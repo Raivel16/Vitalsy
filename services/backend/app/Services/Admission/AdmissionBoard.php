@@ -146,7 +146,7 @@ class AdmissionBoard
     /**
      * @return array<string, mixed>
      */
-    public function advance(string $encounterId, string $step, string $role): array
+    public function advance(string $encounterId, string $step, string $role, ?string $coverageStatus = null): array
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
@@ -154,7 +154,11 @@ class AdmissionBoard
         if (! $definition) {
             throw new AdmissionBoardException('Este no es el paso vigente del ingreso.', 422);
         }
-        if ($encounter->waiting_reason) {
+
+        $resolvingCoverage = $coverageStatus === 'aprobada'
+            && in_array($step, ['cobertura', 'derivacion'], true);
+
+        if ($encounter->waiting_reason && ! $resolvingCoverage) {
             throw new AdmissionBoardException('La cobertura no permite continuar. Derive el trámite.', 422);
         }
         if ($encounter->current_step === 'cerrado' || $encounter->current_step !== $step) {
@@ -164,6 +168,11 @@ class AdmissionBoard
             throw new AdmissionBoardException('Este paso corresponde a otro perfil.', 403);
         }
 
+        if ($coverageStatus !== null) {
+            $encounter->coverage_status = $coverageStatus;
+        }
+
+        $status = $encounter->coverage_status;
         $deliverables = $encounter->deliverables;
         if ($definition['deliverable']) {
             $deliverables[$definition['deliverable']] = true;
@@ -171,21 +180,25 @@ class AdmissionBoard
 
         $next = $definition['next'];
         $waiting = null;
-        if ($step === 'cobertura' && $encounter->coverage_status !== 'aprobada') {
-            $next = 'derivacion';
-            $deliverables['fichaAdmision'] = false;
-        }
-        if ($step === 'derivacion') {
-            $next = 'derivacion';
-            $waiting = 'cobertura';
-        }
-        if ($step === 'cobertura' && $encounter->coverage_status === 'aprobada') {
-            $deliverables['fichaAdmision'] = true;
+
+        if ($step === 'cobertura' || $step === 'derivacion') {
+            if ($status === 'aprobada') {
+                $next = 'brazalete';
+                $waiting = null;
+                $deliverables['fichaAdmision'] = true;
+            } else {
+                $next = 'derivacion';
+                $deliverables['fichaAdmision'] = false;
+                if ($step === 'derivacion') {
+                    $waiting = 'cobertura';
+                }
+            }
         }
 
         $encounter->fill([
             'current_step' => $next ?? $encounter->current_step,
             'waiting_reason' => $waiting,
+            'coverage_status' => $status,
             'deliverables' => $deliverables,
         ])->save();
 

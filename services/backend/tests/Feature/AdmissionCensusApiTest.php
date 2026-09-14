@@ -71,6 +71,15 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounter.currentStep', 'derivacion')
             ->assertJsonPath('encounter.statusLabel', 'Cobertura en trámite');
 
+        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', [
+            'step' => 'derivacion',
+            'coverageStatus' => 'aprobada',
+        ])->assertOk()
+            ->assertJsonPath('encounter.currentStep', 'brazalete')
+            ->assertJsonPath('encounter.coverage.status', 'aprobada')
+            ->assertJsonPath('encounter.nextRole', 'admision')
+            ->assertJsonPath('encounter.deliverables.0.done', true);
+
         $this->asRole('celador');
         $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'traslado'])
             ->assertOk()
@@ -78,6 +87,35 @@ class AdmissionCensusApiTest extends TestCase
 
         $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'recepcion'])
             ->assertStatus(422);
+    }
+
+    public function test_approving_coverage_continues_to_wristband_instead_of_referral(): void
+    {
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', [
+            'step' => 'cobertura',
+            'coverageStatus' => 'aprobada',
+        ])->assertOk()
+            ->assertJsonPath('encounter.currentStep', 'brazalete')
+            ->assertJsonPath('encounter.coverage.status', 'aprobada')
+            ->assertJsonPath('encounter.statusLabel', 'Brazalete por emitir')
+            ->assertJsonPath('encounter.deliverables.0.done', true);
+    }
+
+    public function test_pending_patient_stays_independent_from_a_waiting_referral(): void
+    {
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'derivacion'])
+            ->assertOk()
+            ->assertJsonPath('encounter.statusLabel', 'En trámite de cobertura');
+
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-0002')
+            ->assertOk()
+            ->assertJsonPath('encounter.currentStep', 'cobertura')
+            ->assertJsonPath('encounter.coverage.status', 'pendiente')
+            ->assertJsonPath('encounter.statusLabel', 'Cobertura por validar');
     }
 
     public function test_closing_the_admission_removes_it_from_the_physician_queue(): void

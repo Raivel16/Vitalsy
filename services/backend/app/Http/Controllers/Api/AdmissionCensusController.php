@@ -39,10 +39,16 @@ class AdmissionCensusController extends Controller
     {
         $data = $request->validate([
             'step' => ['required', 'string'],
+            'coverageStatus' => ['nullable', 'in:aprobada,pendiente,rechazada'],
         ]);
 
         return $this->guard(fn () => response()->json([
-            'encounter' => $this->board->advance($encounterId, $data['step'], (string) $request->user()->role),
+            'encounter' => $this->board->advance(
+                $encounterId,
+                $data['step'],
+                (string) $request->user()->role,
+                $data['coverageStatus'] ?? null,
+            ),
         ]));
     }
 
