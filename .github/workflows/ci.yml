@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_pgsql, pgsql
+          tools: composer
+
+      - name: Install frontend dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: services/frontend
+        run: npm test
+
+      - name: Build frontend
+        working-directory: services/frontend
+        run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: services/backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run backend tests
+        working-directory: services/backend
+        run: php artisan test
+
+      - name: Run backend lint or static checks
+        working-directory: services/backend
+        run: ./vendor/bin/pint --test
