@@ -7,8 +7,26 @@ Los datos clínicos aún no salen de un HIS. Para la revisión se usan registros
 ## Cómo entrar
 
 1. Desde la raíz del repositorio: `docker compose up --build`.
-2. Abrir http://localhost:8080.
-3. En la cabecera, elegir el rol de la fila que va a revisar. Cada pantalla solo se abre con el rol indicado. Si el rol no corresponde, aparece un aviso en español, no una pantalla vacía.
+2. Abrir http://localhost:8080. La pantalla de ingreso no muestra códigos de requisito.
+3. Iniciar sesión con una cuenta local. La contraseña de las cuatro es `Vitalsy.2026`.
+
+| Perfil | Correo | Qué abre |
+|---|---|---|
+| Admisión | `admision@vitalsy.local` | RF-01 a RF-06 |
+| Celador | `celador@vitalsy.local` | RF-07 y RF-08 |
+| Enfermería | `enfermeria@vitalsy.local` | RF-09 a RF-15 |
+| Médico | `medico@vitalsy.local` | RF-16 |
+
+Cada pantalla solo se abre con el perfil de esa fila. Si el perfil no corresponde, aparece un aviso en español, no una pantalla vacía. La cabecera muestra el nombre y el perfil, y el botón Cerrar sesión. No hay un selector para cambiar de rol.
+
+## Cómo revisar el acceso (RNF-08 y RNF-09)
+
+Estas reglas no tienen una pantalla propia. Se comprueban en el ingreso y en la cabecera.
+
+| Requisito | Qué debe hacer | Cómo confirmar que está bien |
+|---|---|---|
+| RNF-08 | Exigir sesión y limitar cada interfaz al perfil | Sin sesión solo aparece Iniciar sesión. Un correo o una contraseña vacíos no envían la petición y marcan el campo. Una contraseña incorrecta muestra «El correo o la contraseña no son correctos.» Con `admision@vitalsy.local` se abre Admisión y recepción. Una ruta de otro perfil, por ejemplo `/medico/indicaciones` con admisión, muestra que la vista no está disponible. |
+| RNF-09 | Cerrar la sesión tras 5 minutos sin actividad | Tras entrar, no use el ratón, el teclado ni el desplazamiento durante 5 minutos. Debe volver a Iniciar sesión con el aviso «La sesión se cerró por inactividad. Vuelva a iniciar sesión.» Un clic, una tecla o un desplazamiento reinician ese plazo. |
 
 ## Qué revisar
 
@@ -61,9 +79,9 @@ services/frontend/src/modules/
   medical-orders/               RF-16
 ```
 
-`src/app` contiene el shell, el selector de rol y el cliente HTTP. `src/shared/ui` solo tiene primitivas visuales.
+`src/app` contiene el shell, el inicio de sesión y el cliente HTTP. `src/shared/ui` solo tiene primitivas visuales.
 
-El selector de rol es una sesión del navegador. No cumple todavía el control de acceso de RNF-08 ni el cierre por inactividad de RNF-09.
+La sesión usa cookie httpOnly de Laravel Sanctum, en el mismo origen. El navegador no guarda un token. Las rutas de admisión exigen esa sesión y el perfil indicado en la tabla de acceso.
 
 ## Cálculos clínicos
 
@@ -103,7 +121,6 @@ Una orden desconocida responde 404. Un cuerpo inválido o un valor fisiológico 
 ## Pendiente
 
 - Persistencia y modelos clínicos.
-- Autenticación, roles reales y cierre por inactividad.
 - Firma criptográfica, impresión del brazalete e integración con un lector.
 - Integraciones HIS, cobertura y central de camas.
 - Proceso de alertas, escalamiento y monitoreo programado a partir del NEWS2.

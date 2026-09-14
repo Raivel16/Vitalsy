@@ -19,6 +19,8 @@ docker compose up --build
 
 Nginx publica la aplicación en http://localhost:8080. El puerto 80 queda libre para XAMPP. La API queda en el mismo origen, bajo `/api`. PostgreSQL queda en `localhost:5432`.
 
+El ingreso pide una cuenta local. Las cuentas de revisión y qué pantalla corresponde a cada requisito están en [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md).
+
 La guía para revisar cada pantalla del ingreso está en [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md).
 
 ## Documentación
