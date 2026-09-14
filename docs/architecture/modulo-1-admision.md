@@ -4,11 +4,39 @@ Interfaces del ingreso hospitalario. Los códigos de requisito no se muestran en
 
 Los datos clínicos aún no salen de un HIS. Para la revisión se usan registros de prueba, listados al final.
 
-## Cómo entrar
+## Cómo usar el ingreso
+
+El trabajo no empieza en un formulario suelto. Empieza en **Pacientes**. Cada perfil ve el menú de su tramo, en el orden del proceso 1.
 
 1. Desde la raíz del repositorio: `docker compose up --build`.
 2. Abrir http://localhost:8080. La pantalla de ingreso no muestra códigos de requisito.
 3. Iniciar sesión con una cuenta local. La contraseña de las cuatro es `Vitalsy.2026`.
+4. En **Inicio** lea el tramo de su perfil. En **Pacientes** vea el censo y abra la ficha de un caso.
+5. Si el caso está en su turno, pulse **Continuar**. Complete el formulario y pulse **Confirmar paso en el censo**. Así el siguiente perfil ve el caso.
+
+El censo ya trae tres ingresos, cada uno en un punto distinto del proceso:
+
+| Paciente | Dónde está | Quién actúa ahora |
+|---|---|---|
+| Luis Ernesto Paredes | Cobertura pendiente | Admisión. Si confirma el paso, el caso pasa a derivación y se detiene. |
+| Carmen Yolanda Vega | Cobertura rechazada | Admisión. Debe derivar el trámite. No sigue a brazalete. |
+| Ana María Quispe Rojas | Admisión cerrada, lista para traslado | Celador. Habitación 312, lecho B, brazalete `BRZ-0001-ANA`. |
+
+Enfermería y el médico no tienen un caso en su turno al entrar. Eso es el orden del proceso: el caso de Ana llega a recepción cuando el celador confirma el traslado y la identidad, y llega al médico cuando enfermería confirma valoración, constantes, conciliación, escalas y Kardex.
+
+Para recorrer el camino completo de Ana:
+
+1. Entre como celador, abra a Ana y confirme traslado e identidad.
+2. Cierre sesión y entre como enfermería. Confirme recepción, valoración, constantes, conciliación, escalas y Kardex, en ese orden.
+3. Cierre sesión y entre como médico. Firme las indicaciones.
+
+La ficha de cada paciente muestra datos, ubicación y el estado de los entregables: ficha de admisión, brazalete, expediente, consentimiento, recepción, valoración, signos vitales, conciliación, escalas, Kardex e indicaciones. Un entregable queda **Listo** al confirmar el paso en el censo, no solo al guardar el formulario.
+
+Si la cobertura no está aprobada, confirmar cobertura envía el caso a derivación. Confirmar la derivación lo deja **en trámite**. No se emite brazalete ni se abre expediente.
+
+Las rutas de la tabla de revisión siguen abiertas. Sirven para comprobar cada formulario. El recorrido de trabajo es el censo.
+
+## Cómo entrar
 
 | Perfil | Correo | Qué abre |
 |---|---|---|
@@ -17,7 +45,7 @@ Los datos clínicos aún no salen de un HIS. Para la revisión se usan registros
 | Enfermería | `enfermeria@vitalsy.local` | RF-09 a RF-15 |
 | Médico | `medico@vitalsy.local` | RF-16 |
 
-Cada pantalla solo se abre con el perfil de esa fila. Si el perfil no corresponde, aparece un aviso en español, no una pantalla vacía. La cabecera muestra el nombre y el perfil, y el botón Cerrar sesión. No hay un selector para cambiar de rol.
+Cada pantalla solo se abre con el perfil de esa fila. Si el perfil no corresponde, aparece un aviso en español, no una pantalla vacía. La cabecera muestra el nombre y el perfil, y el botón Cerrar sesión. No hay un selector para cambiar de rol. El menú agrupa Inicio y Pacientes, y después los pasos del proceso 1 que corresponden a ese perfil. Derivación y reubicación son desvíos: se usan solo si el camino principal no puede continuar.
 
 ## Cómo revisar el acceso (RNF-08 y RNF-09)
 
@@ -48,6 +76,9 @@ Estas reglas no tienen una pantalla propia. Se comprueban en el ingreso y en la 
 | RF-14 | Completar escalas de caídas y úlceras | `/enfermeria/riesgos` | Enfermería | Morse y Braden muestran puntaje, nivel escrito y una recomendación. Un valor de fricción fuera de 1 a 3 no se registra. |
 | RF-15 | Consultar el Kardex de ingreso | `/enfermeria/kardex` | Enfermería | La pantalla resume valoración, alergias, medicamentos, constantes, NEWS2 y riesgos. No debe decir que el documento es de prueba. |
 | RF-16 | Revisar y firmar indicaciones basales | `/medico/indicaciones` | Médico | Se listan las indicaciones y el estado pendiente de firma. Sin nombre, colegiatura o confirmación no firma. Con esos datos, el estado pasa a firmado. |
+| RF-83 | Ver el censo del proceso 1 | `/pacientes` | Los cuatro | Admisión ve a Luis y a Carmen en su turno, y a Ana en curso con celador. Celador ve a Ana como su turno. Enfermería y médico ven el censo y el aviso de que aún no hay casos en su tramo. |
+| RF-84 | Ver la ficha y los entregables | `/pacientes/ENC-0001` | Los cuatro | Ana muestra ficha, brazalete, expediente y consentimiento como listos, y el resto como pendiente. |
+| RF-85 | Continuar el paso vigente | Desde la ficha de Ana, como celador | Celador | Continuar abre el traslado con la orden ya puesta. Confirmar paso en el censo deja el caso en verificación de identidad. |
 
 La interfaz no muestra códigos como RF-01. Si aparece un identificador de requisito, un aviso de simulación o un error en inglés, la revisión no pasa.
 
@@ -70,6 +101,7 @@ El frontend usa Screaming Architecture. Cada carpeta nombra el dominio, no una c
 
 ```text
 services/frontend/src/modules/
+  admission-census/             RF-83 a RF-85
   admission/                    RF-01 a RF-06
   patient-transfer/             RF-07 a RF-10
   nursing-assessment/           RF-11, RF-12 y NEWS2
@@ -112,15 +144,24 @@ Prefijo `/api/v1/hospital-admission`. Las respuestas no incluyen un aviso de sim
 | POST | `/vital-signs` | RF-12 y NEWS2 |
 | POST | `/medication-reconciliations` | RF-13 |
 | POST | `/risk-scales` | RF-14 |
+| GET | `/encounters` | RF-83 |
+| GET | `/encounters/{encounterId}` | RF-84 |
+| POST | `/encounters` | RF-85 |
+| POST | `/encounters/{encounterId}/advance` | RF-85 |
 | GET | `/kardex/{encounterId}` | RF-15 |
 | GET | `/medical-orders/{encounterId}` | RF-16 |
 | POST | `/medical-orders/{encounterId}/sign` | RF-16 |
 
 Una orden desconocida responde 404. Un cuerpo inválido o un valor fisiológico imposible responde 422.
 
+## Acceso y usuarios
+
+RF-86 y RF-87 están cubiertos por el inicio y el cierre de sesión. RF-88 a RF-91 describen la administración de cuentas y roles. Esa pantalla no está en este corte. Los cuatro perfiles de revisión se crean con el sembrado de la base.
+
 ## Pendiente
 
-- Persistencia y modelos clínicos.
+- Persistencia clínica completa. El censo guarda el paso y los entregables del ingreso, no el detalle de cada formulario.
+- Pantalla de administración de usuarios y roles (RF-88 a RF-91).
 - Firma criptográfica, impresión del brazalete e integración con un lector.
 - Integraciones HIS, cobertura y central de camas.
 - Proceso de alertas, escalamiento y monitoreo programado a partir del NEWS2.
