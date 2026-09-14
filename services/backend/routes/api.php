@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use Illuminate\Support\Facades\Route;
@@ -12,7 +13,12 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
 
         Route::prefix('hospital-admission')->group(function () {
+            Route::get('encounters', [AdmissionCensusController::class, 'index']);
+            Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
+            Route::post('encounters/{encounterId}/advance', [AdmissionCensusController::class, 'advance']);
+
             Route::middleware('role:admision')->group(function () {
+                Route::post('encounters', [AdmissionCensusController::class, 'store']);
                 Route::get('admission-orders/{orderNumber}', [HospitalAdmissionController::class, 'showAdmissionOrder']);
                 Route::post('filiation/validate', [HospitalAdmissionController::class, 'validateFiliation']);
                 Route::post('coverage/validate', [HospitalAdmissionController::class, 'validateCoverage']);

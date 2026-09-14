@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\Admission\AdmissionBoard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -25,5 +26,7 @@ class DatabaseSeeder extends Seeder
                 [...$account, 'password' => $password, 'email_verified_at' => now()],
             );
         }
+
+        app(AdmissionBoard::class)->ensureDemo();
     }
 }
