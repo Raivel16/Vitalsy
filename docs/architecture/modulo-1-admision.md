@@ -32,7 +32,9 @@ Para recorrer el camino completo de Ana:
 
 La ficha de cada paciente muestra datos, ubicación y el estado de los entregables: ficha de admisión, brazalete, expediente, consentimiento, recepción, valoración, signos vitales, conciliación, escalas, Kardex e indicaciones. Un entregable queda **Listo** al confirmar el paso en el censo, no solo al guardar el formulario.
 
-Si la cobertura no está aprobada, confirmar cobertura envía el caso a derivación. Confirmar la derivación lo deja **en trámite**. No se emite brazalete ni se abre expediente.
+Si la cobertura no está aprobada, deje el estado en pendiente o rechazada, derive el trámite y confirme el paso. El ingreso queda **en trámite**. Si más adelante la cobertura se aprueba, abra de nuevo **Continuar** o **Revisar cobertura**, marque **Aprobada** y confirme el paso: el caso sigue a brazalete.
+
+Al confirmar cobertura, el sistema usa el estado elegido en esa pantalla para ese paciente. Aprobar a Luis no afecta a Carmen, y al revés.
 
 Las rutas de la tabla de revisión siguen abiertas. Sirven para comprobar cada formulario. El recorrido de trabajo es el censo.
 
