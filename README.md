@@ -17,9 +17,9 @@ Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-Nginx publica la aplicación en http://localhost:8080. El puerto 80 queda libre para XAMPP. La API simulada del Módulo 1 queda en el mismo origen, bajo `/api`. PostgreSQL queda en `localhost:5432`.
+Nginx publica la aplicación en http://localhost:8080. El puerto 80 queda libre para XAMPP. La API queda en el mismo origen, bajo `/api`. PostgreSQL queda en `localhost:5432`.
 
-Órdenes de demostración: `OI-2026-0001`, `OI-2026-0002` y `OI-2026-0003`. Brazalete: `BRZ-0001-ANA`.
+La guía para revisar cada pantalla del ingreso está en [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md).
 
 ## Documentación
 
