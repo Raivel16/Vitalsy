@@ -52,6 +52,7 @@ export function ReconciliationPage() {
           </SelectField>
         </div>
         <button className="button button-quiet" type="button" onClick={addMedication}>Agregar medicamento</button>
+        <div className="table-wrap">
         <table>
           <caption>Medicamentos domiciliarios</caption>
           <thead>
@@ -70,6 +71,7 @@ export function ReconciliationPage() {
             ))}
           </tbody>
         </table>
+        </div>
         <p role="status" aria-label="Estado de conciliación">{review.label}</p>
         {review.alerts.map((alert) => <p key={alert} role="alert">{alert}</p>)}
         {error ? <Feedback tone="error">{error}</Feedback> : null}

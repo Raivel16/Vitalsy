@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useId } from "react";
 
 type IconProps = { title?: string };
 
@@ -12,12 +13,22 @@ function Svg({ children, title }: IconProps & { children: ReactNode }) {
 }
 
 export function SealIcon() {
+  const gradientId = useId();
+
   return (
-    <Svg title="Sello de Vitalsy">
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M4 13.5c2.2-1.2 3.4-3.4 4.2-5.2.6 2.4 2 4.2 4 5.4 1.8-1.6 2.8-3.6 3.4-5.6.8 2.2 2.2 4.2 4.4 5.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M12 4.5v3.2M12 16.2V19.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </Svg>
+    <svg className="icon brand-mark" viewBox="0 0 32 32" role="img" aria-label="Vitalsy">
+      <defs>
+        <linearGradient id={gradientId} x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#14B8C6" />
+          <stop offset="1" stopColor="#0E4C92" />
+        </linearGradient>
+      </defs>
+      <path fill={`url(#${gradientId})`} d="M12 4h8v6h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6v6H12v-6H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h6V4Z" />
+      <path d="M6 16h5l2-3 2.2 6 2-3H26" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="24.5" cy="7.5" r="4.2" fill="#E23B4A" />
+      <path d="M24.5 5.4v2.5" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="24.5" cy="9.4" r=".7" fill="#fff" />
+    </svg>
   );
 }
 
