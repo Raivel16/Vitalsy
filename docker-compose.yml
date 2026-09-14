@@ -40,6 +40,8 @@ services:
       APP_KEY: base64:Dk5aG9UDHcSXVpV5u+m5OnNPqHywvv07vZKzXwJvqRY=
       APP_URL: http://localhost:8080
       APP_LOCALE: es
+      SANCTUM_STATEFUL_DOMAINS: localhost:8080,localhost:5173,127.0.0.1:8080
+      SESSION_DOMAIN: localhost
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432

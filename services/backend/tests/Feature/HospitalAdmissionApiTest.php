@@ -2,12 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class HospitalAdmissionApiTest extends TestCase
 {
+    use RefreshDatabase;
+
+    private function asRole(string $role): static
+    {
+        return $this->actingAs(User::factory()->create(['role' => $role]));
+    }
+
     public function test_admission_order_returns_the_order_or_a_spanish_not_found(): void
     {
+        $this->asRole('admision');
         $found = $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001');
         $found->assertOk()
             ->assertJsonMissingPath('simulated')
@@ -22,6 +32,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_filiation_requires_name_in_spanish_and_accepts_a_valid_payload(): void
     {
+        $this->asRole('admision');
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [])
             ->assertStatus(422)
             ->assertJsonMissingPath('simulated')
@@ -36,6 +47,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_coverage_referral_wristband_record_and_consent_are_created(): void
     {
+        $this->asRole('admision');
         $this->postJson('/api/v1/hospital-admission/coverage/validate', [
             'orderNumber' => 'OI-2026-0002',
         ])->assertOk()->assertJsonPath('coverage.status', 'pendiente');
@@ -67,6 +79,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_transfer_identity_reception_and_relocation(): void
     {
+        $this->asRole('celador');
         $this->getJson('/api/v1/hospital-admission/transfer-orders/OT-2026-0001')
             ->assertOk()
             ->assertJsonPath('transfer.room', '312')
@@ -80,6 +93,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
 
+        $this->asRole('enfermeria');
         $this->postJson('/api/v1/hospital-admission/floor-receptions', [
             'encounterId' => 'ENC-0001',
             'confirmed' => true,
@@ -95,6 +109,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_nursing_vitals_calculate_news2_and_reject_impossible_values(): void
     {
+        $this->asRole('enfermeria');
         $this->postJson('/api/v1/hospital-admission/nursing-assessments', [
             'chiefComplaint' => 'Disnea de dos días',
             'allergies' => ['Penicilina'],
@@ -125,6 +140,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_reconciliation_risk_kardex_and_signature(): void
     {
+        $this->asRole('enfermeria');
         $this->postJson('/api/v1/hospital-admission/medication-reconciliations', [
             'allergies' => 'Penicilina',
             'medications' => [[
@@ -163,6 +179,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('kardex.patientName', 'Ana María Quispe Rojas')
             ->assertJsonMissingPath('simulated');
 
+        $this->asRole('medico');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-0001')
             ->assertOk()
             ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');

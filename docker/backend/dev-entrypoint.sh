@@ -7,4 +7,5 @@ until php -r "try { new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_
 done
 
 php artisan migrate --force --no-interaction
+php artisan db:seed --force --no-interaction
 exec php artisan serve --host=0.0.0.0 --port=8000
