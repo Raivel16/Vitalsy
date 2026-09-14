@@ -1,6 +1,7 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { useEncounter } from "../../admission-census/EncounterContext";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -10,7 +11,11 @@ type TransferOrder = {
 };
 
 export function TransferOrderPage() {
+  const encounter = useEncounter();
   const [orderNumber, setOrderNumber] = useState("OT-2026-0001");
+  useEffect(() => {
+    if (encounter?.transferOrderNumber) setOrderNumber(encounter.transferOrderNumber);
+  }, [encounter?.transferOrderNumber]);
   const [result, setResult] = useState<TransferOrder | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,7 +60,11 @@ export function TransferOrderPage() {
 }
 
 export function WristbandVerifyPage() {
+  const encounter = useEncounter();
   const [code, setCode] = useState("");
+  useEffect(() => {
+    if (encounter?.wristbandCode) setCode(encounter.wristbandCode);
+  }, [encounter?.wristbandCode]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 

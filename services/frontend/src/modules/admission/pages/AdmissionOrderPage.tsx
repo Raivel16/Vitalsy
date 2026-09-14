@@ -1,5 +1,8 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { api } from "../../../app/api";
+import { useEncounter } from "../../admission-census/EncounterContext";
+import type { Encounter } from "../../admission-census/domain/encounter";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -16,10 +19,16 @@ type AdmissionOrder = {
 };
 
 export function AdmissionOrderPage() {
+  const encounter = useEncounter();
+  const navigate = useNavigate();
   const [orderNumber, setOrderNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AdmissionOrder | null>(null);
+
+  useEffect(() => {
+    if (encounter?.orderNumber) setOrderNumber(encounter.orderNumber);
+  }, [encounter?.orderNumber]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -59,6 +68,22 @@ export function AdmissionOrderPage() {
             <div><dt>Documento</dt><dd>{result.order.patient.documentType} {result.order.patient.documentNumber}</dd></div>
             <div><dt>Cobertura</dt><dd>{result.order.coverage.payer} · {result.order.coverage.status}</dd></div>
           </dl>
+          <p>
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                void api<{ encounter: Encounter }>("/api/v1/hospital-admission/encounters", {
+                  method: "POST",
+                  body: JSON.stringify({ orderNumber: result.order.orderNumber }),
+                }).then((data) => navigate(`/pacientes/${data.encounter.encounterId}`))
+                  .catch((caught) => setError(errorText(caught, "No se pudo abrir la ficha.")));
+              }}
+            >
+              Abrir ficha del ingreso
+            </button>
+          </p>
+          <p><Link to="/admision/filiacion">Continuar con la filiación</Link></p>
         </section>
       ) : null}
     </Sheet>

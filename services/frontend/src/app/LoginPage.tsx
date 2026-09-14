@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { loginRequest } from "./api";
 import { useAuth } from "./AuthProvider";
 import { errorText } from "./userMessage";
+import { IconLogin } from "@tabler/icons-react";
 import { SealIcon } from "../shared/ui/Icons";
 import { TextField } from "../shared/ui/Field";
 import { Feedback } from "../shared/ui/Sheet";
@@ -55,7 +56,10 @@ export function LoginPage() {
         <TextField id="email" label="Correo" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email} />
         <TextField id="password" label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} error={errors.password} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        <button className="button" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</button>
+        <button className="button" type="submit" disabled={loading}>
+          <IconLogin size={18} stroke={1.75} aria-hidden />
+          {loading ? "Entrando…" : "Entrar"}
+        </button>
       </form>
     </main>
   );

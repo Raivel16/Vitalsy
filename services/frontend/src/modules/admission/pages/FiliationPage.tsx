@@ -1,12 +1,19 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../../../app/api";
+import { useEncounter } from "../../admission-census/EncounterContext";
 import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
 export function FiliationPage() {
+  const encounter = useEncounter();
   const [fullName, setFullName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
+  useEffect(() => {
+    if (!encounter) return;
+    setFullName(encounter.patientName);
+    setDocumentNumber(encounter.documentNumber);
+  }, [encounter]);
   const [birthDate, setBirthDate] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
