@@ -1,0 +1,36 @@
+# Root
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+services/frontend/node_modules/
+services/backend/node_modules/
+services/frontend/dist/
+services/frontend/.vite/
+coverage/
+
+# Laravel / PHP
+services/backend/vendor/
+services/backend/.env
+services/backend/public/hot
+services/backend/storage/*.key
+services/backend/storage/app/*.php
+services/backend/storage/app/public/
+services/backend/storage/framework/cache/*
+services/backend/storage/framework/sessions/*
+services/backend/storage/framework/views/*
+services/backend/storage/logs/*
+services/backend/bootstrap/cache/*.php
+services/backend/bootstrap/cache/*.php
+
+# Docker
+*.log
+docker/postgres/data/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
