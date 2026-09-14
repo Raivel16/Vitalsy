@@ -12,6 +12,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": { target: proxyTarget, changeOrigin: true },
+      "/sanctum": { target: proxyTarget, changeOrigin: true },
       "/up": { target: proxyTarget, changeOrigin: true },
     },
     hmr: hmrClientPort ? { clientPort: Number(hmrClientPort) } : undefined,

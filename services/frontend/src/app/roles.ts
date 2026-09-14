@@ -9,10 +9,9 @@ export const ROLE_LABEL: Record<Role, string> = {
   medico: "Médico",
 };
 
-export function readStoredRole(): Role {
-  const stored = sessionStorage.getItem("vitalsy-role");
-  if (stored === "admision" || stored === "enfermeria" || stored === "celador" || stored === "medico") {
-    return stored;
-  }
-  return "admision";
-}
+export type SessionUser = {
+  name: string;
+  email: string;
+  role: Role;
+};
+

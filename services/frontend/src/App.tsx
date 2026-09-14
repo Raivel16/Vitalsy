@@ -1,7 +1,7 @@
 import { NavLink, Route, Routes } from "react-router";
+import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
-import { RoleProvider } from "./app/RoleProvider";
-import { useRole } from "./app/role-context";
+import { LoginPage } from "./app/LoginPage";
 import { ROLE_LABEL, ROLES, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { AdmissionOrderPage } from "./modules/admission/pages/AdmissionOrderPage";
@@ -37,17 +37,18 @@ const NAV: Array<{ to: string; label: string; roles: Role[] }> = [
 ];
 
 function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {
-  const { role } = useRole();
-  if (roles.includes(role)) return children;
+  const { user } = useAuth();
+  if (user && roles.includes(user.role)) return children;
   return (
     <p className="banner banner-warning" role="alert">
-      Esta vista no está disponible para el rol activo. Se requiere el rol {roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
+      Esta vista no está disponible para su perfil. Se requiere {roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
     </p>
   );
 }
 
 function Shell() {
-  const { role, setRole } = useRole();
+  const { user, logout } = useAuth();
+  const role = user?.role ?? "admision";
   const links = NAV.filter((item) => item.roles.includes(role));
 
   return (
@@ -61,14 +62,10 @@ function Shell() {
             <p>Admisión hospitalaria</p>
           </div>
         </div>
-        <label className="role-switch">
-          Rol activo
-          <select value={role} onChange={(event) => setRole(event.target.value as Role)}>
-            {ROLES.map((item) => (
-              <option key={item} value={item}>{ROLE_LABEL[item]}</option>
-            ))}
-          </select>
-        </label>
+        <div className="session-box">
+          <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
+          <button className="button button-quiet" type="button" onClick={() => void logout()}>Cerrar sesión</button>
+        </div>
       </header>
       <div className="layout">
         <nav aria-label="Ingreso hospitalario">
@@ -110,10 +107,17 @@ function Shell() {
   );
 }
 
+function Gate() {
+  const { user, ready } = useAuth();
+  if (!ready) return <p role="status">Cargando sesión.</p>;
+  if (!user) return <LoginPage />;
+  return <Shell />;
+}
+
 export default function App() {
   return (
-    <RoleProvider>
-      <Shell />
-    </RoleProvider>
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
   );
 }

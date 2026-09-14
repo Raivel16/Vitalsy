@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { ROLE_LABEL } from "./roles";
-import { useRole } from "./role-context";
+import { useAuth } from "./AuthProvider";
 
 const LANES = [
   { role: "admision" as const, title: "Admisión", text: "Orden, filiación, cobertura, brazalete, expediente y consentimiento.", to: "/admision/orden" },
@@ -10,13 +10,14 @@ const LANES = [
 ];
 
 export function HomePage() {
-  const { role } = useRole();
+  const { user } = useAuth();
+  const role = user?.role ?? "admision";
 
   return (
     <section className="home">
       <p className="kicker">Ingreso hospitalario</p>
       <h2>Admisión y recepción del paciente hospitalizado</h2>
-      <p className="lead">Mesa de trabajo para el ingreso. El rol activo es {ROLE_LABEL[role]}.</p>
+      <p className="lead">Mesa de trabajo para el ingreso. Su perfil es {ROLE_LABEL[role]}.</p>
       <ol className="lanes">
         {LANES.map((lane, index) => (
           <li key={lane.role} className={lane.role === role ? "lane lane-active" : "lane"}>
