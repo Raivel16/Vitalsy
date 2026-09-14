@@ -157,7 +157,7 @@ class AdmissionBoard
         if ($encounter->waiting_reason) {
             throw new AdmissionBoardException('La cobertura no permite continuar. Derive el trámite.', 422);
         }
-        if ($encounter->current_step !== $step) {
+        if ($encounter->current_step === 'cerrado' || $encounter->current_step !== $step) {
             throw new AdmissionBoardException('Este no es el paso vigente del ingreso.', 422);
         }
         if ($definition['role'] !== $role) {
@@ -296,7 +296,7 @@ class AdmissionBoard
             'subprocessLabel' => self::SUBPROCESS[$step['subprocess']],
             'currentStep' => $encounter->current_step,
             'currentStepLabel' => $waiting ? 'Esperar regularización de cobertura' : $step['label'],
-            'nextRole' => $waiting ? null : $step['role'],
+            'nextRole' => $waiting || $encounter->current_step === 'cerrado' ? null : $step['role'],
             'statusLabel' => $waiting ? 'En trámite de cobertura' : $step['status'],
             'deliverables' => $deliverables,
         ];
