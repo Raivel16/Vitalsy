@@ -8,3 +8,4 @@
 4. Ningún PR/commit se considera completo sin sus pruebas correspondientes en verde.
 5. La documentación técnica y de arquitectura se mantiene actualizada en `docs/`.
 6. Los requerimientos funcionales y no funcionales viven en `docs/requirements/requerimientos.md` y deben consultarse antes de implementar cualquier feature.
+7. El frontend React debe aplicar Screaming Architecture: la estructura de carpetas debe expresar claramente los dominios y módulos funcionales del sistema, priorizando la organización por funcionalidad sobre la organización exclusivamente por tipo técnico.

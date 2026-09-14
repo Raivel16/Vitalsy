@@ -62,8 +62,10 @@ git rebase origin/dev
 ```bash
 git status
 git add .
-git commit -m "RF-XX: descripcion del cambio"
+git commit -m "feat(admision): RF-XX describir el cambio"
 ```
+
+Los commits deben seguir Conventional Commits con el formato `tipo(alcance): RF-XX descripción breve` cuando estén asociados a un requisito. Los tipos permitidos son `feat`, `fix`, `test`, `docs`, `refactor` y `chore`; deben escribirse en minúsculas, con un verbo en modo imperativo y sin punto final. Para cambios sin requisito asociado se omite `RF-XX`. Cada commit debe ser atómico y contener únicamente cambios completamente relacionados con un mismo objetivo, requisito o corrección; los cambios no relacionados deben registrarse en commits separados.
 
 Subir la rama:
 

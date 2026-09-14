@@ -18,11 +18,17 @@ Este proyecto exige metodología TDD en frontend y backend.
 4. No se aprueba un PR ni un commit si no hay pruebas verdes.
 5. Mantén la documentación técnica actualizada en `docs/`.
 6. Consulta `docs/requirements/requerimientos.md` antes de implementar nuevas funcionalidades.
-7. Todas las ramas de feature deben partir de `dev` y seguir el formato estándar:
+7. Organiza el frontend React aplicando Screaming Architecture, de modo que las carpetas y módulos reflejen claramente el dominio y la funcionalidad implementada.
+8. Nombra los commits usando Conventional Commits con el formato `tipo(alcance): RF-XX descripción breve` cuando exista un requisito asociado.
+   - Tipos permitidos: `feat`, `fix`, `test`, `docs`, `refactor` y `chore`.
+   - Usa minúsculas, verbos en modo imperativo y no agregues punto final.
+   - Cada commit debe contener únicamente cambios completamente relacionados con un mismo objetivo, requisito o corrección. No mezcles cambios no relacionados.
+   - Ejemplo: `feat(admision): RF-01 consultar orden de internamiento`.
+9. Todas las ramas de feature deben partir de `dev` y seguir el formato estándar:
    - `feature/RF-XX-brief-description`
    - `bugfix/RF-XX-brief-description`
    - `hotfix/RF-XX-brief-description`
-8. El identificador del requerimiento (por ejemplo `RF-42`, `RF-81`, `RNF-05`) debe incluirse en el nombre de la rama para identificar exactamente qué cambio se está implementando.
+10. El identificador del requerimiento (por ejemplo `RF-42`, `RF-81`, `RNF-05`) debe incluirse en el nombre de la rama para identificar exactamente qué cambio se está implementando.
 
 ## Flujo recomendado
 
