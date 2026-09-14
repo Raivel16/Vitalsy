@@ -16,9 +16,9 @@ export function CoveragePage() {
   const [status, setStatus] = useState<CoverageStatus>("aprobada");
 
   return (
-    <Sheet kicker="RF-02 · RF-03 · Admisión" title="Cobertura sanitaria">
-      <p className="lead">El estado se muestra con texto e icono. El selector cambia el escenario de demostración.</p>
-      <SelectField id="coverage-scenario" label="Escenario de cobertura" value={status} onChange={(event) => setStatus(event.target.value as CoverageStatus)}>
+    <Sheet kicker="Admisión" title="Cobertura sanitaria">
+      <p className="lead">Revise el estado de la cobertura. Si hay un trámite pendiente, derive el caso a caja o a trabajo social.</p>
+      <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => setStatus(event.target.value as CoverageStatus)}>
         <option value="aprobada">Aprobada</option>
         <option value="pendiente">Pendiente</option>
         <option value="rechazada">Rechazada</option>
@@ -56,7 +56,7 @@ export function ReferralPage() {
         body: JSON.stringify({ destination, relativeName, relativePhone, note }),
       });
       const place = destination === "caja" ? "caja" : "trabajo social";
-      setResult(`Derivación registrada a ${place}. El familiar queda notificado en esta simulación.`);
+      setResult(`Derivación registrada a ${place}. El familiar queda notificado.`);
       setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo registrar la derivación.");
@@ -64,7 +64,7 @@ export function ReferralPage() {
   }
 
   return (
-    <Sheet kicker="RF-03 · Admisión" title="Derivación de cobertura">
+    <Sheet kicker="Admisión" title="Derivación de cobertura">
       <p className="lead">Registre el trámite pendiente y el aviso al familiar o cuidador.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <SelectField id="destination" label="Destino del trámite" value={destination} onChange={(event) => setDestination(event.target.value)}>

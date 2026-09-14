@@ -71,7 +71,7 @@ function Shell() {
         </label>
       </header>
       <div className="layout">
-        <nav aria-label="Módulo 1">
+        <nav aria-label="Ingreso hospitalario">
           <p className="nav-kicker"><PulseIcon /> Turno de ingreso</p>
           <ul>
             {links.map((item) => (

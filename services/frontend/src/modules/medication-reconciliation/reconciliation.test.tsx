@@ -13,7 +13,7 @@ describe("conciliación farmacéutica de ingreso", () => {
     vi.unstubAllGlobals();
   });
 
-  it("muestra dosis, vía y una alerta de alergia simulada, y distingue el estado", async () => {
+  it("muestra dosis, vía y una alerta de alergia, y distingue el estado", async () => {
     const user = userEvent.setup();
     vi.stubGlobal(
       "fetch",

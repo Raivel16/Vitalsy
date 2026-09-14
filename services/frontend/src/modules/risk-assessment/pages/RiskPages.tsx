@@ -44,7 +44,7 @@ export function RiskScalesPage() {
   }
 
   return (
-    <Sheet kicker="RF-14 · Enfermería" title="Escalas de riesgo">
+    <Sheet kicker="Enfermería" title="Escalas de riesgo">
       <p className="lead">Morse para caídas y Braden para úlceras. El puntaje es el de las escalas; no es una orden médica.</p>
       <form className="stack" onSubmit={onSubmit}>
         <fieldset>

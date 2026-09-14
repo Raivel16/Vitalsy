@@ -39,7 +39,7 @@ export function MedicalOrdersPage() {
     const next: Record<string, string> = {};
     if (!physicianName.trim()) next.physicianName = "El nombre del médico es obligatorio.";
     if (!credential.trim()) next.credential = "La colegiatura es obligatoria.";
-    if (!confirmed) next.confirmed = "Debe confirmar la firma electrónica simulada.";
+    if (!confirmed) next.confirmed = "Debe confirmar la firma de las indicaciones.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -59,14 +59,14 @@ export function MedicalOrdersPage() {
   if (!orders) return <Feedback tone="error">{error || "Indicaciones no disponibles."}</Feedback>;
 
   return (
-    <Sheet kicker="RF-16 · Médico" title="Indicaciones médicas basales">
-      <p className="lead">Revise la valoración de ingreso y registre una firma simulada. No tiene validez criptográfica.</p>
+    <Sheet kicker="Médico" title="Indicaciones médicas basales">
+      <p className="lead">Revise la valoración de ingreso y firme las indicaciones basales.</p>
       <p role="status" aria-label="Estado del documento">{statusLabel}</p>
       <ul>{orders.items.map((item) => <li key={item}>{item}</li>)}</ul>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="physician-name" label="Nombre del médico" value={physicianName} onChange={(event) => setPhysicianName(event.target.value)} error={errors.physicianName} />
         <TextField id="credential" label="Colegiatura" value={credential} onChange={(event) => setCredential(event.target.value)} error={errors.credential} />
-        <CheckField id="sign-confirmed" label="Confirmo la firma electrónica simulada" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
+        <CheckField id="sign-confirmed" label="Confirmo la firma de las indicaciones" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         <button className="button" type="submit">Firmar indicaciones</button>
       </form>

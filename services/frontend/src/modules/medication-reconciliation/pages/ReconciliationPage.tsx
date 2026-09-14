@@ -35,8 +35,8 @@ export function ReconciliationPage() {
   }
 
   return (
-    <Sheet kicker="RF-13 · Enfermería" title="Conciliación farmacéutica de ingreso">
-      <p className="lead">Las alertas usan una tabla local de demostración. No reemplazan una base de interacciones.</p>
+    <Sheet kicker="Enfermería" title="Conciliación farmacéutica de ingreso">
+      <p className="lead">Registre los medicamentos domiciliarios y revise las alertas de alergia o interacción.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="known-allergies" label="Alergias conocidas" value={allergies} onChange={(event) => setAllergies(event.target.value)} />
         <div className="form-grid">

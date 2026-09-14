@@ -4,7 +4,6 @@ import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
 type AdmissionOrder = {
-  simulated: boolean;
   order: {
     orderNumber: string;
     originService: string;
@@ -14,8 +13,6 @@ type AdmissionOrder = {
     coverage: { payer: string; status: string; plan: string };
   };
 };
-
-const DEMOS = ["OI-2026-0001", "OI-2026-0002", "OI-2026-0003"];
 
 export function AdmissionOrderPage() {
   const [orderNumber, setOrderNumber] = useState("");
@@ -41,17 +38,10 @@ export function AdmissionOrderPage() {
   }
 
   return (
-    <Sheet kicker="RF-01 · Admisión" title="Orden de internamiento">
-      <p className="lead">Consulte la orden digital enviada por el servicio emisor. Las órdenes de demostración son {DEMOS.join(", ")}.</p>
+    <Sheet kicker="Admisión" title="Orden de internamiento">
+      <p className="lead">Consulte la orden digital enviada por el servicio emisor.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="order-number" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} required />
-        <div className="chip-row" aria-label="Órdenes de demostración">
-          {DEMOS.map((demo) => (
-            <button key={demo} type="button" className="chip" onClick={() => setOrderNumber(demo)}>
-              Usar {demo}
-            </button>
-          ))}
-        </div>
         <button className="button" type="submit">Consultar orden</button>
       </form>
       {loading ? <p role="status">Cargando orden de internamiento.</p> : null}
@@ -59,7 +49,6 @@ export function AdmissionOrderPage() {
       {!loading && !error && !result ? <p className="empty">Ingrese el número de orden para iniciar la consulta.</p> : null}
       {result ? (
         <section className="result-block">
-          <p className="sim-note">Respuesta simulada. No proviene de un HIS real.</p>
           <h3>{result.order.patient.fullName}</h3>
           <dl className="facts">
             <div><dt>Orden</dt><dd>{result.order.orderNumber}</dd></div>

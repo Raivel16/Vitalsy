@@ -35,7 +35,7 @@ export function FiliationPage() {
   }
 
   return (
-    <Sheet kicker="RF-02 · Admisión" title="Datos filiatorios">
+    <Sheet kicker="Admisión" title="Datos filiatorios">
       <p className="lead">Contraste nombre, documento y fecha de nacimiento antes de aprobar la ficha de ingreso.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" />

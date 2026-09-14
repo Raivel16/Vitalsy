@@ -15,17 +15,17 @@ const RULES = [
   {
     allergy: /penicil/i,
     drug: /amoxicil|ampicil|penicil/i,
-    message: (name: string) => `Posible alergia: ${name} coincide con alergia a penicilina. Regla local simulada.`,
+    message: (name: string) => `Posible alergia: ${name} coincide con alergia a penicilina.`,
   },
   {
     allergy: /aine|ibuprofeno|aines/i,
     drug: /ibuprofeno|naproxeno|diclofenaco/i,
-    message: (name: string) => `Posible alergia: ${name} pertenece al grupo de los AINE. Regla local simulada.`,
+    message: (name: string) => `Posible alergia: ${name} pertenece al grupo de los AINE.`,
   },
   {
     allergy: /warfarina|anticoagul/i,
     drug: /ibuprofeno|aspirina|naproxeno/i,
-    message: (name: string) => `Posible interacción: ${name} aumenta el riesgo de sangrado con anticoagulación. Regla local simulada.`,
+    message: (name: string) => `Posible interacción: ${name} aumenta el riesgo de sangrado con anticoagulación.`,
   },
 ];
 

@@ -34,7 +34,7 @@ export function NursingAssessmentPage() {
   }
 
   return (
-    <Sheet kicker="RF-11 · Enfermería" title="Valoración inicial">
+    <Sheet kicker="Enfermería" title="Valoración inicial">
       <p className="lead">Anamnesis, alergias y antecedentes a pie de cama.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={fieldError} />
@@ -121,8 +121,8 @@ export function VitalSignsPage() {
   const urgent = Boolean(news2?.singleParameterAlert || news2?.band === "high");
 
   return (
-    <Sheet kicker="RF-12 · Enfermería" title="Constantes vitales basales">
-      <p className="lead">El NEWS2 se calcula con la tabla del Royal College of Physicians, 2017. No activa todavía el flujo de alertas del módulo 3.</p>
+    <Sheet kicker="Enfermería" title="Constantes vitales basales">
+      <p className="lead">El sistema calcula el NEWS2 a partir de las constantes registradas.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
           <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(event) => update("respiratoryRate", event.target.value)} error={visibleErrors.respiratoryRate} hint="respiraciones/min" />

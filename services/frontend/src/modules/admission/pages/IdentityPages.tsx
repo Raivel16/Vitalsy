@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
-import { SimulatedBarcode } from "../components/Barcode";
+import { Barcode } from "../components/Barcode";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -24,8 +24,8 @@ export function WristbandPage() {
   }
 
   return (
-    <Sheet kicker="RF-04 · Admisión" title="Brazalete de identificación">
-      <p className="lead">La impresión física y el símbolo escaneable quedan pendientes. Esta vista genera el código de demostración.</p>
+    <Sheet kicker="Admisión" title="Brazalete de identificación">
+      <p className="lead">Genere el brazalete de identificación y verifique el código antes de entregarlo.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit">Emitir brazalete</button>
       </form>
@@ -36,7 +36,7 @@ export function WristbandPage() {
           <div>
             <p className="wrist-name">Ana María Quispe Rojas</p>
             <p className="wrist-code">{code}</p>
-            <SimulatedBarcode value={code} />
+            <Barcode value={code} />
           </div>
           <span className="wrist-hole" aria-hidden="true" />
         </div>
@@ -65,8 +65,8 @@ export function RecordPage() {
   }
 
   return (
-    <Sheet kicker="RF-05 · Admisión" title="Expediente clínico de ingreso">
-      <p className="lead">La apertura queda habilitada al validar la admisión. En esta fase el registro es simulado.</p>
+    <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
+      <p className="lead">Abra el expediente clínico de ingreso una vez validados los datos y la cobertura.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit">Aperturar expediente</button>
       </form>
@@ -106,14 +106,14 @@ export function ConsentPage() {
   }
 
   return (
-    <Sheet kicker="RF-06 · Admisión" title="Consentimiento informado">
-      <p className="lead">La firma en esta fase es una confirmación en terminal. No es una firma criptográfica.</p>
+    <Sheet kicker="Admisión" title="Consentimiento informado">
+      <p className="lead">Registre la aceptación del consentimiento informado en el terminal.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="signer-name" label="Nombre de quien firma" value={signerName} onChange={(event) => setSignerName(event.target.value)} error={errors.signerName} />
         <TextField id="relationship" label="Relación con el paciente" value={relationship} onChange={(event) => setRelationship(event.target.value)} />
         <CheckField id="consent-accepted" label="Acepto el consentimiento informado" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} error={errors.accepted} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        {signed ? <Feedback tone="success">Consentimiento {signed}. Respuesta simulada.</Feedback> : null}
+        {signed ? <Feedback tone="success">Consentimiento {signed}.</Feedback> : null}
         <button className="button" type="submit">Registrar consentimiento</button>
       </form>
     </Sheet>

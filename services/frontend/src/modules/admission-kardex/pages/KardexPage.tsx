@@ -39,8 +39,7 @@ export function KardexPage() {
   if (error || !kardex) return <Feedback tone="error">{error || "Kardex no disponible."}</Feedback>;
 
   return (
-    <Sheet kicker="RF-15 · Sistema" title="Kardex electrónico de ingreso">
-      <p className="sim-note">Documento simulado a partir de la valoración de demostración.</p>
+    <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
       <h3>{kardex.patientName}</h3>
       <dl className="facts">
         <div><dt>Valoración</dt><dd>{kardex.assessment}</dd></div>

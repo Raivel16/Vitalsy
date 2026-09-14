@@ -40,7 +40,8 @@ describe("admisión administrativa", () => {
     await user.click(screen.getByRole("button", { name: /consultar orden/i }));
 
     expect(await screen.findByText(/ana maría quispe rojas/i)).toBeInTheDocument();
-    expect(screen.getByText(/simulad/i)).toBeInTheDocument();
+    expect(screen.queryByText(/simulad/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/número de orden/i));
     await user.type(screen.getByLabelText(/número de orden/i), "OI-0000");
@@ -77,9 +78,9 @@ describe("admisión administrativa", () => {
     renderApp("/admision/cobertura");
 
     expect(screen.getByRole("status", { name: /cobertura aprobada/i })).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText(/escenario de cobertura/i), "pendiente");
+    await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "pendiente");
     expect(screen.getByRole("status", { name: /cobertura pendiente/i })).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText(/escenario de cobertura/i), "rechazada");
+    await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "rechazada");
     expect(screen.getByRole("status", { name: /cobertura rechazada/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /derivar trámite/i }));
@@ -119,7 +120,7 @@ describe("admisión administrativa", () => {
     renderApp("/admision/brazalete");
     await user.click(screen.getByRole("button", { name: /emitir brazalete/i }));
     expect(await screen.findByText("BRZ-0001-ANA")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /código de barras simulado/i })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /código de barras/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /abrir expediente/i }));
     await user.click(screen.getByRole("button", { name: /aperturar expediente/i }));

@@ -6,7 +6,7 @@ const LANES = [
   { role: "admision" as const, title: "Admisión", text: "Orden, filiación, cobertura, brazalete, expediente y consentimiento.", to: "/admision/orden" },
   { role: "celador" as const, title: "Celador", text: "Orden de traslado e identidad por brazalete.", to: "/traslado/orden" },
   { role: "enfermeria" as const, title: "Enfermería", text: "Recepción, valoración, NEWS2, conciliación, escalas y Kardex.", to: "/piso/recepcion" },
-  { role: "medico" as const, title: "Médico", text: "Revisión y firma simulada de indicaciones basales.", to: "/medico/indicaciones" },
+  { role: "medico" as const, title: "Médico", text: "Revisión y firma de indicaciones basales.", to: "/medico/indicaciones" },
 ];
 
 export function HomePage() {
@@ -14,9 +14,9 @@ export function HomePage() {
 
   return (
     <section className="home">
-      <p className="kicker">Módulo 1</p>
+      <p className="kicker">Ingreso hospitalario</p>
       <h2>Admisión y recepción del paciente hospitalizado</h2>
-      <p className="lead">Mesa de trabajo para el ingreso. El rol activo es {ROLE_LABEL[role]}. Los datos clínicos de ejemplo son ficticios.</p>
+      <p className="lead">Mesa de trabajo para el ingreso. El rol activo es {ROLE_LABEL[role]}.</p>
       <ol className="lanes">
         {LANES.map((lane, index) => (
           <li key={lane.role} className={lane.role === role ? "lane lane-active" : "lane"}>

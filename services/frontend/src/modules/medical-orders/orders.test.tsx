@@ -46,7 +46,7 @@ describe("indicaciones médicas basales", () => {
 
     await user.type(screen.getByLabelText(/nombre del médico/i), "Dr. Mateo Salas");
     await user.type(screen.getByLabelText(/colegiatura/i), "CMP 12345");
-    await user.click(screen.getByLabelText(/confirmo la firma electrónica simulada/i));
+    await user.click(screen.getByLabelText(/confirmo la firma de las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
 
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);

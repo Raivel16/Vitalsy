@@ -32,7 +32,7 @@ export function TransferOrderPage() {
   }
 
   return (
-    <Sheet kicker="RF-07 · Celador" title="Orden de traslado a piso">
+    <Sheet kicker="Celador" title="Orden de traslado a piso">
       <p className="lead">Confirme habitación y lecho antes de movilizar al paciente.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
@@ -42,7 +42,6 @@ export function TransferOrderPage() {
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {result ? (
         <section className="bed-card">
-          <p className="sim-note">Respuesta simulada.</p>
           <h3>{result.transfer.patientName}</h3>
           <p>Habitación {result.transfer.room}</p>
           <p>Lecho {result.transfer.bed}</p>
@@ -75,14 +74,11 @@ export function WristbandVerifyPage() {
   }
 
   return (
-    <Sheet kicker="RF-08 · Celador" title="Verificación de identidad">
-      <p className="lead">Ingrese el código o use el escaneo simulado. No hay lector físico en esta fase.</p>
+    <Sheet kicker="Celador" title="Verificación de identidad">
+      <p className="lead">Ingrese el código del brazalete para confirmar la identidad antes del traslado.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
-        <div className="actions">
-          <button className="button button-quiet" type="button" onClick={() => setCode("BRZ-0001-ANA")}>Simular escaneo</button>
-          <button className="button" type="submit">Verificar brazalete</button>
-        </div>
+        <button className="button" type="submit">Verificar brazalete</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {message ? <Feedback tone="success">{message}</Feedback> : null}
@@ -109,8 +105,8 @@ export function FloorReceptionPage() {
   }
 
   return (
-    <Sheet kicker="RF-09 · Enfermería" title="Recepción física en piso">
-      <p className="lead">Paciente de demostración: Ana María Quispe Rojas. Habitación 312, lecho B.</p>
+    <Sheet kicker="Enfermería" title="Recepción física en piso">
+      <p className="lead">Confirme que el paciente llegó a la habitación y al lecho asignados.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit">Confirmar recepción</button>
       </form>
@@ -151,8 +147,8 @@ export function RelocationPage() {
   }
 
   return (
-    <Sheet kicker="RF-10 · Enfermería" title="Reubicación del paciente">
-      <p className="lead">Registre la discrepancia de lecho. La notificación a la central es simulada.</p>
+    <Sheet kicker="Enfermería" title="Reubicación del paciente">
+      <p className="lead">Registre la discrepancia de lecho y avise a la central de camas.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="relocation-reason" label="Motivo de la discrepancia" value={reason} onChange={(event) => setReason(event.target.value)} error={errors.reason} />
         <TextField id="requested-room" label="Habitación solicitada" value={room} onChange={(event) => setRoom(event.target.value)} error={errors.room} />

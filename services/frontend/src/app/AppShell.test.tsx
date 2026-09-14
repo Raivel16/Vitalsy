@@ -17,6 +17,13 @@ describe("shell del módulo 1", () => {
     expect(screen.queryByRole("link", { name: /orden de internamiento/i })).not.toBeInTheDocument();
   });
 
+  it("no muestra códigos de requisito ni avisos de simulación", () => {
+    renderApp("/");
+    expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/simulad/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/demostraci/i)).not.toBeInTheDocument();
+  });
+
   it("explica el acceso denegado sin depender solo del color", () => {
     renderApp("/medico/indicaciones");
 
