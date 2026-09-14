@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "./api";
+import { bindIdleTimer } from "./idleTimer";
 import { ROLE_LABEL, type Role, type SessionUser } from "./roles";
 
 type AuthState = {
@@ -50,6 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    return bindIdleTimer(() => {
+      setUser(null);
+      setNotice("La sesión se cerró por inactividad. Vuelva a iniciar sesión.");
+      void api("/api/v1/auth/logout", { method: "POST" }).catch(() => undefined);
+    });
+  }, [user]);
 
   const value = useMemo<AuthState>(() => ({
     user,
