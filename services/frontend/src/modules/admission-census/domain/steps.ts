@@ -2,7 +2,7 @@ export const STEP_PATH: Record<string, string> = {
   orden: "/admision/orden",
   filiacion: "/admision/filiacion",
   cobertura: "/admision/cobertura",
-  derivacion: "/admision/cobertura/derivacion",
+  derivacion: "/admision/cobertura",
   brazalete: "/admision/brazalete",
   expediente: "/admision/expediente",
   consentimiento: "/admision/consentimiento",

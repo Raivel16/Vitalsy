@@ -1,11 +1,10 @@
-import { type FormEvent, useState } from "react";
-import { Link } from "react-router";
+import { type FormEvent, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-
-type CoverageStatus = "aprobada" | "pendiente" | "rechazada";
+import { useEncounterState, type CoverageStatus } from "../../admission-census/EncounterContext";
 
 const COPY: Record<CoverageStatus, string> = {
   aprobada: "La cobertura permite continuar la admisión.",
@@ -14,12 +13,35 @@ const COPY: Record<CoverageStatus, string> = {
 };
 
 export function CoveragePage() {
+  const { encounter, coverageStatus, setCoverageStatus } = useEncounterState();
+  const [params] = useSearchParams();
+  const ingreso = params.get("ingreso");
   const [status, setStatus] = useState<CoverageStatus>("aprobada");
+
+  useEffect(() => {
+    if (coverageStatus) setStatus(coverageStatus);
+    else if (encounter?.coverage.status === "aprobada" || encounter?.coverage.status === "pendiente" || encounter?.coverage.status === "rechazada") {
+      setStatus(encounter.coverage.status);
+    }
+  }, [coverageStatus, encounter]);
+
+  function changeStatus(next: CoverageStatus) {
+    setStatus(next);
+    setCoverageStatus(next);
+  }
+
+  const referralTo = ingreso
+    ? `/admision/cobertura/derivacion?ingreso=${encodeURIComponent(ingreso)}`
+    : "/admision/cobertura/derivacion";
 
   return (
     <Sheet kicker="Admisión" title="Cobertura sanitaria">
-      <p className="lead">Revise el estado de la cobertura. Si hay un trámite pendiente, derive el caso a caja o a trabajo social.</p>
-      <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => setStatus(event.target.value as CoverageStatus)}>
+      <p className="lead">
+        {encounter
+          ? `Revise la cobertura de ${encounter.patientName}. Si la aprueba, confirme el paso en el censo para continuar.`
+          : "Revise el estado de la cobertura. Si hay un trámite pendiente, derive el caso a caja o a trabajo social."}
+      </p>
+      <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => changeStatus(event.target.value as CoverageStatus)}>
         <option value="aprobada">Aprobada</option>
         <option value="pendiente">Pendiente</option>
         <option value="rechazada">Rechazada</option>
@@ -29,12 +51,19 @@ export function CoveragePage() {
         Cobertura {status}
       </p>
       <p>{COPY[status]}</p>
-      <p><Link to="/admision/cobertura/derivacion">Derivar trámite</Link></p>
+      {status === "aprobada" ? (
+        <Feedback tone="info">Con cobertura aprobada, confirme el paso en el censo para emitir el brazalete.</Feedback>
+      ) : (
+        <p><Link to={referralTo}>Derivar trámite</Link></p>
+      )}
     </Sheet>
   );
 }
 
 export function ReferralPage() {
+  const [params] = useSearchParams();
+  const ingreso = params.get("ingreso");
+  const { encounter } = useEncounterState();
   const [relativeName, setRelativeName] = useState("");
   const [relativePhone, setRelativePhone] = useState("");
   const [destination, setDestination] = useState("trabajo_social");
@@ -42,6 +71,10 @@ export function ReferralPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+
+  const coverageTo = ingreso
+    ? `/admision/cobertura?ingreso=${encodeURIComponent(ingreso)}`
+    : "/admision/cobertura";
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -66,7 +99,12 @@ export function ReferralPage() {
 
   return (
     <Sheet kicker="Admisión" title="Derivación de cobertura">
-      <p className="lead">Registre el trámite pendiente y el aviso al familiar o cuidador.</p>
+      <p className="lead">
+        {encounter
+          ? `Registre el trámite de cobertura de ${encounter.patientName} y el aviso al familiar.`
+          : "Registre el trámite pendiente y el aviso al familiar o cuidador."}
+      </p>
+      <p><Link to={coverageTo}>Volver a cobertura</Link></p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <SelectField id="destination" label="Destino del trámite" value={destination} onChange={(event) => setDestination(event.target.value)}>
           <option value="caja">Caja</option>

@@ -1,8 +1,24 @@
 import { createContext, useContext } from "react";
 import type { Encounter } from "./domain/encounter";
 
-export const EncounterContext = createContext<Encounter | null>(null);
+export type CoverageStatus = "aprobada" | "pendiente" | "rechazada";
+
+export type EncounterState = {
+  encounter: Encounter | null;
+  coverageStatus: CoverageStatus | null;
+  setCoverageStatus: (status: CoverageStatus) => void;
+};
+
+export const EncounterContext = createContext<EncounterState>({
+  encounter: null,
+  coverageStatus: null,
+  setCoverageStatus: () => undefined,
+});
 
 export function useEncounter(): Encounter | null {
+  return useContext(EncounterContext).encounter;
+}
+
+export function useEncounterState(): EncounterState {
   return useContext(EncounterContext);
 }

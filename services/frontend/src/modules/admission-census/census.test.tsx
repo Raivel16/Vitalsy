@@ -78,19 +78,52 @@ describe("censo de ingresos", () => {
     expect(screen.getByRole("link", { name: /consultar orden de traslado/i })).toHaveAttribute("href", "/traslado/orden?ingreso=ENC-0001");
   });
 
-  it("confirma el paso vigente y avisa quién continúa", async () => {
+  it("confirma el paso vigente y envía el estado de cobertura del paciente", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse(200, { encounter: luis }))
-      .mockResolvedValueOnce(jsonResponse(200, { encounter: { ...luis, currentStep: "derivacion", nextRole: "admision", statusLabel: "Cobertura en trámite" } }));
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounter: {
+          ...luis,
+          currentStep: "brazalete",
+          currentStepLabel: "Emitir brazalete",
+          nextRole: "admision",
+          statusLabel: "Brazalete por emitir",
+          coverage: { ...luis.coverage, status: "aprobada" },
+        },
+      }));
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/admision/cobertura?ingreso=ENC-0002");
 
-    await user.click(await screen.findByRole("button", { name: /confirmar paso en el censo/i }));
+    await screen.findByRole("button", { name: /confirmar paso en el censo/i });
+    await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "aprobada");
+    await user.click(screen.getByRole("button", { name: /confirmar paso en el censo/i }));
     expect(await screen.findByText(/paso registrado/i)).toBeInTheDocument();
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/encounters/ENC-0002/advance"),
-      expect.objectContaining({ method: "POST" }),
-    ));
+    await waitFor(() => {
+      const advanceCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/advance"));
+      expect(advanceCall?.[1]).toEqual(expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ step: "cobertura", coverageStatus: "aprobada" }),
+      }));
+    });
+  });
+
+  it("abre cobertura al continuar un caso en derivación, no salta el paso de aprobar", async () => {
+    const waiting: Encounter = {
+      ...luis,
+      encounterId: "ENC-0003",
+      patientName: "Carmen Yolanda Vega",
+      currentStep: "derivacion",
+      currentStepLabel: "Esperar regularización de cobertura",
+      nextRole: null,
+      statusLabel: "En trámite de cobertura",
+      coverage: { payer: "Particular", status: "rechazada", plan: "Sin cobertura vigente" },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounters: [waiting, luis] })));
+    renderApp("/pacientes");
+
+    const buttons = await screen.findAllByRole("link", { name: /^continuar$/i });
+    expect(buttons.some((item) => item.getAttribute("href") === "/admision/cobertura?ingreso=ENC-0003")).toBe(true);
+    expect(buttons.some((item) => item.getAttribute("href") === "/admision/cobertura?ingreso=ENC-0002")).toBe(true);
   });
 });

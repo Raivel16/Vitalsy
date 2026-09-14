@@ -56,7 +56,7 @@ export function CensusPage() {
             </thead>
             <tbody>
               {encounters.map((item) => {
-                const own = item.nextRole === role;
+                const own = item.nextRole === role || (role === "admision" && item.currentStep === "derivacion");
                 return (
                   <tr key={item.encounterId}>
                     <td>
@@ -119,13 +119,13 @@ export function EncounterFilePage() {
   }
   if (!encounter) return <p role="status">Cargando ficha del ingreso.</p>;
 
-  const own = encounter.nextRole === role;
+  const own = encounter.nextRole === role || (role === "admision" && encounter.currentStep === "derivacion");
 
   return (
     <Sheet kicker={`Subproceso ${encounter.subprocess}`} title={encounter.patientName}>
       <p className="lead">{encounter.subprocessLabel}. {encounter.statusLabel}.</p>
       {own ? (
-        <p><Link className="button" to={stepPath(encounter.currentStep, encounter.encounterId)}>{encounter.currentStepLabel}</Link></p>
+        <p><Link className="button" to={stepPath(encounter.currentStep, encounter.encounterId)}>{encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}</Link></p>
       ) : (
         <Feedback tone="info">
           {encounter.nextRole
