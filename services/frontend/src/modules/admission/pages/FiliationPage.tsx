@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -30,7 +31,7 @@ export function FiliationPage() {
       });
       setSuccess("Filiación validada. Puede continuar con la cobertura.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo validar la filiación.");
+      setError(errorText(caught, "No se pudo validar la filiación."));
     }
   }
 

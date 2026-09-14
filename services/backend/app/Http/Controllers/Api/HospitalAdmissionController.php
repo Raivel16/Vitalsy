@@ -25,7 +25,7 @@ class HospitalAdmissionController extends Controller
             return $this->missing('No se encontró la orden.');
         }
 
-        return response()->json(['simulated' => true, 'order' => $order]);
+        return response()->json(['order' => $order]);
     }
 
     public function validateFiliation(Request $request): JsonResponse
@@ -37,7 +37,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'validated' => true,
             'patient' => ['fullName' => $data['fullName'], 'documentNumber' => $data['documentNumber']],
         ]);
@@ -51,7 +50,7 @@ class HospitalAdmissionController extends Controller
             return $this->missing('No se encontró la orden.');
         }
 
-        return response()->json(['simulated' => true, 'coverage' => $order['coverage']]);
+        return response()->json(['coverage' => $order['coverage']]);
     }
 
     public function referCoverage(Request $request): JsonResponse
@@ -64,7 +63,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'referral' => [
                 'destination' => $data['destination'],
                 'status' => 'derivado',
@@ -76,7 +74,6 @@ class HospitalAdmissionController extends Controller
     public function issueWristband(): JsonResponse
     {
         return response()->json([
-            'simulated' => true,
             'wristband' => ['code' => 'BRZ-0001-ANA', 'recordId' => 'EXP-0001'],
         ], 201);
     }
@@ -84,7 +81,6 @@ class HospitalAdmissionController extends Controller
     public function openRecord(): JsonResponse
     {
         return response()->json([
-            'simulated' => true,
             'record' => ['recordId' => 'EXP-0001', 'status' => 'abierto'],
         ], 201);
     }
@@ -98,7 +94,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'consent' => ['status' => 'firmado', 'signerName' => $data['signerName']],
         ], 201);
     }
@@ -110,7 +105,6 @@ class HospitalAdmissionController extends Controller
         }
 
         return response()->json([
-            'simulated' => true,
             'transfer' => [
                 'orderNumber' => 'OT-2026-0001',
                 'patientName' => 'Ana María Quispe Rojas',
@@ -126,13 +120,11 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate(['code' => ['required', 'string']]);
         if ($data['code'] !== 'BRZ-0001-ANA') {
             return response()->json([
-                'simulated' => true,
                 'message' => 'El código no corresponde al paciente.',
             ], 422);
         }
 
         return response()->json([
-            'simulated' => true,
             'identity' => ['patientName' => 'Ana María Quispe Rojas', 'code' => $data['code']],
         ]);
     }
@@ -145,7 +137,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'reception' => ['status' => 'ingresado'],
         ], 201);
     }
@@ -160,7 +151,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'relocation' => [
                 'status' => 'notificada',
                 'room' => $data['requestedRoom'],
@@ -178,7 +168,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'assessment' => ['status' => 'registrada'],
         ], 201);
     }
@@ -198,11 +187,10 @@ class HospitalAdmissionController extends Controller
         ]);
 
         if ($message = $this->implausible($data)) {
-            return response()->json(['simulated' => true, 'message' => $message], 422);
+            return response()->json(['message' => $message], 422);
         }
 
         return response()->json([
-            'simulated' => true,
             'news2' => $this->news2->calculate($data),
         ], 201);
     }
@@ -218,14 +206,13 @@ class HospitalAdmissionController extends Controller
         $alerts = [];
         foreach ($data['medications'] as $medication) {
             if (preg_match('/penicil/i', (string) ($data['allergies'] ?? '')) && preg_match('/amoxicil|ampicil|penicil/i', $medication['name'])) {
-                $alerts[] = 'Posible alergia: '.$medication['name'].' coincide con alergia a penicilina. Regla local simulada.';
+                $alerts[] = 'Posible alergia: '.$medication['name'].' coincide con alergia a penicilina.';
             }
         }
 
         $status = $alerts === [] ? 'validada' : 'con_observaciones';
 
         return response()->json([
-            'simulated' => true,
             'reconciliation' => [
                 'status' => $status,
                 'statusLabel' => $status === 'validada' ? 'Validada' : 'Con observaciones',
@@ -244,11 +231,10 @@ class HospitalAdmissionController extends Controller
         try {
             $pressure = $this->braden->calculate($data['braden']);
         } catch (InvalidArgumentException $exception) {
-            return response()->json(['simulated' => true, 'message' => $exception->getMessage()], 422);
+            return response()->json(['message' => $exception->getMessage()], 422);
         }
 
         return response()->json([
-            'simulated' => true,
             'status' => 'registrada',
             'morse' => $this->morse->calculate($data['morse']),
             'braden' => $pressure,
@@ -262,7 +248,6 @@ class HospitalAdmissionController extends Controller
         }
 
         return response()->json([
-            'simulated' => true,
             'kardex' => [
                 'patientName' => 'Ana María Quispe Rojas',
                 'assessment' => 'Disnea de dos días',
@@ -283,7 +268,6 @@ class HospitalAdmissionController extends Controller
         }
 
         return response()->json([
-            'simulated' => true,
             'orders' => [
                 'status' => 'pendiente',
                 'statusLabel' => 'Pendiente de firma',
@@ -305,7 +289,6 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return response()->json([
-            'simulated' => true,
             'signature' => [
                 'status' => 'firmado',
                 'physicianName' => $data['physicianName'],
@@ -339,7 +322,7 @@ class HospitalAdmissionController extends Controller
 
     private function missing(string $message): JsonResponse
     {
-        return response()->json(['simulated' => true, 'message' => $message], 404);
+        return response()->json(['message' => $message], 404);
     }
 
     /**

@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -31,7 +32,7 @@ export function AdmissionOrderPage() {
       );
       setResult(data);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo consultar la orden.");
+      setError(errorText(caught, "No se pudo consultar la orden."));
     } finally {
       setLoading(false);
     }

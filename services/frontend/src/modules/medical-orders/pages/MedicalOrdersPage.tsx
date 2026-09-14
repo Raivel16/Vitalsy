@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -24,7 +25,7 @@ export function MedicalOrdersPage() {
         setStatusLabel(data.orders.statusLabel);
       })
       .catch((caught: unknown) => {
-        if (active) setError(caught instanceof Error ? caught.message : "No se pudieron cargar las indicaciones.");
+        if (active) setError(errorText(caught, "No se pudieron cargar las indicaciones."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -51,7 +52,7 @@ export function MedicalOrdersPage() {
       setStatusLabel(data.signature.status === "firmado" ? "Firmado" : data.signature.status);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo firmar.");
+      setError(errorText(caught, "No se pudo firmar."));
     }
   }
 

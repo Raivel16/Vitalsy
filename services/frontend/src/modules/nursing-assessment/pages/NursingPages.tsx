@@ -1,5 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/news2";
@@ -29,7 +30,7 @@ export function NursingAssessmentPage() {
       setSaved("Valoración registrada.");
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo guardar la valoración.");
+      setError(errorText(caught, "No se pudo guardar la valoración."));
     }
   }
 
@@ -113,7 +114,7 @@ export function VitalSignsPage() {
       setSaved("Constantes registradas.");
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudieron registrar las constantes.");
+      setError(errorText(caught, "No se pudieron registrar las constantes."));
     }
   }
 

@@ -1,5 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { reviewReconciliation, type HomeMedication } from "../domain/bpmhAlerts";
@@ -30,7 +31,7 @@ export function ReconciliationPage() {
       setResult(data.reconciliation.statusLabel);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo registrar la conciliación.");
+      setError(errorText(caught, "No se pudo registrar la conciliación."));
     }
   }
 

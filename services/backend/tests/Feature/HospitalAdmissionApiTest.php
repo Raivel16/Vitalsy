@@ -6,34 +6,35 @@ use Tests\TestCase;
 
 class HospitalAdmissionApiTest extends TestCase
 {
-    public function test_admission_order_returns_simulated_json_or_not_found(): void
+    public function test_admission_order_returns_the_order_or_a_spanish_not_found(): void
     {
         $found = $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001');
         $found->assertOk()
-            ->assertJsonPath('simulated', true)
+            ->assertJsonMissingPath('simulated')
             ->assertJsonPath('order.patient.fullName', 'Ana María Quispe Rojas')
             ->assertJsonPath('order.coverage.status', 'aprobada');
 
         $this->getJson('/api/v1/hospital-admission/admission-orders/OI-0000')
             ->assertNotFound()
-            ->assertJsonPath('simulated', true)
+            ->assertJsonMissingPath('simulated')
             ->assertJsonPath('message', 'No se encontró la orden.');
     }
 
-    public function test_filiation_requires_name_and_accepts_a_valid_payload(): void
+    public function test_filiation_requires_name_in_spanish_and_accepts_a_valid_payload(): void
     {
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [])
             ->assertStatus(422)
-            ->assertJsonPath('simulated', true);
+            ->assertJsonMissingPath('simulated')
+            ->assertJsonPath('message', 'El campo nombre completo es obligatorio.');
 
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [
             'fullName' => 'Ana María Quispe Rojas',
             'documentNumber' => '45678912',
             'confirmed' => true,
-        ])->assertOk()->assertJsonPath('simulated', true)->assertJsonPath('validated', true);
+        ])->assertOk()->assertJsonMissingPath('simulated')->assertJsonPath('validated', true);
     }
 
-    public function test_coverage_referral_wristband_record_and_consent_are_simulated_creates(): void
+    public function test_coverage_referral_wristband_record_and_consent_are_created(): void
     {
         $this->postJson('/api/v1/hospital-admission/coverage/validate', [
             'orderNumber' => 'OI-2026-0002',
@@ -117,7 +118,7 @@ class HospitalAdmissionApiTest extends TestCase
             'consciousness' => 'alert',
             'temperature' => 36.8,
         ])->assertCreated()
-            ->assertJsonPath('simulated', true)
+            ->assertJsonMissingPath('simulated')
             ->assertJsonPath('news2.total', 0)
             ->assertJsonPath('news2.visualLabel', 'Riesgo bajo');
     }
@@ -160,7 +161,7 @@ class HospitalAdmissionApiTest extends TestCase
         $this->getJson('/api/v1/hospital-admission/kardex/ENC-0001')
             ->assertOk()
             ->assertJsonPath('kardex.patientName', 'Ana María Quispe Rojas')
-            ->assertJsonPath('simulated', true);
+            ->assertJsonMissingPath('simulated');
 
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-0001')
             ->assertOk()

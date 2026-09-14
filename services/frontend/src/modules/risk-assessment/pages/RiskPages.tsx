@@ -1,5 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { calculateBraden, type BradenFriction, type BradenScore4 } from "../domain/bradenScale";
@@ -39,7 +40,7 @@ export function RiskScalesPage() {
       setSaved("Escalas registradas.");
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudieron registrar las escalas.");
+      setError(errorText(caught, "No se pudieron registrar las escalas."));
     }
   }
 

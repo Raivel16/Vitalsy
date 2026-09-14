@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
 type Kardex = {
@@ -25,7 +26,7 @@ export function KardexPage() {
         if (active) setKardex(data.kardex);
       })
       .catch((caught: unknown) => {
-        if (active) setError(caught instanceof Error ? caught.message : "No se pudo cargar el Kardex.");
+        if (active) setError(errorText(caught, "No se pudo cargar el Kardex."));
       })
       .finally(() => {
         if (active) setLoading(false);

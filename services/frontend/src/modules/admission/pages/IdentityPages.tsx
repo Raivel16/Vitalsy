@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { Barcode } from "../components/Barcode";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -19,7 +20,7 @@ export function WristbandPage() {
       });
       setCode(data.wristband.code);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo emitir el brazalete.");
+      setError(errorText(caught, "No se pudo emitir el brazalete."));
     }
   }
 
@@ -60,7 +61,7 @@ export function RecordPage() {
       setRecordId(data.record.recordId);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo aperturar el expediente.");
+      setError(errorText(caught, "No se pudo aperturar el expediente."));
     }
   }
 
@@ -101,7 +102,7 @@ export function ConsentPage() {
       setSigned(data.consent.status);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo registrar el consentimiento.");
+      setError(errorText(caught, "No se pudo registrar el consentimiento."));
     }
   }
 

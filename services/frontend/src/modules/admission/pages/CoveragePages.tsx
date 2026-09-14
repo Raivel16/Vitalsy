@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -59,7 +60,7 @@ export function ReferralPage() {
       setResult(`Derivación registrada a ${place}. El familiar queda notificado.`);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo registrar la derivación.");
+      setError(errorText(caught, "No se pudo registrar la derivación."));
     }
   }
 

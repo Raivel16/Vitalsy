@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -25,7 +26,7 @@ export function TransferOrderPage() {
       setResult(data);
     } catch (caught) {
       setResult(null);
-      setError(caught instanceof Error ? caught.message : "No se pudo consultar el traslado.");
+      setError(errorText(caught, "No se pudo consultar el traslado."));
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export function WristbandVerifyPage() {
       });
       setMessage(`Identidad confirmada: ${data.identity.patientName}.`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo verificar el brazalete.");
+      setError(errorText(caught, "No se pudo verificar el brazalete."));
     }
   }
 
@@ -100,7 +101,7 @@ export function FloorReceptionPage() {
       setStatus(data.reception.status);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo confirmar la recepción.");
+      setError(errorText(caught, "No se pudo confirmar la recepción."));
     }
   }
 
@@ -142,7 +143,7 @@ export function RelocationPage() {
       setNotice(`Reubicación notificada a la central. Habitación ${room}, lecho ${bed}.`);
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo registrar la reubicación.");
+      setError(errorText(caught, "No se pudo registrar la reubicación."));
     }
   }
 

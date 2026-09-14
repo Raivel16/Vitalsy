@@ -50,6 +50,18 @@ describe("admisión administrativa", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/no se encontró la orden/i);
   });
 
+  it("traduce un fallo de conexión a un mensaje en español", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    renderApp("/admision/orden");
+
+    await user.type(screen.getByLabelText(/número de orden/i), "OI-2026-0001");
+    await user.click(screen.getByRole("button", { name: /consultar orden/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no hay conexión con el servidor/i);
+    expect(screen.queryByText(/failed to fetch/i)).not.toBeInTheDocument();
+  });
+
   it("no envía la filiación si faltan datos y asocia el error al campo", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn();

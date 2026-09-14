@@ -39,6 +39,7 @@ services:
       APP_DEBUG: "true"
       APP_KEY: base64:Dk5aG9UDHcSXVpV5u+m5OnNPqHywvv07vZKzXwJvqRY=
       APP_URL: http://localhost:8080
+      APP_LOCALE: es
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432

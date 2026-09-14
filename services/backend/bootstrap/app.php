@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,13 +18,33 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
+
         $exceptions->render(function (ValidationException $exception, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
-                    'simulated' => true,
-                    'message' => $exception->validator->errors()->first() ?: 'Los datos no son válidos.',
+                    'message' => $exception->validator->errors()->first() ?: 'Revise los datos e intente de nuevo.',
                     'errors' => $exception->errors(),
                 ], 422);
             }
+        });
+
+        $exceptions->render(function (Throwable $exception, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+            if ($exception instanceof ValidationException) {
+                return null;
+            }
+
+            $status = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
+            $message = $exception->getMessage();
+            $technical = $status >= 500
+                || $message === ''
+                || preg_match('/SQLSTATE|Exception|Stack trace|Server Error|could not be found/i', $message) === 1;
+
+            return response()->json([
+                'message' => $technical ? 'No se pudo completar la operación. Intente de nuevo.' : $message,
+            ], $status);
         });
     })->create();
