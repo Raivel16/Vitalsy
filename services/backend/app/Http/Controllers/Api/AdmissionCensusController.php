@@ -24,6 +24,33 @@ class AdmissionCensusController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($request->filled('patientName')) {
+            $data = $request->validate([
+                'orderNumber' => ['required', 'string', 'max:40'],
+                'patientName' => ['required', 'string', 'max:120'],
+                'documentType' => ['nullable', 'string', 'max:20'],
+                'documentNumber' => ['required', 'string', 'max:30'],
+                'originService' => ['required', 'string', 'max:120'],
+                'coveragePayer' => ['required', 'string', 'max:80'],
+                'coverageStatus' => ['required', 'in:aprobada,pendiente,rechazada'],
+                'coveragePlan' => ['required', 'string', 'max:120'],
+                'requestingPhysician' => ['nullable', 'string', 'max:120'],
+                'reason' => ['nullable', 'string', 'max:255'],
+                'room' => ['nullable', 'string', 'max:20'],
+                'bed' => ['nullable', 'string', 'max:10'],
+                'service' => ['nullable', 'string', 'max:120'],
+                'source' => ['nullable', 'in:manual,external'],
+            ]);
+
+            $source = $data['source'] ?? 'manual';
+
+            return $this->guard(function () use ($data, $source) {
+                $encounter = $this->board->registerIntake($data, $source);
+
+                return response()->json(['encounter' => $encounter], 201);
+            });
+        }
+
         $data = $request->validate([
             'orderNumber' => ['required', 'string'],
         ]);
@@ -32,6 +59,31 @@ class AdmissionCensusController extends Controller
             $encounter = $this->board->openFromOrder($data['orderNumber']);
 
             return response()->json(['encounter' => $encounter], $encounter['currentStep'] === 'filiacion' ? 201 : 200);
+        });
+    }
+
+    public function intake(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'orderNumber' => ['required', 'string', 'max:40'],
+            'patientName' => ['required', 'string', 'max:120'],
+            'documentType' => ['nullable', 'string', 'max:20'],
+            'documentNumber' => ['required', 'string', 'max:30'],
+            'originService' => ['required', 'string', 'max:120'],
+            'coveragePayer' => ['required', 'string', 'max:80'],
+            'coverageStatus' => ['required', 'in:aprobada,pendiente,rechazada'],
+            'coveragePlan' => ['required', 'string', 'max:120'],
+            'requestingPhysician' => ['nullable', 'string', 'max:120'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'room' => ['nullable', 'string', 'max:20'],
+            'bed' => ['nullable', 'string', 'max:10'],
+            'service' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        return $this->guard(function () use ($data) {
+            $encounter = $this->board->registerIntake($data, 'external');
+
+            return response()->json(['encounter' => $encounter], 201);
         });
     }
 

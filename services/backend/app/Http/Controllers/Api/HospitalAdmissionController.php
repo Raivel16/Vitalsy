@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Admission\AdmissionBoard;
+use App\Services\Admission\AdmissionBoardException;
 use App\Services\Clinical\BradenScale;
 use App\Services\Clinical\MorseFallScale;
 use App\Services\Clinical\News2Calculator;
@@ -13,6 +15,7 @@ use InvalidArgumentException;
 class HospitalAdmissionController extends Controller
 {
     public function __construct(
+        private readonly AdmissionBoard $board,
         private readonly News2Calculator $news2,
         private readonly MorseFallScale $morse,
         private readonly BradenScale $braden,
@@ -20,7 +23,7 @@ class HospitalAdmissionController extends Controller
 
     public function showAdmissionOrder(string $orderNumber): JsonResponse
     {
-        $order = $this->orders()[$orderNumber] ?? null;
+        $order = $this->board->findOrder($orderNumber);
         if (! $order) {
             return $this->missing('No se encontró la orden.');
         }
@@ -34,7 +37,16 @@ class HospitalAdmissionController extends Controller
             'fullName' => ['required', 'string'],
             'documentNumber' => ['required', 'string'],
             'confirmed' => ['accepted'],
+            'encounterId' => ['nullable', 'string'],
         ]);
+
+        if (! empty($data['encounterId'])) {
+            $this->board->putClinical($data['encounterId'], 'filiation', [
+                'fullName' => $data['fullName'],
+                'documentNumber' => $data['documentNumber'],
+                'confirmed' => true,
+            ]);
+        }
 
         return response()->json([
             'validated' => true,
@@ -45,7 +57,7 @@ class HospitalAdmissionController extends Controller
     public function validateCoverage(Request $request): JsonResponse
     {
         $data = $request->validate(['orderNumber' => ['required', 'string']]);
-        $order = $this->orders()[$data['orderNumber']] ?? null;
+        $order = $this->board->findOrder($data['orderNumber']);
         if (! $order) {
             return $this->missing('No se encontró la orden.');
         }
@@ -56,11 +68,25 @@ class HospitalAdmissionController extends Controller
     public function referCoverage(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'encounterId' => ['nullable', 'string'],
             'destination' => ['required', 'in:caja,trabajo_social'],
             'relativeName' => ['required', 'string'],
-            'relativePhone' => ['required', 'string'],
+            'relativePhone' => ['required', 'regex:/^\d{7,15}$/'],
             'note' => ['nullable', 'string'],
         ]);
+
+        $referral = [
+            'destination' => $data['destination'],
+            'relativeName' => $data['relativeName'],
+            'relativePhone' => $data['relativePhone'],
+            'note' => $data['note'] ?? null,
+        ];
+
+        if (! empty($data['encounterId'])) {
+            return $this->guard(fn () => response()->json([
+                'referral' => $this->board->storeReferral($data['encounterId'], $referral),
+            ], 201));
+        }
 
         return response()->json([
             'referral' => [
@@ -71,74 +97,73 @@ class HospitalAdmissionController extends Controller
         ], 201);
     }
 
-    public function issueWristband(): JsonResponse
+    public function issueWristband(Request $request): JsonResponse
     {
-        return response()->json([
-            'wristband' => ['code' => 'BRZ-0001-ANA', 'recordId' => 'EXP-0001'],
-        ], 201);
+        $data = $request->validate(['encounterId' => ['required', 'string']]);
+
+        return $this->guard(fn () => response()->json([
+            'wristband' => $this->board->issueWristband($data['encounterId']),
+        ], 201));
     }
 
-    public function openRecord(): JsonResponse
+    public function openRecord(Request $request): JsonResponse
     {
-        return response()->json([
-            'record' => ['recordId' => 'EXP-0001', 'status' => 'abierto'],
-        ], 201);
+        $data = $request->validate(['encounterId' => ['required', 'string']]);
+
+        return $this->guard(fn () => response()->json([
+            'record' => $this->board->openRecord($data['encounterId']),
+        ], 201));
     }
 
     public function storeConsent(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'encounterId' => ['required', 'string'],
             'signerName' => ['required', 'string'],
             'accepted' => ['accepted'],
             'relationship' => ['nullable', 'string'],
         ]);
 
-        return response()->json([
-            'consent' => ['status' => 'firmado', 'signerName' => $data['signerName']],
-        ], 201);
+        return $this->guard(fn () => response()->json([
+            'consent' => $this->board->storeConsent($data['encounterId'], [
+                'signerName' => $data['signerName'],
+                'relationship' => $data['relationship'] ?? null,
+            ]),
+        ], 201));
     }
 
     public function showTransferOrder(string $orderNumber): JsonResponse
     {
-        if ($orderNumber !== 'OT-2026-0001') {
-            return $this->missing('No se encontró la orden de traslado.');
-        }
-
-        return response()->json([
-            'transfer' => [
-                'orderNumber' => 'OT-2026-0001',
-                'patientName' => 'Ana María Quispe Rojas',
-                'room' => '312',
-                'bed' => 'B',
-                'service' => 'Medicina interna',
-            ],
-        ]);
+        return $this->guard(fn () => response()->json([
+            'transfer' => $this->board->findTransfer($orderNumber),
+        ]));
     }
 
     public function verifyWristband(Request $request): JsonResponse
     {
         $data = $request->validate(['code' => ['required', 'string']]);
-        if ($data['code'] !== 'BRZ-0001-ANA') {
-            return response()->json([
-                'message' => 'El código no corresponde al paciente.',
-            ], 422);
-        }
 
-        return response()->json([
-            'identity' => ['patientName' => 'Ana María Quispe Rojas', 'code' => $data['code']],
-        ]);
+        return $this->guard(function () use ($data) {
+            try {
+                return response()->json(['identity' => $this->board->verifyWristband($data['code'])]);
+            } catch (AdmissionBoardException $exception) {
+                return response()->json(['message' => $exception->getMessage()], $exception->status);
+            }
+        });
     }
 
     public function confirmReception(Request $request): JsonResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'encounterId' => ['required', 'string'],
             'confirmed' => ['accepted'],
         ]);
 
-        return response()->json([
-            'reception' => ['status' => 'ingresado'],
-        ], 201);
+        return $this->guard(function () use ($data) {
+            $this->board->putClinical($data['encounterId'], 'reception', ['status' => 'ingresado']);
+
+            return response()->json(['reception' => ['status' => 'ingresado']], 201);
+        });
     }
 
     public function relocate(Request $request): JsonResponse
@@ -150,31 +175,48 @@ class HospitalAdmissionController extends Controller
             'requestedBed' => ['required', 'string'],
         ]);
 
-        return response()->json([
-            'relocation' => [
-                'status' => 'notificada',
-                'room' => $data['requestedRoom'],
-                'bed' => $data['requestedBed'],
-            ],
-        ], 201);
+        return $this->guard(function () use ($data) {
+            $this->board->putClinical($data['encounterId'], 'relocation', $data);
+
+            return response()->json([
+                'relocation' => [
+                    'status' => 'notificada',
+                    'room' => $data['requestedRoom'],
+                    'bed' => $data['requestedBed'],
+                ],
+            ], 201);
+        });
     }
 
     public function storeAssessment(Request $request): JsonResponse
     {
-        $request->validate([
+        $data = $request->validate([
+            'encounterId' => ['nullable', 'string'],
             'chiefComplaint' => ['required', 'string'],
             'allergies' => ['nullable', 'array'],
             'history' => ['nullable', 'string'],
         ]);
 
-        return response()->json([
-            'assessment' => ['status' => 'registrada'],
-        ], 201);
+        if (! empty($data['encounterId'])) {
+            return $this->guard(function () use ($data) {
+                $this->board->putClinical($data['encounterId'], 'assessment', [
+                    'chiefComplaint' => $data['chiefComplaint'],
+                    'allergies' => $data['allergies'] ?? [],
+                    'history' => $data['history'] ?? null,
+                    'status' => 'registrada',
+                ]);
+
+                return response()->json(['assessment' => ['status' => 'registrada']], 201);
+            });
+        }
+
+        return response()->json(['assessment' => ['status' => 'registrada']], 201);
     }
 
     public function storeVitalSigns(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'encounterId' => ['nullable', 'string'],
             'respiratoryRate' => ['required', 'numeric'],
             'oxygenSaturation' => ['required', 'numeric'],
             'systolicBloodPressure' => ['required', 'numeric'],
@@ -190,14 +232,30 @@ class HospitalAdmissionController extends Controller
             return response()->json(['message' => $message], 422);
         }
 
-        return response()->json([
-            'news2' => $this->news2->calculate($data),
-        ], 201);
+        $news2 = $this->news2->calculate($data);
+        if (! empty($data['encounterId'])) {
+            $this->board->putClinical($data['encounterId'], 'vitals', [
+                'input' => $data,
+                'news2' => $news2,
+                'summary' => sprintf(
+                    'FR %s, SpO2 %s %%, PA %s, pulso %s, %s °C',
+                    $data['respiratoryRate'],
+                    $data['oxygenSaturation'],
+                    $data['systolicBloodPressure'],
+                    $data['pulse'],
+                    $data['temperature'],
+                ),
+                'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
+            ]);
+        }
+
+        return response()->json(['news2' => $news2], 201);
     }
 
     public function storeReconciliation(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'encounterId' => ['nullable', 'string'],
             'allergies' => ['nullable', 'string'],
             'medications' => ['required', 'array'],
             'medications.*.name' => ['required', 'string'],
@@ -211,19 +269,25 @@ class HospitalAdmissionController extends Controller
         }
 
         $status = $alerts === [] ? 'validada' : 'con_observaciones';
+        $reconciliation = [
+            'status' => $status,
+            'statusLabel' => $status === 'validada' ? 'Validada' : 'Con observaciones',
+            'alerts' => $alerts,
+            'allergies' => $data['allergies'] ?? null,
+            'medications' => $data['medications'],
+        ];
 
-        return response()->json([
-            'reconciliation' => [
-                'status' => $status,
-                'statusLabel' => $status === 'validada' ? 'Validada' : 'Con observaciones',
-                'alerts' => $alerts,
-            ],
-        ], 201);
+        if (! empty($data['encounterId'])) {
+            $this->board->putClinical($data['encounterId'], 'reconciliation', $reconciliation);
+        }
+
+        return response()->json(['reconciliation' => $reconciliation], 201);
     }
 
     public function storeRiskScales(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'encounterId' => ['nullable', 'string'],
             'morse' => ['required', 'array'],
             'braden' => ['required', 'array'],
         ]);
@@ -234,67 +298,51 @@ class HospitalAdmissionController extends Controller
             return response()->json(['message' => $exception->getMessage()], 422);
         }
 
+        $morse = $this->morse->calculate($data['morse']);
+        if (! empty($data['encounterId'])) {
+            $this->board->putClinical($data['encounterId'], 'risks', [
+                'morse' => $morse,
+                'braden' => $pressure,
+                'fallRisk' => ($morse['levelLabel'] ?? 'Riesgo').' de caídas, '.($morse['total'] ?? 0).' puntos',
+                'pressureRisk' => ($pressure['levelLabel'] ?? 'Riesgo').' de úlceras por presión, '.($pressure['total'] ?? 0).' puntos',
+            ]);
+        }
+
         return response()->json([
             'status' => 'registrada',
-            'morse' => $this->morse->calculate($data['morse']),
+            'morse' => $morse,
             'braden' => $pressure,
         ], 201);
     }
 
     public function showKardex(string $encounterId): JsonResponse
     {
-        if ($encounterId !== 'ENC-0001') {
-            return $this->missing('Kardex no disponible.');
-        }
-
-        return response()->json([
-            'kardex' => [
-                'patientName' => 'Ana María Quispe Rojas',
-                'assessment' => 'Disnea de dos días',
-                'allergies' => ['Penicilina'],
-                'medications' => ['Amoxicilina 500 mg cada 8 horas'],
-                'vitals' => 'FR 16, SpO2 98 %, PA 120, pulso 72, 36.8 °C',
-                'news2' => '0 puntos, riesgo bajo',
-                'fallRisk' => 'Riesgo alto de caídas, 45 puntos',
-                'pressureRisk' => 'Riesgo leve de úlceras por presión, 18 puntos',
-            ],
-        ]);
+        return $this->guard(fn () => response()->json([
+            'kardex' => $this->board->kardex($encounterId),
+        ]));
     }
 
     public function showMedicalOrders(string $encounterId): JsonResponse
     {
-        if ($encounterId !== 'ENC-0001') {
-            return $this->missing('Indicaciones no disponibles.');
-        }
-
-        return response()->json([
-            'orders' => [
-                'status' => 'pendiente',
-                'statusLabel' => 'Pendiente de firma',
-                'items' => ['Reposo relativo', 'Oxígeno si SpO2 menor de 92 %'],
-            ],
-        ]);
+        return $this->guard(fn () => response()->json([
+            'orders' => $this->board->medicalOrders($encounterId),
+        ]));
     }
 
     public function signMedicalOrders(Request $request, string $encounterId): JsonResponse
     {
-        if ($encounterId !== 'ENC-0001') {
-            return $this->missing('Indicaciones no disponibles.');
-        }
-
         $data = $request->validate([
             'physicianName' => ['required', 'string'],
             'credential' => ['required', 'string'],
             'confirmed' => ['accepted'],
         ]);
 
-        return response()->json([
-            'signature' => [
-                'status' => 'firmado',
+        return $this->guard(fn () => response()->json([
+            'signature' => $this->board->signMedicalOrders($encounterId, [
                 'physicianName' => $data['physicianName'],
                 'credential' => $data['credential'],
-            ],
-        ], 201);
+            ]),
+        ], 201));
     }
 
     /**
@@ -325,44 +373,12 @@ class HospitalAdmissionController extends Controller
         return response()->json(['message' => $message], 404);
     }
 
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    private function orders(): array
+    private function guard(callable $action): JsonResponse
     {
-        $patient = [
-            'fullName' => 'Ana María Quispe Rojas',
-            'documentType' => 'DNI',
-            'documentNumber' => '45678912',
-            'birthDate' => '1978-04-12',
-            'sex' => 'Femenino',
-        ];
-
-        return [
-            'OI-2026-0001' => [
-                'orderNumber' => 'OI-2026-0001',
-                'originService' => 'Emergencia adultos',
-                'requestingPhysician' => 'Dra. Lucía Herrera',
-                'reason' => 'Neumonía adquirida en la comunidad',
-                'patient' => $patient,
-                'coverage' => ['payer' => 'SIS', 'status' => 'aprobada', 'plan' => 'SIS Gratuito'],
-            ],
-            'OI-2026-0002' => [
-                'orderNumber' => 'OI-2026-0002',
-                'originService' => 'Emergencia adultos',
-                'requestingPhysician' => 'Dr. Mateo Salas',
-                'reason' => 'Dolor abdominal',
-                'patient' => [...$patient, 'fullName' => 'Luis Ernesto Paredes', 'documentNumber' => '40112233'],
-                'coverage' => ['payer' => 'EsSalud', 'status' => 'pendiente', 'plan' => 'Regular'],
-            ],
-            'OI-2026-0003' => [
-                'orderNumber' => 'OI-2026-0003',
-                'originService' => 'Consulta externa',
-                'requestingPhysician' => 'Dra. Lucía Herrera',
-                'reason' => 'Control de insuficiencia cardíaca',
-                'patient' => [...$patient, 'fullName' => 'Carmen Yolanda Vega', 'documentNumber' => '09881234'],
-                'coverage' => ['payer' => 'Particular', 'status' => 'rechazada', 'plan' => 'Sin cobertura vigente'],
-            ],
-        ];
+        try {
+            return $action();
+        } catch (AdmissionBoardException $exception) {
+            return response()->json(['message' => $exception->getMessage()], $exception->status);
+        }
     }
 }

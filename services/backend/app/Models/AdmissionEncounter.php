@@ -9,6 +9,7 @@ class AdmissionEncounter extends Model
     protected $fillable = [
         'encounter_id',
         'order_number',
+        'source',
         'transfer_order_number',
         'patient_name',
         'document_type',
@@ -25,12 +26,14 @@ class AdmissionEncounter extends Model
         'current_step',
         'waiting_reason',
         'deliverables',
+        'clinical_payload',
     ];
 
     protected function casts(): array
     {
         return [
             'deliverables' => 'array',
+            'clinical_payload' => 'array',
         ];
     }
 }

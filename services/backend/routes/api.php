@@ -19,6 +19,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:admision')->group(function () {
                 Route::post('encounters', [AdmissionCensusController::class, 'store']);
+                Route::post('intake', [AdmissionCensusController::class, 'intake']);
                 Route::get('admission-orders/{orderNumber}', [HospitalAdmissionController::class, 'showAdmissionOrder']);
                 Route::post('filiation/validate', [HospitalAdmissionController::class, 'validateFiliation']);
                 Route::post('coverage/validate', [HospitalAdmissionController::class, 'validateCoverage']);

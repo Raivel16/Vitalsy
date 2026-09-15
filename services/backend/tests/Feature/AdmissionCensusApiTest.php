@@ -162,4 +162,50 @@ class AdmissionCensusApiTest extends TestCase
             ->assertNotFound()
             ->assertJsonPath('message', 'No se encontró la orden.');
     }
+
+    public function test_manual_and_external_intake_create_independent_encounters(): void
+    {
+        $this->asRole('admision');
+
+        $manual = $this->postJson('/api/v1/hospital-admission/encounters', [
+            'orderNumber' => 'OI-2026-0100',
+            'patientName' => 'Pedro Salas Díaz',
+            'documentNumber' => '77889900',
+            'originService' => 'Emergencia adultos',
+            'coveragePayer' => 'SIS',
+            'coverageStatus' => 'aprobada',
+            'coveragePlan' => 'SIS Gratuito',
+            'source' => 'manual',
+        ]);
+        $manual->assertCreated()
+            ->assertJsonPath('encounter.patientName', 'Pedro Salas Díaz')
+            ->assertJsonPath('encounter.currentStep', 'orden')
+            ->assertJsonPath('encounter.source', 'manual');
+
+        $external = $this->postJson('/api/v1/hospital-admission/intake', [
+            'orderNumber' => 'OI-2026-0101',
+            'patientName' => 'María López Ruiz',
+            'documentNumber' => '11223344',
+            'originService' => 'Consulta externa',
+            'coveragePayer' => 'EsSalud',
+            'coverageStatus' => 'pendiente',
+            'coveragePlan' => 'Regular',
+        ]);
+        $external->assertCreated()
+            ->assertJsonPath('encounter.patientName', 'María López Ruiz')
+            ->assertJsonPath('encounter.source', 'external')
+            ->assertJsonPath('encounter.currentStep', 'orden');
+
+        $this->assertDatabaseCount('admission_encounters', 5);
+
+        $this->postJson('/api/v1/hospital-admission/intake', [
+            'orderNumber' => 'OI-2026-0100',
+            'patientName' => 'Duplicado',
+            'documentNumber' => '00000000',
+            'originService' => 'Emergencia adultos',
+            'coveragePayer' => 'SIS',
+            'coverageStatus' => 'aprobada',
+            'coveragePlan' => 'SIS Gratuito',
+        ])->assertStatus(422)->assertJsonPath('message', 'Ya existe un ingreso con esa orden.');
+    }
 }

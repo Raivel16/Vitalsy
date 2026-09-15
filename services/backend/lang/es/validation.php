@@ -8,6 +8,7 @@ return [
     'email' => 'El correo no es válido.',
     'required' => 'El campo :attribute es obligatorio.',
     'string' => 'El campo :attribute no es válido.',
+    'regex' => 'El campo :attribute solo admite dígitos (7 a 15).',
 
     'attributes' => [
         'fullName' => 'nombre completo',

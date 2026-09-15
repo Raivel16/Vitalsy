@@ -67,14 +67,69 @@ class HospitalAdmissionApiTest extends TestCase
         ])->assertCreated()->assertJsonPath('record.status', 'abierto');
 
         $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
             'signerName' => 'Rosa Quispe',
             'accepted' => false,
         ])->assertStatus(422);
 
         $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
             'signerName' => 'Rosa Quispe',
             'accepted' => true,
         ])->assertCreated()->assertJsonPath('consent.status', 'firmado');
+    }
+
+    public function test_referral_phone_rejects_letters(): void
+    {
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/coverage/referrals', [
+            'destination' => 'caja',
+            'relativeName' => 'Rosa Quispe',
+            'relativePhone' => 'abc123',
+        ])->assertStatus(422);
+    }
+
+    public function test_transfer_and_wristband_codes_are_independent_per_patient(): void
+    {
+        $this->asRole('celador');
+        app(\App\Services\Admission\AdmissionBoard::class)->ensureDemo();
+        $admitted = array_fill_keys([
+            'fichaAdmision', 'brazalete', 'expediente', 'consentimiento', 'recepcion',
+            'valoracion', 'signosVitales', 'bpmh', 'escalas', 'kardex', 'indicaciones',
+        ], false);
+        $admitted['fichaAdmision'] = true;
+        $admitted['brazalete'] = true;
+        $admitted['expediente'] = true;
+        $admitted['consentimiento'] = true;
+
+        \App\Models\AdmissionEncounter::query()->where('encounter_id', 'ENC-0002')->update([
+            'current_step' => 'traslado',
+            'waiting_reason' => null,
+            'coverage_status' => 'aprobada',
+            'transfer_order_number' => 'OT-2026-0002',
+            'wristband_code' => 'BRZ-0002-LEP',
+            'room' => '210',
+            'bed' => 'A',
+            'service' => 'Cirugía',
+            'deliverables' => $admitted,
+        ]);
+
+        $this->getJson('/api/v1/hospital-admission/transfer-orders/OT-2026-0002')
+            ->assertOk()
+            ->assertJsonPath('transfer.patientName', 'Luis Ernesto Paredes')
+            ->assertJsonPath('transfer.room', '210');
+
+        $this->getJson('/api/v1/hospital-admission/transfer-orders/OT-2026-0001')
+            ->assertOk()
+            ->assertJsonPath('transfer.patientName', 'Ana María Quispe Rojas');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0002-LEP'])
+            ->assertOk()
+            ->assertJsonPath('identity.patientName', 'Luis Ernesto Paredes');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA'])
+            ->assertOk()
+            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
     }
 
     public function test_transfer_identity_reception_and_relocation(): void
