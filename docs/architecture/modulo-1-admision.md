@@ -2,168 +2,96 @@
 
 Interfaces del ingreso hospitalario. Los códigos de requisito no se muestran en pantalla: esta guía indica qué interfaz corresponde a cada uno y cómo comprobar que funciona.
 
-Los datos clínicos aún no salen de un HIS. Para la revisión se usan registros de prueba, listados al final.
-
 ## Cómo usar el ingreso
 
-El trabajo no empieza en un formulario suelto. Empieza en **Pacientes**. Cada perfil ve el menú de su tramo, en el orden del proceso 1.
+El trabajo empieza en **Pacientes**. El menú solo muestra Inicio, Pacientes y, para admisión, **Registrar ingreso**. Los formularios se abren desde Continuar o la ficha, siempre con el paciente identificado (`?ingreso=`).
 
 1. Desde la raíz del repositorio: `docker compose up --build`.
-2. Abrir http://localhost:8080. La pantalla de ingreso no muestra códigos de requisito.
+2. Abrir http://localhost:8080.
 3. Iniciar sesión con una cuenta local. La contraseña de las cuatro es `Vitalsy.2026`.
-4. En **Inicio** lea el tramo de su perfil. En **Pacientes** vea el censo y abra la ficha de un caso.
-5. Si el caso está en su turno, pulse **Continuar**. Complete el formulario y pulse **Confirmar paso en el censo**. Así el siguiente perfil ve el caso.
+4. En **Pacientes** vea el censo. Si el caso está en su turno, pulse **Continuar**.
+5. Complete el formulario y use el botón de registro o confirmación de esa pantalla: al guardar con éxito el ingreso avanza. Ya no hay un botón aparte de «Confirmar paso en el censo».
+6. Un stepper en la barra del caso muestra los pasos hechos, el actual y los pendientes.
 
-El censo ya trae tres ingresos, cada uno en un punto distinto del proceso:
+### Cómo entran pacientes nuevos
+
+Hay dos vías (ambas crean un ingreso en el censo):
+
+| Vía | Quién | Cómo |
+|---|---|---|
+| Registro manual | Admisión | Menú **Registrar ingreso** o `/pacientes/nuevo`. Completa orden, paciente, cobertura e inicia en el paso de orden. |
+| API de intake | Sistema emisor / Admisión | `POST /api/v1/hospital-admission/intake` con el mismo payload (orden, paciente, cobertura). Fuente `external`. |
+
+Más adelante se podrá decidir cuál dejar como canal principal.
+
+El censo de demostración ya trae tres ingresos:
 
 | Paciente | Dónde está | Quién actúa ahora |
 |---|---|---|
-| Luis Ernesto Paredes | Cobertura pendiente | Admisión. Si confirma el paso, el caso pasa a derivación y se detiene. |
-| Carmen Yolanda Vega | Cobertura rechazada | Admisión. Debe derivar el trámite. No sigue a brazalete. |
-| Ana María Quispe Rojas | Admisión cerrada, lista para traslado | Celador. Habitación 312, lecho B, brazalete `BRZ-0001-ANA`. |
+| Luis Ernesto Paredes | Cobertura pendiente | Admisión |
+| Carmen Yolanda Vega | Cobertura rechazada | Admisión |
+| Ana María Quispe Rojas | Lista para traslado | Celador. Habitación 312, lecho B, brazalete `BRZ-0001-ANA` |
 
-Enfermería y el médico no tienen un caso en su turno al entrar. Eso es el orden del proceso: el caso de Ana llega a recepción cuando el celador confirma el traslado y la identidad, y llega al médico cuando enfermería confirma valoración, constantes, conciliación, escalas y Kardex.
+Los códigos de traslado y brazalete son propios de cada paciente: consultar o verificar el de Ana no sirve para otro ingreso.
 
 Para recorrer el camino completo de Ana:
 
-1. Entre como celador, abra a Ana y confirme traslado e identidad.
-2. Cierre sesión y entre como enfermería. Confirme recepción, valoración, constantes, conciliación, escalas y Kardex, en ese orden.
-3. Cierre sesión y entre como médico. Firme las indicaciones.
+1. Entre como celador, abra a Ana, consulte el traslado y confírmelo; luego verifique el brazalete.
+2. Entre como enfermería. Confirme recepción y siga valoración, constantes, conciliación, escalas y Kardex.
+3. Entre como médico. Firme las indicaciones.
 
-La ficha de cada paciente muestra datos, ubicación y el estado de los entregables: ficha de admisión, brazalete, expediente, consentimiento, recepción, valoración, signos vitales, conciliación, escalas, Kardex e indicaciones. Un entregable queda **Listo** al confirmar el paso en el censo, no solo al guardar el formulario.
-
-Si la cobertura no está aprobada, deje el estado en pendiente o rechazada, derive el trámite y confirme el paso. El ingreso queda **en trámite**. Si más adelante la cobertura se aprueba, abra de nuevo **Continuar** o **Revisar cobertura**, marque **Aprobada** y confirme el paso: el caso sigue a brazalete.
-
-Al confirmar cobertura, el sistema usa el estado elegido en esa pantalla para ese paciente. Aprobar a Luis no afecta a Carmen, y al revés.
-
-Las rutas de la tabla de revisión siguen abiertas. Sirven para comprobar cada formulario. El recorrido de trabajo es el censo.
+Si la cobertura no está aprobada, derive el trámite y registre: el ingreso queda en trámite. Cuando se apruebe, vuelva a cobertura, marque **Aprobada** y registre.
 
 ## Cómo entrar
 
 | Perfil | Correo | Qué abre |
 |---|---|---|
-| Admisión | `admision@vitalsy.local` | RF-01 a RF-06 |
+| Admisión | `admision@vitalsy.local` | RF-01 a RF-06 y registro/intake |
 | Celador | `celador@vitalsy.local` | RF-07 y RF-08 |
 | Enfermería | `enfermeria@vitalsy.local` | RF-09 a RF-15 |
 | Médico | `medico@vitalsy.local` | RF-16 |
 
-Cada pantalla solo se abre con el perfil de esa fila. Si el perfil no corresponde, aparece un aviso en español, no una pantalla vacía. La cabecera muestra el nombre y el perfil, y el botón Cerrar sesión. No hay un selector para cambiar de rol. El menú agrupa Inicio y Pacientes, y después los pasos del proceso 1 que corresponden a ese perfil. Derivación y reubicación son desvíos: se usan solo si el camino principal no puede continuar.
+Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los pasos sueltos: se llegan desde el censo con paciente cargado.
 
 ## Cómo revisar el acceso (RNF-08 y RNF-09)
 
-Estas reglas no tienen una pantalla propia. Se comprueban en el ingreso y en la cabecera.
-
 | Requisito | Qué debe hacer | Cómo confirmar que está bien |
 |---|---|---|
-| RNF-08 | Exigir sesión y limitar cada interfaz al perfil | Sin sesión solo aparece Iniciar sesión. Un correo o una contraseña vacíos no envían la petición y marcan el campo. Una contraseña incorrecta muestra «El correo o la contraseña no son correctos.» Con `admision@vitalsy.local` se abre Admisión y recepción. Una ruta de otro perfil, por ejemplo `/medico/indicaciones` con admisión, muestra que la vista no está disponible. |
-| RNF-09 | Cerrar la sesión tras 5 minutos sin actividad | Tras entrar, no use el ratón, el teclado ni el desplazamiento durante 5 minutos. Debe volver a Iniciar sesión con el aviso «La sesión se cerró por inactividad. Vuelva a iniciar sesión.» Un clic, una tecla o un desplazamiento reinician ese plazo. |
+| RNF-08 | Exigir sesión y limitar cada interfaz al perfil | Sin sesión solo aparece Iniciar sesión. Una ruta de otro perfil muestra que la vista no está disponible. |
+| RNF-09 | Cerrar la sesión tras 5 minutos sin actividad | Tras 5 minutos sin actividad vuelve a Iniciar sesión. |
 
 ## Qué revisar
 
 | Requisito | Qué debe hacer | Interfaz | Rol | Cómo confirmar que está bien |
 |---|---|---|---|---|
-| RF-01 | Ver la orden de internamiento del servicio emisor | `/admision/orden` | Admisión | Escriba `OI-2026-0001` y pulse Consultar orden. Debe ver a Ana María Quispe Rojas, origen Emergencia adultos y cobertura SIS aprobada. Con `OI-0000` debe salir el aviso «No se encontró la orden.», no un error en inglés. |
-| RF-02 | Validar filiación y cobertura | `/admision/filiacion` y `/admision/cobertura` | Admisión | En filiación, envíe vacío: el nombre se marca inválido y no sale una petición. Complete nombre, documento y la confirmación: aparece la validación correcta. En cobertura, cambie el estado a pendiente y a rechazada: el texto y el icono cambian juntos, no solo el color. |
-| RF-03 | Derivar un trámite de cobertura | `/admision/cobertura/derivacion` | Admisión | Deje el familiar vacío y envíe: el error queda junto al campo. Luego registre un familiar y un teléfono hacia trabajo social: el aviso indica que la derivación quedó registrada y el familiar notificado. |
-| RF-04 | Emitir brazalete con código | `/admision/brazalete` | Admisión | Pulse Emitir brazalete. Debe aparecer el nombre, el código `BRZ-0001-ANA` y el código de barras. |
-| RF-05 | Abrir el expediente de ingreso | `/admision/expediente` | Admisión | Pulse Aperturar expediente. El aviso confirma el expediente abierto y el identificador `EXP-0001`. |
-| RF-06 | Registrar el consentimiento | `/admision/consentimiento` | Admisión | Sin nombre ni aceptación, el envío se detiene en el campo. Con nombre y la casilla aceptada, el estado queda firmado. |
-| RF-07 | Ver la orden de traslado con habitación y lecho | `/traslado/orden` | Celador | Con `OT-2026-0001`, debe verse Ana María Quispe Rojas, habitación 312 y lecho B. Otro número responde que no se encontró la orden. |
-| RF-08 | Confirmar identidad con el código del brazalete | `/traslado/identidad` | Celador | `BRZ-0001-ANA` confirma a Ana María Quispe Rojas. Otro código avisa que no corresponde al paciente. |
-| RF-09 | Confirmar la recepción en piso | `/piso/recepcion` | Enfermería | Pulse Confirmar recepción. El estado debe decir que el paciente quedó ingresado. |
-| RF-10 | Registrar una discrepancia de lecho | `/piso/reubicacion` | Enfermería | Sin motivo, habitación o lecho, cada campo muestra su error. Al completarlos, la central queda notificada con la habitación y el lecho pedidos. |
-| RF-11 | Registrar la valoración inicial | `/enfermeria/valoracion` | Enfermería | Sin motivo de consulta no se envía. Con motivo y al menos una alergia agregada, el aviso confirma que la valoración quedó registrada. |
-| RF-12 | Registrar constantes y calcular NEWS2 | `/enfermeria/constantes` | Enfermería | Una saturación imposible (por ejemplo 20) se rechaza antes de enviar, con texto junto al campo. Con FR 16, SpO2 98, PA 120, pulso 72 y 36.8 °C el NEWS2 queda en 0 y el texto dice riesgo bajo, no solo un color. |
-| RF-13 | Conciliar medicamentos domiciliarios | `/enfermeria/conciliacion` | Enfermería | Agregue alergia Penicilina y medicamento Amoxicilina 500 mg cada 8 horas, vía oral. Debe verse la dosis, la vía y una alerta de posible alergia, y el estado «Con observaciones». Sin alerta, el estado queda validada. |
-| RF-14 | Completar escalas de caídas y úlceras | `/enfermeria/riesgos` | Enfermería | Morse y Braden muestran puntaje, nivel escrito y una recomendación. Un valor de fricción fuera de 1 a 3 no se registra. |
-| RF-15 | Consultar el Kardex de ingreso | `/enfermeria/kardex` | Enfermería | La pantalla resume valoración, alergias, medicamentos, constantes, NEWS2 y riesgos. No debe decir que el documento es de prueba. |
-| RF-16 | Revisar y firmar indicaciones basales | `/medico/indicaciones` | Médico | Se listan las indicaciones y el estado pendiente de firma. Sin nombre, colegiatura o confirmación no firma. Con esos datos, el estado pasa a firmado. |
-| RF-83 | Ver el censo del proceso 1 | `/pacientes` | Los cuatro | Admisión ve a Luis y a Carmen en su turno, y a Ana en curso con celador. Celador ve a Ana como su turno. Enfermería y médico ven el censo y el aviso de que aún no hay casos en su tramo. |
-| RF-84 | Ver la ficha y los entregables | `/pacientes/ENC-0001` | Los cuatro | Ana muestra ficha, brazalete, expediente y consentimiento como listos, y el resto como pendiente. |
-| RF-85 | Continuar el paso vigente | Desde la ficha de Ana, como celador | Celador | Continuar abre el traslado con la orden ya puesta. Confirmar paso en el censo deja el caso en verificación de identidad. |
+| RF-01 | Ver la orden de internamiento | Continuar → orden | Admisión | Con el paciente abierto, consulte su número de orden. |
+| RF-02 | Validar filiación y cobertura | Continuar → filiación / cobertura | Admisión | Validar filiación y registrar cobertura avanza el caso. |
+| RF-03 | Derivar cobertura | Derivación desde cobertura | Admisión | El teléfono solo admite dígitos. Al registrar, el caso queda en trámite. |
+| RF-04 | Emitir brazalete | Continuar → brazalete | Admisión | Emite un código propio del paciente en curso, no solo el de Ana. |
+| RF-05 | Abrir expediente | Continuar → expediente | Admisión | Apertura y avanza al consentimiento. |
+| RF-06 | Consentimiento | Continuar → consentimiento | Admisión | Al registrar, el caso pasa a celador. |
+| RF-07 | Orden de traslado | Continuar → traslado | Celador | Cada `OT-…` muestra al paciente dueño de ese código. |
+| RF-08 | Verificar brazalete | Continuar → identidad | Celador | Cada `BRZ-…` confirma solo a su paciente. |
+| RF-09–RF-16 | Recepción a indicaciones | Continuar según el paso | Enfermería / Médico | Registrar en cada pantalla avanza el ingreso. |
+| RF-83 | Censo | `/pacientes` | Todos | Lista pacientes y Continuar solo si es su turno. |
+| RF-85 | Continuar paso vigente | Censo / ficha | Todos | Abre la actividad con el paciente ya identificado. |
 
-La interfaz no muestra códigos como RF-01. Si aparece un identificador de requisito, un aviso de simulación o un error en inglés, la revisión no pasa.
+## API de intake (externa)
 
-## Datos de prueba
+`POST /api/v1/hospital-admission/intake` (autenticado, rol admisión):
 
-Úselos solo en esta revisión. No están anunciados en la interfaz.
-
-| Uso | Valor | Qué debe ocurrir |
-|---|---|---|
-| Orden con cobertura aprobada | `OI-2026-0001` | Ana María Quispe Rojas, SIS aprobada |
-| Orden pendiente | `OI-2026-0002` | Luis Ernesto Paredes, EsSalud pendiente |
-| Orden rechazada | `OI-2026-0003` | Carmen Yolanda Vega, cobertura rechazada |
-| Traslado | `OT-2026-0001` | Habitación 312, lecho B |
-| Brazalete | `BRZ-0001-ANA` | Identidad de Ana María Quispe Rojas |
-| Expediente / encuentro | `EXP-0001` / `ENC-0001` | Brazalete, recepción, Kardex e indicaciones |
-
-## Organización
-
-El frontend usa Screaming Architecture. Cada carpeta nombra el dominio, no una categoría técnica global.
-
-```text
-services/frontend/src/modules/
-  admission-census/             RF-83 a RF-85
-  admission/                    RF-01 a RF-06
-  patient-transfer/             RF-07 a RF-10
-  nursing-assessment/           RF-11, RF-12 y NEWS2
-  medication-reconciliation/    RF-13
-  risk-assessment/              RF-14
-  admission-kardex/             RF-15
-  medical-orders/               RF-16
+```json
+{
+  "orderNumber": "OI-2026-0200",
+  "patientName": "Nombre Apellido",
+  "documentNumber": "12345678",
+  "originService": "Emergencia adultos",
+  "coveragePayer": "SIS",
+  "coverageStatus": "aprobada",
+  "coveragePlan": "SIS Gratuito",
+  "requestingPhysician": "Dra. Ejemplo",
+  "reason": "Motivo clínico"
+}
 ```
 
-`src/app` contiene el shell, el inicio de sesión y el cliente HTTP. `src/shared/ui` solo tiene primitivas visuales.
-
-La sesión usa cookie httpOnly de Laravel Sanctum, en el mismo origen. El navegador no guarda un token. Las rutas de admisión exigen esa sesión y el perfil indicado en la tabla de acceso.
-
-## Cálculos clínicos
-
-NEWS2 sigue la chart 1 del Royal College of Physicians (2017), incluidas la escala 2 de SpO2 y la confusión crónica sin puntuación. La banda visual del proyecto (RNF-15) es verde en 0, amarilla en 1 a 6 y roja desde 7. Una puntuación de 3 en un solo parámetro añade texto de revisión urgente. El cálculo no dispara el flujo de alertas de los módulos 2 y 3.
-
-Morse usa los cortes de cuidado agudo 0-24, 25-44 y 45 o más. Braden usa 19-23, 15-18, 13-14, 10-12 y 9 o menos. La fricción solo admite 1 a 3. El mismo algoritmo está en TypeScript y PHP.
-
-La conciliación aplica reglas locales de alergia e interacción. No es una base farmacológica completa.
-
-## Rutas API
-
-Prefijo `/api/v1/hospital-admission`. Las respuestas no incluyen un aviso de simulación. Un error de validación o un fallo inesperado llega en español.
-
-| Método | Ruta | Requisito |
-|---|---|---|
-| GET | `/admission-orders/{orderNumber}` | RF-01 |
-| POST | `/filiation/validate` | RF-02 |
-| POST | `/coverage/validate` | RF-02 |
-| POST | `/coverage/referrals` | RF-03 |
-| POST | `/wristbands` | RF-04 |
-| POST | `/clinical-records` | RF-05 |
-| POST | `/informed-consents` | RF-06 |
-| GET | `/transfer-orders/{orderNumber}` | RF-07 |
-| POST | `/wristbands/verify` | RF-08 |
-| POST | `/floor-receptions` | RF-09 |
-| POST | `/relocations` | RF-10 |
-| POST | `/nursing-assessments` | RF-11 |
-| POST | `/vital-signs` | RF-12 y NEWS2 |
-| POST | `/medication-reconciliations` | RF-13 |
-| POST | `/risk-scales` | RF-14 |
-| GET | `/encounters` | RF-83 |
-| GET | `/encounters/{encounterId}` | RF-84 |
-| POST | `/encounters` | RF-85 |
-| POST | `/encounters/{encounterId}/advance` | RF-85 |
-| GET | `/kardex/{encounterId}` | RF-15 |
-| GET | `/medical-orders/{encounterId}` | RF-16 |
-| POST | `/medical-orders/{encounterId}/sign` | RF-16 |
-
-Una orden desconocida responde 404. Un cuerpo inválido o un valor fisiológico imposible responde 422.
-
-## Acceso y usuarios
-
-RF-86 y RF-87 están cubiertos por el inicio y el cierre de sesión. RF-88 a RF-91 describen la administración de cuentas y roles. Esa pantalla no está en este corte. Los cuatro perfiles de revisión se crean con el sembrado de la base.
-
-## Pendiente
-
-- Persistencia clínica completa. El censo guarda el paso y los entregables del ingreso, no el detalle de cada formulario.
-- Pantalla de administración de usuarios y roles (RF-88 a RF-91).
-- Firma criptográfica, impresión del brazalete e integración con un lector.
-- Integraciones HIS, cobertura y central de camas.
-- Proceso de alertas, escalamiento y monitoreo programado a partir del NEWS2.
+Respuesta `201` con el `encounter` creado en el paso de orden.
