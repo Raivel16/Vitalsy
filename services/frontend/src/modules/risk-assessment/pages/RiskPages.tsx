@@ -1,12 +1,22 @@
 import { type FormEvent, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { advanceEncounter } from "../../admission-census/domain/advance";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateBraden, type BradenFriction, type BradenScore4 } from "../domain/bradenScale";
 import { calculateMorse } from "../domain/morseFallScale";
 
 export function RiskScalesPage() {
+  const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
+  const role = user?.role ?? "enfermeria";
   const [historyOfFalling, setHistoryOfFalling] = useState(false);
   const [secondaryDiagnosis, setSecondaryDiagnosis] = useState(false);
   const [ambulatoryAid, setAmbulatoryAid] = useState<"none" | "device" | "furniture">("none");
@@ -23,6 +33,8 @@ export function RiskScalesPage() {
   });
   const [saved, setSaved] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   const morse = useMemo(
     () => calculateMorse({ historyOfFalling, secondaryDiagnosis, ambulatoryAid, intravenousAccess, gait, mentalStatus }),
@@ -30,23 +42,52 @@ export function RiskScalesPage() {
   );
   const pressure = useMemo(() => calculateBraden(braden), [braden]);
 
+  if (!encounter) {
+    return (
+      <Sheet kicker="Enfermería" title="Escalas de riesgo">
+        <Feedback tone="info">Abra un paciente desde el censo para registrar las escalas.</Feedback>
+        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      </Sheet>
+    );
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    setPending(true);
     try {
       await api("/api/v1/hospital-admission/risk-scales", {
         method: "POST",
-        body: JSON.stringify({ morse, braden: pressure }),
+        body: JSON.stringify({
+          encounterId: encounter.encounterId,
+          morse: {
+            historyOfFalling,
+            secondaryDiagnosis,
+            ambulatoryAid,
+            intravenousAccess,
+            gait,
+            mentalStatus,
+          },
+          braden,
+        }),
       });
       setSaved("Escalas registradas.");
       setError("");
+      if (encounter.currentStep === "escalas") {
+        const next = await advanceEncounter(encounter.encounterId, "escalas");
+        applyEncounter(next);
+      }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudieron registrar las escalas."));
+    } finally {
+      setPending(false);
     }
   }
 
   return (
     <Sheet kicker="Enfermería" title="Escalas de riesgo">
-      <p className="lead">Morse para caídas y Braden para úlceras. El puntaje es el de las escalas; no es una orden médica.</p>
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="escalas" />
+      <p className="lead">Morse y Braden para {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
         <fieldset>
           <legend>Escala de Morse</legend>
@@ -96,8 +137,9 @@ export function RiskScalesPage() {
         </fieldset>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <p role="status" aria-label="Resultado del registro">{saved}</p> : null}
-        <button className="button" type="submit">Registrar escalas</button>
+        <button className="button" type="submit" disabled={pending}>Registrar escalas</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="escalas" canContinue={advanced} />
     </Sheet>
   );
 }

@@ -275,6 +275,32 @@ th, td { text-align: left; padding: 0.65rem 0.4rem; border-bottom: 1px solid var
 .stepper-current { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
 .stepper-current .stepper-dot { background: var(--teal); }
 .stepper-current .stepper-label { color: var(--navy); }
+.role-steps { margin: 0 0 1rem; }
+.role-steps > p { margin: 0 0 0.4rem; font-weight: 700; color: var(--navy); }
+.role-steps ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+}
+.role-steps a {
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.role-steps a.is-done { background: var(--success-bg); border-color: #b7e4cf; color: #145c3b; }
+.role-steps a.is-active { background: #e8f7fa; border-color: var(--teal); color: var(--navy); }
+.step-nav { margin-top: 1rem; }
+.scanner-box { margin: 0.75rem 0; display: grid; gap: 0.55rem; }
+.scanner-view { max-width: 360px; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); }
+.barcode { max-width: 100%; height: auto; background: white; border-radius: 6px; }
 .deliverables { list-style: none; display: grid; gap: 0.45rem; padding: 0; }
 .deliverables li {
   display: grid;

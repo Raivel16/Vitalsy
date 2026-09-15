@@ -15,17 +15,41 @@ describe("conciliación farmacéutica de ingreso", () => {
 
   it("muestra dosis, vía y una alerta de alergia, y distingue el estado", async () => {
     const user = userEvent.setup();
+    const encounter = {
+      encounterId: "ENC-0001",
+      orderNumber: "OI-1",
+      transferOrderNumber: null,
+      patientName: "Ana",
+      documentType: "DNI",
+      documentNumber: "1",
+      originService: "E",
+      coverage: { payer: "SIS", status: "aprobada", plan: "SIS" },
+      location: { room: null, bed: null, service: null },
+      wristbandCode: null,
+      recordId: null,
+      subprocess: "1.3",
+      subprocessLabel: "x",
+      currentStep: "conciliacion",
+      currentStepLabel: "Conciliación",
+      nextRole: "enfermeria",
+      statusLabel: "Conciliación",
+      deliverables: [],
+      progress: [],
+    };
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse(201, {
-          simulated: true,
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(201, {
           reconciliation: { status: "con_observaciones", statusLabel: "Con observaciones" },
-        }),
-      ),
+        }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          encounter: { ...encounter, currentStep: "escalas", nextRole: "enfermeria" },
+        })),
     );
-    renderApp("/enfermeria/conciliacion");
+    renderApp("/enfermeria/conciliacion?ingreso=ENC-0001");
 
+    await screen.findByLabelText(/alergias conocidas/i);
     await user.type(screen.getByLabelText(/alergias conocidas/i), "Penicilina");
     await user.type(screen.getByLabelText(/^medicamento$/i), "Amoxicilina");
     await user.type(screen.getByLabelText(/dosis/i), "500 mg");

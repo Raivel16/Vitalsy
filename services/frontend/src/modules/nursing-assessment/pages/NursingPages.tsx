@@ -1,12 +1,22 @@
 import { type FormEvent, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { advanceEncounter } from "../../admission-census/domain/advance";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/news2";
 import { validateVitalSigns } from "../domain/vitalSigns";
 
 export function NursingAssessmentPage() {
+  const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
+  const role = user?.role ?? "enfermeria";
   const [complaint, setComplaint] = useState("");
   const [history, setHistory] = useState("");
   const [allergy, setAllergy] = useState("");
@@ -14,6 +24,17 @@ export function NursingAssessmentPage() {
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [saved, setSaved] = useState("");
+  const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
+
+  if (!encounter) {
+    return (
+      <Sheet kicker="Enfermería" title="Valoración inicial">
+        <Feedback tone="info">Abra un paciente desde el censo para registrar la valoración.</Feedback>
+        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      </Sheet>
+    );
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -22,21 +43,35 @@ export function NursingAssessmentPage() {
       return;
     }
     setFieldError("");
+    setPending(true);
     try {
       await api("/api/v1/hospital-admission/nursing-assessments", {
         method: "POST",
-        body: JSON.stringify({ encounterId: "ENC-0001", chiefComplaint: complaint, history, allergies }),
+        body: JSON.stringify({
+          encounterId: encounter.encounterId,
+          chiefComplaint: complaint,
+          history,
+          allergies,
+        }),
       });
       setSaved("Valoración registrada.");
       setError("");
+      if (encounter.currentStep === "valoracion") {
+        const next = await advanceEncounter(encounter.encounterId, "valoracion");
+        applyEncounter(next);
+      }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo guardar la valoración."));
+    } finally {
+      setPending(false);
     }
   }
 
   return (
     <Sheet kicker="Enfermería" title="Valoración inicial">
-      <p className="lead">Anamnesis, alergias y antecedentes a pie de cama.</p>
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="valoracion" />
+      <p className="lead">Anamnesis, alergias y antecedentes de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={fieldError} />
         <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} />
@@ -59,13 +94,18 @@ export function NursingAssessmentPage() {
         ) : <p className="empty">Sin alergias registradas en esta valoración.</p>}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
-        <button className="button" type="submit">Guardar valoración</button>
+        <button className="button" type="submit" disabled={pending}>Guardar valoración</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="valoracion" canContinue={advanced} />
     </Sheet>
   );
 }
 
 export function VitalSignsPage() {
+  const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
+  const role = user?.role ?? "enfermeria";
   const [fields, setFields] = useState({
     respiratoryRate: "",
     oxygenSaturation: "",
@@ -80,6 +120,8 @@ export function VitalSignsPage() {
   const [submitted, setSubmitted] = useState(false);
   const [saved, setSaved] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   const liveErrors = validateVitalSigns(fields);
   const ready = Object.keys(liveErrors).length === 0;
@@ -98,6 +140,15 @@ export function VitalSignsPage() {
     });
   }, [consciousness, confusionOnset, fields, ready, spo2Scale, supplementalOxygen]);
 
+  if (!encounter) {
+    return (
+      <Sheet kicker="Enfermería" title="Constantes vitales basales">
+        <Feedback tone="info">Abra un paciente desde el censo para registrar las constantes.</Feedback>
+        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      </Sheet>
+    );
+  }
+
   function update(key: keyof typeof fields, value: string) {
     setFields((current) => ({ ...current, [key]: value }));
   }
@@ -106,15 +157,31 @@ export function VitalSignsPage() {
     event.preventDefault();
     setSubmitted(true);
     if (!ready || !news2) return;
+    setPending(true);
     try {
       await api("/api/v1/hospital-admission/vital-signs", {
         method: "POST",
-        body: JSON.stringify({ ...fields, spo2Scale, supplementalOxygen, consciousness, confusionOnset, news2Total: news2.total }),
+        body: JSON.stringify({
+          encounterId: encounter.encounterId,
+          ...fields,
+          spo2Scale,
+          supplementalOxygen,
+          consciousness,
+          confusionOnset,
+          news2Total: news2.total,
+        }),
       });
       setSaved("Constantes registradas.");
       setError("");
+      if (encounter.currentStep === "constantes") {
+        const next = await advanceEncounter(encounter.encounterId, "constantes");
+        applyEncounter(next);
+      }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } finally {
+      setPending(false);
     }
   }
 
@@ -123,7 +190,8 @@ export function VitalSignsPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Constantes vitales basales">
-      <p className="lead">El sistema calcula el NEWS2 a partir de las constantes registradas.</p>
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="constantes" />
+      <p className="lead">El sistema calcula el NEWS2 de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
           <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(event) => update("respiratoryRate", event.target.value)} error={visibleErrors.respiratoryRate} hint="respiraciones/min" />
@@ -162,8 +230,9 @@ export function VitalSignsPage() {
         ) : null}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
-        <button className="button" type="submit">Registrar constantes</button>
+        <button className="button" type="submit" disabled={pending}>Registrar constantes</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="constantes" canContinue={advanced} />
     </Sheet>
   );
 }

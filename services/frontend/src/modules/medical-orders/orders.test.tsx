@@ -3,6 +3,28 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 
+const encounter = {
+  encounterId: "ENC-0001",
+  orderNumber: "OI-2026-0001",
+  transferOrderNumber: null,
+  patientName: "Ana María Quispe Rojas",
+  documentType: "DNI",
+  documentNumber: "45678912",
+  originService: "Emergencia",
+  coverage: { payer: "SIS", status: "aprobada", plan: "SIS" },
+  location: { room: "312", bed: "B", service: "Medicina" },
+  wristbandCode: "BRZ-0001-ANA",
+  recordId: "EXP-0001",
+  subprocess: "1.3",
+  subprocessLabel: "Valoración",
+  currentStep: "indicaciones",
+  currentStepLabel: "Indicaciones",
+  nextRole: "medico",
+  statusLabel: "Indicaciones por firmar",
+  deliverables: [],
+  progress: [],
+};
+
 describe("indicaciones médicas basales", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico");
@@ -17,27 +39,24 @@ describe("indicaciones médicas basales", () => {
     const user = userEvent.setup();
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(
-          jsonResponse(200, {
-            simulated: true,
-            orders: {
-              status: "pendiente",
-              statusLabel: "Pendiente de firma",
-              items: ["Reposo relativo", "Oxígeno si SpO2 menor de 92 %"],
-            },
-          }),
-        )
-        .mockResolvedValueOnce(
-          jsonResponse(201, {
-            simulated: true,
-            signature: { status: "firmado", physicianName: "Dr. Mateo Salas" },
-          }),
-        ),
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          orders: {
+            status: "pendiente",
+            statusLabel: "Pendiente de firma",
+            items: ["Reposo relativo", "Oxígeno si SpO2 menor de 92 %"],
+          },
+        }))
+        .mockResolvedValueOnce(jsonResponse(201, {
+          signature: { status: "firmado", physicianName: "Dr. Mateo Salas" },
+        }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          encounter: { ...encounter, currentStep: "cerrado", nextRole: null, statusLabel: "Ingreso cerrado" },
+        })),
     );
 
-    renderApp("/medico/indicaciones");
+    renderApp("/medico/indicaciones?ingreso=ENC-0001");
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/pendiente de firma/i);
     expect(screen.getByText(/reposo relativo/i)).toBeInTheDocument();
 

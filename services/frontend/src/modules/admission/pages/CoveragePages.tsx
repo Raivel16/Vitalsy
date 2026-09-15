@@ -1,12 +1,14 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
-import { useAuth } from "../../../app/AuthProvider";
+import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounterState, type CoverageStatus } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 
 const COPY: Record<CoverageStatus, string> = {
   aprobada: "La cobertura permite continuar la admisión.",
@@ -23,13 +25,14 @@ function phoneError(value: string): string | undefined {
 export function CoveragePage() {
   const { encounter, coverageStatus, setCoverageStatus, applyEncounter } = useEncounterState();
   const { user } = useAuth();
+  const role = user?.role ?? "admision";
   const [params] = useSearchParams();
-  const navigate = useNavigate();
   const ingreso = params.get("ingreso");
   const [status, setStatus] = useState<CoverageStatus>("aprobada");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     if (coverageStatus) setStatus(coverageStatus);
@@ -60,7 +63,7 @@ export function CoveragePage() {
       const next = await advanceEncounter(encounter.encounterId, step, status);
       applyEncounter(next);
       setNotice("Cobertura registrada.");
-      navigate(pathAfterAdvance(next, user?.role ?? "admision"));
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar la cobertura."));
     } finally {
@@ -70,6 +73,7 @@ export function CoveragePage() {
 
   return (
     <Sheet kicker="Admisión" title="Cobertura sanitaria">
+      {encounter ? <RoleStepLinks role={role} encounter={encounter} viewingStep="cobertura" /> : null}
       <p className="lead">
         {encounter
           ? `Revise la cobertura de ${encounter.patientName}. Al registrar, el ingreso avanza según el estado elegido.`
@@ -97,6 +101,7 @@ export function CoveragePage() {
             </button>
             {status !== "aprobada" ? <Link to={referralTo}>Derivar trámite</Link> : null}
           </div>
+          <StepNav role={role} encounter={encounter} viewingStep="cobertura" canContinue={advanced} />
         </>
       )}
     </Sheet>
@@ -107,7 +112,6 @@ export function ReferralPage() {
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
   const { encounter, applyEncounter } = useEncounterState();
-  const navigate = useNavigate();
   const [relativeName, setRelativeName] = useState("");
   const [relativePhone, setRelativePhone] = useState("");
   const [destination, setDestination] = useState("trabajo_social");
@@ -148,9 +152,6 @@ export function ReferralPage() {
       if (encounter && (encounter.currentStep === "cobertura" || encounter.currentStep === "derivacion")) {
         const advanced = await advanceEncounter(encounter.encounterId, encounter.currentStep, "pendiente");
         applyEncounter(advanced);
-        if (advanced.currentStep === "derivacion" && !advanced.nextRole) {
-          navigate(`/pacientes/${advanced.encounterId}`);
-        }
       }
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar la derivación."));

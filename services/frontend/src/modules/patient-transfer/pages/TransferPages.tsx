@@ -1,12 +1,15 @@
-import { type FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
-import { useAuth } from "../../../app/AuthProvider";
+import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
+import { BarcodeScanner } from "../components/BarcodeScanner";
 
 type TransferOrder = {
   transfer: { orderNumber: string; patientName: string; room: string; bed: string; service: string };
@@ -27,18 +30,20 @@ export function TransferOrderPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "celador";
   const [orderNumber, setOrderNumber] = useState("");
   const [result, setResult] = useState<TransferOrder | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     setResult(null);
     setError("");
     setNotice("");
+    setAdvanced(false);
     setOrderNumber(encounter?.transferOrderNumber ?? "");
   }, [encounter?.encounterId, encounter?.transferOrderNumber]);
 
@@ -63,14 +68,15 @@ export function TransferOrderPage() {
   }
 
   async function confirmTransfer() {
-    if (!encounter) return;
     setPending(true);
     setError("");
     try {
-      const next = await advanceEncounter(encounter.encounterId, "traslado");
-      applyEncounter(next);
+      if (encounter.currentStep === "traslado") {
+        const next = await advanceEncounter(encounter.encounterId, "traslado");
+        applyEncounter(next);
+      }
       setNotice("Traslado confirmado.");
-      navigate(pathAfterAdvance(next, user?.role ?? "celador"));
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo confirmar el traslado."));
     } finally {
@@ -80,6 +86,7 @@ export function TransferOrderPage() {
 
   return (
     <Sheet kicker="Celador" title="Orden de traslado a piso">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="traslado" />
       <p className="lead">Confirme habitación y lecho de {encounter.patientName} antes de movilizarlo.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
@@ -94,11 +101,12 @@ export function TransferOrderPage() {
           <p>Habitación {result.transfer.room}</p>
           <p>Lecho {result.transfer.bed}</p>
           <p>{result.transfer.service}</p>
-          <button className="button" type="button" onClick={() => void confirmTransfer()} disabled={pending}>
+          <button className="button" type="button" onClick={() => void confirmTransfer()} disabled={pending || advanced}>
             Confirmar traslado
           </button>
         </section>
       ) : null}
+      <StepNav role={role} encounter={encounter} viewingStep="traslado" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -107,17 +115,23 @@ export function WristbandVerifyPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "celador";
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     setMessage("");
     setError("");
+    setAdvanced(false);
     setCode(encounter?.wristbandCode ?? "");
   }, [encounter?.encounterId, encounter?.wristbandCode]);
+
+  const onScan = useCallback((scanned: string) => {
+    setCode(scanned);
+  }, []);
 
   if (!encounter) return <NeedPatient title="Verificación de identidad" />;
 
@@ -135,8 +149,8 @@ export function WristbandVerifyPage() {
       if (encounter.currentStep === "identidad") {
         const next = await advanceEncounter(encounter.encounterId, "identidad");
         applyEncounter(next);
-        navigate(pathAfterAdvance(next, user?.role ?? "celador"));
       }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo verificar el brazalete."));
     } finally {
@@ -146,13 +160,16 @@ export function WristbandVerifyPage() {
 
   return (
     <Sheet kicker="Celador" title="Verificación de identidad">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="identidad" />
       <p className="lead">Confirme el brazalete de {encounter.patientName} antes del traslado.</p>
+      <BarcodeScanner onScan={onScan} />
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
         <button className="button" type="submit" disabled={pending}>Verificar brazalete</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {message ? <Feedback tone="success">{message}</Feedback> : null}
+      <StepNav role={role} encounter={encounter} viewingStep="identidad" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -161,10 +178,11 @@ export function FloorReceptionPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "enfermeria";
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
@@ -193,8 +211,8 @@ export function FloorReceptionPage() {
       if (encounter.currentStep === "recepcion") {
         const next = await advanceEncounter(encounter.encounterId, "recepcion");
         applyEncounter(next);
-        navigate(pathAfterAdvance(next, user?.role ?? "enfermeria"));
       }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo confirmar la recepción."));
     } finally {
@@ -204,6 +222,7 @@ export function FloorReceptionPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Recepción física en piso">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="recepcion" />
       <p className="lead">Confirme que {encounter.patientName} llegó a la habitación y al lecho asignados.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Confirmar recepción</button>
@@ -211,6 +230,7 @@ export function FloorReceptionPage() {
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {status ? <Feedback tone="success">Paciente {status} en el lecho asignado.</Feedback> : null}
       <p><Link to={`/piso/reubicacion?ingreso=${encodeURIComponent(encounter.encounterId)}`}>Registrar reubicación</Link></p>
+      <StepNav role={role} encounter={encounter} viewingStep="recepcion" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -270,6 +290,7 @@ export function RelocationPage() {
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
         <button className="button" type="submit">Notificar reubicación</button>
       </form>
+      <p><Link to={`/piso/recepcion?ingreso=${encodeURIComponent(encounter.encounterId)}`}>Volver a recepción</Link></p>
     </Sheet>
   );
 }

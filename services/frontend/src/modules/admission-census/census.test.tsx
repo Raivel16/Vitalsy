@@ -111,7 +111,8 @@ describe("censo de ingresos", () => {
         body: JSON.stringify({ step: "cobertura", coverageStatus: "aprobada" }),
       }));
     });
-    expect(await screen.findByRole("button", { name: /emitir brazalete/i })).toBeInTheDocument();
+    expect(await screen.findByText(/cobertura registrada/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
   });
 
   it("abre cobertura al continuar un caso en derivación, no salta el paso de aprobar", async () => {

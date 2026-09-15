@@ -2,6 +2,28 @@ import { screen } from "@testing-library/react";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 
+const encounter = {
+  encounterId: "ENC-0001",
+  orderNumber: "OI-2026-0001",
+  transferOrderNumber: "OT-2026-0001",
+  patientName: "Ana María Quispe Rojas",
+  documentType: "DNI",
+  documentNumber: "45678912",
+  originService: "Emergencia",
+  coverage: { payer: "SIS", status: "aprobada", plan: "SIS" },
+  location: { room: "312", bed: "B", service: "Medicina" },
+  wristbandCode: "BRZ-0001-ANA",
+  recordId: "EXP-0001",
+  subprocess: "1.3",
+  subprocessLabel: "Valoración",
+  currentStep: "kardex",
+  currentStepLabel: "Kardex",
+  nextRole: "enfermeria",
+  statusLabel: "Kardex por revisar",
+  deliverables: [],
+  progress: [],
+};
+
 describe("kardex de ingreso", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "enfermeria");
@@ -15,9 +37,9 @@ describe("kardex de ingreso", () => {
   it("resume valoración, medicamentos, alergias, constantes y riesgos", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse(200, {
-          simulated: true,
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(200, {
           kardex: {
             patientName: "Ana María Quispe Rojas",
             assessment: "Disnea de dos días",
@@ -28,11 +50,10 @@ describe("kardex de ingreso", () => {
             fallRisk: "Riesgo alto de caídas, 45 puntos",
             pressureRisk: "Riesgo leve de úlceras por presión, 18 puntos",
           },
-        }),
-      ),
+        })),
     );
 
-    renderApp("/enfermeria/kardex");
+    renderApp("/enfermeria/kardex?ingreso=ENC-0001");
 
     expect(await screen.findByRole("heading", { name: /kardex electrónico de ingreso/i })).toBeInTheDocument();
     expect(screen.getByText(/disnea de dos días/i)).toBeInTheDocument();
@@ -45,9 +66,11 @@ describe("kardex de ingreso", () => {
   it("anuncia un error si el kardex no puede cargarse", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse(404, { simulated: true, message: "Kardex no disponible." })),
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(404, { message: "Kardex no disponible." })),
     );
-    renderApp("/enfermeria/kardex");
+    renderApp("/enfermeria/kardex?ingreso=ENC-0001");
     expect(await screen.findByRole("alert")).toHaveTextContent(/kardex no disponible/i);
   });
 });

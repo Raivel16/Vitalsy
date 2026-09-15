@@ -1,9 +1,11 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
-import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { advanceEncounter } from "../../admission-census/domain/advance";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -23,18 +25,20 @@ export function AdmissionOrderPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "admision";
   const [orderNumber, setOrderNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [result, setResult] = useState<AdmissionOrder | null>(null);
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     setResult(null);
     setError("");
     setNotice("");
+    setAdvanced(false);
     setOrderNumber(encounter?.orderNumber ?? "");
   }, [encounter?.encounterId, encounter?.orderNumber]);
 
@@ -60,10 +64,12 @@ export function AdmissionOrderPage() {
     setPending(true);
     setError("");
     try {
-      const next = await advanceEncounter(encounter.encounterId, "orden");
-      applyEncounter(next);
+      if (encounter.currentStep === "orden") {
+        const next = await advanceEncounter(encounter.encounterId, "orden");
+        applyEncounter(next);
+      }
       setNotice("Orden confirmada.");
-      navigate(pathAfterAdvance(next, user?.role ?? "admision"));
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo confirmar la orden."));
     } finally {
@@ -73,6 +79,7 @@ export function AdmissionOrderPage() {
 
   return (
     <Sheet kicker="Admisión" title="Orden de internamiento">
+      {encounter ? <RoleStepLinks role={role} encounter={encounter} viewingStep="orden" /> : null}
       <p className="lead">
         {encounter
           ? `Consulte la orden de ${encounter.patientName}.`
@@ -100,16 +107,15 @@ export function AdmissionOrderPage() {
             <div><dt>Cobertura</dt><dd>{result.order.coverage.payer} · {result.order.coverage.status}</dd></div>
           </dl>
           {encounter ? (
-            <button className="button" type="button" onClick={() => void confirmOrder()} disabled={pending}>
+            <button className="button" type="button" onClick={() => void confirmOrder()} disabled={pending || advanced}>
               Confirmar orden
             </button>
           ) : (
-            <p>
-              <Link className="button" to="/pacientes">Ir al censo</Link>
-            </p>
+            <p><Link className="button" to="/pacientes">Ir al censo</Link></p>
           )}
         </section>
       ) : null}
+      {encounter ? <StepNav role={role} encounter={encounter} viewingStep="orden" canContinue={advanced} /> : null}
     </Sheet>
   );
 }

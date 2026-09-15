@@ -1,22 +1,26 @@
 import { type FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
-import { Barcode } from "../components/Barcode";
+import { Barcode, printBarcodeOnly } from "../components/Barcode";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
+import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 
 export function WristbandPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "admision";
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
@@ -30,6 +34,7 @@ export function WristbandPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setNotice("");
     setPending(true);
     try {
       const data = await api<{ wristband: { code: string } }>("/api/v1/hospital-admission/wristbands", {
@@ -37,10 +42,13 @@ export function WristbandPage() {
         body: JSON.stringify({ encounterId: encounter.encounterId }),
       });
       setCode(data.wristband.code);
+      setNotice("Brazalete emitido.");
       if (encounter.currentStep === "brazalete") {
         const next = await advanceEncounter(encounter.encounterId, "brazalete");
         applyEncounter(next);
-        navigate(pathAfterAdvance(next, user?.role ?? "admision"));
+        setAdvanced(true);
+      } else {
+        setAdvanced(true);
       }
     } catch (caught) {
       setError(errorText(caught, "No se pudo emitir el brazalete."));
@@ -51,11 +59,13 @@ export function WristbandPage() {
 
   return (
     <Sheet kicker="Admisión" title="Brazalete de identificación">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="brazalete" />
       <p className="lead">Genere el brazalete de {encounter.patientName} y verifique el código antes de entregarlo.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Emitir brazalete</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
+      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {code ? (
         <div className="wristband">
           <span className="wrist-hole" aria-hidden="true" />
@@ -63,10 +73,14 @@ export function WristbandPage() {
             <p className="wrist-name">{encounter.patientName}</p>
             <p className="wrist-code">{code}</p>
             <Barcode value={code} />
+            <button className="button button-quiet" type="button" onClick={() => printBarcodeOnly()}>
+              Imprimir código de barras
+            </button>
           </div>
           <span className="wrist-hole" aria-hidden="true" />
         </div>
       ) : null}
+      <StepNav role={role} encounter={encounter} viewingStep="brazalete" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -75,10 +89,11 @@ export function RecordPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "admision";
   const [recordId, setRecordId] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
@@ -102,8 +117,8 @@ export function RecordPage() {
       if (encounter.currentStep === "expediente") {
         const next = await advanceEncounter(encounter.encounterId, "expediente");
         applyEncounter(next);
-        navigate(pathAfterAdvance(next, user?.role ?? "admision"));
       }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo aperturar el expediente."));
     } finally {
@@ -113,12 +128,14 @@ export function RecordPage() {
 
   return (
     <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="expediente" />
       <p className="lead">Abra el expediente clínico de {encounter.patientName}.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Aperturar expediente</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {recordId ? <Feedback tone="success">Expediente abierto. Identificador {recordId}.</Feedback> : null}
+      <StepNav role={role} encounter={encounter} viewingStep="expediente" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -127,7 +144,7 @@ export function ConsentPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "admision";
   const [signerName, setSignerName] = useState("");
   const [relationship, setRelationship] = useState("familiar");
   const [accepted, setAccepted] = useState(false);
@@ -135,6 +152,7 @@ export function ConsentPage() {
   const [signed, setSigned] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
@@ -167,10 +185,10 @@ export function ConsentPage() {
       setSigned(data.consent.status);
       setError("");
       if (encounter.currentStep === "consentimiento") {
-        const advanced = await advanceEncounter(encounter.encounterId, "consentimiento");
-        applyEncounter(advanced);
-        navigate(pathAfterAdvance(advanced, user?.role ?? "admision"));
+        const updated = await advanceEncounter(encounter.encounterId, "consentimiento");
+        applyEncounter(updated);
       }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar el consentimiento."));
     } finally {
@@ -180,6 +198,7 @@ export function ConsentPage() {
 
   return (
     <Sheet kicker="Admisión" title="Consentimiento informado">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="consentimiento" />
       <p className="lead">Registre la aceptación del consentimiento de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="signer-name" label="Nombre de quien firma" value={signerName} onChange={(event) => setSignerName(event.target.value)} error={errors.signerName} />
@@ -189,6 +208,7 @@ export function ConsentPage() {
         {signed ? <Feedback tone="success">Consentimiento {signed}.</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Registrar consentimiento</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="consentimiento" canContinue={advanced} />
     </Sheet>
   );
 }

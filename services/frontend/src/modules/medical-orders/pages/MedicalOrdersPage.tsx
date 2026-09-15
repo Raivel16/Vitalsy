@@ -1,12 +1,24 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { advanceEncounter } from "../../admission-census/domain/advance";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 
 type Orders = { statusLabel: string; items: string[] };
 
 export function MedicalOrdersPage() {
+  const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
+  const [params] = useSearchParams();
+  const ingreso = params.get("ingreso");
+  const role = user?.role ?? "medico";
   const [orders, setOrders] = useState<Orders | null>(null);
   const [statusLabel, setStatusLabel] = useState("");
   const [physicianName, setPhysicianName] = useState("");
@@ -14,11 +26,17 @@ export function MedicalOrdersPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(ingreso));
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
+    if (!encounter) {
+      if (!ingreso) setLoading(false);
+      return undefined;
+    }
     let active = true;
-    api<{ orders: Orders }>("/api/v1/hospital-admission/medical-orders/ENC-0001")
+    setLoading(true);
+    api<{ orders: Orders }>(`/api/v1/hospital-admission/medical-orders/${encodeURIComponent(encounter.encounterId)}`)
       .then((data) => {
         if (!active) return;
         setOrders(data.orders);
@@ -33,7 +51,18 @@ export function MedicalOrdersPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [encounter, ingreso]);
+
+  if (ingreso && !encounter) return <p role="status">Cargando el ingreso en curso.</p>;
+
+  if (!encounter) {
+    return (
+      <Sheet kicker="Médico" title="Indicaciones médicas basales">
+        <Feedback tone="info">Abra un paciente desde el censo para firmar las indicaciones.</Feedback>
+        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      </Sheet>
+    );
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -46,11 +75,16 @@ export function MedicalOrdersPage() {
 
     try {
       const data = await api<{ signature: { status: string } }>(
-        "/api/v1/hospital-admission/medical-orders/ENC-0001/sign",
+        `/api/v1/hospital-admission/medical-orders/${encodeURIComponent(encounter.encounterId)}/sign`,
         { method: "POST", body: JSON.stringify({ physicianName, credential, confirmed }) },
       );
       setStatusLabel(data.signature.status === "firmado" ? "Firmado" : data.signature.status);
       setError("");
+      if (encounter.currentStep === "indicaciones") {
+        const updated = await advanceEncounter(encounter.encounterId, "indicaciones");
+        applyEncounter(updated);
+      }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo firmar."));
     }
@@ -61,7 +95,8 @@ export function MedicalOrdersPage() {
 
   return (
     <Sheet kicker="Médico" title="Indicaciones médicas basales">
-      <p className="lead">Revise la valoración de ingreso y firme las indicaciones basales.</p>
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="indicaciones" />
+      <p className="lead">Revise la valoración de {encounter.patientName} y firme las indicaciones basales.</p>
       <p role="status" aria-label="Estado del documento">{statusLabel}</p>
       <ul>{orders.items.map((item) => <li key={item}>{item}</li>)}</ul>
       <form className="stack" onSubmit={onSubmit} noValidate>
@@ -71,6 +106,7 @@ export function MedicalOrdersPage() {
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         <button className="button" type="submit">Firmar indicaciones</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="indicaciones" canContinue={advanced} />
     </Sheet>
   );
 }

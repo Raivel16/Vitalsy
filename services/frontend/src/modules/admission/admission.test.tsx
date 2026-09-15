@@ -165,23 +165,29 @@ describe("admisión administrativa", () => {
         .mockResolvedValueOnce(jsonResponse(201, { record: { recordId: "EXP-0001", status: "abierto" } }))
         .mockResolvedValueOnce(jsonResponse(200, { encounter: atConsent }))
         .mockResolvedValueOnce(jsonResponse(201, { consent: { status: "firmado", signerName: "Rosa Quispe" } }))
-        .mockResolvedValueOnce(jsonResponse(200, { encounter: atTransfer }))
         .mockResolvedValueOnce(jsonResponse(200, { encounter: atTransfer })),
     );
 
     renderApp("/admision/brazalete?ingreso=ENC-0001");
     await user.click(await screen.findByRole("button", { name: /emitir brazalete/i }));
+    expect(await screen.findByText("BRZ-0001-ANA")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /imprimir código de barras/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: /continuar al siguiente paso/i }));
     expect(await screen.findByRole("button", { name: /aperturar expediente/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /aperturar expediente/i }));
-    expect(await screen.findByRole("button", { name: /registrar consentimiento/i })).toBeInTheDocument();
+    expect(await screen.findByText(/expediente abierto/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: /continuar al siguiente paso/i }));
 
+    expect(await screen.findByRole("button", { name: /registrar consentimiento/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
     expect(screen.getByLabelText(/acepto el consentimiento informado/i)).toHaveAttribute("aria-invalid", "true");
 
     await user.type(screen.getByLabelText(/nombre de quien firma/i), "Rosa Quispe");
     await user.click(screen.getByLabelText(/acepto el consentimiento informado/i));
     await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
-    expect(await screen.findByText(/listo para traslado/i)).toBeInTheDocument();
+    expect(await screen.findByText(/consentimiento firmado/i)).toBeInTheDocument();
   });
 });

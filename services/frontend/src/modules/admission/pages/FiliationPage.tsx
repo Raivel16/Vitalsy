@@ -1,9 +1,11 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { api } from "../../../app/api";
-import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { advanceEncounter } from "../../admission-census/domain/advance";
+import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
+import { StepNav } from "../../admission-census/ui/StepNav";
 import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -12,7 +14,7 @@ export function FiliationPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const role = user?.role ?? "admision";
   const [fullName, setFullName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   useEffect(() => {
@@ -26,6 +28,7 @@ export function FiliationPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
@@ -61,10 +64,10 @@ export function FiliationPage() {
       });
       setSuccess("Filiación validada.");
       if (encounter.currentStep === "filiacion") {
-        const advanced = await advanceEncounter(encounter.encounterId, "filiacion");
-        applyEncounter(advanced);
-        navigate(pathAfterAdvance(advanced, user?.role ?? "admision"));
+        const updated = await advanceEncounter(encounter.encounterId, "filiacion");
+        applyEncounter(updated);
       }
+      setAdvanced(true);
     } catch (caught) {
       setError(errorText(caught, "No se pudo validar la filiación."));
     } finally {
@@ -74,6 +77,7 @@ export function FiliationPage() {
 
   return (
     <Sheet kicker="Admisión" title="Datos filiatorios">
+      <RoleStepLinks role={role} encounter={encounter} viewingStep="filiacion" />
       <p className="lead">Contraste los datos de {encounter.patientName} antes de continuar.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" />
@@ -84,6 +88,7 @@ export function FiliationPage() {
         {success ? <Feedback tone="success">{success}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Validar filiación</button>
       </form>
+      <StepNav role={role} encounter={encounter} viewingStep="filiacion" canContinue={advanced} />
     </Sheet>
   );
 }
