@@ -7,6 +7,7 @@ import { navFor } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
+import { PatientRegistrationPage } from "./modules/admission-census/pages/PatientRegistrationPage";
 import { CaseBar } from "./modules/admission-census/CaseBar";
 import { AdmissionOrderPage } from "./modules/admission/pages/AdmissionOrderPage";
 import { CoveragePage, ReferralPage } from "./modules/admission/pages/CoveragePages";
@@ -80,6 +81,7 @@ function Shell() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/pacientes" element={<CensusPage />} />
+              <Route path="/pacientes/nuevo" element={<Guard roles={["admision"]}><PatientRegistrationPage /></Guard>} />
               <Route path="/pacientes/:encounterId" element={<EncounterFilePage />} />
               <Route path="/admision/orden" element={<Guard roles={["admision"]}><AdmissionOrderPage /></Guard>} />
               <Route path="/admision/filiacion" element={<Guard roles={["admision"]}><FiliationPage /></Guard>} />

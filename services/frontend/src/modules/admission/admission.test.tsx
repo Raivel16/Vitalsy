@@ -1,10 +1,31 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 
+const anaEncounter = {
+  encounterId: "ENC-0001",
+  orderNumber: "OI-2026-0001",
+  transferOrderNumber: null,
+  patientName: "Ana María Quispe Rojas",
+  documentType: "DNI",
+  documentNumber: "45678912",
+  originService: "Emergencia adultos",
+  coverage: { payer: "SIS", status: "aprobada", plan: "SIS Gratuito" },
+  location: { room: null, bed: null, service: null },
+  wristbandCode: null,
+  recordId: null,
+  subprocess: "1.1",
+  subprocessLabel: "Verificación y registro administrativo",
+  currentStep: "orden",
+  currentStepLabel: "Consultar orden de internamiento",
+  nextRole: "admision",
+  statusLabel: "Orden por consultar",
+  deliverables: [],
+  progress: [],
+};
+
 const approvedOrder = {
-  simulated: true,
   order: {
     orderNumber: "OI-2026-0001",
     originService: "Emergencia adultos",
@@ -26,20 +47,20 @@ describe("admisión administrativa", () => {
     vi.unstubAllGlobals();
   });
 
-  it("muestra el estado vacío, luego la orden y un error accesible si no existe", async () => {
+  it("muestra la orden del paciente y un error accesible si no existe", async () => {
     const user = userEvent.setup();
     const fetchMock = vi
       .fn()
+      .mockResolvedValueOnce(jsonResponse(200, { encounter: anaEncounter }))
       .mockResolvedValueOnce(jsonResponse(200, approvedOrder))
-      .mockResolvedValueOnce(jsonResponse(404, { simulated: true, message: "No se encontró la orden." }));
+      .mockResolvedValueOnce(jsonResponse(404, { message: "No se encontró la orden." }));
     vi.stubGlobal("fetch", fetchMock);
-    renderApp("/admision/orden");
+    renderApp("/admision/orden?ingreso=ENC-0001");
 
-    expect(screen.getByText(/ingrese el número de orden/i)).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/número de orden/i), "OI-2026-0001");
+    expect(await screen.findByDisplayValue("OI-2026-0001")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /consultar orden/i }));
 
-    expect(await screen.findByText(/ana maría quispe rojas/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /ana maría quispe rojas/i })).toBeInTheDocument();
     expect(screen.queryByText(/simulad/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
 
@@ -52,10 +73,15 @@ describe("admisión administrativa", () => {
 
   it("traduce un fallo de conexión a un mensaje en español", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
-    renderApp("/admision/orden");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: anaEncounter }))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch")),
+    );
+    renderApp("/admision/orden?ingreso=ENC-0001");
 
-    await user.type(screen.getByLabelText(/número de orden/i), "OI-2026-0001");
+    await screen.findByDisplayValue("OI-2026-0001");
     await user.click(screen.getByRole("button", { name: /consultar orden/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/no hay conexión con el servidor/i);
@@ -64,111 +90,98 @@ describe("admisión administrativa", () => {
 
   it("no envía la filiación si faltan datos y asocia el error al campo", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounter: { ...anaEncounter, currentStep: "filiacion", patientName: "", documentNumber: "" },
+    }));
     vi.stubGlobal("fetch", fetchMock);
-    renderApp("/admision/filiacion");
+    renderApp("/admision/filiacion?ingreso=ENC-0001");
 
+    await screen.findByLabelText(/nombre completo/i);
+    await user.clear(screen.getByLabelText(/nombre completo/i));
+    await user.clear(screen.getByLabelText(/número de documento/i));
     await user.click(screen.getByRole("button", { name: /validar filiación/i }));
 
     const name = screen.getByLabelText(/nombre completo/i);
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText(/el nombre completo es obligatorio/i)).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/filiation/"))).toBe(false);
   });
 
-  it("muestra cobertura aprobada, pendiente o rechazada con texto y permite derivar", async () => {
+  it("muestra cobertura aprobada, pendiente o rechazada con texto y valida el teléfono", async () => {
     const user = userEvent.setup();
+    const coverage = { ...anaEncounter, currentStep: "cobertura" };
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse(201, {
-          simulated: true,
-          referral: { destination: "trabajo_social", status: "derivado" },
-        }),
-      ),
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: coverage }))
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: coverage }))
+        .mockResolvedValueOnce(jsonResponse(201, {
+          referral: { destination: "trabajo_social", status: "derivado", relativeName: "Rosa Quispe" },
+        }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          encounter: { ...coverage, currentStep: "derivacion", nextRole: null, statusLabel: "En trámite de cobertura" },
+        })),
     );
-    renderApp("/admision/cobertura");
+    renderApp("/admision/cobertura?ingreso=ENC-0001");
 
-    expect(screen.getByRole("status", { name: /cobertura aprobada/i })).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: /cobertura aprobada/i })).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "pendiente");
     expect(screen.getByRole("status", { name: /cobertura pendiente/i })).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "rechazada");
     expect(screen.getByRole("status", { name: /cobertura rechazada/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /derivar trámite/i }));
-    await user.type(screen.getByLabelText(/nombre del familiar/i), "Rosa Quispe");
+    await user.type(await screen.findByLabelText(/nombre del familiar/i), "Rosa Quispe");
+    await user.type(screen.getByLabelText(/teléfono del familiar/i), "abc");
+    expect(screen.getByLabelText(/teléfono del familiar/i)).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: /registrar derivación/i }));
+    expect(screen.getByText(/teléfono del familiar es obligatorio/i)).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(/teléfono del familiar/i), "999111222");
     await user.click(screen.getByRole("button", { name: /registrar derivación/i }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent(/trabajo social/i);
+    expect(await screen.findByText(/derivación registrada a trabajo social/i)).toBeInTheDocument();
   });
 
   it("genera el brazalete, abre el expediente y exige la aceptación del consentimiento", async () => {
     const user = userEvent.setup();
+    const atWristband = { ...anaEncounter, currentStep: "brazalete", coverage: { ...anaEncounter.coverage, status: "aprobada" } };
+    const atRecord = { ...atWristband, currentStep: "expediente", wristbandCode: "BRZ-0001-ANA" };
+    const atConsent = { ...atRecord, currentStep: "consentimiento", recordId: "EXP-0001" };
+    const atTransfer = {
+      ...atConsent,
+      currentStep: "traslado",
+      nextRole: "celador" as const,
+      statusLabel: "Listo para traslado",
+      deliverables: [{ id: "consentimiento", label: "Consentimiento informado", done: true }],
+    };
+
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(
-          jsonResponse(201, {
-            simulated: true,
-            wristband: { code: "BRZ-0001-ANA", recordId: "EXP-0001" },
-          }),
-        )
-        .mockResolvedValueOnce(
-          jsonResponse(201, {
-            simulated: true,
-            record: { recordId: "EXP-0001", status: "abierto" },
-          }),
-        )
-        .mockResolvedValueOnce(
-          jsonResponse(201, {
-            simulated: true,
-            consent: { status: "firmado", signerName: "Rosa Quispe" },
-          }),
-        ),
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atWristband }))
+        .mockResolvedValueOnce(jsonResponse(201, { wristband: { code: "BRZ-0001-ANA", recordId: null } }))
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atRecord }))
+        .mockResolvedValueOnce(jsonResponse(201, { record: { recordId: "EXP-0001", status: "abierto" } }))
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atConsent }))
+        .mockResolvedValueOnce(jsonResponse(201, { consent: { status: "firmado", signerName: "Rosa Quispe" } }))
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atTransfer }))
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atTransfer })),
     );
 
-    renderApp("/admision/brazalete");
-    await user.click(screen.getByRole("button", { name: /emitir brazalete/i }));
-    expect(await screen.findByText("BRZ-0001-ANA")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /código de barras/i })).toBeInTheDocument();
+    renderApp("/admision/brazalete?ingreso=ENC-0001");
+    await user.click(await screen.findByRole("button", { name: /emitir brazalete/i }));
+    expect(await screen.findByRole("button", { name: /aperturar expediente/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: /abrir expediente/i }));
     await user.click(screen.getByRole("button", { name: /aperturar expediente/i }));
-    expect(await screen.findByText(/expediente abierto/i)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /registrar consentimiento/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: /registrar consentimiento/i }));
     await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
     expect(screen.getByLabelText(/acepto el consentimiento informado/i)).toHaveAttribute("aria-invalid", "true");
 
     await user.type(screen.getByLabelText(/nombre de quien firma/i), "Rosa Quispe");
     await user.click(screen.getByLabelText(/acepto el consentimiento informado/i));
     await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
-    expect(await screen.findByRole("status")).toHaveTextContent(/firmado/i);
-  });
-});
-
-describe("carga de la orden", () => {
-  it("anuncia el estado de carga", async () => {
-    let resolveFetch: (value: unknown) => void = () => undefined;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveFetch = resolve;
-          }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderApp("/admision/orden");
-    await user.type(screen.getByLabelText(/número de orden/i), "OI-2026-0001");
-    await user.click(screen.getByRole("button", { name: /consultar orden/i }));
-
-    expect(screen.getByRole("status")).toHaveTextContent(/cargando orden/i);
-    resolveFetch(jsonResponse(200, approvedOrder));
-    await waitFor(() => expect(screen.getByText(/ana maría quispe rojas/i)).toBeInTheDocument());
-    vi.unstubAllGlobals();
+    expect(await screen.findByText(/listo para traslado/i)).toBeInTheDocument();
   });
 });

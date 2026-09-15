@@ -1,8 +1,9 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "../../../app/api";
-import { useEncounter } from "../../admission-census/EncounterContext";
-import type { Encounter } from "../../admission-census/domain/encounter";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -11,24 +12,31 @@ type AdmissionOrder = {
   order: {
     orderNumber: string;
     originService: string;
-    requestingPhysician: string;
-    reason: string;
-    patient: { fullName: string; documentType: string; documentNumber: string; birthDate: string; sex: string };
+    requestingPhysician: string | null;
+    reason: string | null;
+    patient: { fullName: string; documentType: string; documentNumber: string; birthDate?: string; sex?: string };
     coverage: { payer: string; status: string; plan: string };
   };
 };
 
 export function AdmissionOrderPage() {
   const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [orderNumber, setOrderNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [result, setResult] = useState<AdmissionOrder | null>(null);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    if (encounter?.orderNumber) setOrderNumber(encounter.orderNumber);
-  }, [encounter?.orderNumber]);
+    setResult(null);
+    setError("");
+    setNotice("");
+    setOrderNumber(encounter?.orderNumber ?? "");
+  }, [encounter?.encounterId, encounter?.orderNumber]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -47,43 +55,59 @@ export function AdmissionOrderPage() {
     }
   }
 
+  async function confirmOrder() {
+    if (!encounter) return;
+    setPending(true);
+    setError("");
+    try {
+      const next = await advanceEncounter(encounter.encounterId, "orden");
+      applyEncounter(next);
+      setNotice("Orden confirmada.");
+      navigate(pathAfterAdvance(next, user?.role ?? "admision"));
+    } catch (caught) {
+      setError(errorText(caught, "No se pudo confirmar la orden."));
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <Sheet kicker="Admisión" title="Orden de internamiento">
-      <p className="lead">Consulte la orden digital enviada por el servicio emisor.</p>
+      <p className="lead">
+        {encounter
+          ? `Consulte la orden de ${encounter.patientName}.`
+          : "Consulte la orden digital enviada por el servicio emisor o registre un ingreso manual."}
+      </p>
+      {!encounter ? (
+        <p><Link className="button" to="/pacientes/nuevo">Registrar ingreso manual</Link></p>
+      ) : null}
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="order-number" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} required />
         <button className="button" type="submit">Consultar orden</button>
       </form>
       {loading ? <p role="status">Cargando orden de internamiento.</p> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {!loading && !error && !result ? <p className="empty">Ingrese el número de orden para iniciar la consulta.</p> : null}
+      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {result ? (
         <section className="result-block">
           <h3>{result.order.patient.fullName}</h3>
           <dl className="facts">
             <div><dt>Orden</dt><dd>{result.order.orderNumber}</dd></div>
             <div><dt>Origen</dt><dd>{result.order.originService}</dd></div>
-            <div><dt>Médico emisor</dt><dd>{result.order.requestingPhysician}</dd></div>
-            <div><dt>Motivo</dt><dd>{result.order.reason}</dd></div>
+            <div><dt>Médico emisor</dt><dd>{result.order.requestingPhysician ?? "No indicado"}</dd></div>
+            <div><dt>Motivo</dt><dd>{result.order.reason ?? "No indicado"}</dd></div>
             <div><dt>Documento</dt><dd>{result.order.patient.documentType} {result.order.patient.documentNumber}</dd></div>
             <div><dt>Cobertura</dt><dd>{result.order.coverage.payer} · {result.order.coverage.status}</dd></div>
           </dl>
-          <p>
-            <button
-              className="button"
-              type="button"
-              onClick={() => {
-                void api<{ encounter: Encounter }>("/api/v1/hospital-admission/encounters", {
-                  method: "POST",
-                  body: JSON.stringify({ orderNumber: result.order.orderNumber }),
-                }).then((data) => navigate(`/pacientes/${data.encounter.encounterId}`))
-                  .catch((caught) => setError(errorText(caught, "No se pudo abrir la ficha.")));
-              }}
-            >
-              Abrir ficha del ingreso
+          {encounter ? (
+            <button className="button" type="button" onClick={() => void confirmOrder()} disabled={pending}>
+              Confirmar orden
             </button>
-          </p>
-          <p><Link to="/admision/filiacion">Continuar con la filiación</Link></p>
+          ) : (
+            <p>
+              <Link className="button" to="/pacientes">Ir al censo</Link>
+            </p>
+          )}
         </section>
       ) : null}
     </Sheet>

@@ -7,12 +7,14 @@ export type EncounterState = {
   encounter: Encounter | null;
   coverageStatus: CoverageStatus | null;
   setCoverageStatus: (status: CoverageStatus) => void;
+  applyEncounter: (encounter: Encounter) => void;
 };
 
 export const EncounterContext = createContext<EncounterState>({
   encounter: null,
   coverageStatus: null,
   setCoverageStatus: () => undefined,
+  applyEncounter: () => undefined,
 });
 
 export function useEncounter(): Encounter | null {

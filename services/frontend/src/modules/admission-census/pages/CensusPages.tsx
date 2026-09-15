@@ -8,6 +8,7 @@ import { errorText } from "../../../app/userMessage";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
 import { stepPath } from "../domain/steps";
+import { AdmissionStepper } from "../ui/AdmissionStepper";
 
 export function CensusPage() {
   const { user } = useAuth();
@@ -34,12 +35,15 @@ export function CensusPage() {
   return (
     <Sheet kicker="Ingreso hospitalario" title="Pacientes en admisión">
       <p className="lead">
-        Censo del proceso 1. Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. El resto sigue en otro tramo.
+        Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente.
       </p>
+      {role === "admision" ? (
+        <p><Link className="button button-quiet" to="/pacientes/nuevo">Registrar ingreso</Link></p>
+      ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {!encounters && !error ? <p role="status">Cargando pacientes.</p> : null}
       {encounters && mine.length === 0 ? (
-        <Feedback tone="info">No hay pacientes esperando su tramo. Aparecerán cuando el paso anterior se confirme.</Feedback>
+        <Feedback tone="info">No hay pacientes esperando su turno. Aparecerán cuando el paso anterior se registre.</Feedback>
       ) : null}
       {encounters ? (
         <div className="table-wrap">
@@ -64,7 +68,7 @@ export function CensusPage() {
                       <span className="hint">{item.documentType} {item.documentNumber}</span>
                     </td>
                     <td>
-                      {item.subprocess} · {item.statusLabel}
+                      {item.statusLabel}
                       <span className="hint">{item.currentStepLabel}</span>
                     </td>
                     <td>{locationText(item)}</td>
@@ -122,8 +126,9 @@ export function EncounterFilePage() {
   const own = encounter.nextRole === role || (role === "admision" && encounter.currentStep === "derivacion");
 
   return (
-    <Sheet kicker={`Subproceso ${encounter.subprocess}`} title={encounter.patientName}>
-      <p className="lead">{encounter.subprocessLabel}. {encounter.statusLabel}.</p>
+    <Sheet kicker="Ficha del ingreso" title={encounter.patientName}>
+      <p className="lead">{encounter.statusLabel}.</p>
+      {encounter.progress ? <AdmissionStepper steps={encounter.progress} /> : null}
       {own ? (
         <p><Link className="button" to={stepPath(encounter.currentStep, encounter.encounterId)}>{encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}</Link></p>
       ) : (

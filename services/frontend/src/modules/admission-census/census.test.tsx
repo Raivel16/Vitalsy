@@ -26,6 +26,10 @@ const luis: Encounter = {
     { id: "fichaAdmision", label: "Ficha digital de admisión", done: false },
     { id: "brazalete", label: "Brazalete de identificación", done: false },
   ],
+  progress: [
+    { id: "cobertura", label: "Validar cobertura", state: "current" },
+    { id: "brazalete", label: "Emitir brazalete", state: "pending" },
+  ],
 };
 
 const ana: Encounter = {
@@ -66,6 +70,7 @@ describe("censo de ingresos", () => {
     expect(screen.getByRole("link", { name: /^continuar$/i })).toHaveAttribute("href", "/admision/cobertura?ingreso=ENC-0002");
     expect(screen.getByText(/en curso con celador/i)).toBeInTheDocument();
     expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/proceso 1/i)).not.toBeInTheDocument();
   });
 
   it("abre la ficha con el estado de cada entregable", async () => {
@@ -76,9 +81,10 @@ describe("censo de ingresos", () => {
     expect(screen.getByText("Ficha digital de admisión").closest("li")).toHaveTextContent("Listo");
     expect(screen.getByText("Expediente clínico electrónico").closest("li")).toHaveTextContent("Pendiente");
     expect(screen.getByRole("link", { name: /consultar orden de traslado/i })).toHaveAttribute("href", "/traslado/orden?ingreso=ENC-0001");
+    expect(screen.queryByText(/subproceso/i)).not.toBeInTheDocument();
   });
 
-  it("confirma el paso vigente y envía el estado de cobertura del paciente", async () => {
+  it("registra la cobertura del paciente y avanza el ingreso", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse(200, { encounter: luis }))
@@ -95,10 +101,9 @@ describe("censo de ingresos", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/admision/cobertura?ingreso=ENC-0002");
 
-    await screen.findByRole("button", { name: /confirmar paso en el censo/i });
+    await screen.findByRole("button", { name: /registrar cobertura/i });
     await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "aprobada");
-    await user.click(screen.getByRole("button", { name: /confirmar paso en el censo/i }));
-    expect(await screen.findByText(/paso registrado/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /registrar cobertura/i }));
     await waitFor(() => {
       const advanceCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/advance"));
       expect(advanceCall?.[1]).toEqual(expect.objectContaining({
@@ -106,6 +111,7 @@ describe("censo de ingresos", () => {
         body: JSON.stringify({ step: "cobertura", coverageStatus: "aprobada" }),
       }));
     });
+    expect(await screen.findByRole("button", { name: /emitir brazalete/i })).toBeInTheDocument();
   });
 
   it("abre cobertura al continuar un caso en derivación, no salta el paso de aprobar", async () => {

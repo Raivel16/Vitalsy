@@ -6,9 +6,16 @@ export type Deliverable = {
   done: boolean;
 };
 
+export type ProgressStep = {
+  id: string;
+  label: string;
+  state: "done" | "current" | "pending";
+};
+
 export type Encounter = {
   encounterId: string;
   orderNumber: string;
+  source?: string;
   transferOrderNumber: string | null;
   patientName: string;
   documentType: string;
@@ -25,6 +32,7 @@ export type Encounter = {
   nextRole: Role | null;
   statusLabel: string;
   deliverables: Deliverable[];
+  progress?: ProgressStep[];
 };
 
 export function locationText(encounter: Encounter): string {

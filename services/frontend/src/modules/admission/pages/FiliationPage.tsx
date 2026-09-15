@@ -1,12 +1,18 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { api } from "../../../app/api";
-import { useEncounter } from "../../admission-census/EncounterContext";
+import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
+import { advanceEncounter, pathAfterAdvance } from "../../admission-census/domain/advance";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
 export function FiliationPage() {
   const encounter = useEncounter();
+  const { applyEncounter } = useEncounterState();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   useEffect(() => {
@@ -19,6 +25,16 @@ export function FiliationPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  if (!encounter) {
+    return (
+      <Sheet kicker="Admisión" title="Datos filiatorios">
+        <Feedback tone="info">Abra un paciente desde el censo para validar su filiación.</Feedback>
+        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      </Sheet>
+    );
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -31,20 +47,34 @@ export function FiliationPage() {
     setError("");
     if (Object.keys(next).length > 0) return;
 
+    setPending(true);
     try {
       await api("/api/v1/hospital-admission/filiation/validate", {
         method: "POST",
-        body: JSON.stringify({ fullName, documentNumber, birthDate, confirmed }),
+        body: JSON.stringify({
+          encounterId: encounter.encounterId,
+          fullName,
+          documentNumber,
+          birthDate,
+          confirmed,
+        }),
       });
-      setSuccess("Filiación validada. Puede continuar con la cobertura.");
+      setSuccess("Filiación validada.");
+      if (encounter.currentStep === "filiacion") {
+        const advanced = await advanceEncounter(encounter.encounterId, "filiacion");
+        applyEncounter(advanced);
+        navigate(pathAfterAdvance(advanced, user?.role ?? "admision"));
+      }
     } catch (caught) {
       setError(errorText(caught, "No se pudo validar la filiación."));
+    } finally {
+      setPending(false);
     }
   }
 
   return (
     <Sheet kicker="Admisión" title="Datos filiatorios">
-      <p className="lead">Contraste nombre, documento y fecha de nacimiento antes de aprobar la ficha de ingreso.</p>
+      <p className="lead">Contraste los datos de {encounter.patientName} antes de continuar.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" />
         <TextField id="document-number" label="Número de documento" value={documentNumber} onChange={(event) => setDocumentNumber(event.target.value)} error={errors.documentNumber} />
@@ -52,7 +82,7 @@ export function FiliationPage() {
         <CheckField id="filiation-confirmed" label="Los datos coinciden con la orden de internamiento" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {success ? <Feedback tone="success">{success}</Feedback> : null}
-        <button className="button" type="submit">Validar filiación</button>
+        <button className="button" type="submit" disabled={pending}>Validar filiación</button>
       </form>
     </Sheet>
   );
