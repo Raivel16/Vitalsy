@@ -30,6 +30,8 @@ export function WristbandPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -38,12 +40,12 @@ export function WristbandPage() {
     try {
       const data = await api<{ wristband: { code: string } }>("/api/v1/hospital-admission/wristbands", {
         method: "POST",
-        body: JSON.stringify({ encounterId: encounter.encounterId }),
+        body: JSON.stringify({ encounterId: activeEncounter.encounterId }),
       });
       setCode(data.wristband.code);
       setNotice("Brazalete emitido.");
-      if (encounter.currentStep === "brazalete") {
-        const next = await advanceEncounter(encounter.encounterId, "brazalete");
+      if (activeEncounter.currentStep === "brazalete") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "brazalete");
         applyEncounter(next);
         setAdvanced(true);
       } else {
@@ -58,7 +60,7 @@ export function WristbandPage() {
 
   return (
     <Sheet kicker="Admisión" title="Brazalete de identificación">
-      <p className="lead">Genere el brazalete de {encounter.patientName} y verifique el código antes de entregarlo.</p>
+      <p className="lead">Genere el brazalete de {activeEncounter.patientName} y verifique el código antes de entregarlo.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Emitir brazalete</button>
       </form>
@@ -68,7 +70,7 @@ export function WristbandPage() {
         <div className="wristband">
           <span className="wrist-hole" aria-hidden="true" />
           <div>
-            <p className="wrist-name">{encounter.patientName}</p>
+            <p className="wrist-name">{activeEncounter.patientName}</p>
             <p className="wrist-code">{code}</p>
             <Barcode value={code} />
             <button className="button button-quiet" type="button" onClick={() => printBarcodeOnly()}>
@@ -78,7 +80,7 @@ export function WristbandPage() {
           <span className="wrist-hole" aria-hidden="true" />
         </div>
       ) : null}
-      <StepNav role={role} encounter={encounter} viewingStep="brazalete" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="brazalete" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -102,18 +104,20 @@ export function RecordPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
     try {
       const data = await api<{ record: { recordId: string } }>("/api/v1/hospital-admission/clinical-records", {
         method: "POST",
-        body: JSON.stringify({ encounterId: encounter.encounterId }),
+        body: JSON.stringify({ encounterId: activeEncounter.encounterId }),
       });
       setRecordId(data.record.recordId);
       setError("");
-      if (encounter.currentStep === "expediente") {
-        const next = await advanceEncounter(encounter.encounterId, "expediente");
+      if (activeEncounter.currentStep === "expediente") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "expediente");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -126,13 +130,13 @@ export function RecordPage() {
 
   return (
     <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
-      <p className="lead">Abra el expediente clínico de {encounter.patientName}.</p>
+      <p className="lead">Abra el expediente clínico de {activeEncounter.patientName}.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Aperturar expediente</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {recordId ? <Feedback tone="success">Expediente abierto. Identificador {recordId}.</Feedback> : null}
-      <StepNav role={role} encounter={encounter} viewingStep="expediente" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="expediente" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -160,6 +164,8 @@ export function ConsentPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -173,7 +179,7 @@ export function ConsentPage() {
       const data = await api<{ consent: { status: string } }>("/api/v1/hospital-admission/informed-consents", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           signerName,
           relationship,
           accepted,
@@ -181,8 +187,8 @@ export function ConsentPage() {
       });
       setSigned(data.consent.status);
       setError("");
-      if (encounter.currentStep === "consentimiento") {
-        const updated = await advanceEncounter(encounter.encounterId, "consentimiento");
+      if (activeEncounter.currentStep === "consentimiento") {
+        const updated = await advanceEncounter(activeEncounter.encounterId, "consentimiento");
         applyEncounter(updated);
       }
       setAdvanced(true);
@@ -195,7 +201,7 @@ export function ConsentPage() {
 
   return (
     <Sheet kicker="Admisión" title="Consentimiento informado">
-      <p className="lead">Registre la aceptación del consentimiento de {encounter.patientName}.</p>
+      <p className="lead">Registre la aceptación del consentimiento de {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="signer-name" label="Nombre de quien firma" value={signerName} onChange={(event) => setSignerName(event.target.value)} error={errors.signerName} />
         <TextField id="relationship" label="Relación con el paciente" value={relationship} onChange={(event) => setRelationship(event.target.value)} />
@@ -204,7 +210,7 @@ export function ConsentPage() {
         {signed ? <Feedback tone="success">Consentimiento {signed}.</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Registrar consentimiento</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="consentimiento" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="consentimiento" canContinue={advanced} />
     </Sheet>
   );
 }

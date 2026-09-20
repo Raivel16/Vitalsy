@@ -39,6 +39,8 @@ export function FiliationPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -59,7 +61,7 @@ export function FiliationPage() {
       await api("/api/v1/hospital-admission/filiation/validate", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           fullName,
           documentNumber,
           birthDate,
@@ -67,8 +69,8 @@ export function FiliationPage() {
         }),
       });
       setSuccess("Filiación validada.");
-      if (encounter.currentStep === "filiacion") {
-        const updated = await advanceEncounter(encounter.encounterId, "filiacion");
+      if (activeEncounter.currentStep === "filiacion") {
+        const updated = await advanceEncounter(activeEncounter.encounterId, "filiacion");
         applyEncounter(updated);
       }
       setAdvanced(true);
@@ -81,7 +83,7 @@ export function FiliationPage() {
 
   return (
     <Sheet kicker="Admisión" title="Datos filiatorios">
-      <p className="lead">Contraste los datos de {encounter.patientName} antes de continuar.</p>
+      <p className="lead">Contraste los datos de {activeEncounter.patientName} antes de continuar.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" required />
         <TextField
@@ -108,7 +110,7 @@ export function FiliationPage() {
         {success ? <Feedback tone="success">{success}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Validar filiación</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="filiacion" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="filiacion" canContinue={advanced} />
     </Sheet>
   );
 }

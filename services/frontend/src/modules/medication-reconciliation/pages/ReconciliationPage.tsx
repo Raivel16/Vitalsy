@@ -35,6 +35,8 @@ export function ReconciliationPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   function addMedication() {
     if (!draft.name.trim() || !draft.dose.trim() || !draft.frequency.trim()) return;
     setMedications((current) => [...current, draft]);
@@ -50,7 +52,7 @@ export function ReconciliationPage() {
         {
           method: "POST",
           body: JSON.stringify({
-            encounterId: encounter.encounterId,
+            encounterId: activeEncounter.encounterId,
             allergies,
             medications,
             status: review.status,
@@ -59,8 +61,8 @@ export function ReconciliationPage() {
       );
       setResult(data.reconciliation.statusLabel);
       setError("");
-      if (encounter.currentStep === "conciliacion") {
-        const next = await advanceEncounter(encounter.encounterId, "conciliacion");
+      if (activeEncounter.currentStep === "conciliacion") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "conciliacion");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -73,7 +75,7 @@ export function ReconciliationPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Conciliación farmacéutica de ingreso">
-      <p className="lead">Medicamentos domiciliarios de {encounter.patientName}.</p>
+      <p className="lead">Medicamentos domiciliarios de {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="known-allergies" label="Alergias conocidas (opcional)" value={allergies} onChange={(event) => setAllergies(event.target.value)} hint="Puede dejarse vacío si no hay alergias." />
         <div className="form-grid">
@@ -114,7 +116,7 @@ export function ReconciliationPage() {
         {result ? <p role="status" aria-label="Resultado del registro">{result}</p> : null}
         <button className="button" type="submit" disabled={pending}>Registrar conciliación</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="conciliacion" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="conciliacion" canContinue={advanced} />
     </Sheet>
   );
 }

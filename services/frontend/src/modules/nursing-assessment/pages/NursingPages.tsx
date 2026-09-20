@@ -36,6 +36,8 @@ export function NursingAssessmentPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -50,7 +52,7 @@ export function NursingAssessmentPage() {
       await api("/api/v1/hospital-admission/nursing-assessments", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           chiefComplaint: complaint,
           history,
           allergies,
@@ -58,8 +60,8 @@ export function NursingAssessmentPage() {
       });
       setSaved("Valoración registrada.");
       setError("");
-      if (encounter.currentStep === "valoracion") {
-        const nextEncounter = await advanceEncounter(encounter.encounterId, "valoracion");
+      if (activeEncounter.currentStep === "valoracion") {
+        const nextEncounter = await advanceEncounter(activeEncounter.encounterId, "valoracion");
         applyEncounter(nextEncounter);
       }
       setAdvanced(true);
@@ -72,7 +74,7 @@ export function NursingAssessmentPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Valoración inicial">
-      <p className="lead">Anamnesis, alergias y antecedentes de {encounter.patientName}.</p>
+      <p className="lead">Anamnesis, alergias y antecedentes de {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={errors.complaint} required />
         <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} error={errors.history} required />
@@ -97,7 +99,7 @@ export function NursingAssessmentPage() {
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Guardar valoración</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="valoracion" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="valoracion" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -150,6 +152,8 @@ export function VitalSignsPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   function update(key: keyof typeof fields, value: string) {
     setFields((current) => ({ ...current, [key]: value }));
   }
@@ -163,7 +167,7 @@ export function VitalSignsPage() {
       await api("/api/v1/hospital-admission/vital-signs", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           ...fields,
           spo2Scale,
           supplementalOxygen,
@@ -174,8 +178,8 @@ export function VitalSignsPage() {
       });
       setSaved("Constantes registradas.");
       setError("");
-      if (encounter.currentStep === "constantes") {
-        const next = await advanceEncounter(encounter.encounterId, "constantes");
+      if (activeEncounter.currentStep === "constantes") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "constantes");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -191,7 +195,7 @@ export function VitalSignsPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Constantes vitales basales">
-      <p className="lead">El sistema calcula el NEWS2 de {encounter.patientName}.</p>
+      <p className="lead">El sistema calcula el NEWS2 de {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
           <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(event) => update("respiratoryRate", event.target.value)} error={visibleErrors.respiratoryRate} hint="respiraciones/min" />
@@ -232,7 +236,7 @@ export function VitalSignsPage() {
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Registrar constantes</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="constantes" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="constantes" canContinue={advanced} />
     </Sheet>
   );
 }

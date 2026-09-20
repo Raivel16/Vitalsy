@@ -50,6 +50,8 @@ export function RiskScalesPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
@@ -57,7 +59,7 @@ export function RiskScalesPage() {
       await api("/api/v1/hospital-admission/risk-scales", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           morse: {
             historyOfFalling,
             secondaryDiagnosis,
@@ -71,8 +73,8 @@ export function RiskScalesPage() {
       });
       setSaved("Escalas registradas.");
       setError("");
-      if (encounter.currentStep === "escalas") {
-        const next = await advanceEncounter(encounter.encounterId, "escalas");
+      if (activeEncounter.currentStep === "escalas") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "escalas");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -85,7 +87,7 @@ export function RiskScalesPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Escalas de riesgo">
-      <p className="lead">Morse y Braden para {encounter.patientName}.</p>
+      <p className="lead">Morse y Braden para {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
         <fieldset>
           <legend>Escala de Morse</legend>
@@ -137,7 +139,7 @@ export function RiskScalesPage() {
         {saved ? <p role="status" aria-label="Resultado del registro">{saved}</p> : null}
         <button className="button" type="submit" disabled={pending}>Registrar escalas</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="escalas" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="escalas" canContinue={advanced} />
     </Sheet>
   );
 }

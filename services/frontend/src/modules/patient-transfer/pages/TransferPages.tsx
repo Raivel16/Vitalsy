@@ -48,6 +48,8 @@ export function TransferOrderPage() {
 
   if (!encounter) return <NeedPatient title="Orden de traslado a piso" />;
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -70,8 +72,8 @@ export function TransferOrderPage() {
     setPending(true);
     setError("");
     try {
-      if (encounter.currentStep === "traslado") {
-        const next = await advanceEncounter(encounter.encounterId, "traslado");
+      if (activeEncounter.currentStep === "traslado") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "traslado");
         applyEncounter(next);
       }
       setNotice("Traslado confirmado.");
@@ -85,7 +87,7 @@ export function TransferOrderPage() {
 
   return (
     <Sheet kicker="Celador" title="Orden de traslado a piso">
-      <p className="lead">Confirme habitación y lecho de {encounter.patientName} antes de movilizarlo.</p>
+      <p className="lead">Confirme habitación y lecho de {activeEncounter.patientName} antes de movilizarlo.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
         <button className="button" type="submit">Consultar traslado</button>
@@ -104,7 +106,7 @@ export function TransferOrderPage() {
           </button>
         </section>
       ) : null}
-      <StepNav role={role} encounter={encounter} viewingStep="traslado" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="traslado" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -133,6 +135,8 @@ export function WristbandVerifyPage() {
 
   if (!encounter) return <NeedPatient title="Verificación de identidad" />;
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setMessage("");
@@ -144,8 +148,8 @@ export function WristbandVerifyPage() {
         body: JSON.stringify({ code }),
       });
       setMessage(`Identidad confirmada: ${data.identity.patientName}.`);
-      if (encounter.currentStep === "identidad") {
-        const next = await advanceEncounter(encounter.encounterId, "identidad");
+      if (activeEncounter.currentStep === "identidad") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "identidad");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -158,7 +162,7 @@ export function WristbandVerifyPage() {
 
   return (
     <Sheet kicker="Celador" title="Verificación de identidad">
-      <p className="lead">Confirme el brazalete de {encounter.patientName} antes del traslado.</p>
+      <p className="lead">Confirme el brazalete de {activeEncounter.patientName} antes del traslado.</p>
       <BarcodeScanner onScan={onScan} />
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
@@ -166,7 +170,7 @@ export function WristbandVerifyPage() {
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {message ? <Feedback tone="success">{message}</Feedback> : null}
-      <StepNav role={role} encounter={encounter} viewingStep="identidad" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="identidad" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -190,6 +194,8 @@ export function FloorReceptionPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
@@ -197,16 +203,16 @@ export function FloorReceptionPage() {
       const data = await api<{ reception: { status: string } }>("/api/v1/hospital-admission/floor-receptions", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
-          room: encounter.location.room,
-          bed: encounter.location.bed,
+          encounterId: activeEncounter.encounterId,
+          room: activeEncounter.location.room,
+          bed: activeEncounter.location.bed,
           confirmed: true,
         }),
       });
       setStatus(data.reception.status);
       setError("");
-      if (encounter.currentStep === "recepcion") {
-        const next = await advanceEncounter(encounter.encounterId, "recepcion");
+      if (activeEncounter.currentStep === "recepcion") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "recepcion");
         applyEncounter(next);
       }
       setAdvanced(true);
@@ -219,14 +225,14 @@ export function FloorReceptionPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Recepción física en piso">
-      <p className="lead">Confirme que {encounter.patientName} llegó a la habitación y al lecho asignados.</p>
+      <p className="lead">Confirme que {activeEncounter.patientName} llegó a la habitación y al lecho asignados.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Confirmar recepción</button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {status ? <Feedback tone="success">Paciente {status} en el lecho asignado.</Feedback> : null}
-      <p><Link to={`/piso/reubicacion?ingreso=${encodeURIComponent(encounter.encounterId)}`}>Registrar reubicación</Link></p>
-      <StepNav role={role} encounter={encounter} viewingStep="recepcion" canContinue={advanced} />
+      <p><Link to={`/piso/reubicacion?ingreso=${encodeURIComponent(activeEncounter.encounterId)}`}>Registrar reubicación</Link></p>
+      <StepNav role={role} encounter={activeEncounter} viewingStep="recepcion" canContinue={advanced} />
     </Sheet>
   );
 }
@@ -249,6 +255,8 @@ export function RelocationPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -262,7 +270,7 @@ export function RelocationPage() {
       await api("/api/v1/hospital-admission/relocations", {
         method: "POST",
         body: JSON.stringify({
-          encounterId: encounter.encounterId,
+          encounterId: activeEncounter.encounterId,
           reason,
           requestedRoom: room,
           requestedBed: bed,
@@ -277,7 +285,7 @@ export function RelocationPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Reubicación del paciente">
-      <p className="lead">Registre la discrepancia de lecho de {encounter.patientName} y avise a la central de camas.</p>
+      <p className="lead">Registre la discrepancia de lecho de {activeEncounter.patientName} y avise a la central de camas.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="relocation-reason" label="Motivo de la discrepancia" value={reason} onChange={(event) => setReason(event.target.value)} error={errors.reason} />
         <TextField id="requested-room" label="Habitación solicitada" value={room} onChange={(event) => setRoom(event.target.value)} error={errors.room} />
@@ -286,7 +294,7 @@ export function RelocationPage() {
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
         <button className="button" type="submit">Notificar reubicación</button>
       </form>
-      <p><Link to={`/piso/recepcion?ingreso=${encodeURIComponent(encounter.encounterId)}`}>Volver a recepción</Link></p>
+      <p><Link to={`/piso/recepcion?ingreso=${encodeURIComponent(activeEncounter.encounterId)}`}>Volver a recepción</Link></p>
     </Sheet>
   );
 }

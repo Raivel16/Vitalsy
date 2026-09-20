@@ -63,6 +63,8 @@ export function MedicalOrdersPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -74,13 +76,13 @@ export function MedicalOrdersPage() {
 
     try {
       const data = await api<{ signature: { status: string } }>(
-        `/api/v1/hospital-admission/medical-orders/${encodeURIComponent(encounter.encounterId)}/sign`,
+        `/api/v1/hospital-admission/medical-orders/${encodeURIComponent(activeEncounter.encounterId)}/sign`,
         { method: "POST", body: JSON.stringify({ physicianName, credential, confirmed }) },
       );
       setStatusLabel(data.signature.status === "firmado" ? "Firmado" : data.signature.status);
       setError("");
-      if (encounter.currentStep === "indicaciones") {
-        const updated = await advanceEncounter(encounter.encounterId, "indicaciones");
+      if (activeEncounter.currentStep === "indicaciones") {
+        const updated = await advanceEncounter(activeEncounter.encounterId, "indicaciones");
         applyEncounter(updated);
       }
       setAdvanced(true);
@@ -94,7 +96,7 @@ export function MedicalOrdersPage() {
 
   return (
     <Sheet kicker="Médico" title="Indicaciones médicas basales">
-      <p className="lead">Revise la valoración de {encounter.patientName} y firme las indicaciones basales.</p>
+      <p className="lead">Revise la valoración de {activeEncounter.patientName} y firme las indicaciones basales.</p>
       <p role="status" aria-label="Estado del documento">{statusLabel}</p>
       <ul>{orders.items.map((item) => <li key={item}>{item}</li>)}</ul>
       <form className="stack" onSubmit={onSubmit} noValidate>
@@ -104,7 +106,7 @@ export function MedicalOrdersPage() {
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         <button className="button" type="submit">Firmar indicaciones</button>
       </form>
-      <StepNav role={role} encounter={encounter} viewingStep="indicaciones" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="indicaciones" canContinue={advanced} />
     </Sheet>
   );
 }

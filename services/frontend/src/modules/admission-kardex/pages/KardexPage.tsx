@@ -67,12 +67,14 @@ export function KardexPage() {
     );
   }
 
+  const activeEncounter = encounter;
+
   async function confirmKardex() {
     setPending(true);
     setError("");
     try {
-      if (encounter.currentStep === "kardex") {
-        const next = await advanceEncounter(encounter.encounterId, "kardex");
+      if (activeEncounter.currentStep === "kardex") {
+        const next = await advanceEncounter(activeEncounter.encounterId, "kardex");
         applyEncounter(next);
       }
       setNotice("Kardex revisado.");
@@ -108,7 +110,7 @@ export function KardexPage() {
       <button className="button" type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
         Confirmar revisión del Kardex
       </button>
-      <StepNav role={role} encounter={encounter} viewingStep="kardex" canContinue={advanced} />
+      <StepNav role={role} encounter={activeEncounter} viewingStep="kardex" canContinue={advanced} />
     </Sheet>
   );
 }
