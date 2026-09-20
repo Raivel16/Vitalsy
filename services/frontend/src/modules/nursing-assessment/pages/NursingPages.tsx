@@ -7,10 +7,10 @@ import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/news2";
 import { validateVitalSigns } from "../domain/vitalSigns";
+import { requiredText } from "../../../shared/validation/inputRules";
 
 export function NursingAssessmentPage() {
   const encounter = useEncounter();
@@ -22,7 +22,7 @@ export function NursingAssessmentPage() {
   const [allergy, setAllergy] = useState("");
   const [allergies, setAllergies] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [fieldError, setFieldError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -38,11 +38,13 @@ export function NursingAssessmentPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!complaint.trim()) {
-      setFieldError("El motivo de consulta es obligatorio.");
-      return;
-    }
-    setFieldError("");
+    const next: Record<string, string> = {};
+    const complaintIssue = requiredText(complaint, "El motivo de consulta es obligatorio.");
+    if (complaintIssue) next.complaint = complaintIssue;
+    const historyIssue = requiredText(history, "Los antecedentes son obligatorios.");
+    if (historyIssue) next.history = historyIssue;
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
     setPending(true);
     try {
       await api("/api/v1/hospital-admission/nursing-assessments", {
@@ -57,8 +59,8 @@ export function NursingAssessmentPage() {
       setSaved("Valoración registrada.");
       setError("");
       if (encounter.currentStep === "valoracion") {
-        const next = await advanceEncounter(encounter.encounterId, "valoracion");
-        applyEncounter(next);
+        const nextEncounter = await advanceEncounter(encounter.encounterId, "valoracion");
+        applyEncounter(nextEncounter);
       }
       setAdvanced(true);
     } catch (caught) {
@@ -70,13 +72,12 @@ export function NursingAssessmentPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Valoración inicial">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="valoracion" />
       <p className="lead">Anamnesis, alergias y antecedentes de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
-        <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={fieldError} />
-        <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} />
+        <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={errors.complaint} required />
+        <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} error={errors.history} required />
         <div className="inline-add">
-          <TextField id="allergy" label="Alergia" value={allergy} onChange={(event) => setAllergy(event.target.value)} />
+          <TextField id="allergy" label="Alergia (opcional)" value={allergy} onChange={(event) => setAllergy(event.target.value)} hint="Solo si el paciente declara alergias." />
           <button
             className="button button-quiet"
             type="button"
@@ -190,7 +191,6 @@ export function VitalSignsPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Constantes vitales basales">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="constantes" />
       <p className="lead">El sistema calcula el NEWS2 de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">

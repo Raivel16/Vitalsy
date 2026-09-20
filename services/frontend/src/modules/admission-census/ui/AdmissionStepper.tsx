@@ -1,9 +1,20 @@
+import { Link } from "react-router";
+import type { Role } from "../../../app/roles";
 import type { ProgressStep } from "../domain/encounter";
+import { canViewRoleStep, stepPath } from "../domain/steps";
 
-export function AdmissionStepper({ steps }: { steps: ProgressStep[] }) {
+type Props = {
+  steps: ProgressStep[];
+  role?: Role;
+  encounterId?: string;
+  currentStep?: string;
+};
+
+export function AdmissionStepper({ steps, role, encounterId, currentStep }: Props) {
   if (steps.length === 0) return null;
   const current = steps.find((step) => step.state === "current");
   const done = steps.filter((step) => step.state === "done").length;
+  const progressCurrent = currentStep ?? current?.id ?? "";
 
   return (
     <nav className="stepper" aria-label="Avance del ingreso">
@@ -12,12 +23,31 @@ export function AdmissionStepper({ steps }: { steps: ProgressStep[] }) {
         {current ? `: ${current.label}` : ""}
       </p>
       <ol>
-        {steps.map((step) => (
-          <li key={step.id} className={`stepper-item stepper-${step.state}`} aria-current={step.state === "current" ? "step" : undefined}>
-            <span className="stepper-dot" aria-hidden="true" />
-            <span className="stepper-label">{step.label}</span>
-          </li>
-        ))}
+        {steps.map((step) => {
+          const clickable = Boolean(
+            role
+            && encounterId
+            && progressCurrent
+            && canViewRoleStep(role, step.id, steps, progressCurrent),
+          );
+
+          return (
+            <li
+              key={step.id}
+              className={`stepper-item stepper-${step.state}${clickable ? " stepper-clickable" : ""}`}
+              aria-current={step.state === "current" ? "step" : undefined}
+            >
+              <span className="stepper-dot" aria-hidden="true" />
+              {clickable ? (
+                <Link className="stepper-label" to={stepPath(step.id, encounterId!)}>
+                  {step.label}
+                </Link>
+              ) : (
+                <span className="stepper-label">{step.label}</span>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );

@@ -62,15 +62,64 @@ describe("censo de ingresos", () => {
   });
 
   it("lista los pacientes y continúa solo el paso del perfil", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounters: [luis, ana] })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounters: [luis, ana],
+      meta: { total: 2, page: 1, perPage: 10, lastPage: 1 },
+    })));
     renderApp("/pacientes");
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/buscar paciente/i)).toBeInTheDocument();
     expect(screen.getByText(/2 de 3 entregables listos/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^continuar$/i })).toHaveAttribute("href", "/admision/cobertura?ingreso=ENC-0002");
     expect(screen.getByText(/en curso con celador/i)).toBeInTheDocument();
+    expect(screen.getByText(/página 1 de 1/i)).toBeInTheDocument();
     expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
     expect(screen.queryByText(/proceso 1/i)).not.toBeInTheDocument();
+  });
+
+  it("busca pacientes y pagina de 10 en 10", async () => {
+    const user = userEvent.setup();
+    const page1 = Array.from({ length: 10 }, (_, index) => ({
+      ...luis,
+      encounterId: `ENC-P${index + 1}`,
+      patientName: `Paciente Página Uno ${index + 1}`,
+      documentNumber: `800000${index}`,
+    }));
+    const page2 = [{
+      ...ana,
+      encounterId: "ENC-P11",
+      patientName: "Ana María Quispe Rojas",
+      documentNumber: "45678912",
+    }];
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounters: page1,
+        meta: { total: 11, page: 1, perPage: 10, lastPage: 2 },
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounters: page2,
+        meta: { total: 11, page: 2, perPage: 10, lastPage: 2 },
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounters: page2,
+        meta: { total: 1, page: 1, perPage: 10, lastPage: 1 },
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/pacientes");
+
+    expect(await screen.findByText(/página 1 de 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/1–10 de 11/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /siguiente/i }));
+    expect(await screen.findByText(/página 2 de 2/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ana María Quispe Rojas/i })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/buscar paciente/i), "Quispe");
+    await waitFor(() => {
+      const searchCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("q=Quispe"));
+      expect(searchCall).toBeTruthy();
+    });
+    expect(await screen.findByText(/1–1 de 1/i)).toBeInTheDocument();
   });
 
   it("abre la ficha con el estado de cada entregable", async () => {
@@ -126,7 +175,10 @@ describe("censo de ingresos", () => {
       statusLabel: "En trámite de cobertura",
       coverage: { payer: "Particular", status: "rechazada", plan: "Sin cobertura vigente" },
     };
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounters: [waiting, luis] })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounters: [waiting, luis],
+      meta: { total: 2, page: 1, perPage: 10, lastPage: 1 },
+    })));
     renderApp("/pacientes");
 
     const buttons = await screen.findAllByRole("link", { name: /^continuar$/i });

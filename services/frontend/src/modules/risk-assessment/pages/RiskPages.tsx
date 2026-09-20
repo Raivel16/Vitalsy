@@ -7,7 +7,6 @@ import { SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateBraden, type BradenFriction, type BradenScore4 } from "../domain/bradenScale";
 import { calculateMorse } from "../domain/morseFallScale";
@@ -86,7 +85,6 @@ export function RiskScalesPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Escalas de riesgo">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="escalas" />
       <p className="lead">Morse y Braden para {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
         <fieldset>

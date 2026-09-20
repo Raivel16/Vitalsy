@@ -4,7 +4,6 @@ import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { advanceEncounter } from "../../admission-census/domain/advance";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { errorText } from "../../../app/userMessage";
 import { TextField } from "../../../shared/ui/Field";
@@ -79,7 +78,6 @@ export function AdmissionOrderPage() {
 
   return (
     <Sheet kicker="Admisión" title="Orden de internamiento">
-      {encounter ? <RoleStepLinks role={role} encounter={encounter} viewingStep="orden" /> : null}
       <p className="lead">
         {encounter
           ? `Consulte la orden de ${encounter.patientName}.`

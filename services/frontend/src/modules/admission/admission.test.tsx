@@ -104,7 +104,35 @@ describe("admisión administrativa", () => {
     const name = screen.getByLabelText(/nombre completo/i);
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText(/el nombre completo es obligatorio/i)).toBeInTheDocument();
+    expect(screen.getByText(/fecha de nacimiento es obligatoria/i)).toBeInTheDocument();
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/filiation/"))).toBe(false);
+  });
+
+  it("no muestra pasos duplicados en el formulario y solo acepta dígitos en el DNI", async () => {
+    const user = userEvent.setup();
+    const progress = [
+      { id: "orden", label: "Consultar orden de internamiento", state: "done" },
+      { id: "filiacion", label: "Validar filiación", state: "current" },
+      { id: "cobertura", label: "Validar cobertura", state: "pending" },
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounter: { ...anaEncounter, currentStep: "filiacion", progress },
+    })));
+    renderApp("/admision/filiacion?ingreso=ENC-0001");
+
+    await screen.findByDisplayValue("45678912");
+    expect(screen.queryByText(/sus pasos en este ingreso/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /consultar orden de internamiento/i })).toHaveAttribute(
+      "href",
+      "/admision/orden?ingreso=ENC-0001",
+    );
+    expect(screen.queryByRole("link", { name: /validar cobertura/i })).not.toBeInTheDocument();
+
+    const documentField = screen.getByDisplayValue("45678912");
+    await user.type(documentField, "abXY");
+    expect(documentField).toHaveValue("45678912");
+    await user.type(documentField, "99");
+    expect(documentField).toHaveValue("4567891299");
   });
 
   it("muestra cobertura aprobada, pendiente o rechazada con texto y valida el teléfono", async () => {

@@ -12,9 +12,19 @@ class AdmissionCensusController extends Controller
 {
     public function __construct(private readonly AdmissionBoard $board) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(['encounters' => $this->board->list()]);
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        return response()->json($this->board->list(
+            $data['q'] ?? null,
+            (int) ($data['page'] ?? 1),
+            (int) ($data['per_page'] ?? 10),
+        ));
     }
 
     public function show(string $encounterId): JsonResponse

@@ -7,7 +7,6 @@ import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 
 type Orders = { statusLabel: string; items: string[] };
@@ -95,7 +94,6 @@ export function MedicalOrdersPage() {
 
   return (
     <Sheet kicker="Médico" title="Indicaciones médicas basales">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="indicaciones" />
       <p className="lead">Revise la valoración de {encounter.patientName} y firme las indicaciones basales.</p>
       <p role="status" aria-label="Estado del documento">{statusLabel}</p>
       <ul>{orders.items.map((item) => <li key={item}>{item}</li>)}</ul>

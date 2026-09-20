@@ -7,20 +7,14 @@ import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field"
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounterState, type CoverageStatus } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
+import { digitsOnly, phoneNumberError, requiredText } from "../../../shared/validation/inputRules";
 
 const COPY: Record<CoverageStatus, string> = {
   aprobada: "La cobertura permite continuar la admisión.",
   pendiente: "Hay un trámite pendiente antes de completar el ingreso.",
   rechazada: "La cobertura fue rechazada. Derive el trámite antes de continuar.",
 };
-
-function phoneError(value: string): string | undefined {
-  if (!value.trim()) return "El teléfono del familiar es obligatorio.";
-  if (!/^\d{7,15}$/.test(value.trim())) return "El teléfono solo admite dígitos (7 a 15).";
-  return undefined;
-}
 
 export function CoveragePage() {
   const { encounter, coverageStatus, setCoverageStatus, applyEncounter } = useEncounterState();
@@ -73,7 +67,6 @@ export function CoveragePage() {
 
   return (
     <Sheet kicker="Admisión" title="Cobertura sanitaria">
-      {encounter ? <RoleStepLinks role={role} encounter={encounter} viewingStep="cobertura" /> : null}
       <p className="lead">
         {encounter
           ? `Revise la cobertura de ${encounter.patientName}. Al registrar, el ingreso avanza según el estado elegido.`
@@ -128,8 +121,9 @@ export function ReferralPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (!relativeName.trim()) next.relativeName = "El nombre del familiar es obligatorio.";
-    const phoneIssue = phoneError(relativePhone);
+    const nameIssue = requiredText(relativeName, "El nombre del familiar es obligatorio.");
+    if (nameIssue) next.relativeName = nameIssue;
+    const phoneIssue = phoneNumberError(relativePhone, { label: "El teléfono del familiar" });
     if (phoneIssue) next.relativePhone = phoneIssue;
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -173,18 +167,19 @@ export function ReferralPage() {
           <option value="caja">Caja</option>
           <option value="trabajo_social">Trabajo social</option>
         </SelectField>
-        <TextField id="relative-name" label="Nombre del familiar" value={relativeName} onChange={(event) => setRelativeName(event.target.value)} error={errors.relativeName} />
+        <TextField id="relative-name" label="Nombre del familiar" value={relativeName} onChange={(event) => setRelativeName(event.target.value)} error={errors.relativeName} required />
         <TextField
           id="relative-phone"
           label="Teléfono del familiar"
           inputMode="numeric"
           pattern="\d{7,15}"
           value={relativePhone}
-          onChange={(event) => setRelativePhone(event.target.value.replace(/\D+/g, "").slice(0, 15))}
+          onChange={(event) => setRelativePhone(digitsOnly(event.target.value, 15))}
           error={errors.relativePhone}
           hint="Solo dígitos, de 7 a 15."
+          required
         />
-        <TextAreaField id="referral-note" label="Observación" value={note} onChange={(event) => setNote(event.target.value)} />
+        <TextAreaField id="referral-note" label="Observación (opcional)" value={note} onChange={(event) => setNote(event.target.value)} hint="Puede dejarse vacío." />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {result ? <Feedback tone="success">{result}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Registrar derivación</button>

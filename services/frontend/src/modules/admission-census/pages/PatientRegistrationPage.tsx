@@ -6,6 +6,7 @@ import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import type { Encounter } from "../../admission-census/domain/encounter";
 import { stepPath } from "../../admission-census/domain/steps";
+import { digitsOnly, documentNumberError, requiredText } from "../../../shared/validation/inputRules";
 
 export function PatientRegistrationPage() {
   const navigate = useNavigate();
@@ -24,10 +25,18 @@ export function PatientRegistrationPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (!orderNumber.trim()) next.orderNumber = "El número de orden es obligatorio.";
-    if (!patientName.trim()) next.patientName = "El nombre del paciente es obligatorio.";
-    if (!documentNumber.trim()) next.documentNumber = "El documento es obligatorio.";
-    if (!coveragePlan.trim()) next.coveragePlan = "El plan de cobertura es obligatorio.";
+    const orderIssue = requiredText(orderNumber, "El número de orden es obligatorio.");
+    if (orderIssue) next.orderNumber = orderIssue;
+    const nameIssue = requiredText(patientName, "El nombre del paciente es obligatorio.");
+    if (nameIssue) next.patientName = nameIssue;
+    const documentIssue = documentNumberError(documentNumber, "El documento");
+    if (documentIssue) next.documentNumber = documentIssue;
+    const originIssue = requiredText(originService, "El servicio de origen es obligatorio.");
+    if (originIssue) next.originService = originIssue;
+    const payerIssue = requiredText(coveragePayer, "El pagador es obligatorio.");
+    if (payerIssue) next.coveragePayer = payerIssue;
+    const planIssue = requiredText(coveragePlan, "El plan de cobertura es obligatorio.");
+    if (planIssue) next.coveragePlan = planIssue;
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -62,18 +71,27 @@ export function PatientRegistrationPage() {
         Alta manual de un paciente para iniciar la admisión. Los sistemas emisores también pueden enviar el mismo payload a la API de intake.
       </p>
       <form className="stack" onSubmit={onSubmit} noValidate>
-        <TextField id="reg-order" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} error={errors.orderNumber} />
-        <TextField id="reg-name" label="Nombre del paciente" value={patientName} onChange={(event) => setPatientName(event.target.value)} error={errors.patientName} />
-        <TextField id="reg-document" label="Número de documento" value={documentNumber} onChange={(event) => setDocumentNumber(event.target.value)} error={errors.documentNumber} />
-        <TextField id="reg-origin" label="Servicio de origen" value={originService} onChange={(event) => setOriginService(event.target.value)} />
-        <TextField id="reg-payer" label="Pagador" value={coveragePayer} onChange={(event) => setCoveragePayer(event.target.value)} />
-        <SelectField id="reg-coverage" label="Estado de cobertura" value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value)}>
+        <TextField id="reg-order" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} error={errors.orderNumber} required />
+        <TextField id="reg-name" label="Nombre del paciente" value={patientName} onChange={(event) => setPatientName(event.target.value)} error={errors.patientName} required />
+        <TextField
+          id="reg-document"
+          label="Número de documento"
+          inputMode="numeric"
+          value={documentNumber}
+          onChange={(event) => setDocumentNumber(digitsOnly(event.target.value, 12))}
+          error={errors.documentNumber}
+          hint="Solo números."
+          required
+        />
+        <TextField id="reg-origin" label="Servicio de origen" value={originService} onChange={(event) => setOriginService(event.target.value)} error={errors.originService} required />
+        <TextField id="reg-payer" label="Pagador" value={coveragePayer} onChange={(event) => setCoveragePayer(event.target.value)} error={errors.coveragePayer} required />
+        <SelectField id="reg-coverage" label="Estado de cobertura" value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value)} required>
           <option value="aprobada">Aprobada</option>
           <option value="pendiente">Pendiente</option>
           <option value="rechazada">Rechazada</option>
         </SelectField>
-        <TextField id="reg-plan" label="Plan de cobertura" value={coveragePlan} onChange={(event) => setCoveragePlan(event.target.value)} error={errors.coveragePlan} />
-        <TextField id="reg-reason" label="Motivo de internamiento" value={reason} onChange={(event) => setReason(event.target.value)} />
+        <TextField id="reg-plan" label="Plan de cobertura" value={coveragePlan} onChange={(event) => setCoveragePlan(event.target.value)} error={errors.coveragePlan} required />
+        <TextField id="reg-reason" label="Motivo de internamiento (opcional)" value={reason} onChange={(event) => setReason(event.target.value)} hint="Puede dejarse vacío si no aplica." />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         <button className="button" type="submit" disabled={pending}>Registrar e iniciar</button>
       </form>

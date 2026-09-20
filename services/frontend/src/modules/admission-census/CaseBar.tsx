@@ -66,7 +66,14 @@ export function CaseBar({ children }: { children: ReactNode }) {
                 <strong>{encounter.patientName}</strong>
                 <span>{encounter.statusLabel}. {encounter.currentStepLabel}.</span>
               </p>
-              {encounter.progress ? <AdmissionStepper steps={encounter.progress} /> : null}
+              {encounter.progress ? (
+                <AdmissionStepper
+                  steps={encounter.progress}
+                  role={user?.role}
+                  encounterId={encounter.encounterId}
+                  currentStep={encounter.currentStep}
+                />
+              ) : null}
               <div className="actions">
                 <Link to={`/pacientes/${encounter.encounterId}`}>Ver ficha</Link>
                 {encounter.nextRole && user && encounter.nextRole !== user.role && encounter.currentStep !== "derivacion" ? (

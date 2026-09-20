@@ -8,7 +8,6 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 
 export function WristbandPage() {
@@ -59,7 +58,6 @@ export function WristbandPage() {
 
   return (
     <Sheet kicker="Admisión" title="Brazalete de identificación">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="brazalete" />
       <p className="lead">Genere el brazalete de {encounter.patientName} y verifique el código antes de entregarlo.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Emitir brazalete</button>
@@ -128,7 +126,6 @@ export function RecordPage() {
 
   return (
     <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="expediente" />
       <p className="lead">Abra el expediente clínico de {encounter.patientName}.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Aperturar expediente</button>
@@ -198,7 +195,6 @@ export function ConsentPage() {
 
   return (
     <Sheet kicker="Admisión" title="Consentimiento informado">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="consentimiento" />
       <p className="lead">Registre la aceptación del consentimiento de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="signer-name" label="Nombre de quien firma" value={signerName} onChange={(event) => setSignerName(event.target.value)} error={errors.signerName} />

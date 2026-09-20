@@ -94,18 +94,49 @@ class AdmissionBoard
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{encounters: list<array<string, mixed>>, meta: array{total: int, page: int, perPage: int, lastPage: int}}
      */
-    public function list(): array
+    public function list(?string $query = null, int $page = 1, int $perPage = 10): array
     {
         $this->ensureDemo();
 
-        return AdmissionEncounter::query()
+        $builder = AdmissionEncounter::query();
+        $term = trim((string) $query);
+        if ($term !== '') {
+            $like = '%'.mb_strtolower($term).'%';
+            $builder->where(function ($filter) use ($like) {
+                $filter
+                    ->whereRaw('LOWER(patient_name) like ?', [$like])
+                    ->orWhereRaw('LOWER(document_number) like ?', [$like])
+                    ->orWhereRaw('LOWER(encounter_id) like ?', [$like])
+                    ->orWhereRaw('LOWER(order_number) like ?', [$like]);
+            });
+        }
+
+        $sorted = $builder
             ->get()
             ->sortBy(fn (AdmissionEncounter $encounter) => $this->sortKey($encounter))
+            ->values();
+
+        $total = $sorted->count();
+        $perPage = max(1, min(50, $perPage));
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $lastPage));
+        $encounters = $sorted
+            ->slice(($page - 1) * $perPage, $perPage)
             ->values()
             ->map(fn (AdmissionEncounter $encounter) => $this->present($encounter))
             ->all();
+
+        return [
+            'encounters' => $encounters,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'perPage' => $perPage,
+                'lastPage' => $lastPage,
+            ],
+        ];
     }
 
     /**

@@ -53,8 +53,10 @@ describe("valoración inicial de enfermería", () => {
     await screen.findByText(/anamnesis/i);
     await user.click(screen.getByRole("button", { name: /guardar valoración/i }));
     expect(screen.getByLabelText(/motivo de consulta/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText(/antecedentes son obligatorios/i)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/motivo de consulta/i), "Disnea de dos días");
+    await user.type(screen.getByLabelText(/^antecedentes$/i), "HTA controlada");
     await user.type(screen.getByLabelText(/alergia/i), "Penicilina");
     await user.click(screen.getByRole("button", { name: /agregar alergia/i }));
     expect(screen.getByText("Penicilina")).toBeInTheDocument();

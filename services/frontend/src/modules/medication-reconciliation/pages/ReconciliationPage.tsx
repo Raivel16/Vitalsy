@@ -7,7 +7,6 @@ import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { reviewReconciliation, type HomeMedication } from "../domain/bpmhAlerts";
 
@@ -74,10 +73,9 @@ export function ReconciliationPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Conciliación farmacéutica de ingreso">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="conciliacion" />
       <p className="lead">Medicamentos domiciliarios de {encounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
-        <TextField id="known-allergies" label="Alergias conocidas" value={allergies} onChange={(event) => setAllergies(event.target.value)} />
+        <TextField id="known-allergies" label="Alergias conocidas (opcional)" value={allergies} onChange={(event) => setAllergies(event.target.value)} hint="Puede dejarse vacío si no hay alergias." />
         <div className="form-grid">
           <TextField id="med-name" label="Medicamento" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
           <TextField id="med-dose" label="Dosis" value={draft.dose} onChange={(event) => setDraft({ ...draft, dose: event.target.value })} />

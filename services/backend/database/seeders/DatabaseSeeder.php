@@ -23,9 +23,11 @@ class DatabaseSeeder extends Seeder
         foreach ($accounts as $account) {
             User::query()->updateOrCreate(
                 ['email' => $account['email']],
-                [...$account, 'password' => $password, 'email_verified_at' => now()],
+                [...$account, 'password' => $password, 'email_verified_at' => now(), 'is_active' => true],
             );
         }
+
+        $this->call(CatalogSeeder::class);
 
         app(AdmissionBoard::class)->ensureDemo();
     }

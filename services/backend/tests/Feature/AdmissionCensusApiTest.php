@@ -24,6 +24,9 @@ class AdmissionCensusApiTest extends TestCase
         $response->assertOk()
             ->assertJsonMissingPath('simulated')
             ->assertJsonCount(3, 'encounters')
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.perPage', 10)
+            ->assertJsonPath('meta.page', 1)
             ->assertJsonPath('encounters.0.patientName', 'Luis Ernesto Paredes')
             ->assertJsonPath('encounters.0.currentStep', 'cobertura')
             ->assertJsonPath('encounters.0.nextRole', 'admision')
@@ -34,6 +37,52 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounters.2.nextRole', 'celador')
             ->assertJsonPath('encounters.2.location.room', '312')
             ->assertJsonPath('encounters.2.deliverables.3.done', true);
+    }
+
+    public function test_census_filters_by_patient_name_or_document(): void
+    {
+        $this->asRole('admision');
+
+        $this->getJson('/api/v1/hospital-admission/encounters?q=Quispe')
+            ->assertOk()
+            ->assertJsonCount(1, 'encounters')
+            ->assertJsonPath('encounters.0.patientName', 'Ana María Quispe Rojas')
+            ->assertJsonPath('meta.total', 1);
+
+        $this->getJson('/api/v1/hospital-admission/encounters?q=40112233')
+            ->assertOk()
+            ->assertJsonCount(1, 'encounters')
+            ->assertJsonPath('encounters.0.documentNumber', '40112233');
+    }
+
+    public function test_census_paginates_ten_per_page(): void
+    {
+        $this->asRole('admision');
+        $this->getJson('/api/v1/hospital-admission/encounters');
+
+        for ($i = 4; $i <= 15; $i++) {
+            $this->postJson('/api/v1/hospital-admission/encounters', [
+                'orderNumber' => sprintf('OI-PAGE-%04d', $i),
+                'patientName' => sprintf('Paciente Demo %02d', $i),
+                'documentNumber' => sprintf('700000%02d', $i),
+                'originService' => 'Emergencia adultos',
+                'coveragePayer' => 'SIS',
+                'coverageStatus' => 'aprobada',
+                'coveragePlan' => 'SIS Gratuito',
+                'source' => 'manual',
+            ])->assertCreated();
+        }
+
+        $page1 = $this->getJson('/api/v1/hospital-admission/encounters?page=1&per_page=10');
+        $page1->assertOk()
+            ->assertJsonPath('meta.total', 15)
+            ->assertJsonPath('meta.lastPage', 2)
+            ->assertJsonCount(10, 'encounters');
+
+        $page2 = $this->getJson('/api/v1/hospital-admission/encounters?page=2&per_page=10');
+        $page2->assertOk()
+            ->assertJsonPath('meta.page', 2)
+            ->assertJsonCount(5, 'encounters');
     }
 
     public function test_file_shows_deliverables_and_unknown_encounter_is_spanish_not_found(): void

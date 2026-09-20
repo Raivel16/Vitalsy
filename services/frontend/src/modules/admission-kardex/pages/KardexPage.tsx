@@ -6,7 +6,6 @@ import { errorText } from "../../../app/userMessage";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 
 type Kardex = {
@@ -90,7 +89,6 @@ export function KardexPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="kardex" />
       {kardex ? (
         <>
           <h3>{kardex.patientName}</h3>

@@ -7,7 +7,6 @@ import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
-import { RoleStepLinks } from "../../admission-census/ui/RoleStepLinks";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 
@@ -86,7 +85,6 @@ export function TransferOrderPage() {
 
   return (
     <Sheet kicker="Celador" title="Orden de traslado a piso">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="traslado" />
       <p className="lead">Confirme habitación y lecho de {encounter.patientName} antes de movilizarlo.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
@@ -160,7 +158,6 @@ export function WristbandVerifyPage() {
 
   return (
     <Sheet kicker="Celador" title="Verificación de identidad">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="identidad" />
       <p className="lead">Confirme el brazalete de {encounter.patientName} antes del traslado.</p>
       <BarcodeScanner onScan={onScan} />
       <form className="stack" onSubmit={onSubmit}>
@@ -222,7 +219,6 @@ export function FloorReceptionPage() {
 
   return (
     <Sheet kicker="Enfermería" title="Recepción física en piso">
-      <RoleStepLinks role={role} encounter={encounter} viewingStep="recepcion" />
       <p className="lead">Confirme que {encounter.patientName} llegó a la habitación y al lecho asignados.</p>
       <form onSubmit={onSubmit}>
         <button className="button" type="submit" disabled={pending}>Confirmar recepción</button>
