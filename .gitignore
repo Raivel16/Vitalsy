@@ -28,6 +28,8 @@ services/backend/bootstrap/cache/*.php
 # Docker
 *.log
 docker/postgres/data/
+docker/nginx/certs/
+!docker/nginx/certs/.gitkeep
 
 # OS/editor
 .DS_Store
