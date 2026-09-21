@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdmissionEncounter;
 use App\Models\User;
+use App\Services\Admission\AdmissionBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -170,8 +172,8 @@ class AdmissionCensusApiTest extends TestCase
     public function test_closing_the_admission_removes_it_from_the_physician_queue(): void
     {
         $this->asRole('medico');
-        app(\App\Services\Admission\AdmissionBoard::class)->ensureDemo();
-        $encounter = \App\Models\AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
+        app(AdmissionBoard::class)->ensureDemo();
+        $encounter = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
         $this->assertNotNull($encounter);
         $encounter->update(['current_step' => 'indicaciones']);
 

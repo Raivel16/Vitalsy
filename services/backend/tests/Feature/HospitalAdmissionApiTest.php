@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdmissionEncounter;
 use App\Models\User;
+use App\Services\Admission\AdmissionBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -92,7 +94,7 @@ class HospitalAdmissionApiTest extends TestCase
     public function test_transfer_and_wristband_codes_are_independent_per_patient(): void
     {
         $this->asRole('celador');
-        app(\App\Services\Admission\AdmissionBoard::class)->ensureDemo();
+        app(AdmissionBoard::class)->ensureDemo();
         $admitted = array_fill_keys([
             'fichaAdmision', 'brazalete', 'expediente', 'consentimiento', 'recepcion',
             'valoracion', 'signosVitales', 'bpmh', 'escalas', 'kardex', 'indicaciones',
@@ -102,7 +104,7 @@ class HospitalAdmissionApiTest extends TestCase
         $admitted['expediente'] = true;
         $admitted['consentimiento'] = true;
 
-        \App\Models\AdmissionEncounter::query()->where('encounter_id', 'ENC-0002')->update([
+        AdmissionEncounter::query()->where('encounter_id', 'ENC-0002')->update([
             'current_step' => 'traslado',
             'waiting_reason' => null,
             'coverage_status' => 'aprobada',
