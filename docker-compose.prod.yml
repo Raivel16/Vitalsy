@@ -1,5 +1,4 @@
-# El arranque de prueba del Módulo 1 está en docker-compose.yml (Nginx en el puerto 8080).
-# Este archivo de producción aún no publica el frontend compilado.
+version: "3.8"
 
 services:
   frontend:

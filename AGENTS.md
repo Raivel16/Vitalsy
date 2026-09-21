@@ -47,28 +47,3 @@ Antes de implementar cualquier cambio, el agente debe seguir estas reglas:
 ## Objetivo de contexto
 
 El propósito de este archivo es reducir el consumo innecesario de tokens y evitar que los agentes vuelvan a releer todo el proyecto desde cero para cada tarea. Debe usarse como punto de referencia obligatorio para mantener coherencia con la estrategia del proyecto.
-
-
-<!-- BEGIN AGENT ANNOTATIONS — DO NOT EDIT CONTENT ABOVE THIS LINE -->
-
-## Anotaciones de agentes (solo anexos)
-
-> Esta sección se **agrega al final**. El contenido previo de AGENTS.md no debe modificarse.
-> Alternativa: `docs/agent-context.md` para notas largas por iteración.
-
-### 2026-09-19 — RF-02 UX stepper y validaciones de formularios
-
-- **Navegación de pasos:** un solo stepper superior (`AdmissionStepper` en `CaseBar` / ficha). No duplicar pills «Sus pasos en este ingreso» (`RoleStepLinks` eliminado).
-- **Regresar por stepper:** un paso es clickable solo si `canViewRoleStep(role, step, progress, currentStep)` lo permite (pasos del rol ya alcanzados/completados). Pasos futuros o de otro rol: solo etiqueta, sin link.
-- **Layout:** `.sheet` y `.case-bar` centrados (`margin: auto`, `max-width` acotado). Formularios no pegados a la esquina izquierda.
-- **Validaciones compartidas:** `shared/validation/inputRules.ts` — `digitsOnly`, `documentNumberError`, `phoneNumberError`, `requiredText`.
-- **Reglas de campos:** DNI/documento y teléfonos solo dígitos (filtrar en `onChange`). Obligatorios por defecto; opcionales explícitos (alergias, observación de derivación, motivo de internamiento si no aplica).
-- **Base de trabajo local:** `origin/dev` puede estar atrasado; el flujo de admisión vive en ramas `feature/RF-*`. Preferir ramificar bugfix desde la rama feature que ya tenga el módulo 1, documentándolo en el plan.
-
-### 2026-09-20 — Esquema DB RF-01–RF-91 + censo
-
-- Migraciones `2026_09_20_100*` + modelos Eloquent + `CatalogSeeder`; detalle en `docs/architecture/modelo-datos.md` y `docs/agent-context.md`.
-- `admission_encounters` intacto; `encounter_id` string indexado sin FK en tablas nuevas.
-- Censo: búsqueda `q` + paginación 10; sheets anchos en pantallas grandes (`Sheet wide` / CSS responsive).
-
-<!-- END AGENT ANNOTATIONS -->

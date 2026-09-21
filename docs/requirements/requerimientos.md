@@ -27,12 +27,6 @@ A continuación se detallan los requisitos funcionales organizados por módulos 
 15. RF-15: Generar Kardex electrónico de ingreso. El sistema debe generar automáticamente el Kardex electrónico a partir de la valoración y conciliación registradas. Actor: Sistema.
 16. RF-16: Validar y firmar indicaciones médicas basales. El sistema debe permitir al médico revisar la valoración de ingreso, validar el BPMH y firmar electrónicamente la hoja de indicaciones médicas. Actor: Médico residente / de guardia.
 
-Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al orden del proceso 1. No renumeran RF-01 a RF-82.
-
-- RF-83 (agregado): Consultar el censo de ingresos del proceso 1. El sistema debe listar los pacientes en curso de admisión y recepción, con identidad, documento, subproceso vigente, ubicación cuando exista y avance de los entregables. Actor: Personal administrativo de admisión, Celador, Enfermera de piso y Médico residente / de guardia.
-- RF-84 (agregado): Consultar la ficha del ingreso y sus entregables. El sistema debe mostrar, para un paciente del censo, los datos registrados y el estado de los entregables del proceso 1: ficha digital de admisión, brazalete, expediente clínico, consentimiento, recepción en piso, valoración inicial, registro basal de signos vitales, conciliación farmacéutica (BPMH), escalas de riesgo, Kardex electrónico e indicaciones médicas. Actor: el perfil que interviene en el caso.
-- RF-85 (agregado): Continuar el ingreso en el paso vigente. El sistema debe abrir, desde el censo o la ficha, la actividad del proceso 1 que corresponde al rol, con el paciente ya identificado. Actor: el perfil responsable del paso.
-
 ### Módulo 2: Atención y Seguimiento del Paciente Hospitalizado
 
 17. RF-17: Integrar resultados de laboratorio (LIS) vía API. El sistema debe consumir e integrar automáticamente, mediante interoperabilidad HL7/FHIR, los resultados de laboratorio del paciente. Actor: Sistema.
@@ -113,17 +107,6 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 80. RF-80: Aprobar convocatoria de personal de retén. El sistema debe permitir a la jefatura aprobar la convocatoria digital del profesional de retén. Actor: Jefatura de enfermería / Dirección médica.
 81. RF-81: Autorizar cobertura extraordinaria. El sistema debe permitir a recursos humanos validar la justificación y autorizar la guardia extraordinaria. Actor: Personal de recursos humanos.
 82. RF-82: Confirmar ingreso del personal de retén. El sistema debe permitir registrar el ingreso efectivo del retén en el módulo de asistencia. Actor: Enfermera supervisora de piso.
-
-### Acceso y gestión de usuarios
-
-Requisitos transversales. No pertenecen a un proceso clínico. El control de acceso y el cierre por inactividad se precisan además en RNF-08 y RNF-09. La pantalla de administración de cuentas no forma parte del corte actual del módulo 1.
-
-- RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
-- RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
-- RF-88 (agregado): Consultar usuarios y roles. El sistema debe listar las cuentas del personal con nombre, correo, rol asignado y estado. Actor: administrador de accesos.
-- RF-89 (agregado): Registrar un usuario y asignarle un rol. El sistema debe permitir crear una cuenta y asociarla a un único rol operativo. Actor: administrador de accesos.
-- RF-90 (agregado): Actualizar datos o rol de un usuario. El sistema debe permitir corregir los datos de la cuenta o cambiar el rol asignado. Actor: administrador de accesos.
-- RF-91 (agregado): Desactivar un usuario. El sistema debe permitir desactivar una cuenta sin eliminarla, de modo que no pueda iniciar sesión y se conserve la trazabilidad. Actor: administrador de accesos.
 
 ## 3. Requerimientos No Funcionales
 

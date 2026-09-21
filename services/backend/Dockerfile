@@ -6,14 +6,10 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
+    libjpeg-dev \
     libpq-dev \
-    libzip-dev \
-    pkg-config \
     zip \
     unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo_pgsql pdo pdo_mysql gd zip bcmath \
     && rm -rf /var/lib/apt/lists/*
