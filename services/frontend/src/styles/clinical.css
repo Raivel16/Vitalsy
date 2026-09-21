@@ -186,7 +186,7 @@ nav a[aria-current="page"] { background: #e7f6f8; color: var(--navy); box-shadow
 .lead { color: var(--muted); max-width: 68ch; }
 .stack { display: grid; gap: 0.9rem; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
-.field { display: grid; gap: 0.3rem; min-width: 0; }
+.field { display: grid; gap: 0.5rem; min-width: 0; }
 .field label, .check label, legend { font-weight: 650; }
 input, select, textarea {
   width: 100%;
@@ -200,8 +200,32 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgba(20, 184, 198
 .hint, .field-error { margin: 0; font-size: 0.92rem; }
 .hint { color: var(--muted); }
 .field-error { color: var(--danger); }
-.check { display: flex; gap: 0.6rem; align-items: flex-start; }
+.password-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-input input { padding-right: 3rem; }
+.password-toggle {
+  position: absolute;
+  right: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  min-height: 40px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.password-toggle:hover { background: rgba(14, 76, 146, 0.08); }
+.referral-status { margin: 1rem 0; }
+.referral-status h3 { margin: 0 0 0.45rem; }
+.check { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-start; }
 .check input { width: 1.15rem; height: 1.15rem; margin-top: 0.2rem; min-height: 0; }
+.check .field-error { flex: 1 0 100%; }
 fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin: 0; }
 legend { padding: 0 0.3rem; }
 .choice-row, .inline-add, .actions, .chip-row { flex-wrap: wrap; }
@@ -233,12 +257,14 @@ legend { padding: 0 0.3rem; }
   padding: 0.7rem 0.85rem;
   font-weight: 700;
 }
-.stamp { width: fit-content; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.85rem; }
+.stamp { width: fit-content; margin: 0.8rem 0; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.85rem; }
 .stamp-aprobada, .banner-success, .news-green { color: var(--success); background: var(--success-bg); }
 .stamp-pendiente, .banner-warning, .news-yellow { color: var(--warning); background: var(--warning-bg); }
 .stamp-rechazada, .banner-error, .news-red { color: var(--danger); background: var(--danger-bg); }
 .banner-info { color: var(--info); background: var(--info-bg); }
 .banner, .news { margin: 0.8rem 0; }
+.stack .stamp, .stack .banner, .stack .news { margin: 0; }
+.result-block { margin-top: 1rem; }
 .news { border-left: 4px solid currentColor; padding: 0.8rem 1rem; border-radius: 12px; }
 .empty { color: var(--muted); }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin: 1rem 0; }
@@ -263,8 +289,23 @@ th, td { text-align: left; padding: 0.65rem 0.4rem; border-bottom: 1px solid var
 .wrist-hole { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; }
 .wrist-name { font-weight: 700; font-size: 1.05rem; margin: 0; }
 .wrist-code { margin: 0.15rem 0 0.35rem; font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
-.barcode { width: min(220px, 100%); height: 48px; background: white; border-radius: 6px; }
-.barcode rect { fill: var(--navy); }
+.barcode-wrap {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.45rem 0 0.55rem;
+  padding: 0.45rem 0.55rem;
+  background: #fff;
+  border-radius: 8px;
+}
+.barcode {
+  display: block;
+  width: min(240px, 100%);
+  height: auto;
+  min-height: 56px;
+  background: #fff;
+  border-radius: 6px;
+}
 .lanes { list-style: none; display: grid; gap: 0.8rem; padding: 0; margin: 1rem 0 0; }
 .lane { display: grid; grid-template-columns: auto 1fr; gap: 0.8rem; padding: 0.9rem; border: 1px solid var(--line); border-radius: 14px; background: #f8fbfd; }
 .lane > span { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 10px; background: var(--navy); color: white; font-weight: 700; }
@@ -333,7 +374,6 @@ a.stepper-label:hover {
 .step-nav { margin-top: 1rem; }
 .scanner-box { margin: 0.75rem 0; display: grid; gap: 0.55rem; }
 .scanner-view { max-width: 360px; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); }
-.barcode { max-width: 100%; height: auto; background: white; border-radius: 6px; }
 .deliverables { list-style: none; display: grid; gap: 0.45rem; padding: 0; }
 .deliverables li {
   display: grid;

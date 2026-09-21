@@ -1,8 +1,9 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -44,8 +45,7 @@ export function RiskScalesPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Escalas de riesgo">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar las escalas.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar las escalas." />
       </Sheet>
     );
   }
@@ -136,8 +136,8 @@ export function RiskScalesPage() {
           </p>
         </fieldset>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        {saved ? <p role="status" aria-label="Resultado del registro">{saved}</p> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar escalas</button>
+        {saved ? <Feedback tone="success" label="Resultado del registro">{saved}</Feedback> : null}
+        <Button type="submit" pending={pending}>Registrar escalas</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="escalas" canContinue={advanced} />
     </Sheet>

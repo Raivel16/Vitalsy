@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { ROLE_LABEL } from "./roles";
 import { useAuth } from "./AuthProvider";
+import { ButtonLink } from "../shared/ui/Button";
 
 const GUIDE: Record<string, string> = {
   admision: "Abra el censo, continúe el paciente de su turno y registre cada actividad. También puede registrar un ingreso manual o recibir órdenes por la API de intake.",
@@ -18,7 +19,7 @@ export function HomePage() {
       <p className="kicker">Ingreso hospitalario</p>
       <h2>Admisión y recepción del paciente</h2>
       <p className="lead">{GUIDE[role]} Su perfil es {ROLE_LABEL[role]}.</p>
-      <p><Link className="button" to="/pacientes">Ver pacientes en curso</Link></p>
+      <p><ButtonLink to="/pacientes">Ver pacientes en curso</ButtonLink></p>
       {role === "admision" ? (
         <p><Link to="/pacientes/nuevo">Registrar un ingreso manual</Link></p>
       ) : null}

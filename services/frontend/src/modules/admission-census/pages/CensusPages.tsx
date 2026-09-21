@@ -5,6 +5,7 @@ import { api } from "../../../app/api";
 import { ROLE_LABEL } from "../../../app/roles";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
@@ -76,7 +77,7 @@ export function CensusPage() {
         Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente.
       </p>
       {role === "admision" ? (
-        <p><Link className="button button-quiet" to="/pacientes/nuevo">Registrar ingreso</Link></p>
+        <p><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
       ) : null}
       <div className="census-toolbar">
         <TextField
@@ -133,9 +134,9 @@ export function CensusPage() {
                       <td>{deliverableCount(item)}</td>
                       <td>
                         {own ? (
-                          <Link className="button" to={stepPath(item.currentStep, item.encounterId)}>
+                          <ButtonLink to={stepPath(item.currentStep, item.encounterId)}>
                             Continuar
-                          </Link>
+                          </ButtonLink>
                         ) : (
                           <span>{item.nextRole ? `En curso con ${ROLE_LABEL[item.nextRole]}` : item.statusLabel}</span>
                         )}
@@ -151,22 +152,22 @@ export function CensusPage() {
               Página {meta.page} de {meta.lastPage}
             </p>
             <div className="pager-actions">
-              <button
-                className="button button-quiet"
+              <Button
+                variant="quiet"
                 type="button"
                 disabled={meta.page <= 1 || loading}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 Anterior
-              </button>
-              <button
-                className="button button-quiet"
+              </Button>
+              <Button
+                variant="quiet"
                 type="button"
                 disabled={meta.page >= meta.lastPage || loading}
                 onClick={() => setPage((current) => current + 1)}
               >
                 Siguiente
-              </button>
+              </Button>
             </div>
           </nav>
         </>
@@ -219,7 +220,11 @@ export function EncounterFilePage() {
         />
       ) : null}
       {own ? (
-        <p><Link className="button" to={stepPath(encounter.currentStep, encounter.encounterId)}>{encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}</Link></p>
+        <p>
+          <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
+            {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
+          </ButtonLink>
+        </p>
       ) : (
         <Feedback tone="info">
           {encounter.nextRole
@@ -237,6 +242,25 @@ export function EncounterFilePage() {
         <div><dt>Brazalete</dt><dd>{encounter.wristbandCode ?? "Aún no emitido"}</dd></div>
         <div><dt>Avance</dt><dd>{deliverableCount(encounter)}</dd></div>
       </dl>
+      {encounter.coverageReferral ? (
+        <section className="referral-status" role="region" aria-label="Estado de la derivación de cobertura">
+          <h3>Derivación de cobertura</h3>
+          <Feedback tone="info">
+            Trámite derivado a {encounter.coverageReferral.destinationLabel}. Estado: {encounter.coverageReferral.status}.
+          </Feedback>
+          <dl className="facts">
+            <div><dt>Destino</dt><dd>{encounter.coverageReferral.destinationLabel}</dd></div>
+            <div><dt>Estado</dt><dd>{encounter.coverageReferral.status}</dd></div>
+            <div><dt>Familiar notificado</dt><dd>{encounter.coverageReferral.relativeName}</dd></div>
+            <div><dt>Teléfono</dt><dd>{encounter.coverageReferral.relativePhone ?? "No indicado"}</dd></div>
+            {encounter.coverageReferral.note ? (
+              <div><dt>Observación</dt><dd>{encounter.coverageReferral.note}</dd></div>
+            ) : null}
+          </dl>
+        </section>
+      ) : encounter.coverage.status !== "aprobada" ? (
+        <Feedback tone="info">Aún no hay una derivación registrada para este ingreso.</Feedback>
+      ) : null}
       <h3>Entregables del ingreso</h3>
       <ul className="deliverables">
         {encounter.deliverables.map((item) => (

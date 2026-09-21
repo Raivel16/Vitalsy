@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+import { Button } from "../../../shared/ui/Button";
 import { Feedback } from "../../../shared/ui/Sheet";
 
 type Props = {
@@ -49,13 +50,13 @@ export function BarcodeScanner({ onScan }: Props) {
   return (
     <div className="scanner-box">
       {!open ? (
-        <button className="button button-quiet" type="button" onClick={() => setOpen(true)}>
+        <Button variant="quiet" type="button" onClick={() => setOpen(true)}>
           Escanear brazalete
-        </button>
+        </Button>
       ) : (
-        <button className="button button-quiet" type="button" onClick={() => setOpen(false)}>
+        <Button variant="quiet" type="button" onClick={() => setOpen(false)}>
           Cerrar escáner
-        </button>
+        </Button>
       )}
       {open ? <div id={elementId} className="scanner-view" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}

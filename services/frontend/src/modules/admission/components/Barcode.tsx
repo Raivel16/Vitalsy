@@ -1,74 +1,75 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 
 function FallbackBars({ value }: { value: string }) {
   const widths = value.split("").map((char) => (char.charCodeAt(0) % 3) + 1);
   let x = 4;
   const bars = widths.map((width, index) => {
-    const rect = <rect key={index} x={x} y="4" width={width} height="40" />;
+    const rect = <rect key={index} x={x} y="4" width={width} height="40" fill="#0E4C92" />;
     x += width + 1;
     return rect;
   });
   return (
     <svg className="barcode" viewBox={`0 0 ${x + 8} 56`} role="img" aria-label={`Código de barras ${value}`}>
+      <rect x="0" y="0" width={x + 8} height="56" fill="#ffffff" />
       {bars}
-      <text x={8} y="54" fontSize="10">{value}</text>
+      <text x={8} y="54" fontSize="10" fill="#0E4C92">
+        {value}
+      </text>
     </svg>
   );
 }
 
+function canUseJsBarcode() {
+  if (import.meta.env.MODE === "test") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext?.("2d"));
+  } catch {
+    return false;
+  }
+}
+
 export function Barcode({ value, id = "wristband-barcode" }: { value: string; id?: string }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const [mode, setMode] = useState<"pending" | "js" | "fallback">("pending");
+  const [mode, setMode] = useState<"js" | "fallback">(() => (canUseJsBarcode() ? "js" : "fallback"));
 
-  useEffect(() => {
-    if (!value) return;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext?.("2d");
-    if (!ctx) {
+  useLayoutEffect(() => {
+    if (!value || mode === "fallback") return;
+    const node = svgRef.current;
+    if (!node || !canUseJsBarcode()) {
       setMode("fallback");
       return;
     }
-    setMode("pending");
-    const timer = window.setTimeout(() => {
-      if (!svgRef.current) {
-        setMode("fallback");
-        return;
-      }
-      try {
-        JsBarcode(svgRef.current, value, {
-          format: "CODE128",
-          displayValue: true,
-          fontSize: 14,
-          height: 64,
-          margin: 8,
-          background: "#ffffff",
-          lineColor: "#0E4C92",
-        });
-        setMode("js");
-      } catch {
-        setMode("fallback");
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [value]);
-
-  if (mode === "fallback") {
-    return (
-      <div id={id} className="barcode-wrap">
-        <FallbackBars value={value} />
-      </div>
-    );
-  }
+    try {
+      JsBarcode(node, value, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        height: 64,
+        margin: 8,
+        background: "#ffffff",
+        lineColor: "#0E4C92",
+      });
+    } catch {
+      setMode("fallback");
+    }
+  }, [mode, value]);
 
   return (
     <div id={id} className="barcode-wrap">
-      <svg
-        ref={svgRef}
-        className="barcode"
-        role="img"
-        aria-label={`Código de barras ${value}`}
-      />
+      {mode === "fallback" ? (
+        <FallbackBars value={value} />
+      ) : (
+        <svg
+          ref={svgRef}
+          className="barcode"
+          width={240}
+          height={80}
+          role="img"
+          aria-label={`Código de barras ${value}`}
+        />
+      )}
     </div>
   );
 }

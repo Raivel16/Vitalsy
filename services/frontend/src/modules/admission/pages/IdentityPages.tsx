@@ -1,8 +1,9 @@
 import { type FormEvent, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { Barcode, printBarcodeOnly } from "../components/Barcode";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -24,8 +25,7 @@ export function WristbandPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Admisión" title="Brazalete de identificación">
-        <Feedback tone="info">Abra un paciente desde el censo para emitir su brazalete.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para emitir su brazalete." />
       </Sheet>
     );
   }
@@ -61,21 +61,21 @@ export function WristbandPage() {
   return (
     <Sheet kicker="Admisión" title="Brazalete de identificación">
       <p className="lead">Genere el brazalete de {activeEncounter.patientName} y verifique el código antes de entregarlo.</p>
-      <form onSubmit={onSubmit}>
-        <button className="button" type="submit" disabled={pending}>Emitir brazalete</button>
+      <form className="stack" onSubmit={onSubmit}>
+        <Button type="submit" pending={pending}>Emitir brazalete</Button>
+        {error ? <Feedback tone="error">{error}</Feedback> : null}
+        {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       </form>
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {code ? (
         <div className="wristband">
           <span className="wrist-hole" aria-hidden="true" />
           <div>
             <p className="wrist-name">{activeEncounter.patientName}</p>
-            <p className="wrist-code">{code}</p>
+            <p className="wrist-code" aria-label="Código del brazalete">{code}</p>
             <Barcode value={code} />
-            <button className="button button-quiet" type="button" onClick={() => printBarcodeOnly()}>
+            <Button variant="quiet" type="button" onClick={() => printBarcodeOnly()}>
               Imprimir código de barras
-            </button>
+            </Button>
           </div>
           <span className="wrist-hole" aria-hidden="true" />
         </div>
@@ -98,8 +98,7 @@ export function RecordPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
-        <Feedback tone="info">Abra un paciente desde el censo para aperturar su expediente.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para aperturar su expediente." />
       </Sheet>
     );
   }
@@ -132,7 +131,7 @@ export function RecordPage() {
     <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
       <p className="lead">Abra el expediente clínico de {activeEncounter.patientName}.</p>
       <form onSubmit={onSubmit}>
-        <button className="button" type="submit" disabled={pending}>Aperturar expediente</button>
+        <Button type="submit" pending={pending}>Aperturar expediente</Button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {recordId ? <Feedback tone="success">Expediente abierto. Identificador {recordId}.</Feedback> : null}
@@ -158,8 +157,7 @@ export function ConsentPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Admisión" title="Consentimiento informado">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar el consentimiento.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar el consentimiento." />
       </Sheet>
     );
   }
@@ -208,7 +206,7 @@ export function ConsentPage() {
         <CheckField id="consent-accepted" label="Acepto el consentimiento informado" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} error={errors.accepted} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {signed ? <Feedback tone="success">Consentimiento {signed}.</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar consentimiento</button>
+        <Button type="submit" pending={pending}>Registrar consentimiento</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="consentimiento" canContinue={advanced} />
     </Sheet>

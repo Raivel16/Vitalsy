@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import type { Encounter } from "../../admission-census/domain/encounter";
@@ -93,7 +94,7 @@ export function PatientRegistrationPage() {
         <TextField id="reg-plan" label="Plan de cobertura" value={coveragePlan} onChange={(event) => setCoveragePlan(event.target.value)} error={errors.coveragePlan} required />
         <TextField id="reg-reason" label="Motivo de internamiento (opcional)" value={reason} onChange={(event) => setReason(event.target.value)} hint="Puede dejarse vacío si no aplica." />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar e iniciar</button>
+        <Button type="submit" pending={pending}>Registrar e iniciar</Button>
       </form>
       <p><Link to="/pacientes">Volver al censo</Link></p>
     </Sheet>

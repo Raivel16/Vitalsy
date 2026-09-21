@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
@@ -61,8 +63,7 @@ export function KardexPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
-        <Feedback tone="info">Abra un paciente desde el censo para revisar el Kardex.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para revisar el Kardex." />
       </Sheet>
     );
   }
@@ -107,9 +108,9 @@ export function KardexPage() {
       ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <button className="button" type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
+      <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
         Confirmar revisión del Kardex
-      </button>
+      </Button>
       <StepNav role={role} encounter={activeEncounter} viewingStep="kardex" canContinue={advanced} />
     </Sheet>
   );

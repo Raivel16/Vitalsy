@@ -198,7 +198,8 @@ describe("admisión administrativa", () => {
 
     renderApp("/admision/brazalete?ingreso=ENC-0001");
     await user.click(await screen.findByRole("button", { name: /emitir brazalete/i }));
-    expect(await screen.findByText("BRZ-0001-ANA")).toBeInTheDocument();
+    expect(await screen.findByLabelText(/código del brazalete/i)).toHaveTextContent("BRZ-0001-ANA");
+    expect(screen.getByRole("img", { name: /código de barras BRZ-0001-ANA/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /imprimir código de barras/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
 
