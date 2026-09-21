@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import type { Role } from "../../../app/roles";
+import { ButtonLink } from "../../../shared/ui/Button";
 import type { Encounter } from "../domain/encounter";
 import { nextContinuePath, previousRoleStep, stepPath } from "../domain/steps";
 
@@ -32,7 +33,7 @@ export function StepNav({
       ) : (
         <Link to={`/pacientes/${encounter.encounterId}`}>Volver a la ficha</Link>
       )}
-      {canContinue ? <Link className="button" to={nextPath}>{label}</Link> : null}
+      {canContinue ? <ButtonLink to={nextPath}>{label}</ButtonLink> : null}
     </div>
   );
 }

@@ -133,6 +133,34 @@ describe("censo de ingresos", () => {
     expect(screen.queryByText(/subproceso/i)).not.toBeInTheDocument();
   });
 
+  it("muestra en la ficha el estado de una derivación de cobertura registrada", async () => {
+    const waiting = {
+      ...luis,
+      encounterId: "ENC-0003",
+      patientName: "Carmen Yolanda Vega",
+      currentStep: "derivacion",
+      currentStepLabel: "Esperar regularización de cobertura",
+      nextRole: null,
+      statusLabel: "En trámite de cobertura",
+      coverage: { payer: "Particular", status: "rechazada", plan: "Sin cobertura vigente" },
+      coverageReferral: {
+        destination: "trabajo_social",
+        destinationLabel: "Trabajo social",
+        status: "derivado",
+        relativeName: "Rosa Vega",
+        relativePhone: "999888777",
+        note: "Copago pendiente",
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: waiting })));
+    renderApp("/pacientes/ENC-0003");
+
+    expect(await screen.findByRole("region", { name: /estado de la derivación de cobertura/i })).toBeInTheDocument();
+    expect(screen.getByText(/trámite derivado a trabajo social/i)).toBeInTheDocument();
+    expect(screen.getByText("Rosa Vega")).toBeInTheDocument();
+    expect(screen.getByText("999888777")).toBeInTheDocument();
+  });
+
   it("registra la cobertura del paciente y avanza el ingreso", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()

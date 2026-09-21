@@ -20,13 +20,25 @@ export function Sheet({
   );
 }
 
-export function Feedback({ tone, children }: { tone: "error" | "success" | "info"; children: ReactNode }) {
+export function Feedback({
+  tone,
+  children,
+  label,
+}: {
+  tone: "error" | "success" | "info";
+  children: ReactNode;
+  label?: string;
+}) {
   if (tone === "error") {
     return (
-      <p className="banner banner-error" role="alert">
+      <p className="banner banner-error" role="alert" aria-label={label}>
         {children}
       </p>
     );
   }
-  return <p className={`banner banner-${tone}`} role="status">{children}</p>;
+  return (
+    <p className={`banner banner-${tone}`} role="status" aria-label={label}>
+      {children}
+    </p>
+  );
 }

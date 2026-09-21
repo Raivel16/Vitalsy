@@ -71,4 +71,11 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `admission_encounters` intacto; `encounter_id` string indexado sin FK en tablas nuevas.
 - Censo: búsqueda `q` + paginación 10; sheets anchos en pantallas grandes (`Sheet wide` / CSS responsive).
 
+### 2026-09-20 — UI compartida y espaciado de formularios
+
+- Componentes en `shared/ui/`: `Button` / `ButtonLink`, `EmptyEncounter`, `StatusStamp`, `FormActions`.
+- Cobertura: formulario en `.stack` + `StatusStamp`; `.stamp` con margen vertical; dentro de `.stack` el margen se anula para no duplicar el gap.
+- CSS: `.field` gap 0.5rem; `.check .field-error` a ancho completo; `.result-block` con margen superior.
+- `Feedback` acepta `label` opcional (`aria-label`) para resultados de registro.
+
 <!-- END AGENT ANNOTATIONS -->

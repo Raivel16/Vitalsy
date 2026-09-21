@@ -1,8 +1,9 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -30,8 +31,7 @@ export function NursingAssessmentPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Valoración inicial">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar la valoración.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar la valoración." />
       </Sheet>
     );
   }
@@ -80,8 +80,8 @@ export function NursingAssessmentPage() {
         <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} error={errors.history} required />
         <div className="inline-add">
           <TextField id="allergy" label="Alergia (opcional)" value={allergy} onChange={(event) => setAllergy(event.target.value)} hint="Solo si el paciente declara alergias." />
-          <button
-            className="button button-quiet"
+          <Button
+            variant="quiet"
             type="button"
             onClick={() => {
               if (!allergy.trim()) return;
@@ -90,14 +90,14 @@ export function NursingAssessmentPage() {
             }}
           >
             Agregar alergia
-          </button>
+          </Button>
         </div>
         {allergies.length > 0 ? (
           <ul>{allergies.map((item) => <li key={item}>{item}</li>)}</ul>
         ) : <p className="empty">Sin alergias registradas en esta valoración.</p>}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Guardar valoración</button>
+        <Button type="submit" pending={pending}>Guardar valoración</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="valoracion" canContinue={advanced} />
     </Sheet>
@@ -146,8 +146,7 @@ export function VitalSignsPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Constantes vitales basales">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar las constantes.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar las constantes." />
       </Sheet>
     );
   }
@@ -234,7 +233,7 @@ export function VitalSignsPage() {
         ) : null}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar constantes</button>
+        <Button type="submit" pending={pending}>Registrar constantes</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="constantes" canContinue={advanced} />
     </Sheet>

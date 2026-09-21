@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureRequestOrigin;
 use App\Http\Middleware\EnsureUserRole;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Nginx (HTTP/HTTPS) envía X-Forwarded-*; necesario para URL/scheme correctos en LAN.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+        $middleware->api(prepend: [
+            EnsureRequestOrigin::class,
+        ]);
         $middleware->statefulApi();
         $middleware->alias([
             'role' => EnsureUserRole::class,

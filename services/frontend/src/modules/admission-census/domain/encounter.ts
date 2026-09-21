@@ -12,6 +12,16 @@ export type ProgressStep = {
   state: "done" | "current" | "pending";
 };
 
+export type CoverageReferral = {
+  destination: string;
+  destinationLabel: string;
+  status: string;
+  relativeName: string;
+  relativePhone?: string | null;
+  note?: string | null;
+  registeredAt?: string | null;
+};
+
 export type Encounter = {
   encounterId: string;
   orderNumber: string;
@@ -22,6 +32,7 @@ export type Encounter = {
   documentNumber: string;
   originService: string;
   coverage: { payer: string; status: string; plan: string };
+  coverageReferral?: CoverageReferral | null;
   location: { room: string | null; bed: string | null; service: string | null };
   wristbandCode: string | null;
   recordId: string | null;

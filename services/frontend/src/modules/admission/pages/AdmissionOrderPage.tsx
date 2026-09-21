@@ -1,11 +1,11 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { errorText } from "../../../app/userMessage";
+import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -84,11 +84,11 @@ export function AdmissionOrderPage() {
           : "Consulte la orden digital enviada por el servicio emisor o registre un ingreso manual."}
       </p>
       {!encounter ? (
-        <p><Link className="button" to="/pacientes/nuevo">Registrar ingreso manual</Link></p>
+        <p><ButtonLink to="/pacientes/nuevo">Registrar ingreso manual</ButtonLink></p>
       ) : null}
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="order-number" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} required />
-        <button className="button" type="submit">Consultar orden</button>
+        <Button type="submit">Consultar orden</Button>
       </form>
       {loading ? <p role="status">Cargando orden de internamiento.</p> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
@@ -105,11 +105,11 @@ export function AdmissionOrderPage() {
             <div><dt>Cobertura</dt><dd>{result.order.coverage.payer} · {result.order.coverage.status}</dd></div>
           </dl>
           {encounter ? (
-            <button className="button" type="button" onClick={() => void confirmOrder()} disabled={pending || advanced}>
+            <Button type="button" onClick={() => void confirmOrder()} disabled={pending || advanced}>
               Confirmar orden
-            </button>
+            </Button>
           ) : (
-            <p><Link className="button" to="/pacientes">Ir al censo</Link></p>
+            <p><ButtonLink to="/pacientes">Ir al censo</ButtonLink></p>
           )}
         </section>
       ) : null}

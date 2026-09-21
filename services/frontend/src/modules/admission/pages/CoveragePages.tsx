@@ -3,17 +3,21 @@ import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
+import { FormActions } from "../../../shared/ui/FormActions";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { StatusStamp } from "../../../shared/ui/StatusStamp";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounterState, type CoverageStatus } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { digitsOnly, phoneNumberError, requiredText } from "../../../shared/validation/inputRules";
 
 const COPY: Record<CoverageStatus, string> = {
-  aprobada: "La cobertura permite continuar la admisión.",
-  pendiente: "Hay un trámite pendiente antes de completar el ingreso.",
-  rechazada: "La cobertura fue rechazada. Derive el trámite antes de continuar.",
+  aprobada: "La cobertura permite continuar la admisión hacia el brazalete.",
+  pendiente: "Hay un trámite pendiente. Registre la cobertura y use «Derivar trámite» para notificar al familiar (caja o trabajo social). No se emite brazalete hasta que la cobertura quede aprobada.",
+  rechazada: "La cobertura fue rechazada. Registre el estado, derive el trámite y espere la resolución. No se emite brazalete mientras esté rechazada.",
 };
 
 export function CoveragePage() {
@@ -56,8 +60,13 @@ export function CoveragePage() {
       const step = encounter.currentStep === "derivacion" ? "derivacion" : "cobertura";
       const next = await advanceEncounter(encounter.encounterId, step, status);
       applyEncounter(next);
-      setNotice("Cobertura registrada.");
-      setAdvanced(true);
+      if (status === "aprobada") {
+        setNotice("Cobertura registrada. Puede continuar con el brazalete.");
+        setAdvanced(true);
+      } else {
+        setNotice("Cobertura registrada. Derive el trámite (caja o trabajo social) antes de continuar la admisión.");
+        setAdvanced(false);
+      }
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar la cobertura."));
     } finally {
@@ -65,38 +74,37 @@ export function CoveragePage() {
     }
   }
 
+  if (!encounter) {
+    return (
+      <Sheet kicker="Admisión" title="Cobertura sanitaria">
+        <EmptyEncounter message="Abra un paciente desde el censo para validar su cobertura." />
+      </Sheet>
+    );
+  }
+
   return (
     <Sheet kicker="Admisión" title="Cobertura sanitaria">
       <p className="lead">
-        {encounter
-          ? `Revise la cobertura de ${encounter.patientName}. Al registrar, el ingreso avanza según el estado elegido.`
-          : "Abra un paciente desde el censo para validar su cobertura."}
+        Revise la cobertura de {encounter.patientName}. Al registrar, el ingreso avanza según el estado elegido.
       </p>
-      {!encounter ? (
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
-      ) : (
-        <>
-          <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => changeStatus(event.target.value as CoverageStatus)}>
-            <option value="aprobada">Aprobada</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="rechazada">Rechazada</option>
-          </SelectField>
-          <p className={`stamp stamp-${status}`} role="status" aria-label={`Cobertura ${status}`}>
-            <span aria-hidden="true">{status === "aprobada" ? "✓" : status === "pendiente" ? "!" : "×"}</span>
-            Cobertura {status}
-          </p>
-          <p>{COPY[status]}</p>
-          {error ? <Feedback tone="error">{error}</Feedback> : null}
-          {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-          <div className="actions">
-            <button className="button" type="button" onClick={() => void registerCoverage()} disabled={pending}>
-              Registrar cobertura
-            </button>
-            {status !== "aprobada" ? <Link to={referralTo}>Derivar trámite</Link> : null}
-          </div>
-          <StepNav role={role} encounter={encounter} viewingStep="cobertura" canContinue={advanced} />
-        </>
-      )}
+      <div className="stack">
+        <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => changeStatus(event.target.value as CoverageStatus)}>
+          <option value="aprobada">Aprobada</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="rechazada">Rechazada</option>
+        </SelectField>
+        <StatusStamp status={status} />
+        <p>{COPY[status]}</p>
+        {error ? <Feedback tone="error">{error}</Feedback> : null}
+        {notice ? <Feedback tone="success">{notice}</Feedback> : null}
+        <FormActions>
+          <Button type="button" onClick={() => void registerCoverage()} pending={pending}>
+            Registrar cobertura
+          </Button>
+          {status !== "aprobada" ? <Link to={referralTo}>Derivar trámite</Link> : null}
+        </FormActions>
+        <StepNav role={role} encounter={encounter} viewingStep="cobertura" canContinue={advanced} />
+      </div>
     </Sheet>
   );
 }
@@ -182,7 +190,7 @@ export function ReferralPage() {
         <TextAreaField id="referral-note" label="Observación (opcional)" value={note} onChange={(event) => setNote(event.target.value)} hint="Puede dejarse vacío." />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {result ? <Feedback tone="success">{result}</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar derivación</button>
+        <Button type="submit" pending={pending}>Registrar derivación</Button>
       </form>
     </Sheet>
   );

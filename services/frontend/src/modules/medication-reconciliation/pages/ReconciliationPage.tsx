@@ -1,8 +1,9 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -29,8 +30,7 @@ export function ReconciliationPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Conciliación farmacéutica de ingreso">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar la conciliación.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar la conciliación." />
       </Sheet>
     );
   }
@@ -89,7 +89,7 @@ export function ReconciliationPage() {
             <option value="inhalatoria">Inhalatoria</option>
           </SelectField>
         </div>
-        <button className="button button-quiet" type="button" onClick={addMedication}>Agregar medicamento</button>
+        <Button variant="quiet" type="button" onClick={addMedication}>Agregar medicamento</Button>
         <div className="table-wrap">
           <table>
             <caption>Medicamentos domiciliarios</caption>
@@ -113,8 +113,8 @@ export function ReconciliationPage() {
         <p role="status" aria-label="Estado de conciliación">{review.label}</p>
         {review.alerts.map((alert) => <p key={alert} role="alert">{alert}</p>)}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        {result ? <p role="status" aria-label="Resultado del registro">{result}</p> : null}
-        <button className="button" type="submit" disabled={pending}>Registrar conciliación</button>
+        {result ? <Feedback tone="success" label="Resultado del registro">{result}</Feedback> : null}
+        <Button type="submit" pending={pending}>Registrar conciliación</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="conciliacion" canContinue={advanced} />
     </Sheet>

@@ -20,6 +20,32 @@ class AuthApiTest extends TestCase
         $this->withHeader('X-CSRF-TOKEN', csrf_token());
     }
 
+    public function test_login_works_without_origin_header_for_lan_clients(): void
+    {
+        User::factory()->create([
+            'email' => 'celador@vitalsy.local',
+            'password' => 'Vitalsy.2026',
+            'role' => 'celador',
+        ]);
+
+        // Simula cliente móvil/LAN que no envía Origin ni Referer.
+        $this->withoutHeader('origin')
+            ->withoutHeader('referer')
+            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
+            ->get('/sanctum/csrf-cookie');
+
+        $this->withHeader('X-CSRF-TOKEN', csrf_token())
+            ->withoutHeader('origin')
+            ->withoutHeader('referer')
+            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
+            ->postJson('/api/v1/auth/login', [
+                'email' => 'celador@vitalsy.local',
+                'password' => 'Vitalsy.2026',
+            ])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'celador');
+    }
+
     public function test_login_rejects_unknown_credentials_in_spanish(): void
     {
         $this->postJson('/api/v1/auth/login', [

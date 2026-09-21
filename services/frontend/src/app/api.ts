@@ -23,6 +23,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`${baseUrl}${path}`, {
       ...init,
       credentials: "include",
+      referrerPolicy: "origin",
       headers: {
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest",
@@ -45,7 +46,10 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function loginRequest(email: string, password: string): Promise<{ user: SessionUser }> {
-  await fetch(`${baseUrl}/sanctum/csrf-cookie`, { credentials: "include" });
+  await fetch(`${baseUrl}/sanctum/csrf-cookie`, {
+    credentials: "include",
+    referrerPolicy: "origin",
+  });
   return api("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),

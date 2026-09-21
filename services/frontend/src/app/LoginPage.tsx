@@ -1,9 +1,10 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
+import { IconEye, IconEyeOff, IconLogin } from "@tabler/icons-react";
 import { loginRequest } from "./api";
 import { useAuth } from "./AuthProvider";
 import { errorText } from "./userMessage";
-import { IconLogin } from "@tabler/icons-react";
+import { Button } from "../shared/ui/Button";
 import { SealIcon } from "../shared/ui/Icons";
 import { TextField } from "../shared/ui/Field";
 import { Feedback } from "../shared/ui/Sheet";
@@ -13,6 +14,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ export function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await loginRequest(email.trim(), password);
+      const data = await loginRequest(email.trim().toLowerCase(), password);
       setUser(data.user);
       setNotice("");
       navigate("/");
@@ -53,13 +55,51 @@ export function LoginPage() {
         <h2>Iniciar sesión</h2>
         <p className="lead">Ingrese con su cuenta institucional para continuar.</p>
         {notice ? <Feedback tone="info">{notice}</Feedback> : null}
-        <TextField id="email" label="Correo" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email} />
-        <TextField id="password" label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} error={errors.password} />
+        <TextField
+          id="email"
+          label="Correo"
+          type="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={errors.email}
+        />
+        <div className="field">
+          <label htmlFor="password">Contraseña</label>
+          <div className="password-input">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? "password-error" : undefined}
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? <IconEyeOff size={20} stroke={1.75} aria-hidden /> : <IconEye size={20} stroke={1.75} aria-hidden />}
+            </button>
+          </div>
+          {errors.password ? <p id="password-error" className="field-error">{errors.password}</p> : null}
+        </div>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        <button className="button" type="submit" disabled={loading}>
+        <Button type="submit" pending={loading}>
           <IconLogin size={18} stroke={1.75} aria-hidden />
           {loading ? "Entrando…" : "Entrar"}
-        </button>
+        </Button>
       </form>
     </main>
   );

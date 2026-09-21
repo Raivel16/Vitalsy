@@ -429,7 +429,11 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
         $payload = $encounter->clinical_payload ?? [];
-        $payload['referral'] = $referral;
+        $payload['referral'] = [
+            ...$referral,
+            'status' => 'derivado',
+            'registeredAt' => now()->toIso8601String(),
+        ];
         $encounter->clinical_payload = $payload;
         $encounter->save();
 
@@ -437,6 +441,8 @@ class AdmissionBoard
             'destination' => $referral['destination'],
             'status' => 'derivado',
             'relativeName' => $referral['relativeName'],
+            'relativePhone' => $referral['relativePhone'] ?? null,
+            'registeredAt' => $payload['referral']['registeredAt'],
         ];
     }
 
@@ -665,6 +671,8 @@ class AdmissionBoard
         }
 
         $waiting = $encounter->waiting_reason !== null;
+        $payload = $encounter->clinical_payload ?? [];
+        $referral = is_array($payload['referral'] ?? null) ? $payload['referral'] : null;
         $currentIndex = array_search($encounter->current_step === 'derivacion' ? 'cobertura' : $encounter->current_step, self::FLOW_STEPS, true);
         if ($currentIndex === false) {
             $currentIndex = count(self::FLOW_STEPS);
@@ -715,6 +723,15 @@ class AdmissionBoard
             'currentStepLabel' => $waiting ? 'Esperar regularización de cobertura' : $step['label'],
             'nextRole' => $waiting || $encounter->current_step === 'cerrado' ? null : $step['role'],
             'statusLabel' => $waiting ? 'En trámite de cobertura' : $step['status'],
+            'coverageReferral' => $referral ? [
+                'destination' => $referral['destination'],
+                'destinationLabel' => ($referral['destination'] ?? '') === 'caja' ? 'Caja' : 'Trabajo social',
+                'status' => $referral['status'] ?? 'derivado',
+                'relativeName' => $referral['relativeName'] ?? '',
+                'relativePhone' => $referral['relativePhone'] ?? null,
+                'note' => $referral['note'] ?? null,
+                'registeredAt' => $referral['registeredAt'] ?? null,
+            ] : null,
             'deliverables' => $deliverables,
             'progress' => $progress,
         ];

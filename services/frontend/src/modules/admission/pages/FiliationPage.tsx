@@ -1,11 +1,12 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { StepNav } from "../../admission-census/ui/StepNav";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { digitsOnly, documentNumberError, requiredText } from "../../../shared/validation/inputRules";
@@ -33,8 +34,7 @@ export function FiliationPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Admisión" title="Datos filiatorios">
-        <Feedback tone="info">Abra un paciente desde el censo para validar su filiación.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para validar su filiación." />
       </Sheet>
     );
   }
@@ -108,7 +108,7 @@ export function FiliationPage() {
         <CheckField id="filiation-confirmed" label="Los datos coinciden con la orden de internamiento" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {success ? <Feedback tone="success">{success}</Feedback> : null}
-        <button className="button" type="submit" disabled={pending}>Validar filiación</button>
+        <Button type="submit" pending={pending}>Validar filiación</Button>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="filiacion" canContinue={advanced} />
     </Sheet>

@@ -169,6 +169,27 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounter.statusLabel', 'Cobertura por validar');
     }
 
+    public function test_encounter_file_exposes_registered_coverage_referral(): void
+    {
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/coverage/referrals', [
+            'encounterId' => 'ENC-0003',
+            'destination' => 'caja',
+            'relativeName' => 'Rosa Vega',
+            'relativePhone' => '999888777',
+            'note' => 'Copago pendiente',
+        ])->assertCreated();
+
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-0003')
+            ->assertOk()
+            ->assertJsonPath('encounter.coverageReferral.destination', 'caja')
+            ->assertJsonPath('encounter.coverageReferral.destinationLabel', 'Caja')
+            ->assertJsonPath('encounter.coverageReferral.status', 'derivado')
+            ->assertJsonPath('encounter.coverageReferral.relativeName', 'Rosa Vega')
+            ->assertJsonPath('encounter.coverageReferral.relativePhone', '999888777');
+    }
+
     public function test_closing_the_admission_removes_it_from_the_physician_queue(): void
     {
         $this->asRole('medico');

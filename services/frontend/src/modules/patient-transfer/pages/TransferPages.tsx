@@ -3,6 +3,8 @@ import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { Button } from "../../../shared/ui/Button";
+import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -17,10 +19,7 @@ type TransferOrder = {
 function NeedPatient({ title }: { title: string }) {
   return (
     <Sheet kicker="Celador" title={title}>
-      <Feedback tone="info">
-        Abra un paciente desde el censo para trabajar este paso con su código propio.
-      </Feedback>
-      <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+      <EmptyEncounter message="Abra un paciente desde el censo para trabajar este paso con su código propio." />
     </Sheet>
   );
 }
@@ -90,7 +89,7 @@ export function TransferOrderPage() {
       <p className="lead">Confirme habitación y lecho de {activeEncounter.patientName} antes de movilizarlo.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
-        <button className="button" type="submit">Consultar traslado</button>
+        <Button type="submit">Consultar traslado</Button>
       </form>
       {loading ? <p role="status">Cargando orden de traslado.</p> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
@@ -101,9 +100,9 @@ export function TransferOrderPage() {
           <p>Habitación {result.transfer.room}</p>
           <p>Lecho {result.transfer.bed}</p>
           <p>{result.transfer.service}</p>
-          <button className="button" type="button" onClick={() => void confirmTransfer()} disabled={pending || advanced}>
+          <Button type="button" onClick={() => void confirmTransfer()} disabled={pending || advanced}>
             Confirmar traslado
-          </button>
+          </Button>
         </section>
       ) : null}
       <StepNav role={role} encounter={activeEncounter} viewingStep="traslado" canContinue={advanced} />
@@ -166,7 +165,7 @@ export function WristbandVerifyPage() {
       <BarcodeScanner onScan={onScan} />
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
-        <button className="button" type="submit" disabled={pending}>Verificar brazalete</button>
+        <Button type="submit" pending={pending}>Verificar brazalete</Button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {message ? <Feedback tone="success">{message}</Feedback> : null}
@@ -188,8 +187,7 @@ export function FloorReceptionPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Recepción física en piso">
-        <Feedback tone="info">Abra un paciente desde el censo para confirmar su recepción.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para confirmar su recepción." />
       </Sheet>
     );
   }
@@ -227,7 +225,7 @@ export function FloorReceptionPage() {
     <Sheet kicker="Enfermería" title="Recepción física en piso">
       <p className="lead">Confirme que {activeEncounter.patientName} llegó a la habitación y al lecho asignados.</p>
       <form onSubmit={onSubmit}>
-        <button className="button" type="submit" disabled={pending}>Confirmar recepción</button>
+        <Button type="submit" pending={pending}>Confirmar recepción</Button>
       </form>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {status ? <Feedback tone="success">Paciente {status} en el lecho asignado.</Feedback> : null}
@@ -249,8 +247,7 @@ export function RelocationPage() {
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Reubicación del paciente">
-        <Feedback tone="info">Abra un paciente desde el censo para registrar la reubicación.</Feedback>
-        <p><Link className="button" to="/pacientes">Ir a pacientes</Link></p>
+        <EmptyEncounter message="Abra un paciente desde el censo para registrar la reubicación." />
       </Sheet>
     );
   }
@@ -292,7 +289,7 @@ export function RelocationPage() {
         <TextField id="requested-bed" label="Lecho solicitado" value={bed} onChange={(event) => setBed(event.target.value)} error={errors.bed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-        <button className="button" type="submit">Notificar reubicación</button>
+        <Button type="submit">Notificar reubicación</Button>
       </form>
       <p><Link to={`/piso/recepcion?ingreso=${encodeURIComponent(activeEncounter.encounterId)}`}>Volver a recepción</Link></p>
     </Sheet>

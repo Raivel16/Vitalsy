@@ -18,6 +18,7 @@ import { ReconciliationPage } from "./modules/medication-reconciliation/pages/Re
 import { NursingAssessmentPage, VitalSignsPage } from "./modules/nursing-assessment/pages/NursingPages";
 import { FloorReceptionPage, RelocationPage, TransferOrderPage, WristbandVerifyPage } from "./modules/patient-transfer/pages/TransferPages";
 import { RiskScalesPage } from "./modules/risk-assessment/pages/RiskPages";
+import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
@@ -49,10 +50,10 @@ function Shell() {
         </div>
         <div className="session-box">
           <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
-          <button className="button button-quiet" type="button" onClick={() => void logout()}>
+          <Button variant="quiet" type="button" onClick={() => void logout()}>
             <IconLogout size={18} stroke={1.75} aria-hidden />
             Cerrar sesión
-          </button>
+          </Button>
         </div>
       </header>
       <div className="layout">
