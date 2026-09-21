@@ -18,6 +18,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
+        $credentials['email'] = mb_strtolower(trim($credentials['email']));
 
         if (! Auth::attempt($credentials, false)) {
             throw ValidationException::withMessages([
