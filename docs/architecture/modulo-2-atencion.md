@@ -17,35 +17,26 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 
 | RF | Estado | Interfaz / API |
 |---|---|---|
-| RF-17 | Hecho | `/atencion/laboratorio?ingreso=` · `POST/GET .../lab-results` (stub LIS FHIR) |
-| RF-18 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` (stub PACS FHIR) |
-| RF-19 | Hecho | `/atencion/visita?ingreso=` · `GET .../clinical-visit` (labs + imágenes + notas del día) |
-| RF-20 | Hecho | `/atencion/evolucion?ingreso=` · `POST/GET .../medical-evolution-notes` (médico residente) |
-| RF-21 | Hecho | `/atencion/cpoe?ingreso=` · `POST .../prescriptions` + Kardex CPOE (médico tratante) |
+| RF-17 | Hecho | `/atencion/laboratorio?ingreso=` · `POST/GET .../lab-results` |
+| RF-18 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` |
+| RF-19 | Hecho | `/atencion/visita?ingreso=` · `GET .../clinical-visit` |
+| RF-20 | Hecho | `/atencion/evolucion?ingreso=` · `POST/GET .../medical-evolution-notes` |
+| RF-21 | Hecho | `/atencion/cpoe?ingreso=` · `POST .../prescriptions` + Kardex CPOE |
 | RF-22–27 | Hecho | `/atencion/constantes?ingreso=` · vitals/telemetría + NEWS2 + gráfica + alertas/agenda |
-| RF-28–RF-33 | Pendiente | Siguiente incremento |
+| RF-28–31 | Hecho | `/atencion/emar?ingreso=` · e-MAR, 5 correctos, firma |
+| RF-32–33 | Hecho | `/atencion/cuidados?ingreso=` · evolución enfermería + cuidados auxiliares |
 
-## Cómo comprobar RF-17
+## Rutas UI
 
-1. Iniciar sesión como `medico_residente@vitalsy.local` (u otro rol clínico autorizado).
-2. Abrir `/atencion/laboratorio?ingreso=<encounterId>` de un ingreso existente.
-3. Pulsar **Integrar desde LIS**: deben aparecer Hemoglobina y Creatinina (stub) y persistir en `lab_results`.
+| Ruta | Roles |
+|---|---|
+| `/atencion/laboratorio` | residente, tratante, enfermera |
+| `/atencion/imagenes` | residente, tratante, enfermera |
+| `/atencion/visita` | residente, tratante |
+| `/atencion/evolucion` | residente |
+| `/atencion/cpoe` | tratante |
+| `/atencion/constantes` | enfermera, auxiliar |
+| `/atencion/emar` | enfermera |
+| `/atencion/cuidados` | enfermera, auxiliar |
 
-## Cómo comprobar RF-18
-
-1. Con el mismo ingreso, abrir `/atencion/imagenes?ingreso=<encounterId>`.
-2. Pulsar **Integrar desde PACS**: deben aparecer RX de tórax y ECO abdominal (stub) en `imaging_reports`.
-
-## Cómo comprobar RF-19
-
-1. Como `medico_tratante` o `medico_residente`, abrir `/atencion/visita?ingreso=<encounterId>`.
-2. Debe mostrar en una sola pantalla labs, imágenes y notas de enfermería **del día**.
-
-## Cómo comprobar RF-20
-
-1. Como `medico_residente@vitalsy.local`, abrir `/atencion/evolucion?ingreso=<encounterId>`.
-2. Escribir la nota, marcar firma y registrar: debe aparecer en el listado como firmada.
-
-## API Yaak
-
-Colección importable: [`docs/api/yaak-modulo-2.postman_collection.json`](../api/yaak-modulo-2.postman_collection.json). Guía: [`docs/api/README.md`](../api/README.md).
+Todas requieren `?ingreso=<encounterId>` de un ingreso existente (idealmente `current_step=cerrado`).

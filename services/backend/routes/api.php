@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClinicalVisitController;
 use App\Http\Controllers\Api\CpoeController;
+use App\Http\Controllers\Api\EmarCareController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
@@ -99,6 +100,17 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:enfermera_piso,auxiliar_enfermeria,medico_residente,medico_tratante')->group(function () {
                 Route::get('encounters/{encounterId}/vital-signs/chart', [VitalSignsMonitoringController::class, 'chart']);
+            });
+
+            // RF-28–31: e-MAR; RF-32 evolución enfermería; RF-33 cuidados auxiliares.
+            Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('encounters/{encounterId}/emar', [EmarCareController::class, 'emar']);
+                Route::post('encounters/{encounterId}/emar/{doseId}/administer', [EmarCareController::class, 'administer']);
+                Route::post('encounters/{encounterId}/nursing-evolution-notes', [EmarCareController::class, 'storeNursingNote']);
+            });
+
+            Route::middleware('role:auxiliar_enfermeria')->group(function () {
+                Route::post('encounters/{encounterId}/care-activities', [EmarCareController::class, 'storeCareActivity']);
             });
         });
     });

@@ -24,6 +24,8 @@ import { ClinicalVisitPage } from "./modules/clinical-visit/pages/ClinicalVisitP
 import { MedicalEvolutionPage } from "./modules/medical-evolution/pages/MedicalEvolutionPage";
 import { CpoePage } from "./modules/cpoe/pages/CpoePage";
 import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonitoringPage";
+import { EmarPage } from "./modules/e-mar/pages/EmarPage";
+import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -152,6 +154,22 @@ function Shell() {
                 element={
                   <Guard roles={["enfermera_piso", "auxiliar_enfermeria"]}>
                     <VitalMonitoringPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/emar"
+                element={
+                  <Guard roles={["enfermera_piso"]}>
+                    <EmarPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/cuidados"
+                element={
+                  <Guard roles={["enfermera_piso", "auxiliar_enfermeria"]}>
+                    <NursingEvolutionCarePage />
                   </Guard>
                 }
               />
