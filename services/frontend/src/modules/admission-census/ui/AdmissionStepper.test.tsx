@@ -31,7 +31,7 @@ describe("AdmissionStepper", () => {
     expect(screen.queryByRole("link", { name: /consultar orden de traslado/i })).not.toBeInTheDocument();
   });
 
-  it("no ofrece enlaces de admisión al rol celador", () => {
+  it("no ofrece enlaces de admisión al rol camillero", () => {
     render(
       <MemoryRouter>
         <AdmissionStepper
@@ -40,7 +40,7 @@ describe("AdmissionStepper", () => {
             { id: "identidad", label: "Verificar identidad", state: "pending" },
             { id: "orden", label: "Consultar orden de internamiento", state: "done" },
           ]}
-          role="celador"
+          role="camillero"
           encounterId="ENC-0001"
           currentStep="traslado"
         />

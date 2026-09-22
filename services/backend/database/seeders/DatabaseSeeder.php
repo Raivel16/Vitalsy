@@ -17,8 +17,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Mesa de admisión', 'email' => 'admision@vitalsy.local', 'role' => 'admision'],
             ['name' => 'Enfermería de piso', 'email' => 'enfermeria@vitalsy.local', 'role' => 'enfermeria'],
             ['name' => 'Médico de guardia', 'email' => 'medico@vitalsy.local', 'role' => 'medico'],
-            ['name' => 'Celador de traslado', 'email' => 'celador@vitalsy.local', 'role' => 'celador'],
+            ['name' => 'Camillero de traslado', 'email' => 'camillero@vitalsy.local', 'role' => 'camillero'],
         ];
+
+        User::query()->where('email', 'celador@vitalsy.local')->delete();
 
         foreach ($accounts as $account) {
             User::query()->updateOrCreate(

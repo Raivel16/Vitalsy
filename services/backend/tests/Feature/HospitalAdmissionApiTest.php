@@ -93,7 +93,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_transfer_and_wristband_codes_are_independent_per_patient(): void
     {
-        $this->asRole('celador');
+        $this->asRole('camillero');
         app(AdmissionBoard::class)->ensureDemo();
         $admitted = array_fill_keys([
             'fichaAdmision', 'brazalete', 'expediente', 'consentimiento', 'recepcion',
@@ -136,7 +136,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_transfer_identity_reception_and_relocation(): void
     {
-        $this->asRole('celador');
+        $this->asRole('camillero');
         $this->getJson('/api/v1/hospital-admission/transfer-orders/OT-2026-0001')
             ->assertOk()
             ->assertJsonPath('transfer.room', '312')

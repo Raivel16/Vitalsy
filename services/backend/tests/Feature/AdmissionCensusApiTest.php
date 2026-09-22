@@ -36,7 +36,7 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounters.1.currentStep', 'derivacion')
             ->assertJsonPath('encounters.2.encounterId', 'ENC-0001')
             ->assertJsonPath('encounters.2.currentStep', 'traslado')
-            ->assertJsonPath('encounters.2.nextRole', 'celador')
+            ->assertJsonPath('encounters.2.nextRole', 'camillero')
             ->assertJsonPath('encounters.2.location.room', '312')
             ->assertJsonPath('encounters.2.deliverables.3.done', true);
     }
@@ -55,6 +55,12 @@ class AdmissionCensusApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'encounters')
             ->assertJsonPath('encounters.0.documentNumber', '40112233');
+
+        $this->getJson('/api/v1/hospital-admission/encounters?q=BRZ-0001-ANA')
+            ->assertOk()
+            ->assertJsonCount(1, 'encounters')
+            ->assertJsonPath('encounters.0.wristbandCode', 'BRZ-0001-ANA')
+            ->assertJsonPath('encounters.0.patientName', 'Ana María Quispe Rojas');
     }
 
     public function test_census_paginates_ten_per_page(): void
@@ -107,7 +113,7 @@ class AdmissionCensusApiTest extends TestCase
 
     public function test_only_the_responsible_role_can_advance_the_current_step(): void
     {
-        $this->asRole('celador');
+        $this->asRole('camillero');
         $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'derivacion'])
             ->assertForbidden()
             ->assertJsonPath('message', 'Este paso corresponde a otro perfil.');
@@ -131,7 +137,7 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounter.nextRole', 'admision')
             ->assertJsonPath('encounter.deliverables.0.done', true);
 
-        $this->asRole('celador');
+        $this->asRole('camillero');
         $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'traslado'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'identidad');

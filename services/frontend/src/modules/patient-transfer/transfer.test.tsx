@@ -1,7 +1,15 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
+
+vi.mock("../../shared/ui/BarcodeScanner", () => ({
+  BarcodeScanner: ({ onScan }: { onScan: (code: string) => void }) => (
+    <button type="button" onClick={() => onScan("BRZ-0001-ANA")}>
+      Simular escaneo
+    </button>
+  ),
+}));
 
 const ana = {
   encounterId: "ENC-0001",
@@ -19,7 +27,7 @@ const ana = {
   subprocessLabel: "Traslado y recepción en piso",
   currentStep: "traslado",
   currentStepLabel: "Consultar orden de traslado",
-  nextRole: "celador",
+  nextRole: "camillero",
   statusLabel: "Listo para traslado",
   deliverables: [],
   progress: [
@@ -30,7 +38,7 @@ const ana = {
 
 describe("traslado y recepción en piso", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "celador");
+    sessionStorage.setItem("vitalsy-role", "camillero");
   });
 
   afterEach(() => {
@@ -58,7 +66,7 @@ describe("traslado y recepción en piso", () => {
         },
       }))
       .mockResolvedValueOnce(jsonResponse(200, {
-        encounter: { ...ana, currentStep: "identidad", currentStepLabel: "Verificar identidad", nextRole: "celador" },
+        encounter: { ...ana, currentStep: "identidad", currentStepLabel: "Verificar identidad", nextRole: "camillero" },
       }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -86,6 +94,26 @@ describe("traslado y recepción en piso", () => {
     await user.type(screen.getByLabelText(/código del brazalete/i), "BRZ-MALO");
     await user.click(screen.getByRole("button", { name: /verificar brazalete/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/no corresponde/i);
+  });
+
+  it("valida el brazalete automáticamente al escanearlo", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(200, { encounter: { ...ana, currentStep: "identidad", wristbandCode: "BRZ-0001-ANA" } }))
+      .mockResolvedValueOnce(jsonResponse(200, { identity: { patientName: "Ana María Quispe Rojas", code: "BRZ-0001-ANA" } }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounter: { ...ana, currentStep: "recepcion", currentStepLabel: "Confirmar recepción en piso", nextRole: "enfermeria" },
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderApp("/traslado/identidad?ingreso=ENC-0001");
+    await screen.findByDisplayValue("BRZ-0001-ANA");
+    await user.click(screen.getByRole("button", { name: /simular escaneo/i }));
+    expect(await screen.findByText(/identidad confirmada/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/wristbands/verify"))).toBe(true);
+      expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/advance"))).toBe(true);
+    });
   });
 
   it("permite a enfermería confirmar recepción del paciente en curso", async () => {

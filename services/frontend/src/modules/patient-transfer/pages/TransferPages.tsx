@@ -1,8 +1,9 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { TextField } from "../../../shared/ui/Field";
@@ -10,7 +11,7 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
-import { BarcodeScanner } from "../components/BarcodeScanner";
+import type { Encounter } from "../../admission-census/domain/encounter";
 
 type TransferOrder = {
   transfer: { orderNumber: string; patientName: string; room: string; bed: string; service: string };
@@ -18,7 +19,7 @@ type TransferOrder = {
 
 function NeedPatient({ title }: { title: string }) {
   return (
-    <Sheet kicker="Celador" title={title}>
+    <Sheet kicker="Celador / Camillero" title={title}>
       <EmptyEncounter message="Abra un paciente desde el censo para trabajar este paso con su código propio." />
     </Sheet>
   );
@@ -28,7 +29,7 @@ export function TransferOrderPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "celador";
+  const role = user?.role ?? "camillero";
   const [orderNumber, setOrderNumber] = useState("");
   const [result, setResult] = useState<TransferOrder | null>(null);
   const [error, setError] = useState("");
@@ -85,7 +86,7 @@ export function TransferOrderPage() {
   }
 
   return (
-    <Sheet kicker="Celador" title="Orden de traslado a piso">
+    <Sheet kicker="Celador / Camillero" title="Orden de traslado a piso">
       <p className="lead">Confirme habitación y lecho de {activeEncounter.patientName} antes de movilizarlo.</p>
       <form className="stack" onSubmit={onSubmit}>
         <TextField id="transfer-order" label="Número de traslado" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} />
@@ -110,16 +111,33 @@ export function TransferOrderPage() {
   );
 }
 
+async function verifyWristbandCode(
+  code: string,
+  activeEncounter: Encounter,
+  applyEncounter: (encounter: Encounter) => void,
+): Promise<string> {
+  const data = await api<{ identity: { patientName: string } }>("/api/v1/hospital-admission/wristbands/verify", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+  if (activeEncounter.currentStep === "identidad") {
+    const next = await advanceEncounter(activeEncounter.encounterId, "identidad");
+    applyEncounter(next);
+  }
+  return `Identidad confirmada: ${data.identity.patientName}.`;
+}
+
 export function WristbandVerifyPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "celador";
+  const role = user?.role ?? "camillero";
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const pendingRef = useRef(false);
 
   useEffect(() => {
     setMessage("");
@@ -128,9 +146,29 @@ export function WristbandVerifyPage() {
     setCode(encounter?.wristbandCode ?? "");
   }, [encounter?.encounterId, encounter?.wristbandCode]);
 
+  const runVerify = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || !encounter || pendingRef.current) return;
+    pendingRef.current = true;
+    setCode(trimmed);
+    setMessage("");
+    setError("");
+    setPending(true);
+    try {
+      const notice = await verifyWristbandCode(trimmed, encounter, applyEncounter);
+      setMessage(notice);
+      setAdvanced(true);
+    } catch (caught) {
+      setError(errorText(caught, "No se pudo verificar el brazalete."));
+    } finally {
+      pendingRef.current = false;
+      setPending(false);
+    }
+  }, [applyEncounter, encounter]);
+
   const onScan = useCallback((scanned: string) => {
-    setCode(scanned);
-  }, []);
+    void runVerify(scanned);
+  }, [runVerify]);
 
   if (!encounter) return <NeedPatient title="Verificación de identidad" />;
 
@@ -138,35 +176,19 @@ export function WristbandVerifyPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    setMessage("");
-    setError("");
-    setPending(true);
-    try {
-      const data = await api<{ identity: { patientName: string } }>("/api/v1/hospital-admission/wristbands/verify", {
-        method: "POST",
-        body: JSON.stringify({ code }),
-      });
-      setMessage(`Identidad confirmada: ${data.identity.patientName}.`);
-      if (activeEncounter.currentStep === "identidad") {
-        const next = await advanceEncounter(activeEncounter.encounterId, "identidad");
-        applyEncounter(next);
-      }
-      setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo verificar el brazalete."));
-    } finally {
-      setPending(false);
-    }
+    await runVerify(code);
   }
 
   return (
-    <Sheet kicker="Celador" title="Verificación de identidad">
+    <Sheet kicker="Celador / Camillero" title="Verificación de identidad">
       <p className="lead">Confirme el brazalete de {activeEncounter.patientName} antes del traslado.</p>
-      <BarcodeScanner onScan={onScan} />
-      <form className="stack" onSubmit={onSubmit}>
-        <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
-        <Button type="submit" pending={pending}>Verificar brazalete</Button>
-      </form>
+      <div className="identity-verify">
+        <BarcodeScanner onScan={onScan} />
+        <form className="stack" onSubmit={onSubmit}>
+          <TextField id="wristband-code" label="Código del brazalete" value={code} onChange={(event) => setCode(event.target.value)} />
+          <Button type="submit" pending={pending}>Verificar brazalete</Button>
+        </form>
+      </div>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {message ? <Feedback tone="success">{message}</Feedback> : null}
       <StepNav role={role} encounter={activeEncounter} viewingStep="identidad" canContinue={advanced} />

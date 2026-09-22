@@ -30,3 +30,12 @@ Al retomar: leer este archivo + sección final de anotaciones en `AGENTS.md`.
 - Prueba: `tests/Feature/SchemaCoverageTest.php`.
 
 Para aplicar esquema en entorno local (cuando el usuario lo autorice): `php artisan migrate` (evitar `migrate:fresh` si hay datos a conservar).
+
+## 2026-09-20 — RF-92 camillero + escáner de brazalete
+
+Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-spacing`).
+
+- Rol técnico `celador` → `camillero`; cuenta demo `camillero@vitalsy.local`. Etiqueta UI y docs de actor: **Celador / Camillero**.
+- RF-08: al escanear en verificación de identidad se valida y avanza sin segundo clic.
+- RF-92: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
+- `BarcodeScanner` movido a `shared/ui/BarcodeScanner.tsx`.

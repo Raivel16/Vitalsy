@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { ROLE_LABEL } from "../../../app/roles";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
+import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -67,6 +68,14 @@ export function CensusPage() {
     };
   }, [page, query]);
 
+  const onWristbandScan = useCallback((code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setSearch(trimmed);
+    setQuery(trimmed);
+    setPage(1);
+  }, []);
+
   const mine = encounters?.filter((item) => item.nextRole === role) ?? [];
   const from = meta.total === 0 ? 0 : (meta.page - 1) * meta.perPage + 1;
   const to = Math.min(meta.page * meta.perPage, meta.total);
@@ -80,14 +89,19 @@ export function CensusPage() {
         <p><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
       ) : null}
       <div className="census-toolbar">
-        <TextField
-          id="census-search"
-          label="Buscar paciente"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Nombre, DNI u orden"
-          hint="Busca por nombre, documento, ID de ingreso u orden."
-        />
+        <div className="census-toolbar-row">
+          <TextField
+            id="census-search"
+            label="Buscar paciente"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Nombre, DNI, orden o brazalete"
+            hint="Busca por nombre, documento, ID de ingreso, orden o código de brazalete."
+          />
+          <div className="census-toolbar-actions">
+            <BarcodeScanner onScan={onWristbandScan} />
+          </div>
+        </div>
       </div>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {loading && !encounters ? <p role="status">Cargando pacientes.</p> : null}

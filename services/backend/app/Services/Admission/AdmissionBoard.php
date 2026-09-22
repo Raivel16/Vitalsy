@@ -26,8 +26,8 @@ class AdmissionBoard
         'brazalete' => ['role' => 'admision', 'next' => 'expediente', 'subprocess' => '1.1', 'label' => 'Emitir brazalete', 'status' => 'Brazalete por emitir', 'deliverable' => 'brazalete'],
         'expediente' => ['role' => 'admision', 'next' => 'consentimiento', 'subprocess' => '1.1', 'label' => 'Aperturar expediente', 'status' => 'Expediente por aperturar', 'deliverable' => 'expediente'],
         'consentimiento' => ['role' => 'admision', 'next' => 'traslado', 'subprocess' => '1.1', 'label' => 'Registrar consentimiento', 'status' => 'Consentimiento por firmar', 'deliverable' => 'consentimiento'],
-        'traslado' => ['role' => 'celador', 'next' => 'identidad', 'subprocess' => '1.2', 'label' => 'Consultar orden de traslado', 'status' => 'Listo para traslado', 'deliverable' => null],
-        'identidad' => ['role' => 'celador', 'next' => 'recepcion', 'subprocess' => '1.2', 'label' => 'Verificar identidad', 'status' => 'Identidad por confirmar', 'deliverable' => null],
+        'traslado' => ['role' => 'camillero', 'next' => 'identidad', 'subprocess' => '1.2', 'label' => 'Consultar orden de traslado', 'status' => 'Listo para traslado', 'deliverable' => null],
+        'identidad' => ['role' => 'camillero', 'next' => 'recepcion', 'subprocess' => '1.2', 'label' => 'Verificar identidad', 'status' => 'Identidad por confirmar', 'deliverable' => null],
         'recepcion' => ['role' => 'enfermeria', 'next' => 'valoracion', 'subprocess' => '1.2', 'label' => 'Confirmar recepción en piso', 'status' => 'Pendiente de recepción', 'deliverable' => 'recepcion'],
         'valoracion' => ['role' => 'enfermeria', 'next' => 'constantes', 'subprocess' => '1.3', 'label' => 'Registrar valoración inicial', 'status' => 'Valoración por registrar', 'deliverable' => 'valoracion'],
         'constantes' => ['role' => 'enfermeria', 'next' => 'conciliacion', 'subprocess' => '1.3', 'label' => 'Registrar constantes basales', 'status' => 'Constantes por registrar', 'deliverable' => 'signosVitales'],
@@ -109,7 +109,8 @@ class AdmissionBoard
                     ->whereRaw('LOWER(patient_name) like ?', [$like])
                     ->orWhereRaw('LOWER(document_number) like ?', [$like])
                     ->orWhereRaw('LOWER(encounter_id) like ?', [$like])
-                    ->orWhereRaw('LOWER(order_number) like ?', [$like]);
+                    ->orWhereRaw('LOWER(order_number) like ?', [$like])
+                    ->orWhereRaw('LOWER(wristband_code) like ?', [$like]);
             });
         }
 
