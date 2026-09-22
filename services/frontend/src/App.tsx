@@ -19,6 +19,7 @@ import { NursingAssessmentPage, VitalSignsPage } from "./modules/nursing-assessm
 import { FloorReceptionPage, RelocationPage, TransferOrderPage, WristbandVerifyPage } from "./modules/patient-transfer/pages/TransferPages";
 import { RiskScalesPage } from "./modules/risk-assessment/pages/RiskPages";
 import { LabResultsPage } from "./modules/lab-results/pages/LabResultsPage";
+import { ImagingReportsPage } from "./modules/imaging-reports/pages/ImagingReportsPage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -107,6 +108,14 @@ function Shell() {
                 element={
                   <Guard roles={["medico_residente", "medico_tratante", "enfermera_piso"]}>
                     <LabResultsPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/imagenes"
+                element={
+                  <Guard roles={["medico_residente", "medico_tratante", "enfermera_piso"]}>
+                    <ImagingReportsPage />
                   </Guard>
                 }
               />

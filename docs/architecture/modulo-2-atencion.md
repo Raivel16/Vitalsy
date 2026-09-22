@@ -17,11 +17,17 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 
 | RF | Estado | Interfaz / API |
 |---|---|---|
-| RF-17 | Hecho | `/atencion/laboratorio?ingreso=` · `POST/GET .../inpatient-care/encounters/{id}/lab-results` (stub LIS FHIR) |
-| RF-18–RF-33 | Pendiente | Siguiente incremento |
+| RF-17 | Hecho | `/atencion/laboratorio?ingreso=` · `POST/GET .../lab-results` (stub LIS FHIR) |
+| RF-18 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` (stub PACS FHIR) |
+| RF-19–RF-33 | Pendiente | Siguiente incremento |
 
 ## Cómo comprobar RF-17
 
 1. Iniciar sesión como `medico_residente@vitalsy.local` (u otro rol clínico autorizado).
 2. Abrir `/atencion/laboratorio?ingreso=<encounterId>` de un ingreso existente.
 3. Pulsar **Integrar desde LIS**: deben aparecer Hemoglobina y Creatinina (stub) y persistir en `lab_results`.
+
+## Cómo comprobar RF-18
+
+1. Con el mismo ingreso, abrir `/atencion/imagenes?ingreso=<encounterId>`.
+2. Pulsar **Integrar desde PACS**: deben aparecer RX de tórax y ECO abdominal (stub) en `imaging_reports`.

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
+use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,8 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:medico_residente,medico_tratante,enfermera_piso')->group(function () {
                 Route::post('encounters/{encounterId}/lab-results/sync', [LabResultsController::class, 'sync']);
                 Route::get('encounters/{encounterId}/lab-results', [LabResultsController::class, 'index']);
+                Route::post('encounters/{encounterId}/imaging-reports/sync', [ImagingReportsController::class, 'sync']);
+                Route::get('encounters/{encounterId}/imaging-reports', [ImagingReportsController::class, 'index']);
             });
         });
     });
