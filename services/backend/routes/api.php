@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ClinicalVisitController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
+use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -68,8 +69,14 @@ Route::prefix('v1')->group(function () {
             });
 
             // RF-19: visita consolidada — solo médicos.
+            // RF-20: nota de evolución — solo médico residente.
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {
                 Route::get('encounters/{encounterId}/clinical-visit', [ClinicalVisitController::class, 'show']);
+            });
+
+            Route::middleware('role:medico_residente')->group(function () {
+                Route::get('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'index']);
+                Route::post('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'store']);
             });
         });
     });

@@ -20,7 +20,8 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 | RF-17 | Hecho | `/atencion/laboratorio?ingreso=` · `POST/GET .../lab-results` (stub LIS FHIR) |
 | RF-18 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` (stub PACS FHIR) |
 | RF-19 | Hecho | `/atencion/visita?ingreso=` · `GET .../clinical-visit` (labs + imágenes + notas del día) |
-| RF-20–RF-33 | Pendiente | Siguiente incremento |
+| RF-20 | Hecho | `/atencion/evolucion?ingreso=` · `POST/GET .../medical-evolution-notes` (médico residente) |
+| RF-21–RF-33 | Pendiente | Siguiente incremento |
 
 ## Cómo comprobar RF-17
 
@@ -37,3 +38,12 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 
 1. Como `medico_tratante` o `medico_residente`, abrir `/atencion/visita?ingreso=<encounterId>`.
 2. Debe mostrar en una sola pantalla labs, imágenes y notas de enfermería **del día**.
+
+## Cómo comprobar RF-20
+
+1. Como `medico_residente@vitalsy.local`, abrir `/atencion/evolucion?ingreso=<encounterId>`.
+2. Escribir la nota, marcar firma y registrar: debe aparecer en el listado como firmada.
+
+## API Yaak
+
+Colección importable: [`docs/api/yaak-modulo-2.postman_collection.json`](../api/yaak-modulo-2.postman_collection.json). Guía: [`docs/api/README.md`](../api/README.md).
