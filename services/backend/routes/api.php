@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClinicalVisitController;
+use App\Http\Controllers\Api\CpoeController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
@@ -77,6 +78,16 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:medico_residente')->group(function () {
                 Route::get('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'index']);
                 Route::post('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'store']);
+            });
+
+            // RF-21: CPOE — médico tratante; kardex CPOE consultable por clínica de piso/médicos.
+            Route::middleware('role:medico_tratante')->group(function () {
+                Route::post('encounters/{encounterId}/prescriptions', [CpoeController::class, 'store']);
+            });
+
+            Route::middleware('role:medico_tratante,medico_residente,enfermera_piso')->group(function () {
+                Route::get('encounters/{encounterId}/prescriptions/active', [CpoeController::class, 'active']);
+                Route::get('encounters/{encounterId}/kardex', [CpoeController::class, 'kardex']);
             });
         });
     });

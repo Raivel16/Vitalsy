@@ -22,6 +22,7 @@ import { LabResultsPage } from "./modules/lab-results/pages/LabResultsPage";
 import { ImagingReportsPage } from "./modules/imaging-reports/pages/ImagingReportsPage";
 import { ClinicalVisitPage } from "./modules/clinical-visit/pages/ClinicalVisitPage";
 import { MedicalEvolutionPage } from "./modules/medical-evolution/pages/MedicalEvolutionPage";
+import { CpoePage } from "./modules/cpoe/pages/CpoePage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -134,6 +135,14 @@ function Shell() {
                 element={
                   <Guard roles={["medico_residente"]}>
                     <MedicalEvolutionPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/cpoe"
+                element={
+                  <Guard roles={["medico_tratante"]}>
+                    <CpoePage />
                   </Guard>
                 }
               />

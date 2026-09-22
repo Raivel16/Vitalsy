@@ -21,7 +21,8 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 | RF-18 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` (stub PACS FHIR) |
 | RF-19 | Hecho | `/atencion/visita?ingreso=` · `GET .../clinical-visit` (labs + imágenes + notas del día) |
 | RF-20 | Hecho | `/atencion/evolucion?ingreso=` · `POST/GET .../medical-evolution-notes` (médico residente) |
-| RF-21–RF-33 | Pendiente | Siguiente incremento |
+| RF-21 | Hecho | `/atencion/cpoe?ingreso=` · `POST .../prescriptions` + Kardex CPOE (médico tratante) |
+| RF-22–RF-33 | Pendiente | Siguiente incremento |
 
 ## Cómo comprobar RF-17
 
