@@ -23,6 +23,7 @@ import { ImagingReportsPage } from "./modules/imaging-reports/pages/ImagingRepor
 import { ClinicalVisitPage } from "./modules/clinical-visit/pages/ClinicalVisitPage";
 import { MedicalEvolutionPage } from "./modules/medical-evolution/pages/MedicalEvolutionPage";
 import { CpoePage } from "./modules/cpoe/pages/CpoePage";
+import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonitoringPage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -143,6 +144,14 @@ function Shell() {
                 element={
                   <Guard roles={["medico_tratante"]}>
                     <CpoePage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/constantes"
+                element={
+                  <Guard roles={["enfermera_piso", "auxiliar_enfermeria"]}>
+                    <VitalMonitoringPage />
                   </Guard>
                 }
               />

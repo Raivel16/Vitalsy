@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
+use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -88,6 +89,16 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:medico_tratante,medico_residente,enfermera_piso')->group(function () {
                 Route::get('encounters/{encounterId}/prescriptions/active', [CpoeController::class, 'active']);
                 Route::get('encounters/{encounterId}/kardex', [CpoeController::class, 'kardex']);
+            });
+
+            // RF-22–27: monitoreo fisiológico, NEWS2, gráfica, alertas y programación.
+            Route::middleware('role:enfermera_piso,auxiliar_enfermeria')->group(function () {
+                Route::post('encounters/{encounterId}/vital-signs', [VitalSignsMonitoringController::class, 'store']);
+                Route::post('encounters/{encounterId}/vital-signs/telemetry', [VitalSignsMonitoringController::class, 'telemetry']);
+            });
+
+            Route::middleware('role:enfermera_piso,auxiliar_enfermeria,medico_residente,medico_tratante')->group(function () {
+                Route::get('encounters/{encounterId}/vital-signs/chart', [VitalSignsMonitoringController::class, 'chart']);
             });
         });
     });
