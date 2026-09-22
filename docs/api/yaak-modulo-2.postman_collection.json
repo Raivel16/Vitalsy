@@ -1,0 +1,188 @@
+{
+  "info": {
+    "_postman_id": "vitalsy-modulo-2-inpatient",
+    "name": "Vitalsy — Módulo 2 (Atención y seguimiento)",
+    "description": "Peticiones RF-17 a RF-19 para importar en Yaak (Settings → Import/Export → Import). Auth Sanctum por cookies: 1) CSRF 2) login 3) sync/listado.\n\nVariables: baseUrl (http://localhost:8080), encounterId, email, password.\nTras login, Yaak/Postman debe conservar cookies de sesión y enviar X-XSRF-TOKEN desde la cookie XSRF-TOKEN.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "encounterId", "value": "ENC-HOSP-0001" },
+    { "key": "email", "value": "medico_residente@vitalsy.local" },
+    { "key": "password", "value": "Vitalsy.2026" },
+    { "key": "xsrfToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Auth Sanctum",
+      "item": [
+        {
+          "name": "CSRF cookie",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "Referer", "value": "{{baseUrl}}/" }
+            ],
+            "url": "{{baseUrl}}/sanctum/csrf-cookie",
+            "description": "Obtiene cookies XSRF-TOKEN y vitalsy_session. Copie el valor decodificado de XSRF-TOKEN a la variable xsrfToken."
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "Referer", "value": "{{baseUrl}}/" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RF-17 Laboratorio LIS",
+      "item": [
+        {
+          "name": "Sync lab results",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/lab-results/sync",
+            "description": "Roles: medico_residente, medico_tratante, enfermera_piso. Integra stub FHIR Observation."
+          }
+        },
+        {
+          "name": "List lab results",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/lab-results"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RF-18 Imágenes PACS",
+      "item": [
+        {
+          "name": "Sync imaging reports",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/imaging-reports/sync",
+            "description": "Roles: medico_residente, medico_tratante, enfermera_piso. Integra stub FHIR DiagnosticReport."
+          }
+        },
+        {
+          "name": "List imaging reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/imaging-reports"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RF-19 Visita consolidada",
+      "item": [
+        {
+          "name": "Get clinical visit board",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/clinical-visit",
+            "description": "Roles: medico_residente, medico_tratante. Devuelve labs + imágenes + notas de enfermería del día."
+          }
+        }
+      ]
+    },
+    {
+      "name": "RF-20 Evolución médica",
+      "item": [
+        {
+          "name": "List medical evolution notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/medical-evolution-notes",
+            "description": "Rol: medico_residente."
+          }
+        },
+        {
+          "name": "Create medical evolution note",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" },
+              { "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" },
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Evolución favorable. Continuar plan actual.\",\n  \"sign\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/inpatient-care/encounters/{{encounterId}}/medical-evolution-notes",
+            "description": "Rol: medico_residente. RF-20."
+          }
+        }
+      ]
+    }
+  ]
+}
