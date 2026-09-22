@@ -18,6 +18,7 @@ import { ReconciliationPage } from "./modules/medication-reconciliation/pages/Re
 import { NursingAssessmentPage, VitalSignsPage } from "./modules/nursing-assessment/pages/NursingPages";
 import { FloorReceptionPage, RelocationPage, TransferOrderPage, WristbandVerifyPage } from "./modules/patient-transfer/pages/TransferPages";
 import { RiskScalesPage } from "./modules/risk-assessment/pages/RiskPages";
+import { LabResultsPage } from "./modules/lab-results/pages/LabResultsPage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -101,6 +102,14 @@ function Shell() {
               <Route path="/enfermeria/riesgos" element={<Guard roles={["enfermera_piso"]}><RiskScalesPage /></Guard>} />
               <Route path="/enfermeria/kardex" element={<Guard roles={["enfermera_piso"]}><KardexPage /></Guard>} />
               <Route path="/medico/indicaciones" element={<Guard roles={["medico_residente"]}><MedicalOrdersPage /></Guard>} />
+              <Route
+                path="/atencion/laboratorio"
+                element={
+                  <Guard roles={["medico_residente", "medico_tratante", "enfermera_piso"]}>
+                    <LabResultsPage />
+                  </Guard>
+                }
+              />
             </Routes>
           </CaseBar>
         </main>

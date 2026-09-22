@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
+use App\Http\Controllers\Api\LabResultsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -51,6 +52,15 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:medico_residente')->group(function () {
                 Route::get('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'showMedicalOrders']);
                 Route::post('medical-orders/{encounterId}/sign', [HospitalAdmissionController::class, 'signMedicalOrders']);
+            });
+        });
+
+        // Módulo 2 — Atención y seguimiento
+        Route::prefix('inpatient-care')->group(function () {
+            // RF-17: integración LIS (disparo operativo para roles clínicos; actor Sistema vía adaptador).
+            Route::middleware('role:medico_residente,medico_tratante,enfermera_piso')->group(function () {
+                Route::post('encounters/{encounterId}/lab-results/sync', [LabResultsController::class, 'sync']);
+                Route::get('encounters/{encounterId}/lab-results', [LabResultsController::class, 'index']);
             });
         });
     });

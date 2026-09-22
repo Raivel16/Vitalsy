@@ -89,4 +89,8 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante`.
 - Catálogo en `docs/requirements/requerimientos.md`.
 
+### 2026-09-21 — RF-17 LIS
+
+- Stub FHIR + API `lab-results` + UI `/atencion/laboratorio`. Ver `docs/architecture/modulo-2-atencion.md`.
+
 <!-- END AGENT ANNOTATIONS -->

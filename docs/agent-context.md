@@ -46,3 +46,9 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 
 - Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante` (sin claves genéricas `enfermeria`/`medico`). Catálogo en `requerimientos.md`.
 - UX Módulo 2 orientativa: censo + chart (Opción A), no stepper de admisión.
+
+## 2026-09-21 — RF-17 integración LIS
+
+- `LisClient`/`StubLisClient`, `LabResultsIntegrator`, API `inpatient-care/.../lab-results`, UI `/atencion/laboratorio`.
+- Guía: `docs/architecture/modulo-2-atencion.md`.
+- Siguiente: RF-18 (PACS) por el mismo patrón.
