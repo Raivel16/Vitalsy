@@ -16,7 +16,7 @@ export function RiskScalesPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [historyOfFalling, setHistoryOfFalling] = useState(false);
   const [secondaryDiagnosis, setSecondaryDiagnosis] = useState(false);
   const [ambulatoryAid, setAmbulatoryAid] = useState<"none" | "device" | "furniture">("none");

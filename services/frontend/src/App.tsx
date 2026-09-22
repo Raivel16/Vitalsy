@@ -93,14 +93,14 @@ function Shell() {
               <Route path="/admision/consentimiento" element={<Guard roles={["admision"]}><ConsentPage /></Guard>} />
               <Route path="/traslado/orden" element={<Guard roles={["camillero"]}><TransferOrderPage /></Guard>} />
               <Route path="/traslado/identidad" element={<Guard roles={["camillero"]}><WristbandVerifyPage /></Guard>} />
-              <Route path="/piso/recepcion" element={<Guard roles={["enfermeria"]}><FloorReceptionPage /></Guard>} />
-              <Route path="/piso/reubicacion" element={<Guard roles={["enfermeria"]}><RelocationPage /></Guard>} />
-              <Route path="/enfermeria/valoracion" element={<Guard roles={["enfermeria"]}><NursingAssessmentPage /></Guard>} />
-              <Route path="/enfermeria/constantes" element={<Guard roles={["enfermeria"]}><VitalSignsPage /></Guard>} />
-              <Route path="/enfermeria/conciliacion" element={<Guard roles={["enfermeria"]}><ReconciliationPage /></Guard>} />
-              <Route path="/enfermeria/riesgos" element={<Guard roles={["enfermeria"]}><RiskScalesPage /></Guard>} />
-              <Route path="/enfermeria/kardex" element={<Guard roles={["enfermeria"]}><KardexPage /></Guard>} />
-              <Route path="/medico/indicaciones" element={<Guard roles={["medico"]}><MedicalOrdersPage /></Guard>} />
+              <Route path="/piso/recepcion" element={<Guard roles={["enfermera_piso"]}><FloorReceptionPage /></Guard>} />
+              <Route path="/piso/reubicacion" element={<Guard roles={["enfermera_piso"]}><RelocationPage /></Guard>} />
+              <Route path="/enfermeria/valoracion" element={<Guard roles={["enfermera_piso"]}><NursingAssessmentPage /></Guard>} />
+              <Route path="/enfermeria/constantes" element={<Guard roles={["enfermera_piso", "auxiliar_enfermeria"]}><VitalSignsPage /></Guard>} />
+              <Route path="/enfermeria/conciliacion" element={<Guard roles={["enfermera_piso"]}><ReconciliationPage /></Guard>} />
+              <Route path="/enfermeria/riesgos" element={<Guard roles={["enfermera_piso"]}><RiskScalesPage /></Guard>} />
+              <Route path="/enfermeria/kardex" element={<Guard roles={["enfermera_piso"]}><KardexPage /></Guard>} />
+              <Route path="/medico/indicaciones" element={<Guard roles={["medico_residente"]}><MedicalOrdersPage /></Guard>} />
             </Routes>
           </CaseBar>
         </main>

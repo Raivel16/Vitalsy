@@ -84,4 +84,9 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - RF-08: escaneo en identidad valida solo. RF-92: escáner en censo; `q` incluye brazalete.
 - Escáner compartido: `shared/ui/BarcodeScanner.tsx`.
 
+### 2026-09-21 — Módulo 2 roles clínicos
+
+- Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante`.
+- Catálogo en `docs/requirements/requerimientos.md`.
+
 <!-- END AGENT ANNOTATIONS -->

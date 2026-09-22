@@ -34,17 +34,21 @@ Route::prefix('v1')->group(function () {
                 Route::post('wristbands/verify', [HospitalAdmissionController::class, 'verifyWristband']);
             });
 
-            Route::middleware('role:enfermeria')->group(function () {
+            Route::middleware('role:enfermera_piso')->group(function () {
                 Route::post('floor-receptions', [HospitalAdmissionController::class, 'confirmReception']);
                 Route::post('relocations', [HospitalAdmissionController::class, 'relocate']);
                 Route::post('nursing-assessments', [HospitalAdmissionController::class, 'storeAssessment']);
-                Route::post('vital-signs', [HospitalAdmissionController::class, 'storeVitalSigns']);
                 Route::post('medication-reconciliations', [HospitalAdmissionController::class, 'storeReconciliation']);
                 Route::post('risk-scales', [HospitalAdmissionController::class, 'storeRiskScales']);
                 Route::get('kardex/{encounterId}', [HospitalAdmissionController::class, 'showKardex']);
             });
 
-            Route::middleware('role:medico')->group(function () {
+            // RF-12: constantes basales — enfermera de piso o auxiliar de enfermería.
+            Route::middleware('role:enfermera_piso,auxiliar_enfermeria')->group(function () {
+                Route::post('vital-signs', [HospitalAdmissionController::class, 'storeVitalSigns']);
+            });
+
+            Route::middleware('role:medico_residente')->group(function () {
                 Route::get('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'showMedicalOrders']);
                 Route::post('medical-orders/{encounterId}/sign', [HospitalAdmissionController::class, 'signMedicalOrders']);
             });

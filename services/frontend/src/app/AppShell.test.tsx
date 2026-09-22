@@ -15,7 +15,7 @@ describe("shell del módulo 1", () => {
   });
 
   it("cambia la navegación según el perfil", () => {
-    sessionStorage.setItem("vitalsy-role", "medico");
+    sessionStorage.setItem("vitalsy-role", "medico_residente");
     renderApp("/");
 
     expect(screen.getByRole("link", { name: /^Pacientes$/i })).toBeInTheDocument();

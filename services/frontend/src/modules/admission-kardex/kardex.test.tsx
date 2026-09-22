@@ -18,7 +18,7 @@ const encounter = {
   subprocessLabel: "Valoración",
   currentStep: "kardex",
   currentStepLabel: "Kardex",
-  nextRole: "enfermeria",
+  nextRole: "enfermera_piso",
   statusLabel: "Kardex por revisar",
   deliverables: [],
   progress: [],
@@ -26,7 +26,7 @@ const encounter = {
 
 describe("kardex de ingreso", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });
 
   afterEach(() => {

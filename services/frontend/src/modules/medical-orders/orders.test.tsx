@@ -19,7 +19,7 @@ const encounter = {
   subprocessLabel: "Valoración",
   currentStep: "indicaciones",
   currentStepLabel: "Indicaciones",
-  nextRole: "medico",
+  nextRole: "medico_residente",
   statusLabel: "Indicaciones por firmar",
   deliverables: [],
   progress: [],
@@ -27,7 +27,7 @@ const encounter = {
 
 describe("indicaciones médicas basales", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "medico");
+    sessionStorage.setItem("vitalsy-role", "medico_residente");
   });
 
   afterEach(() => {

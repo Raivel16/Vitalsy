@@ -17,7 +17,7 @@ export function ReconciliationPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [allergies, setAllergies] = useState("");
   const [draft, setDraft] = useState<HomeMedication>(EMPTY);
   const [medications, setMedications] = useState<HomeMedication[]>([]);

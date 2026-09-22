@@ -102,7 +102,7 @@ describe("traslado y recepción en piso", () => {
       .mockResolvedValueOnce(jsonResponse(200, { encounter: { ...ana, currentStep: "identidad", wristbandCode: "BRZ-0001-ANA" } }))
       .mockResolvedValueOnce(jsonResponse(200, { identity: { patientName: "Ana María Quispe Rojas", code: "BRZ-0001-ANA" } }))
       .mockResolvedValueOnce(jsonResponse(200, {
-        encounter: { ...ana, currentStep: "recepcion", currentStepLabel: "Confirmar recepción en piso", nextRole: "enfermeria" },
+        encounter: { ...ana, currentStep: "recepcion", currentStepLabel: "Confirmar recepción en piso", nextRole: "enfermera_piso" },
       }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -117,13 +117,13 @@ describe("traslado y recepción en piso", () => {
   });
 
   it("permite a enfermería confirmar recepción del paciente en curso", async () => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
     const user = userEvent.setup();
     const nursing = {
       ...ana,
       currentStep: "recepcion",
       currentStepLabel: "Confirmar recepción en piso",
-      nextRole: "enfermeria",
+      nextRole: "enfermera_piso",
     };
     vi.stubGlobal(
       "fetch",
@@ -131,7 +131,7 @@ describe("traslado y recepción en piso", () => {
         .mockResolvedValueOnce(jsonResponse(200, { encounter: nursing }))
         .mockResolvedValueOnce(jsonResponse(201, { reception: { status: "ingresado" } }))
         .mockResolvedValueOnce(jsonResponse(200, {
-          encounter: { ...nursing, currentStep: "valoracion", nextRole: "enfermeria" },
+          encounter: { ...nursing, currentStep: "valoracion", nextRole: "enfermera_piso" },
         })),
     );
 
@@ -141,13 +141,13 @@ describe("traslado y recepción en piso", () => {
   });
 
   it("permite notificar una reubicación del paciente en curso", async () => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
     const user = userEvent.setup();
     const nursing = {
       ...ana,
       currentStep: "recepcion",
       currentStepLabel: "Confirmar recepción en piso",
-      nextRole: "enfermeria",
+      nextRole: "enfermera_piso",
     };
     vi.stubGlobal(
       "fetch",

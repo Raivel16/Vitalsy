@@ -6,8 +6,10 @@ import { ButtonLink } from "../shared/ui/Button";
 const GUIDE: Record<string, string> = {
   admision: "Abra el censo, continúe el paciente de su turno y registre cada actividad. También puede registrar un ingreso manual o recibir órdenes por la API de intake.",
   camillero: "Abra el censo y continúe solo los pacientes listos para traslado. Consulte habitación y lecho, y verifique el brazalete antes de movilizar.",
-  enfermeria: "Abra el censo cuando el paciente llegue a piso. Confirme la recepción o registre una reubicación, y luego complete valoración, constantes, conciliación, escalas y Kardex.",
-  medico: "Abra el censo cuando enfermería cierre el Kardex. Revise la valoración y firme las indicaciones basales.",
+  enfermera_piso: "Abra el censo cuando el paciente llegue a piso. Confirme la recepción o registre una reubicación, y luego complete valoración, constantes, conciliación, escalas y Kardex.",
+  auxiliar_enfermeria: "Abra el censo para apoyar la toma de constantes vitales basales y, en atención diaria, los cuidados directos del paciente hospitalizado.",
+  medico_residente: "Abra el censo cuando la enfermera de piso cierre el Kardex. Revise la valoración y firme las indicaciones basales.",
+  medico_tratante: "Consulte el censo de hospitalizados y el chart del paciente para la visita médica, la evolución consolidada y la prescripción electrónica.",
 };
 
 export function HomePage() {

@@ -150,7 +150,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
 
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/floor-receptions', [
             'encounterId' => 'ENC-0001',
             'confirmed' => true,
@@ -166,7 +166,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_nursing_vitals_calculate_news2_and_reject_impossible_values(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/nursing-assessments', [
             'chiefComplaint' => 'Disnea de dos días',
             'allergies' => ['Penicilina'],
@@ -197,7 +197,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_reconciliation_risk_kardex_and_signature(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/medication-reconciliations', [
             'allergies' => 'Penicilina',
             'medications' => [[
@@ -236,7 +236,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('kardex.patientName', 'Ana María Quispe Rojas')
             ->assertJsonMissingPath('simulated');
 
-        $this->asRole('medico');
+        $this->asRole('medico_residente');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-0001')
             ->assertOk()
             ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');

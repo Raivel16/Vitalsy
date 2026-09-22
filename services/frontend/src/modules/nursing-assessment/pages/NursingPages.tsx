@@ -17,7 +17,7 @@ export function NursingAssessmentPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [complaint, setComplaint] = useState("");
   const [history, setHistory] = useState("");
   const [allergy, setAllergy] = useState("");
@@ -108,7 +108,7 @@ export function VitalSignsPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [fields, setFields] = useState({
     respiratoryRate: "",
     oxygenSaturation: "",

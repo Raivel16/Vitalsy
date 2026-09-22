@@ -95,7 +95,7 @@ class AdmissionCensusApiTest extends TestCase
 
     public function test_file_shows_deliverables_and_unknown_encounter_is_spanish_not_found(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
 
         $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')
             ->assertOk()
@@ -198,7 +198,7 @@ class AdmissionCensusApiTest extends TestCase
 
     public function test_closing_the_admission_removes_it_from_the_physician_queue(): void
     {
-        $this->asRole('medico');
+        $this->asRole('medico_residente');
         app(AdmissionBoard::class)->ensureDemo();
         $encounter = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
         $this->assertNotNull($encounter);

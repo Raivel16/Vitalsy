@@ -19,7 +19,7 @@ export function MedicalOrdersPage() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
-  const role = user?.role ?? "medico";
+  const role = user?.role ?? "medico_residente";
   const [orders, setOrders] = useState<Orders | null>(null);
   const [statusLabel, setStatusLabel] = useState("");
   const [physicianName, setPhysicianName] = useState("");

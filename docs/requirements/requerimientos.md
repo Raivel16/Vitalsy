@@ -21,11 +21,11 @@ A continuación se detallan los requisitos funcionales organizados por módulos 
 9. RF-09: Confirmar recepción física en piso. El sistema debe permitir cambiar el estado del paciente a "Ingresado" al confirmarse la recepción en la habitación asignada. Actor: Enfermera de piso.
 10. RF-10: Registrar reubicación de paciente. El sistema debe permitir registrar una discrepancia de lecho y notificar a la central para reubicación. Actor: Enfermera de piso.
 11. RF-11: Registrar valoración inicial de enfermería. El sistema debe permitir registrar anamnesis, alergias y antecedentes del paciente a pie de cama. Actor: Enfermera de piso.
-12. RF-12: Registrar constantes vitales basales. El sistema debe permitir el ingreso de las mediciones fisiológicas iniciales del paciente. Actor: Enfermera de piso / Auxiliar de enfermería.
+12. RF-12: Registrar constantes vitales basales. El sistema debe permitir el ingreso de las mediciones fisiológicas iniciales del paciente. Actor: Enfermera de piso (`enfermera_piso`) / Auxiliar de enfermería (`auxiliar_enfermeria`).
 13. RF-13: Gestionar conciliación farmacéutica de ingreso (BPMH). El sistema debe permitir registrar los medicamentos domiciliarios del paciente y contrastarlos automáticamente contra alergias e interacciones conocidas. Actor: Enfermera de piso.
 14. RF-14: Registrar escalas de riesgo. El sistema debe permitir completar digitalmente las escalas de riesgo de caídas y de úlceras por presión. Actor: Enfermera de piso.
 15. RF-15: Generar Kardex electrónico de ingreso. El sistema debe generar automáticamente el Kardex electrónico a partir de la valoración y conciliación registradas. Actor: Sistema.
-16. RF-16: Validar y firmar indicaciones médicas basales. El sistema debe permitir al médico revisar la valoración de ingreso, validar el BPMH y firmar electrónicamente la hoja de indicaciones médicas. Actor: Médico residente / de guardia.
+16. RF-16: Validar y firmar indicaciones médicas basales. El sistema debe permitir al médico residente revisar la valoración de ingreso, validar el BPMH y firmar electrónicamente la hoja de indicaciones médicas. Actor: Médico residente (`medico_residente`).
 
 Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al orden del proceso 1. No renumeran RF-01 a RF-82.
 
@@ -38,21 +38,21 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 
 17. RF-17: Integrar resultados de laboratorio (LIS) vía API. El sistema debe consumir e integrar automáticamente, mediante interoperabilidad HL7/FHIR, los resultados de laboratorio del paciente. Actor: Sistema.
 18. RF-18: Integrar informes de imágenes (PACS) vía API. El sistema debe consumir e integrar automáticamente los informes de imágenes diagnósticas. Actor: Sistema.
-19. RF-19: Consolidar información clínica para la visita médica. El sistema debe desplegar en una sola pantalla los resultados de laboratorio, informes de imágenes y notas de enfermería del día. Actor: Médico tratante / Médico residente.
-20. RF-20: Registrar nota de evolución médica digital. El sistema debe permitir el registro de la evolución clínica del paciente durante la visita médica. Actor: Médico residente.
-21. RF-21: Gestionar prescripción electrónica (CPOE). El sistema debe permitir modificar o continuar el plan terapéutico y actualizar automáticamente el Kardex electrónico. Actor: Médico tratante.
-22. RF-22: Capturar constantes vitales manual o automáticamente. El sistema debe permitir el ingreso manual de constantes vitales o su ingesta automática desde monitores compatibles vía API REST. Actor: Auxiliar de enfermería / Enfermera de piso / Sistema.
+19. RF-19: Consolidar información clínica para la visita médica. El sistema debe desplegar en una sola pantalla los resultados de laboratorio, informes de imágenes y notas de enfermería del día. Actor: Médico tratante (`medico_tratante`) / Médico residente (`medico_residente`).
+20. RF-20: Registrar nota de evolución médica digital. El sistema debe permitir el registro de la evolución clínica del paciente durante la visita médica. Actor: Médico residente (`medico_residente`).
+21. RF-21: Gestionar prescripción electrónica (CPOE). El sistema debe permitir modificar o continuar el plan terapéutico y actualizar automáticamente el Kardex electrónico. Actor: Médico tratante (`medico_tratante`).
+22. RF-22: Capturar constantes vitales manual o automáticamente. El sistema debe permitir el ingreso manual de constantes vitales o su ingesta automática desde monitores compatibles vía API REST. Actor: Auxiliar de enfermería (`auxiliar_enfermeria`) / Enfermera de piso (`enfermera_piso`) / Sistema.
 23. RF-23: Filtrar digitalmente señales fisiológicas. El sistema debe aplicar un filtro digital (Butterworth de cuarto orden, fase cero) para atenuar ruido o interferencias en las señales capturadas. Actor: Sistema.
 24. RF-24: Calcular automáticamente el score NEWS2. El sistema debe calcular de forma determinista la puntuación NEWS2 a partir de las constantes vitales registradas. Actor: Sistema.
 25. RF-25: Generar gráfica evolutiva de signos vitales. El sistema debe representar gráficamente la evolución de las constantes vitales del paciente. Actor: Sistema.
 26. RF-26: Activar automáticamente el proceso de gestión de alertas. El sistema debe iniciar automáticamente el flujo de alertas cuando el score NEWS2 sea igual o mayor a 1 punto. Actor: Sistema.
 27. RF-27: Programar el siguiente control rutinario. El sistema debe fijar automáticamente el siguiente control a 12 horas cuando el NEWS2 sea 0. Actor: Sistema.
-28. RF-28: Consultar hoja de administración de medicamentos electrónica (e-MAR). El sistema debe mostrar las dosis programadas para el turno vigente. Actor: Enfermera de piso.
-29. RF-29: Verificar los cinco correctos antes de administrar medicación. El sistema debe validar mediante código de barras que paciente, fármaco, dosis, vía y hora coincidan con la prescripción CPOE. Actor: Sistema / Enfermera de piso.
+28. RF-28: Consultar hoja de administración de medicamentos electrónica (e-MAR). El sistema debe mostrar las dosis programadas para el turno vigente. Actor: Enfermera de piso (`enfermera_piso`).
+29. RF-29: Verificar los cinco correctos antes de administrar medicación. El sistema debe validar mediante código de barras que paciente, fármaco, dosis, vía y hora coincidan con la prescripción CPOE. Actor: Sistema / Enfermera de piso (`enfermera_piso`).
 30. RF-30: Bloquear administración ante inconsistencias. El sistema debe emitir una advertencia y bloquear el registro de administración cuando detecte una discrepancia. Actor: Sistema.
-31. RF-31: Firmar digitalmente la dosis administrada. El sistema debe permitir la firma digital de cada dosis aplicada en el e-MAR, generando un registro inmutable. Actor: Enfermera de piso.
-32. RF-32: Registrar nota de evolución de enfermería. El sistema debe permitir documentar la evolución y cuidados brindados durante el turno. Actor: Enfermera de piso.
-33. RF-33: Registrar finalización de cuidados directos. El sistema debe permitir marcar la finalización de actividades de higiene y cuidados básicos. Actor: Auxiliar de enfermería.
+31. RF-31: Firmar digitalmente la dosis administrada. El sistema debe permitir la firma digital de cada dosis aplicada en el e-MAR, generando un registro inmutable. Actor: Enfermera de piso (`enfermera_piso`).
+32. RF-32: Registrar nota de evolución de enfermería. El sistema debe permitir documentar la evolución y cuidados brindados durante el turno. Actor: Enfermera de piso (`enfermera_piso`).
+33. RF-33: Registrar finalización de cuidados directos. El sistema debe permitir marcar la finalización de actividades de higiene y cuidados básicos. Actor: Auxiliar de enfermería (`auxiliar_enfermeria`).
 
 ### Módulo 3: Gestión de Alertas y Respuesta ante Alteraciones del Estado Clínico
 
@@ -119,10 +119,23 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 
 Requisitos transversales. No pertenecen a un proceso clínico. El control de acceso y el cierre por inactividad se precisan además en RNF-08 y RNF-09. La pantalla de administración de cuentas no forma parte del corte actual del módulo 1.
 
+#### Catálogo de roles operativos (claves técnicas)
+
+Los actores de proceso se implementan con una clave de rol por responsabilidad. No se usan claves genéricas `enfermeria` ni `medico`.
+
+| Clave técnica | Etiqueta en UI / actor de proceso | Alcance principal |
+|---|---|---|
+| `admision` | Admisión / Personal administrativo de admisión | Módulo 1 (RF-01–06, RF-83–85) |
+| `camillero` | Celador / Camillero | Módulo 1 (RF-07–08, RF-92) |
+| `enfermera_piso` | Enfermera de piso | Módulo 1 (RF-09–15) y Módulo 2 (RF-22, RF-28–32) |
+| `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22) y cuidados directos (RF-33) |
+| `medico_residente` | Médico residente | Indicaciones de ingreso (RF-16), visita/evolución (RF-19–20) |
+| `medico_tratante` | Médico tratante | Visita consolidada (RF-19) y CPOE (RF-21) |
+
 - RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 - RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
 - RF-88 (agregado): Consultar usuarios y roles. El sistema debe listar las cuentas del personal con nombre, correo, rol asignado y estado. Actor: administrador de accesos.
-- RF-89 (agregado): Registrar un usuario y asignarle un rol. El sistema debe permitir crear una cuenta y asociarla a un único rol operativo. Actor: administrador de accesos.
+- RF-89 (agregado): Registrar un usuario y asignarle un rol. El sistema debe permitir crear una cuenta y asociarla a un único rol operativo del catálogo. Actor: administrador de accesos.
 - RF-90 (agregado): Actualizar datos o rol de un usuario. El sistema debe permitir corregir los datos de la cuenta o cambiar el rol asignado. Actor: administrador de accesos.
 - RF-91 (agregado): Desactivar un usuario. El sistema debe permitir desactivar una cuenta sin eliminarla, de modo que no pueda iniciar sesión y se conserve la trazabilidad. Actor: administrador de accesos.
 

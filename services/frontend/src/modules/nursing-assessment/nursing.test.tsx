@@ -19,7 +19,7 @@ const nursing = {
   subprocessLabel: "Valoración",
   currentStep: "valoracion",
   currentStepLabel: "Registrar valoración inicial",
-  nextRole: "enfermeria",
+  nextRole: "enfermera_piso",
   statusLabel: "Valoración por registrar",
   deliverables: [],
   progress: [
@@ -31,7 +31,7 @@ const nursing = {
 
 describe("valoración inicial de enfermería", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });
 
   afterEach(() => {
@@ -45,7 +45,7 @@ describe("valoración inicial de enfermería", () => {
       .mockResolvedValueOnce(jsonResponse(200, { encounter: nursing }))
       .mockResolvedValueOnce(jsonResponse(201, { assessment: { status: "registrada" } }))
       .mockResolvedValueOnce(jsonResponse(200, {
-        encounter: { ...nursing, currentStep: "constantes", nextRole: "enfermeria", statusLabel: "Constantes por registrar" },
+        encounter: { ...nursing, currentStep: "constantes", nextRole: "enfermera_piso", statusLabel: "Constantes por registrar" },
       }));
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/enfermeria/valoracion?ingreso=ENC-0001");

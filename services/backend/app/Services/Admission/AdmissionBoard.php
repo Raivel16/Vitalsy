@@ -28,14 +28,14 @@ class AdmissionBoard
         'consentimiento' => ['role' => 'admision', 'next' => 'traslado', 'subprocess' => '1.1', 'label' => 'Registrar consentimiento', 'status' => 'Consentimiento por firmar', 'deliverable' => 'consentimiento'],
         'traslado' => ['role' => 'camillero', 'next' => 'identidad', 'subprocess' => '1.2', 'label' => 'Consultar orden de traslado', 'status' => 'Listo para traslado', 'deliverable' => null],
         'identidad' => ['role' => 'camillero', 'next' => 'recepcion', 'subprocess' => '1.2', 'label' => 'Verificar identidad', 'status' => 'Identidad por confirmar', 'deliverable' => null],
-        'recepcion' => ['role' => 'enfermeria', 'next' => 'valoracion', 'subprocess' => '1.2', 'label' => 'Confirmar recepción en piso', 'status' => 'Pendiente de recepción', 'deliverable' => 'recepcion'],
-        'valoracion' => ['role' => 'enfermeria', 'next' => 'constantes', 'subprocess' => '1.3', 'label' => 'Registrar valoración inicial', 'status' => 'Valoración por registrar', 'deliverable' => 'valoracion'],
-        'constantes' => ['role' => 'enfermeria', 'next' => 'conciliacion', 'subprocess' => '1.3', 'label' => 'Registrar constantes basales', 'status' => 'Constantes por registrar', 'deliverable' => 'signosVitales'],
-        'conciliacion' => ['role' => 'enfermeria', 'next' => 'escalas', 'subprocess' => '1.3', 'label' => 'Conciliar medicamentos', 'status' => 'Conciliación por registrar', 'deliverable' => 'bpmh'],
-        'escalas' => ['role' => 'enfermeria', 'next' => 'kardex', 'subprocess' => '1.3', 'label' => 'Completar escalas de riesgo', 'status' => 'Escalas por completar', 'deliverable' => 'escalas'],
-        'kardex' => ['role' => 'enfermeria', 'next' => 'indicaciones', 'subprocess' => '1.3', 'label' => 'Revisar Kardex de ingreso', 'status' => 'Kardex por revisar', 'deliverable' => 'kardex'],
-        'indicaciones' => ['role' => 'medico', 'next' => 'cerrado', 'subprocess' => '1.3', 'label' => 'Firmar indicaciones médicas', 'status' => 'Indicaciones por firmar', 'deliverable' => 'indicaciones'],
-        'cerrado' => ['role' => 'medico', 'next' => null, 'subprocess' => '1.3', 'label' => 'Ingreso cerrado', 'status' => 'Ingreso cerrado', 'deliverable' => null],
+        'recepcion' => ['role' => 'enfermera_piso', 'next' => 'valoracion', 'subprocess' => '1.2', 'label' => 'Confirmar recepción en piso', 'status' => 'Pendiente de recepción', 'deliverable' => 'recepcion'],
+        'valoracion' => ['role' => 'enfermera_piso', 'next' => 'constantes', 'subprocess' => '1.3', 'label' => 'Registrar valoración inicial', 'status' => 'Valoración por registrar', 'deliverable' => 'valoracion'],
+        'constantes' => ['role' => 'enfermera_piso', 'next' => 'conciliacion', 'subprocess' => '1.3', 'label' => 'Registrar constantes basales', 'status' => 'Constantes por registrar', 'deliverable' => 'signosVitales'],
+        'conciliacion' => ['role' => 'enfermera_piso', 'next' => 'escalas', 'subprocess' => '1.3', 'label' => 'Conciliar medicamentos', 'status' => 'Conciliación por registrar', 'deliverable' => 'bpmh'],
+        'escalas' => ['role' => 'enfermera_piso', 'next' => 'kardex', 'subprocess' => '1.3', 'label' => 'Completar escalas de riesgo', 'status' => 'Escalas por completar', 'deliverable' => 'escalas'],
+        'kardex' => ['role' => 'enfermera_piso', 'next' => 'indicaciones', 'subprocess' => '1.3', 'label' => 'Revisar Kardex de ingreso', 'status' => 'Kardex por revisar', 'deliverable' => 'kardex'],
+        'indicaciones' => ['role' => 'medico_residente', 'next' => 'cerrado', 'subprocess' => '1.3', 'label' => 'Firmar indicaciones médicas', 'status' => 'Indicaciones por firmar', 'deliverable' => 'indicaciones'],
+        'cerrado' => ['role' => 'medico_residente', 'next' => null, 'subprocess' => '1.3', 'label' => 'Ingreso cerrado', 'status' => 'Ingreso cerrado', 'deliverable' => null],
     ];
 
     /**

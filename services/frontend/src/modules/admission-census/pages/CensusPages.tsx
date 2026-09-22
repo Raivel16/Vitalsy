@@ -10,7 +10,7 @@ import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
-import { stepPath } from "../domain/steps";
+import { canActOnEncounter, stepPath } from "../domain/steps";
 import { AdmissionStepper } from "../ui/AdmissionStepper";
 
 type CensusMeta = {
@@ -76,7 +76,7 @@ export function CensusPage() {
     setPage(1);
   }, []);
 
-  const mine = encounters?.filter((item) => item.nextRole === role) ?? [];
+  const mine = encounters?.filter((item) => canActOnEncounter(role, item)) ?? [];
   const from = meta.total === 0 ? 0 : (meta.page - 1) * meta.perPage + 1;
   const to = Math.min(meta.page * meta.perPage, meta.total);
 
@@ -133,7 +133,7 @@ export function CensusPage() {
               </thead>
               <tbody>
                 {encounters.map((item) => {
-                  const own = item.nextRole === role || (role === "admision" && item.currentStep === "derivacion");
+                  const own = canActOnEncounter(role, item);
                   return (
                     <tr key={item.encounterId}>
                       <td>
@@ -220,7 +220,7 @@ export function EncounterFilePage() {
   }
   if (!encounter) return <p role="status">Cargando ficha del ingreso.</p>;
 
-  const own = encounter.nextRole === role || (role === "admision" && encounter.currentStep === "derivacion");
+  const own = canActOnEncounter(role, encounter);
 
   return (
     <Sheet kicker="Ficha del ingreso" title={encounter.patientName}>

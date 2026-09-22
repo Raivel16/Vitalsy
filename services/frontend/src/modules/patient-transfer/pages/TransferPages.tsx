@@ -200,7 +200,7 @@ export function FloorReceptionPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);

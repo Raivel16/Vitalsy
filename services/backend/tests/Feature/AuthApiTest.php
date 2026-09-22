@@ -90,7 +90,7 @@ class AuthApiTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Debe iniciar sesión para continuar.');
 
-        $physician = User::factory()->create(['role' => 'medico']);
+        $physician = User::factory()->create(['role' => 'medico_residente']);
 
         $this->actingAs($physician)
             ->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')

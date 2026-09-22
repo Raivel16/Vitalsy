@@ -5,7 +5,7 @@ import { jsonResponse, renderApp } from "../../test/renderApp";
 
 describe("conciliación farmacéutica de ingreso", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });
 
   afterEach(() => {
@@ -31,7 +31,7 @@ describe("conciliación farmacéutica de ingreso", () => {
       subprocessLabel: "x",
       currentStep: "conciliacion",
       currentStepLabel: "Conciliación",
-      nextRole: "enfermeria",
+      nextRole: "enfermera_piso",
       statusLabel: "Conciliación",
       deliverables: [],
       progress: [],
@@ -44,7 +44,7 @@ describe("conciliación farmacéutica de ingreso", () => {
           reconciliation: { status: "con_observaciones", statusLabel: "Con observaciones" },
         }))
         .mockResolvedValueOnce(jsonResponse(200, {
-          encounter: { ...encounter, currentStep: "escalas", nextRole: "enfermeria" },
+          encounter: { ...encounter, currentStep: "escalas", nextRole: "enfermera_piso" },
         })),
     );
     renderApp("/enfermeria/conciliacion?ingreso=ENC-0001");

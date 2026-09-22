@@ -27,7 +27,7 @@ export function KardexPage() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [kardex, setKardex] = useState<Kardex | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(Boolean(ingreso));

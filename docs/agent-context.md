@@ -39,3 +39,10 @@ Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-s
 - RF-08: al escanear en verificación de identidad se valida y avanza sin segundo clic.
 - RF-92: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
 - `BarcodeScanner` movido a `shared/ui/BarcodeScanner.tsx`.
+
+## 2026-09-21 — Módulo 2: roles clínicos separados
+
+Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualizado).
+
+- Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante` (sin claves genéricas `enfermeria`/`medico`). Catálogo en `requerimientos.md`.
+- UX Módulo 2 orientativa: censo + chart (Opción A), no stepper de admisión.
