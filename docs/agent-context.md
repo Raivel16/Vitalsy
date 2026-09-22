@@ -51,4 +51,10 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 
 - `LisClient`/`StubLisClient`, `LabResultsIntegrator`, API `inpatient-care/.../lab-results`, UI `/atencion/laboratorio`.
 - Guía: `docs/architecture/modulo-2-atencion.md`.
-- Siguiente: RF-18 (PACS) por el mismo patrón.
+
+## 2026-09-21 — Módulo 2 RF-17–33 completo (rama feature)
+
+- Commits atómicos por RF/subproceso en `feature/RF-17-modulo-2-atencion-seguimiento`.
+- UX: chart + acciones (`/atencion/*`), no stepper de admisión.
+- Cubierto: LIS, PACS, visita, evolución médica, CPOE, vitals/NEWS2/Butterworth/alertas, e-MAR, cuidados.
+- Yaak: `docs/api/yaak-modulo-2.postman_collection.json` (pendiente validar auth Sanctum en cliente).
