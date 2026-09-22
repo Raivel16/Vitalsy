@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClinicalVisitController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
@@ -64,6 +65,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('encounters/{encounterId}/lab-results', [LabResultsController::class, 'index']);
                 Route::post('encounters/{encounterId}/imaging-reports/sync', [ImagingReportsController::class, 'sync']);
                 Route::get('encounters/{encounterId}/imaging-reports', [ImagingReportsController::class, 'index']);
+            });
+
+            // RF-19: visita consolidada — solo médicos.
+            Route::middleware('role:medico_residente,medico_tratante')->group(function () {
+                Route::get('encounters/{encounterId}/clinical-visit', [ClinicalVisitController::class, 'show']);
             });
         });
     });
