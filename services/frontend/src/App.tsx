@@ -91,8 +91,8 @@ function Shell() {
               <Route path="/admision/brazalete" element={<Guard roles={["admision"]}><WristbandPage /></Guard>} />
               <Route path="/admision/expediente" element={<Guard roles={["admision"]}><RecordPage /></Guard>} />
               <Route path="/admision/consentimiento" element={<Guard roles={["admision"]}><ConsentPage /></Guard>} />
-              <Route path="/traslado/orden" element={<Guard roles={["celador"]}><TransferOrderPage /></Guard>} />
-              <Route path="/traslado/identidad" element={<Guard roles={["celador"]}><WristbandVerifyPage /></Guard>} />
+              <Route path="/traslado/orden" element={<Guard roles={["camillero"]}><TransferOrderPage /></Guard>} />
+              <Route path="/traslado/identidad" element={<Guard roles={["camillero"]}><WristbandVerifyPage /></Guard>} />
               <Route path="/piso/recepcion" element={<Guard roles={["enfermeria"]}><FloorReceptionPage /></Guard>} />
               <Route path="/piso/reubicacion" element={<Guard roles={["enfermeria"]}><RelocationPage /></Guard>} />
               <Route path="/enfermeria/valoracion" element={<Guard roles={["enfermeria"]}><NursingAssessmentPage /></Guard>} />

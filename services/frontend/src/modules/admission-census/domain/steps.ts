@@ -22,7 +22,7 @@ export const STEP_PATH: Record<string, string> = {
 
 export const ROLE_STEPS: Record<Role, string[]> = {
   admision: ["orden", "filiacion", "cobertura", "brazalete", "expediente", "consentimiento"],
-  celador: ["traslado", "identidad"],
+  camillero: ["traslado", "identidad"],
   enfermeria: ["recepcion", "valoracion", "constantes", "conciliacion", "escalas", "kardex"],
   medico: ["indicaciones"],
 };

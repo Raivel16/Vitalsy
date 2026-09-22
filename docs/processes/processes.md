@@ -4,7 +4,7 @@ Descripción del Proceso
 Este proceso reemplaza los registros en papel, carpetas físicas e iteraciones telefónicas de la admisión tradicional por un flujo de captura digital centralizado en Vitalsy. Permite la validación electrónica de la orden, la apertura inmediata del expediente, el registro web de la valoración basal a pie de cama y la conciliación estructurada de medicamentos de ingreso (BPMH).
 Actores Involucrados
 Personal administrativo de admisión.
-Celador / Portador hospitalario.
+Celador / Camillero.
 Enfermera de piso.
 Auxiliar de enfermería.
 Médico residente / de guardia.
@@ -25,10 +25,10 @@ Modelado del Proceso Mejorado (TO-BE): (Espacio reservado para la inserción del
 
 
 Subproceso 1.2: Traslado y Recepción Física Digitalizada del Paciente en Piso
-Actores Involucrados: Celador / Portador hospitalario, Auxiliar de enfermería, Enfermera de piso.
+Actores Involucrados: Celador / Camillero, Auxiliar de enfermería, Enfermera de piso.
 Actividades paso a paso:
-El Celador / Portador hospitalario consulta en la Web App Vitalsy (desde la estación o navegador móvil) la orden de traslado asignada con el número de habitación y lecho en piso.
-El Celador / Portador hospitalario acude al servicio de origen, verifica el código del brazalete del paciente para confirmar identidad y efectúa el traslado físico hacia la habitación.
+El Celador / Camillero consulta en la Web App Vitalsy (desde la estación o navegador móvil) la orden de traslado asignada con el número de habitación y lecho en piso.
+El Celador / Camillero acude al servicio de origen, verifica el código del brazalete del paciente para confirmar identidad y efectúa el traslado físico hacia la habitación.
 El Auxiliar de enfermería asiste en la acomodación del paciente en la cama hospitalaria, posicionando barandillas y cabecera.
 La Enfermera de piso accede a la Web App Vitalsy desde la terminal o tablet de piso; si la cama asignada coincide con la orden digital, entonces la enfermera de piso presiona "Confirmar Recepción en Piso", cambiando automáticamente el estado del paciente a "Ingresado" en la central; si existe una discrepancia en el lecho asignado, entonces la enfermera selecciona "Reubicar Paciente" e informa a la central mediante el sistema.
 Flujo de Información Descriptivo: Entra la Ficha Digital de Admisión. Se generan como salidas el Registro Digital de Recepción Física en Habitación y la Confirmación de Ingreso a Piso.
@@ -215,7 +215,7 @@ Médico tratante (especialista) / residente.
 Profesional de trabajo social.
 Enfermera de piso.
 Personal administrativo de altas / caja.
-Celador / Portador hospitalario.
+Celador / Camillero.
 Paciente y familiar / cuidador.
 Plataforma Web Vitalsy.
 
@@ -264,14 +264,14 @@ Modelado del Proceso Mejorado (TO-BE):
 (Espacio reservado para la inserción del diagrama del Subproceso 4.3 TO-BE en Bizagi)
 Subproceso 4.4: Trámite Administrativo, Pase de Salida y Egreso Físico
 Descripción: Cierre administrativo del internamiento, emisión digital del pase de salida y confirmación del egreso físico del paciente.
-Actores Involucrados: Personal administrativo de altas / caja, Celador / Portador hospitalario, Paciente y familiar / cuidador, Enfermera de piso, Plataforma Web Vitalsy.
+Actores Involucrados: Personal administrativo de altas / caja, Celador / Camillero, Paciente y familiar / cuidador, Enfermera de piso, Plataforma Web Vitalsy.
 Actividades paso a paso:
 El Personal administrativo de altas / caja recibe la información del alta y consulta los datos administrativos correspondientes en el sistema.
 Verifica la cuenta hospitalaria y el estado de pago o cobertura.
 Si la liquidación está conforme, registra la aprobación y genera el Pase de Salida Digital.
 Si existen cargos o trámites pendientes, registra la observación en el sistema y solicita la regularización correspondiente.
-Una vez autorizado el pase, el Celador / Portador hospitalario consulta en Vitalsy la autorización de salida.
-El Celador / Portador hospitalario acude a la habitación y realiza el traslado del paciente hasta la salida principal o ambulancia.
+Una vez autorizado el pase, el Celador / Camillero consulta en Vitalsy la autorización de salida.
+El Celador / Camillero acude a la habitación y realiza el traslado del paciente hasta la salida principal o ambulancia.
 El Paciente y familiar / cuidador reciben el comprobante de salida correspondiente.
 La Enfermera de piso registra digitalmente la Salida Efectiva del Paciente.
 Vitalsy actualiza automáticamente el estado del lecho y genera la Notificación Digital de Cama Vacante.
@@ -282,7 +282,7 @@ Modelado del Proceso Mejorado (TO-BE):
 Flujo de Información Descriptivo del Proceso 4
 El proceso inicia con la evaluación clínica del Médico tratante / residente. Si el paciente cumple los criterios de alta, se genera en Vitalsy la Orden Digital de Alta, la Epicrisis Electrónica y las Recetas Médicas Ambulatorias.
 A partir de la autorización del alta, se ejecutan en paralelo la Valoración Social Pre-Egreso y la Conciliación Farmacéutica e Instrucciones de Enfermería. El Profesional de trabajo social registra digitalmente la valoración y, cuando corresponde, el Informe de Valoración Social. La Enfermera de piso registra la conciliación farmacéutica, el Informe Digital de Alta de Enfermería y las Indicaciones de Cuidados Domiciliarios.
-Posteriormente, el Personal administrativo de altas / caja verifica la situación administrativa y genera el Pase de Salida Digital. El Celador / Portador hospitalario consulta la autorización y realiza el traslado del paciente. Finalmente, la Enfermera de piso registra la salida efectiva en Vitalsy y el sistema actualiza automáticamente el estado de la cama, generando la Notificación Digital de Cama Vacante.
+Posteriormente, el Personal administrativo de altas / caja verifica la situación administrativa y genera el Pase de Salida Digital. El Celador / Camillero consulta la autorización y realiza el traslado del paciente. Finalmente, la Enfermera de piso registra la salida efectiva en Vitalsy y el sistema actualiza automáticamente el estado de la cama, generando la Notificación Digital de Cama Vacante.
 De esta manera, el proceso mantiene la secuencia y responsabilidades del AS-IS, pero sustituye los registros manuales y documentos físicos por registros digitales centralizados y trazables. El AS-IS corregido establece precisamente la ejecución paralela de los Subprocesos 4.2 y 4.3 y el cierre mediante el registro de salida efectiva.
 Modelado del Proceso Mejorado (TO-BE)
 (Espacio reservado para la inserción del diagrama del Proceso 4 TO-BE en Bizagi)

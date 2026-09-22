@@ -30,13 +30,13 @@ El censo de demostración ya trae tres ingresos:
 |---|---|---|
 | Luis Ernesto Paredes | Cobertura pendiente | Admisión |
 | Carmen Yolanda Vega | Cobertura rechazada | Admisión |
-| Ana María Quispe Rojas | Lista para traslado | Celador. Habitación 312, lecho B, brazalete `BRZ-0001-ANA` |
+| Ana María Quispe Rojas | Lista para traslado | Celador / Camillero. Habitación 312, lecho B, brazalete `BRZ-0001-ANA` |
 
 Los códigos de traslado y brazalete son propios de cada paciente: consultar o verificar el de Ana no sirve para otro ingreso.
 
 Para recorrer el camino completo de Ana:
 
-1. Entre como celador, abra a Ana, consulte el traslado y confírmelo; luego verifique el brazalete.
+1. Entre como camillero (`camillero@vitalsy.local`), abra a Ana, consulte el traslado y confírmelo; luego verifique el brazalete (el escaneo confirma solo).
 2. Entre como enfermería. Confirme recepción y siga valoración, constantes, conciliación, escalas y Kardex.
 3. Entre como médico. Firme las indicaciones.
 
@@ -47,7 +47,7 @@ Si la cobertura no está aprobada, derive el trámite y registre: el ingreso que
 | Perfil | Correo | Qué abre |
 |---|---|---|
 | Admisión | `admision@vitalsy.local` | RF-01 a RF-06 y registro/intake |
-| Celador | `celador@vitalsy.local` | RF-07 y RF-08 |
+| Celador / Camillero | `camillero@vitalsy.local` | RF-07 y RF-08 |
 | Enfermería | `enfermeria@vitalsy.local` | RF-09 a RF-15 |
 | Médico | `medico@vitalsy.local` | RF-16 |
 
@@ -69,12 +69,13 @@ Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los paso
 | RF-03 | Derivar cobertura | Derivación desde cobertura | Admisión | El teléfono solo admite dígitos. Al registrar, el caso queda en trámite. |
 | RF-04 | Emitir brazalete | Continuar → brazalete | Admisión | Emite un código propio del paciente en curso, no solo el de Ana. |
 | RF-05 | Abrir expediente | Continuar → expediente | Admisión | Apertura y avanza al consentimiento. |
-| RF-06 | Consentimiento | Continuar → consentimiento | Admisión | Al registrar, el caso pasa a celador. |
-| RF-07 | Orden de traslado | Continuar → traslado | Celador | Cada `OT-…` muestra al paciente dueño de ese código. |
-| RF-08 | Verificar brazalete | Continuar → identidad | Celador | Cada `BRZ-…` confirma solo a su paciente. |
+| RF-06 | Consentimiento | Continuar → consentimiento | Admisión | Al registrar, el caso pasa a camillero. |
+| RF-07 | Orden de traslado | Continuar → traslado | Celador / Camillero | Cada `OT-…` muestra al paciente dueño de ese código. |
+| RF-08 | Verificar brazalete | Continuar → identidad | Celador / Camillero | Cada `BRZ-…` confirma solo a su paciente; el escaneo valida solo. |
 | RF-09–RF-16 | Recepción a indicaciones | Continuar según el paso | Enfermería / Médico | Registrar en cada pantalla avanza el ingreso. |
 | RF-83 | Censo | `/pacientes` | Todos | Lista pacientes y Continuar solo si es su turno. |
 | RF-85 | Continuar paso vigente | Censo / ficha | Todos | Abre la actividad con el paciente ya identificado. |
+| RF-92 | Buscar por brazalete | Censo → Escanear brazalete | Todos | Filtra el listado por el código leído. |
 
 ## API de intake (externa)
 

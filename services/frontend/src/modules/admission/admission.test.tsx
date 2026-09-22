@@ -179,7 +179,7 @@ describe("admisión administrativa", () => {
     const atTransfer = {
       ...atConsent,
       currentStep: "traslado",
-      nextRole: "celador" as const,
+      nextRole: "camillero" as const,
       statusLabel: "Listo para traslado",
       deliverables: [{ id: "consentimiento", label: "Consentimiento informado", done: true }],
     };

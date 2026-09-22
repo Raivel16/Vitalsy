@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('informed-consents', [HospitalAdmissionController::class, 'storeConsent']);
             });
 
-            Route::middleware('role:celador')->group(function () {
+            Route::middleware('role:camillero')->group(function () {
                 Route::get('transfer-orders/{orderNumber}', [HospitalAdmissionController::class, 'showTransferOrder']);
                 Route::post('wristbands/verify', [HospitalAdmissionController::class, 'verifyWristband']);
             });

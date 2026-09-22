@@ -18,7 +18,7 @@ function testUser(): SessionUser | null {
   const stored = sessionStorage.getItem("vitalsy-user");
   if (stored) return JSON.parse(stored) as SessionUser;
   const role = sessionStorage.getItem("vitalsy-role");
-  if (role === "admision" || role === "enfermeria" || role === "celador" || role === "medico") {
+  if (role === "admision" || role === "enfermeria" || role === "camillero" || role === "medico") {
     return { name: ROLE_LABEL[role as Role], email: `${role}@vitalsy.local`, role };
   }
   return null;

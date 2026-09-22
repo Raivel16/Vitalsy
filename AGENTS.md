@@ -78,4 +78,10 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - CSS: `.field` gap 0.5rem; `.check .field-error` a ancho completo; `.result-block` con margen superior.
 - `Feedback` acepta `label` opcional (`aria-label`) para resultados de registro.
 
+### 2026-09-20 — RF-92 camillero y escáner de brazalete
+
+- Rol interno `camillero`; UI/docs actor **Celador / Camillero**; cuenta `camillero@vitalsy.local`.
+- RF-08: escaneo en identidad valida solo. RF-92: escáner en censo; `q` incluye brazalete.
+- Escáner compartido: `shared/ui/BarcodeScanner.tsx`.
+
 <!-- END AGENT ANNOTATIONS -->

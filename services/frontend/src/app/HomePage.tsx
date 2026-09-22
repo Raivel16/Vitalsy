@@ -5,7 +5,7 @@ import { ButtonLink } from "../shared/ui/Button";
 
 const GUIDE: Record<string, string> = {
   admision: "Abra el censo, continúe el paciente de su turno y registre cada actividad. También puede registrar un ingreso manual o recibir órdenes por la API de intake.",
-  celador: "Abra el censo y continúe solo los pacientes listos para traslado. Consulte habitación y lecho, y verifique el brazalete antes de movilizar.",
+  camillero: "Abra el censo y continúe solo los pacientes listos para traslado. Consulte habitación y lecho, y verifique el brazalete antes de movilizar.",
   enfermeria: "Abra el censo cuando el paciente llegue a piso. Confirme la recepción o registre una reubicación, y luego complete valoración, constantes, conciliación, escalas y Kardex.",
   medico: "Abra el censo cuando enfermería cierre el Kardex. Revise la valoración y firme las indicaciones basales.",
 };

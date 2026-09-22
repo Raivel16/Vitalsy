@@ -16,8 +16,8 @@ A continuación se detallan los requisitos funcionales organizados por módulos 
 4. RF-04: Emitir brazalete de identificación con código de barras. El sistema debe generar e imprimir un brazalete físico con código de barras enlazado al ID del expediente electrónico. Actor: Personal administrativo de admisión.
 5. RF-05: Aperturar expediente clínico electrónico de ingreso. El sistema debe habilitar automáticamente el expediente clínico electrónico al validarse la admisión. Actor: Personal administrativo de admisión / Sistema.
 6. RF-06: Registrar consentimiento informado digital. El sistema debe permitir la firma digital del formulario de consentimiento informado y administrativo desde un terminal. Actor: Paciente y familiar / cuidador.
-7. RF-07: Consultar orden de traslado a piso. El sistema debe mostrar la orden de traslado con número de habitación y lecho asignado. Actor: Celador / Portador hospitalario.
-8. RF-08: Verificar identidad mediante código de brazalete. El sistema debe permitir escanear o validar el código del brazalete para confirmar la identidad del paciente antes del traslado. Actor: Celador / Portador hospitalario.
+7. RF-07: Consultar orden de traslado a piso. El sistema debe mostrar la orden de traslado con número de habitación y lecho asignado. Actor: Celador / Camillero.
+8. RF-08: Verificar identidad mediante código de brazalete. El sistema debe permitir escanear o validar el código del brazalete para confirmar la identidad del paciente antes del traslado. Un escaneo exitoso debe confirmar la identidad sin exigir un segundo clic de verificación. Actor: Celador / Camillero.
 9. RF-09: Confirmar recepción física en piso. El sistema debe permitir cambiar el estado del paciente a "Ingresado" al confirmarse la recepción en la habitación asignada. Actor: Enfermera de piso.
 10. RF-10: Registrar reubicación de paciente. El sistema debe permitir registrar una discrepancia de lecho y notificar a la central para reubicación. Actor: Enfermera de piso.
 11. RF-11: Registrar valoración inicial de enfermería. El sistema debe permitir registrar anamnesis, alergias y antecedentes del paciente a pie de cama. Actor: Enfermera de piso.
@@ -29,9 +29,10 @@ A continuación se detallan los requisitos funcionales organizados por módulos 
 
 Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al orden del proceso 1. No renumeran RF-01 a RF-82.
 
-- RF-83 (agregado): Consultar el censo de ingresos del proceso 1. El sistema debe listar los pacientes en curso de admisión y recepción, con identidad, documento, subproceso vigente, ubicación cuando exista y avance de los entregables. Actor: Personal administrativo de admisión, Celador, Enfermera de piso y Médico residente / de guardia.
+- RF-83 (agregado): Consultar el censo de ingresos del proceso 1. El sistema debe listar los pacientes en curso de admisión y recepción, con identidad, documento, subproceso vigente, ubicación cuando exista y avance de los entregables. Actor: Personal administrativo de admisión, Celador / Camillero, Enfermera de piso y Médico residente / de guardia.
 - RF-84 (agregado): Consultar la ficha del ingreso y sus entregables. El sistema debe mostrar, para un paciente del censo, los datos registrados y el estado de los entregables del proceso 1: ficha digital de admisión, brazalete, expediente clínico, consentimiento, recepción en piso, valoración inicial, registro basal de signos vitales, conciliación farmacéutica (BPMH), escalas de riesgo, Kardex electrónico e indicaciones médicas. Actor: el perfil que interviene en el caso.
 - RF-85 (agregado): Continuar el ingreso en el paso vigente. El sistema debe abrir, desde el censo o la ficha, la actividad del proceso 1 que corresponde al rol, con el paciente ya identificado. Actor: el perfil responsable del paso.
+- RF-92 (agregado): Buscar un ingreso del censo escaneando el brazalete. El sistema debe permitir, desde el listado de pacientes, escanear el código del brazalete para filtrar y localizar el ingreso correspondiente de forma rápida. Actor: Personal administrativo de admisión, Celador / Camillero, Enfermera de piso y Médico residente / de guardia.
 
 ### Módulo 2: Atención y Seguimiento del Paciente Hospitalizado
 
@@ -83,7 +84,7 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 56. RF-56: Registrar confirmación de recepción de indicaciones. El sistema debe permitir al paciente o familiar confirmar digitalmente la recepción de las indicaciones de alta. Actor: Paciente y familiar / cuidador.
 57. RF-57: Verificar estado de cuenta hospitalaria. El sistema debe permitir consultar y validar el estado de pago o cobertura del paciente. Actor: Personal administrativo de altas / caja.
 58. RF-58: Generar pase de salida digital. El sistema debe emitir el pase de salida una vez conforme la liquidación administrativa. Actor: Personal administrativo de altas / caja.
-59. RF-59: Consultar autorización de salida y trasladar al paciente. El sistema debe permitir verificar la autorización antes del traslado físico del paciente. Actor: Celador / Portador hospitalario.
+59. RF-59: Consultar autorización de salida y trasladar al paciente. El sistema debe permitir verificar la autorización antes del traslado físico del paciente. Actor: Celador / Camillero.
 60. RF-60: Registrar salida efectiva del paciente. El sistema debe permitir confirmar el egreso físico del paciente. Actor: Enfermera de piso.
 61. RF-61: Actualizar automáticamente el estado de cama. El sistema debe generar la notificación digital de cama vacante al registrarse la salida efectiva. Actor: Sistema.
 

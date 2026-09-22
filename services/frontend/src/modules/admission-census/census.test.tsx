@@ -4,6 +4,14 @@ import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 import type { Encounter } from "./domain/encounter";
 
+vi.mock("../../shared/ui/BarcodeScanner", () => ({
+  BarcodeScanner: ({ onScan }: { onScan: (code: string) => void }) => (
+    <button type="button" onClick={() => onScan("BRZ-0001-ANA")}>
+      Simular escaneo
+    </button>
+  ),
+}));
+
 const luis: Encounter = {
   encounterId: "ENC-0002",
   orderNumber: "OI-2026-0002",
@@ -47,7 +55,7 @@ const ana: Encounter = {
   subprocessLabel: "Traslado y recepción en piso",
   currentStep: "traslado",
   currentStepLabel: "Consultar orden de traslado",
-  nextRole: "celador",
+  nextRole: "camillero",
   statusLabel: "Listo para traslado",
   deliverables: [
     { id: "fichaAdmision", label: "Ficha digital de admisión", done: true },
@@ -70,9 +78,10 @@ describe("censo de ingresos", () => {
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/buscar paciente/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /simular escaneo|escanear brazalete/i })).toBeInTheDocument();
     expect(screen.getByText(/2 de 3 entregables listos/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^continuar$/i })).toHaveAttribute("href", "/admision/cobertura?ingreso=ENC-0002");
-    expect(screen.getByText(/en curso con celador/i)).toBeInTheDocument();
+    expect(screen.getByText(/en curso con celador \/ camillero/i)).toBeInTheDocument();
     expect(screen.getByText(/página 1 de 1/i)).toBeInTheDocument();
     expect(screen.queryByText(/RF-\d+/)).not.toBeInTheDocument();
     expect(screen.queryByText(/proceso 1/i)).not.toBeInTheDocument();
@@ -122,9 +131,32 @@ describe("censo de ingresos", () => {
     expect(await screen.findByText(/1–1 de 1/i)).toBeInTheDocument();
   });
 
+  it("busca por código de brazalete al escanear", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounters: [luis, ana],
+        meta: { total: 2, page: 1, perPage: 10, lastPage: 1 },
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        encounters: [ana],
+        meta: { total: 1, page: 1, perPage: 10, lastPage: 1 },
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/pacientes");
+
+    expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /simular escaneo/i }));
+    await waitFor(() => {
+      const searchCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("q=BRZ-0001-ANA"));
+      expect(searchCall).toBeTruthy();
+    });
+    expect(await screen.findByRole("link", { name: /Ana María Quispe Rojas/i })).toBeInTheDocument();
+  });
+
   it("abre la ficha con el estado de cada entregable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: ana })));
-    renderApp("/pacientes/ENC-0001", { role: "celador" });
+    renderApp("/pacientes/ENC-0001", { role: "camillero" });
 
     expect(await screen.findByRole("heading", { name: /Ana María Quispe Rojas/i })).toBeInTheDocument();
     expect(screen.getByText("Ficha digital de admisión").closest("li")).toHaveTextContent("Listo");
