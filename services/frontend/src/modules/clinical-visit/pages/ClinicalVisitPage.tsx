@@ -5,6 +5,8 @@ import { errorText } from "../../../app/userMessage";
 import { useEncounter } from "../../admission-census/EncounterContext";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { formatDate } from "../../../shared/datetime/format";
+import { VitalSignsChartPanel } from "../../vital-monitoring/ui/VitalSignsChartPanel";
 
 type VisitBoard = {
   day: string;
@@ -48,24 +50,30 @@ export function ClinicalVisitPage() {
   return (
     <Sheet kicker="Atención en piso" title="Visita médica" wide>
       <p className="lead">
-        Consolida laboratorio, imágenes y notas de enfermería del día
+        Consolida laboratorio, imágenes, notas de enfermería y gráfica de signos vitales
         {encounter ? ` para ${encounter.patientName}` : ""}.
       </p>
       {loading ? <p role="status">Cargando visita.</p> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
+      <VitalSignsChartPanel encounterId={ingreso} />
       {board ? (
         <div className="stack">
-          <p className="hint">Día clínico: {board.day}</p>
+          <p className="hint">Día clínico: {formatDate(board.day)}</p>
           <section className="result-block" aria-label="Laboratorio">
             <h3>Laboratorio</h3>
             {board.labResults.length === 0 ? (
               <Feedback tone="info">Sin resultados de laboratorio en el día. <Link to={`/atencion/laboratorio?ingreso=${encodeURIComponent(ingreso)}`}>Integrar LIS</Link></Feedback>
             ) : (
-              <ul>
-                {board.labResults.map((item) => (
-                  <li key={item.id}><strong>{item.summary}</strong></li>
-                ))}
-              </ul>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Resumen</th></tr></thead>
+                  <tbody>
+                    {board.labResults.map((item) => (
+                      <tr key={item.id}><td>{item.summary}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
           <section className="result-block" aria-label="Imágenes">
@@ -73,11 +81,19 @@ export function ClinicalVisitPage() {
             {board.imagingReports.length === 0 ? (
               <Feedback tone="info">Sin informes de imágenes en el día. <Link to={`/atencion/imagenes?ingreso=${encodeURIComponent(ingreso)}`}>Integrar PACS</Link></Feedback>
             ) : (
-              <ul>
-                {board.imagingReports.map((item) => (
-                  <li key={item.id}><strong>{item.summary}</strong>{item.modality ? <span className="hint"> · {item.modality}</span> : null}</li>
-                ))}
-              </ul>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Resumen</th><th>Modalidad</th></tr></thead>
+                  <tbody>
+                    {board.imagingReports.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.summary}</td>
+                        <td>{item.modality ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
           <section className="result-block" aria-label="Notas de enfermería">
@@ -85,14 +101,19 @@ export function ClinicalVisitPage() {
             {board.nursingNotes.length === 0 ? (
               <Feedback tone="info">Aún no hay notas de enfermería registradas hoy.</Feedback>
             ) : (
-              <ul>
-                {board.nursingNotes.map((item) => (
-                  <li key={item.id}>
-                    <strong>{item.body}</strong>
-                    {item.authorName ? <span className="hint"> · {item.authorName}</span> : null}
-                  </li>
-                ))}
-              </ul>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Nota</th><th>Autor</th></tr></thead>
+                  <tbody>
+                    {board.nursingNotes.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.body}</td>
+                        <td>{item.authorName ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
         </div>

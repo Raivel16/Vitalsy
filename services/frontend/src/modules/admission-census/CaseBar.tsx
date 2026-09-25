@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { api } from "../../app/api";
 import { ROLE_LABEL } from "../../app/roles";
 import { useAuth } from "../../app/AuthProvider";
+import { isClinicalRole, primaryAttentionPath } from "../../app/navigation";
 import { errorText } from "../../app/userMessage";
 import { Feedback } from "../../shared/ui/Sheet";
 import { EncounterContext, type CoverageStatus } from "./EncounterContext";
@@ -16,19 +17,25 @@ function asCoverage(status: string | null | undefined): CoverageStatus | null {
 
 export function CaseBar({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const location = useLocation();
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [coverageStatus, setCoverageStatus] = useState<CoverageStatus | null>(null);
   const [error, setError] = useState("");
 
+  const hideAdmissionStepper =
+    location.pathname.startsWith("/atencion") || encounter?.currentStep === "cerrado";
+
   useEffect(() => {
     if (!ingreso) {
       setEncounter(null);
       setCoverageStatus(null);
       setError("");
+      sessionStorage.removeItem("vitalsy-ingreso");
       return undefined;
     }
+    sessionStorage.setItem("vitalsy-ingreso", ingreso);
     let active = true;
     api<{ encounter: Encounter }>(`/api/v1/hospital-admission/encounters/${encodeURIComponent(ingreso)}`)
       .then((data) => {
@@ -66,7 +73,7 @@ export function CaseBar({ children }: { children: ReactNode }) {
                 <strong>{encounter.patientName}</strong>
                 <span>{encounter.statusLabel}. {encounter.currentStepLabel}.</span>
               </p>
-              {encounter.progress ? (
+              {!hideAdmissionStepper && encounter.progress ? (
                 <AdmissionStepper
                   steps={encounter.progress}
                   role={user?.role}
@@ -76,6 +83,14 @@ export function CaseBar({ children }: { children: ReactNode }) {
               ) : null}
               <div className="actions">
                 <Link to={`/pacientes/${encounter.encounterId}`}>Ver ficha</Link>
+                {isClinicalRole(user?.role ?? "admision") ? (
+                  <Link to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}>
+                    Expediente clínico
+                  </Link>
+                ) : null}
+                {encounter.currentStep === "cerrado" && user && isClinicalRole(user.role) ? (
+                  <Link to={primaryAttentionPath(user.role, encounter.encounterId)}>Atención en piso</Link>
+                ) : null}
                 {encounter.nextRole && user && encounter.nextRole !== user.role && encounter.currentStep !== "derivacion" ? (
                   <span>Este paso corresponde a {ROLE_LABEL[encounter.nextRole]}.</span>
                 ) : null}

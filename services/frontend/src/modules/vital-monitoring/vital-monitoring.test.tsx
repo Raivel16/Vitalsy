@@ -22,7 +22,7 @@ const encounter = {
   nextRole: null,
   statusLabel: "Hospitalizado",
   deliverables: [],
-  progress: [],
+  progress: [{ id: "orden", label: "Orden", status: "done" }],
 };
 
 describe("monitoreo de constantes (RF-22–27)", () => {
@@ -35,7 +35,7 @@ describe("monitoreo de constantes (RF-22–27)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("registra constantes, muestra NEWS2 y actualiza la gráfica", async () => {
+  it("no precarga valores y registra constantes con gráfica", async () => {
     const user = userEvent.setup();
     let chartCalls = 0;
     vi.stubGlobal(
@@ -63,8 +63,18 @@ describe("monitoreo de constantes (RF-22–27)", () => {
 
     renderApp("/atencion/constantes?ingreso=ENC-HOSP-0001");
     expect(await screen.findByRole("heading", { name: /monitoreo de constantes/i })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /avance del ingreso/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/frecuencia respiratoria/i)).toHaveValue("");
+
+    await user.type(screen.getByLabelText(/frecuencia respiratoria/i), "16");
+    await user.type(screen.getByLabelText(/^saturación$/i), "98");
+    await user.type(screen.getByLabelText(/presión sistólica/i), "120");
+    await user.type(screen.getByLabelText(/^pulso$/i), "72");
+    await user.type(screen.getByLabelText(/^temperatura$/i), "36.8");
     await user.click(screen.getByRole("button", { name: /registrar constantes/i }));
+
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/próximo control/i);
-    expect(await screen.findByRole("region", { name: /gráfica evolutiva/i })).toHaveTextContent(/pulso 72/i);
+    expect(await screen.findByRole("img", { name: /gráfica evolutiva/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /gráfica evolutiva/i })).toHaveTextContent(/72/);
   });
 });

@@ -3,6 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 
+vi.mock("../../shared/ui/BarcodeScanner", () => ({
+  BarcodeScanner: ({ onScan, label }: { onScan: (code: string) => void; label?: string }) => (
+    <button type="button" onClick={() => onScan("SCANNED")}>{label ?? "Escanear"}</button>
+  ),
+}));
+
 const encounter = {
   encounterId: "ENC-HOSP-0001",
   orderNumber: "OI-2026-EMAR-1",
@@ -35,7 +41,7 @@ describe("e-MAR (RF-28–31)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("lista dosis y administra tras verificar códigos", async () => {
+  it("lista dosis y administra tras verificar códigos sin precarga", async () => {
     const user = userEvent.setup();
     let administered = false;
     vi.stubGlobal(
@@ -49,9 +55,12 @@ describe("e-MAR (RF-28–31)", () => {
         }
         if (url.includes("/emar")) {
           return jsonResponse(200, {
+            hasActivePrescription: true,
+            shiftStart: "2026-09-21T07:00:00+00:00",
+            shiftEnd: "2026-09-21T19:00:00+00:00",
             doses: administered
-              ? [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", status: "administrado", expectedPatientBarcode: "BRZ-EMAR-0001", expectedDrugBarcode: "DRUG-PARACETAMOL-1G" }]
-              : [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", status: "pendiente", expectedPatientBarcode: "BRZ-EMAR-0001", expectedDrugBarcode: "DRUG-PARACETAMOL-1G" }],
+              ? [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", status: "administrado", scheduledAt: "2026-09-21T14:00:00+00:00", expectedPatientBarcode: "BRZ-EMAR-0001", expectedDrugBarcode: "DRUG-PARACETAMOL-1G" }]
+              : [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", status: "pendiente", scheduledAt: "2026-09-21T14:00:00+00:00", expectedPatientBarcode: "BRZ-EMAR-0001", expectedDrugBarcode: "DRUG-PARACETAMOL-1G" }],
           });
         }
         return jsonResponse(404, { message: "No se encontró lo solicitado." });
@@ -61,6 +70,12 @@ describe("e-MAR (RF-28–31)", () => {
     renderApp("/atencion/emar?ingreso=ENC-HOSP-0001");
     expect(await screen.findByRole("heading", { name: /e-mar del turno/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /^administrar$/i }));
+    expect(screen.getByText(/código esperado del medicamento/i)).toHaveTextContent(/DRUG-PARACETAMOL-1G/i);
+    expect(screen.getByRole("button", { name: /escanear brazalete/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /escanear medicamento/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/código paciente/i)).toHaveValue("");
+    await user.type(screen.getByLabelText(/código paciente/i), "BRZ-EMAR-0001");
+    await user.type(screen.getByLabelText(/código medicamento/i), "DRUG-PARACETAMOL-1G");
     await user.click(screen.getByRole("button", { name: /confirmar administración/i }));
     expect(await screen.findByRole("status", { name: /resultado de administración/i })).toHaveTextContent(/dosis administrada/i);
   });

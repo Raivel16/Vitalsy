@@ -4,6 +4,7 @@ import { IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { ROLE_LABEL } from "../../../app/roles";
 import { useAuth } from "../../../app/AuthProvider";
+import { isClinicalRole, primaryAttentionPath } from "../../../app/navigation";
 import { errorText } from "../../../app/userMessage";
 import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
@@ -134,6 +135,7 @@ export function CensusPage() {
               <tbody>
                 {encounters.map((item) => {
                   const own = canActOnEncounter(role, item);
+                  const canAttend = isClinicalRole(role) && item.currentStep === "cerrado";
                   return (
                     <tr key={item.encounterId}>
                       <td>
@@ -150,6 +152,10 @@ export function CensusPage() {
                         {own ? (
                           <ButtonLink to={stepPath(item.currentStep, item.encounterId)}>
                             Continuar
+                          </ButtonLink>
+                        ) : canAttend ? (
+                          <ButtonLink to={primaryAttentionPath(role, item.encounterId)}>
+                            Atención
                           </ButtonLink>
                         ) : (
                           <span>{item.nextRole ? `En curso con ${ROLE_LABEL[item.nextRole]}` : item.statusLabel}</span>
@@ -199,6 +205,7 @@ export function EncounterFilePage() {
 
   useEffect(() => {
     let active = true;
+    sessionStorage.setItem("vitalsy-ingreso", encounterId);
     api<{ encounter: Encounter }>(`/api/v1/hospital-admission/encounters/${encodeURIComponent(encounterId)}`)
       .then((data) => {
         if (active) setEncounter(data.encounter);
@@ -221,6 +228,7 @@ export function EncounterFilePage() {
   if (!encounter) return <p role="status">Cargando ficha del ingreso.</p>;
 
   const own = canActOnEncounter(role, encounter);
+  const canAttend = isClinicalRole(role) && encounter.currentStep === "cerrado";
 
   return (
     <Sheet kicker="Ficha del ingreso" title={encounter.patientName}>
@@ -237,6 +245,12 @@ export function EncounterFilePage() {
         <p>
           <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
             {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
+          </ButtonLink>
+        </p>
+      ) : canAttend ? (
+        <p>
+          <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
+            Abrir atención en piso
           </ButtonLink>
         </p>
       ) : (

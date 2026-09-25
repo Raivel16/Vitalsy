@@ -35,19 +35,41 @@ describe("prescripción CPOE (RF-21)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("registra medicamentos y actualiza el Kardex en pantalla", async () => {
+  it("crea plan inicial sin opción de reemplazar completo", async () => {
     const user = userEvent.setup();
+    let hasActive = false;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo, init?: RequestInit) => {
         const url = String(input);
         if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
-        if (url.includes("/kardex") && (!init || !init.method || init.method === "GET")) {
-          return jsonResponse(200, { medications: [], source: "cpoe" });
+        if (url.includes("/prescriptions/active") && (!init || !init.method || init.method === "GET")) {
+          return jsonResponse(200, {
+            prescription: hasActive
+              ? {
+                  id: 1,
+                  status: "activo",
+                  signedAt: "2026-09-21T12:00:00+00:00",
+                  items: [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", frequency: "cada 8 horas", drugBarcode: "DRUG-PARACETAMOL-1G" }],
+                }
+              : null,
+          });
         }
-        if (url.includes("/prescriptions") && init?.method === "POST") {
+        if (url.includes("/kardex") && (!init || !init.method || init.method === "GET")) {
+          return jsonResponse(200, {
+            medications: hasActive ? ["Paracetamol 1 g cada 8 horas"] : [],
+            source: "cpoe",
+          });
+        }
+        if (url.includes("/prescriptions") && init?.method === "POST" && !url.includes("/items")) {
+          hasActive = true;
           return jsonResponse(201, {
-            prescription: { id: 1, status: "activo", items: [{ drugName: "Paracetamol", dose: "1 g", route: "VO", frequency: "cada 8 horas" }] },
+            prescription: {
+              id: 1,
+              status: "activo",
+              signedAt: "2026-09-21T12:00:00+00:00",
+              items: [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", frequency: "cada 8 horas", drugBarcode: "DRUG-PARACETAMOL-1G" }],
+            },
             kardex: { medications: ["Paracetamol 1 g cada 8 horas"], source: "cpoe" },
           });
         }
@@ -57,15 +79,19 @@ describe("prescripción CPOE (RF-21)", () => {
 
     renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
     expect(await screen.findByRole("heading", { name: /prescripción electrónica/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /reemplazar plan completo/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /nueva prescripción/i })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^medicamento$/i), "Paracetamol");
     await user.type(screen.getByLabelText(/^dosis$/i), "1 g");
-    await user.clear(screen.getByLabelText(/^vía$/i));
     await user.type(screen.getByLabelText(/^vía$/i), "VO");
     await user.type(screen.getByLabelText(/^frecuencia$/i), "cada 8 horas");
     await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
 
-    expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/kardex actualizado/i);
-    expect(screen.getByRole("region", { name: /kardex electrónico/i })).toHaveTextContent(/paracetamol 1 g cada 8 horas/i);
+    expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/e-mar/i);
+    expect(screen.getByRole("region", { name: /prescripción activa/i })).toHaveTextContent(/paracetamol/i);
+    expect(screen.queryByRole("heading", { name: /reemplazar plan completo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /nueva prescripción/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /agregar al plan/i })).toBeInTheDocument();
   });
 });

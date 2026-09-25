@@ -1,9 +1,9 @@
-import { NavLink, Route, Routes } from "react-router";
+import { NavLink, Route, Routes, useNavigate } from "react-router";
 import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor } from "./app/navigation";
+import { navFor, withIngreso, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -26,6 +26,7 @@ import { CpoePage } from "./modules/cpoe/pages/CpoePage";
 import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonitoringPage";
 import { EmarPage } from "./modules/e-mar/pages/EmarPage";
 import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
+import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
 import { Button } from "./shared/ui/Button";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
@@ -37,6 +38,28 @@ function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {
     <p className="banner banner-warning" role="alert">
       Esta vista no está disponible para su perfil. Se requiere {roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
     </p>
+  );
+}
+
+function ShellNavLink({ item }: { item: NavItem }) {
+  const navigate = useNavigate();
+  const Icon = item.icon;
+
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      onClick={(event) => {
+        if (!item.needsIngreso) return;
+        const next = withIngreso(item.to);
+        if (next === item.to) return;
+        event.preventDefault();
+        void navigate(next);
+      }}
+    >
+      <Icon size={20} stroke={1.75} aria-hidden />
+      {item.label}
+    </NavLink>
   );
 }
 
@@ -53,7 +76,7 @@ function Shell() {
           <SealIcon />
           <div>
             <h1>Vitalsy</h1>
-            <p>Admisión hospitalaria</p>
+            <p>Gestión clínica hospitalaria</p>
           </div>
         </div>
         <div className="session-box">
@@ -65,22 +88,16 @@ function Shell() {
         </div>
       </header>
       <div className="layout">
-        <nav aria-label="Ingreso hospitalario">
+        <nav aria-label="Menú principal">
           {groups.map((group) => (
             <div className="nav-group" key={group.id}>
               <p>{group.label}</p>
               <ul>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <li key={item.to}>
-                      <NavLink to={item.to} end={item.end}>
-                        <Icon size={20} stroke={1.75} aria-hidden />
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  );
-                })}
+                {group.items.map((item) => (
+                  <li key={item.to}>
+                    <ShellNavLink item={item} />
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
@@ -122,6 +139,14 @@ function Shell() {
                 element={
                   <Guard roles={["medico_residente", "medico_tratante", "enfermera_piso"]}>
                     <ImagingReportsPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/chart"
+                element={
+                  <Guard roles={["medico_residente", "medico_tratante", "enfermera_piso", "auxiliar_enfermeria"]}>
+                    <PatientChartPage />
                   </Guard>
                 }
               />
