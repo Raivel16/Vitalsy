@@ -107,5 +107,6 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Cuidados: tabs Notas/Actividades + `completedByName`; expediente con timeline por fecha y filtro `from`/`to`.
 - Admisión en chart: sin etiqueta «Proceso 1».
 - RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
+- Pulido visual: sin cabeceras azul uniforme, menú fixed, fondo patrón sutil, CTA ficha centrado.
 
 <!-- END AGENT ANNOTATIONS -->

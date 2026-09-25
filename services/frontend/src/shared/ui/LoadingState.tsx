@@ -4,7 +4,6 @@ export function LoadingState({ label = "Cargando…" }: { label?: string }) {
       <div className="loading-track" aria-hidden>
         <div className="loading-bar" />
       </div>
-      <div className="loading-spinner" aria-hidden />
       <p>{label}</p>
     </div>
   );

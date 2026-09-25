@@ -8,6 +8,7 @@ import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { TextAreaField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { requiredText } from "../../../shared/validation/inputRules";
 
 type NoteRow = {
@@ -95,21 +96,26 @@ export function MedicalEvolutionPage() {
           <input type="checkbox" checked={sign} onChange={(event) => setSign(event.target.checked)} />
           Firmar digitalmente la nota
         </label>
-        <FormActions>
+        <FormActions align="center">
           <Button type="submit" disabled={saving}>{saving ? "Registrando…" : "Registrar evolución"}</Button>
         </FormActions>
       </form>
+      {notes === null && !error ? <LoadingState label="Cargando evoluciones…" /> : null}
       {notes && notes.length > 0 ? (
-        <ul className="stack result-block" aria-label="Notas registradas">
-          {notes.map((item) => (
-            <li key={item.id}>
-              <strong>{item.body}</strong>
-              <span className="hint">
-                {[item.authorName, item.signed ? "Firmada" : "Borrador"].filter(Boolean).join(" · ")}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <section className="note-feed" aria-label="Notas registradas">
+          <h3>Notas registradas</h3>
+          <ul className="note-feed-list">
+            {notes.map((item) => (
+              <li key={item.id} className="note-card">
+                <p className="note-card-body">{item.body}</p>
+                <p className="note-card-meta">
+                  <span>{item.authorName ?? "Sin autor"}</span>
+                  <span className={item.signed ? "note-badge is-signed" : "note-badge"}>{item.signed ? "Firmada" : "Borrador"}</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </Sheet>
   );

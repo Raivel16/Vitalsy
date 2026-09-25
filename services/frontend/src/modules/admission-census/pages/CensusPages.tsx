@@ -10,6 +10,7 @@ import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { safeNextPath } from "../../../shared/navigation/returnTo";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
@@ -248,17 +249,17 @@ export function EncounterFilePage() {
         />
       ) : null}
       {own ? (
-        <p>
+        <FormActions align="center">
           <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
             {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
           </ButtonLink>
-        </p>
+        </FormActions>
       ) : canAttend ? (
-        <p>
+        <FormActions align="center">
           <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
             Abrir atención en piso
           </ButtonLink>
-        </p>
+        </FormActions>
       ) : (
         <Feedback tone="info">
           {encounter.nextRole

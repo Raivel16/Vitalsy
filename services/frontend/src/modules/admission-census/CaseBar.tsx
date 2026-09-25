@@ -6,6 +6,7 @@ import { useAuth } from "../../app/AuthProvider";
 import { isClinicalRole, primaryAttentionPath } from "../../app/navigation";
 import { errorText } from "../../app/userMessage";
 import { Feedback } from "../../shared/ui/Sheet";
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { EncounterContext, type CoverageStatus } from "./EncounterContext";
 import type { Encounter } from "./domain/encounter";
 import { AdmissionStepper } from "./ui/AdmissionStepper";
@@ -65,13 +66,13 @@ export function CaseBar({ children }: { children: ReactNode }) {
     <EncounterContext.Provider value={value}>
       {ingreso ? (
         <section className="case-bar" aria-label="Ingreso en curso">
-          {!encounter && !error ? <p role="status">Cargando el ingreso en curso.</p> : null}
+          {!encounter && !error ? <LoadingState label="Cargando el ingreso en curso…" /> : null}
           {error ? <Feedback tone="error">{error}</Feedback> : null}
           {encounter ? (
             <>
               <p>
                 <strong>{encounter.patientName}</strong>
-                <span>{encounter.statusLabel}. {encounter.currentStepLabel}.</span>
+                <span>{encounter.statusLabel}</span>
               </p>
               {!hideAdmissionStepper && encounter.progress ? (
                 <AdmissionStepper

@@ -218,7 +218,7 @@ export function CpoePage() {
                           <td>{item.route}</td>
                           <td>{item.frequency}</td>
                           <td><code>{item.drugBarcode}</code></td>
-                          <td>
+                          <td className="row-actions">
                             <Button type="button" variant="quiet" onClick={() => { setEditingId(item.id); setEditForm({ drugName: item.drugName, dose: item.dose, route: item.route, frequency: item.frequency }); }}>Editar</Button>
                             <Button type="button" variant="quiet" onClick={() => void onDeleteItem(item.id)}>Eliminar</Button>
                           </td>

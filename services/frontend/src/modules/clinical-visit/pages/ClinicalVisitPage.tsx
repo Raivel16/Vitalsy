@@ -5,6 +5,7 @@ import { errorText } from "../../../app/userMessage";
 import { useEncounter } from "../../admission-census/EncounterContext";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { formatDate } from "../../../shared/datetime/format";
 import { VitalSignsChartPanel } from "../../vital-monitoring/ui/VitalSignsChartPanel";
 
@@ -53,12 +54,12 @@ export function ClinicalVisitPage() {
         Consolida laboratorio, imágenes, notas de enfermería y gráfica de signos vitales
         {encounter ? ` para ${encounter.patientName}` : ""}.
       </p>
-      {loading ? <p role="status">Cargando visita.</p> : null}
+      {loading ? <LoadingState label="Cargando visita…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       <VitalSignsChartPanel encounterId={ingreso} />
       {board ? (
         <div className="stack">
-          <p className="hint">Día clínico: {formatDate(board.day)}</p>
+          <p className="day-label">Día clínico: {formatDate(board.day)}</p>
           <section className="result-block" aria-label="Laboratorio">
             <h3>Laboratorio</h3>
             {board.labResults.length === 0 ? (

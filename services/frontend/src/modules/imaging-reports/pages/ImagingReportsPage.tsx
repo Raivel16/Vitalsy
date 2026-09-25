@@ -7,6 +7,7 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { StatusStamp } from "../../../shared/ui/StatusStamp";
 
 type ImagingReportRow = {
@@ -76,7 +77,7 @@ export function ImagingReportsPage() {
         El sistema consume el PACS (FHIR DiagnosticReport) e integra los informes al expediente
         {encounter ? ` de ${encounter.patientName}` : ""}.
       </p>
-      {loading ? <p role="status">Cargando informes.</p> : null}
+      {loading ? <LoadingState label="Cargando informes…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
       <StatusStamp label="Origen">Integración PACS / FHIR</StatusStamp>
@@ -84,13 +85,15 @@ export function ImagingReportsPage() {
         <Feedback tone="info">Aún no hay informes integrados para este ingreso.</Feedback>
       ) : null}
       {reports && reports.length > 0 ? (
-        <ul className="stack result-block">
+        <ul className="note-feed-list" aria-label="Informes de imágenes">
           {reports.map((item) => (
-            <li key={item.id}>
-              <strong>{item.summary}</strong>
-              <span className="hint">
-                {[item.modality, item.externalId, item.reportedAt].filter(Boolean).join(" · ")}
-              </span>
+            <li key={item.id} className="note-card">
+              <p className="note-card-body">{item.summary}</p>
+              <p className="note-card-meta">
+                {item.modality ? <span>{item.modality}</span> : null}
+                <span>{item.externalId ?? "Sin ID externo"}</span>
+                {item.reportedAt ? <span>{item.reportedAt}</span> : null}
+              </p>
             </li>
           ))}
         </ul>

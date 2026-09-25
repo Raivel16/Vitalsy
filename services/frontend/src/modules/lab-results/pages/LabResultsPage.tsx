@@ -7,6 +7,7 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { StatusStamp } from "../../../shared/ui/StatusStamp";
 
 type LabResultRow = {
@@ -75,7 +76,7 @@ export function LabResultsPage() {
         El sistema consume el LIS (FHIR Observation) e integra los resultados al expediente del paciente
         {encounter ? ` ${encounter.patientName}` : ""}.
       </p>
-      {loading ? <p role="status">Cargando resultados.</p> : null}
+      {loading ? <LoadingState label="Cargando resultados…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
       <StatusStamp label="Origen">Integración LIS / FHIR</StatusStamp>
@@ -83,11 +84,14 @@ export function LabResultsPage() {
         <Feedback tone="info">Aún no hay resultados integrados para este ingreso.</Feedback>
       ) : null}
       {results && results.length > 0 ? (
-        <ul className="stack result-block">
+        <ul className="note-feed-list" aria-label="Resultados de laboratorio">
           {results.map((item) => (
-            <li key={item.id}>
-              <strong>{item.summary}</strong>
-              <span className="hint">{item.externalId}{item.resultedAt ? ` · ${item.resultedAt}` : ""}</span>
+            <li key={item.id} className="note-card">
+              <p className="note-card-body">{item.summary}</p>
+              <p className="note-card-meta">
+                <span>{item.externalId ?? "Sin ID externo"}</span>
+                {item.resultedAt ? <span>{item.resultedAt}</span> : null}
+              </p>
             </li>
           ))}
         </ul>

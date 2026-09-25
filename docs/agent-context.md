@@ -76,3 +76,9 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Gráfica evolutiva respeta el filtro de fechas; loader centrado; menú lateral a altura completa.
 - Censo: sin paginación si hay 1 página; botón Acción a ancho de celda; `?next=` restaura la pantalla pedida.
 - RF-20: evolución médica para `medico_residente` y `medico_tratante`.
+
+## 2026-09-25 — Pulido visual (menos azul uniforme)
+
+- Cabeceras sin franja azul uniforme; tipografía de lectura más contrastada.
+- Loader solo barra; menú `position: fixed`; fondo con patrón salud muy sutil.
+- Evoluciones/labs/imágenes en tarjetas; gap Editar/Eliminar; CTA de ficha centrado.
