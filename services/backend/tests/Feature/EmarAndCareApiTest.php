@@ -86,9 +86,8 @@ class EmarAndCareApiTest extends TestCase
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
             ->assertOk()
-            ->assertJsonCount(1, 'doses')
-            ->assertJsonPath('doses.0.drugName', 'Paracetamol')
-            ->assertJsonPath('doses.0.status', 'pendiente');
+            ->assertJsonPath('hasActivePrescription', true)
+            ->assertJsonFragment(['drugName' => 'Paracetamol', 'status' => 'pendiente']);
 
         Carbon::setTestNow();
     }
@@ -138,20 +137,95 @@ class EmarAndCareApiTest extends TestCase
         $this->assertDatabaseCount('nursing_evolution_notes', 1);
     }
 
+    public function test_nurse_and_auxiliar_can_use_notes_and_care_activities(): void
+    {
+        $this->inpatientEncounter();
+
+        $this->asRole('enfermera_piso');
+        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities', [
+            'activityLabel' => 'Higiene matutina',
+        ])->assertCreated();
+
+        $this->asRole('auxiliar_enfermeria');
+        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/nursing-evolution-notes', [
+            'body' => 'Auxiliar documenta evolución del turno.',
+        ])->assertCreated();
+
+        $this->assertDatabaseCount('care_activity_completions', 1);
+        $this->assertDatabaseCount('nursing_evolution_notes', 1);
+    }
+
+    public function test_new_cpoe_schedules_doses_even_when_prior_doses_exist(): void
+    {
+        Carbon::setTestNow('2026-09-21 14:30:00');
+        $this->inpatientEncounter();
+        $prescriber = User::factory()->create(['role' => 'medico_tratante']);
+
+        $old = Prescription::query()->create([
+            'encounter_id' => 'ENC-HOSP-0001',
+            'status' => 'reemplazado',
+            'prescribed_by' => $prescriber->id,
+            'signed_at' => now()->subHour(),
+        ]);
+        $oldItem = $old->items()->create([
+            'drug_name' => 'Ibuprofeno',
+            'dose' => '400 mg',
+            'route' => 'VO',
+            'frequency' => 'cada 8 horas',
+        ]);
+        MedicationAdministration::query()->create([
+            'encounter_id' => 'ENC-HOSP-0001',
+            'prescription_item_id' => $oldItem->id,
+            'scheduled_at' => Carbon::parse('2026-09-21 08:00:00'),
+            'status' => 'pendiente',
+        ]);
+
+        $active = Prescription::query()->create([
+            'encounter_id' => 'ENC-HOSP-0001',
+            'status' => 'activo',
+            'prescribed_by' => $prescriber->id,
+            'signed_at' => now(),
+        ]);
+        $active->items()->create([
+            'drug_name' => 'Paracetamol',
+            'dose' => '1 g',
+            'route' => 'VO',
+            'frequency' => 'cada 8 horas',
+        ]);
+
+        $this->asRole('enfermera_piso');
+
+        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
+            ->assertOk()
+            ->assertJsonPath('hasActivePrescription', true);
+
+        $drugs = collect($response->json('doses'))->pluck('drugName')->all();
+        $this->assertContains('Paracetamol', $drugs);
+        $this->assertGreaterThanOrEqual(1, count($response->json('doses')));
+
+        Carbon::setTestNow();
+    }
+
     public function test_auxiliar_can_complete_care_activity(): void
     {
         $this->inpatientEncounter();
-        $this->asRole('auxiliar_enfermeria');
+        $auxiliar = $this->asRole('auxiliar_enfermeria');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities', [
+        $response = $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities', [
             'activityLabel' => 'Higiene matutina',
         ])
             ->assertCreated()
-            ->assertJsonPath('activity.activityLabel', 'Higiene matutina');
+            ->assertJsonPath('activity.activityLabel', 'Higiene matutina')
+            ->assertJsonPath('activity.completedByName', $auxiliar->name);
 
         $this->assertDatabaseHas('care_activity_completions', [
             'encounter_id' => 'ENC-HOSP-0001',
             'activity_label' => 'Higiene matutina',
+            'completed_by' => $auxiliar->id,
         ]);
+
+        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities')
+            ->assertOk()
+            ->assertJsonPath('activities.0.completedByName', $auxiliar->name);
     }
 }

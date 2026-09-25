@@ -36,6 +36,7 @@ class VitalSignsMonitoring
             'spo2_scale' => $input['spo2Scale'] ?? 'scale1',
             'supplemental_oxygen' => (bool) ($input['supplementalOxygen'] ?? false),
             'consciousness' => $input['consciousness'] ?? 'alert',
+            'confusion_onset' => $input['confusionOnset'] ?? null,
         ], $user, filtered: false);
     }
 
@@ -108,6 +109,7 @@ class VitalSignsMonitoring
             'pulse' => $values['pulse'],
             'temperature' => $values['temperature'],
             'consciousness' => $values['consciousness'],
+            'confusionOnset' => $values['confusion_onset'] ?? null,
             'supplementalOxygen' => $values['supplemental_oxygen'],
             'spo2Scale' => $values['spo2_scale'],
         ]);

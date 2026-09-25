@@ -23,6 +23,7 @@ class VitalSignsMonitoringController extends Controller
             'pulse' => ['required', 'numeric'],
             'temperature' => ['required', 'numeric'],
             'consciousness' => ['required', 'string'],
+            'confusionOnset' => ['nullable', 'in:new,chronic'],
             'supplementalOxygen' => ['sometimes', 'boolean'],
             'spo2Scale' => ['sometimes', 'string'],
         ], [

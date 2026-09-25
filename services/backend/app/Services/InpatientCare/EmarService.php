@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class EmarService
 {
     /**
-     * @return array{doses: list<array<string, mixed>>, shiftStart: string, shiftEnd: string}
+     * @return array{doses: list<array<string, mixed>>, shiftStart: string, shiftEnd: string, hasActivePrescription: bool}
      */
     public function listShift(string $encounterId): array
     {
@@ -22,6 +22,11 @@ class EmarService
         $this->ensureDosesFromActiveCpoe($encounterId);
 
         [$start, $end] = $this->shiftWindow();
+
+        $hasActive = Prescription::query()
+            ->where('encounter_id', $encounterId)
+            ->where('status', 'activo')
+            ->exists();
 
         $doses = MedicationAdministration::query()
             ->with('prescriptionItem')
@@ -36,6 +41,7 @@ class EmarService
             'doses' => $doses,
             'shiftStart' => $start->toIso8601String(),
             'shiftEnd' => $end->toIso8601String(),
+            'hasActivePrescription' => $hasActive,
         ];
     }
 
@@ -103,20 +109,36 @@ class EmarService
             return;
         }
 
-        if (MedicationAdministration::query()->where('encounter_id', $encounterId)->exists()) {
-            return;
-        }
+        $activeItemIds = $prescription->items->pluck('id')->all();
 
-        [$start] = $this->shiftWindow();
+        MedicationAdministration::query()
+            ->where('encounter_id', $encounterId)
+            ->where('status', 'pendiente')
+            ->whereNotIn('prescription_item_id', $activeItemIds)
+            ->update(['status' => 'cancelado']);
+
+        [$start, $end] = $this->shiftWindow();
+
         foreach ($prescription->items as $item) {
             $hours = $this->intervalHours($item->frequency);
-            for ($h = 0; $h < 24; $h += $hours) {
-                MedicationAdministration::query()->create([
-                    'encounter_id' => $encounterId,
-                    'prescription_item_id' => $item->id,
-                    'scheduled_at' => $start->copy()->startOfDay()->addHours($h),
-                    'status' => 'pendiente',
-                ]);
+            $cursor = $start->copy();
+            while ($cursor < $end) {
+                $exists = MedicationAdministration::query()
+                    ->where('encounter_id', $encounterId)
+                    ->where('prescription_item_id', $item->id)
+                    ->where('scheduled_at', $cursor)
+                    ->exists();
+
+                if (! $exists) {
+                    MedicationAdministration::query()->create([
+                        'encounter_id' => $encounterId,
+                        'prescription_item_id' => $item->id,
+                        'scheduled_at' => $cursor->copy(),
+                        'status' => 'pendiente',
+                    ]);
+                }
+
+                $cursor->addHours($hours);
             }
         }
     }
@@ -155,10 +177,8 @@ class EmarService
         if (! $item) {
             return '';
         }
-        $name = strtoupper(preg_replace('/\s+/', '', $item->drug_name) ?? '');
-        $dose = strtoupper(preg_replace('/\s+/', '', $item->dose) ?? '');
 
-        return "DRUG-{$name}-{$dose}";
+        return CpoeService::drugBarcodeFor($item->drug_name, $item->dose);
     }
 
     /**

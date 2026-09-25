@@ -47,6 +47,27 @@ class CpoeController extends Controller
         return response()->json($result, 201);
     }
 
+    public function storeItem(Request $request, string $encounterId): JsonResponse
+    {
+        $item = $this->validateItem($request);
+        $result = $this->cpoe->addItem($encounterId, $item);
+
+        return response()->json($result, 201);
+    }
+
+    public function updateItem(Request $request, string $encounterId, int $itemId): JsonResponse
+    {
+        $item = $this->validateItem($request);
+        $result = $this->cpoe->updateItem($encounterId, $itemId, $item);
+
+        return response()->json($result);
+    }
+
+    public function destroyItem(string $encounterId, int $itemId): JsonResponse
+    {
+        return response()->json($this->cpoe->deleteItem($encounterId, $itemId));
+    }
+
     public function active(string $encounterId): JsonResponse
     {
         return response()->json($this->cpoe->active($encounterId));
@@ -55,5 +76,23 @@ class CpoeController extends Controller
     public function kardex(string $encounterId): JsonResponse
     {
         return response()->json($this->cpoe->kardex($encounterId));
+    }
+
+    /**
+     * @return array{drugName: string, dose: string, route: string, frequency: string}
+     */
+    private function validateItem(Request $request): array
+    {
+        return $request->validate([
+            'drugName' => ['required', 'string'],
+            'dose' => ['required', 'string'],
+            'route' => ['required', 'string'],
+            'frequency' => ['required', 'string'],
+        ], [
+            'drugName.required' => 'El nombre del medicamento es obligatorio.',
+            'dose.required' => 'La dosis es obligatoria.',
+            'route.required' => 'La vía es obligatoria.',
+            'frequency.required' => 'La frecuencia es obligatoria.',
+        ]);
     }
 }

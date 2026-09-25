@@ -76,11 +76,53 @@ class CpoePrescriptionApiTest extends TestCase
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')
             ->assertOk()
-            ->assertJsonPath('prescription.items.0.drugName', 'Paracetamol');
+            ->assertJsonPath('prescription.items.0.drugName', 'Paracetamol')
+            ->assertJsonPath('prescription.items.0.drugBarcode', 'DRUG-PARACETAMOL-1G');
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/kardex')
             ->assertOk()
             ->assertJsonPath('medications.0', 'Paracetamol 1 g cada 8 horas');
+    }
+
+    public function test_tratante_can_edit_delete_and_add_items_individually(): void
+    {
+        $this->inpatientEncounter();
+        $this->asRole('medico_tratante');
+
+        $created = $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+            'items' => [
+                ['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => 'cada 8 horas'],
+                ['drugName' => 'Omeprazol', 'dose' => '20 mg', 'route' => 'VO', 'frequency' => 'cada 24 horas'],
+            ],
+        ])->assertCreated();
+
+        $itemId = (int) $created->json('prescription.items.0.id');
+
+        $this->putJson("/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items/{$itemId}", [
+            'drugName' => 'Paracetamol',
+            'dose' => '500 mg',
+            'route' => 'VO',
+            'frequency' => 'cada 6 horas',
+        ])
+            ->assertOk()
+            ->assertJsonPath('prescription.items.0.dose', '500 mg')
+            ->assertJsonPath('prescription.items.0.drugBarcode', 'DRUG-PARACETAMOL-500MG');
+
+        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items', [
+            'drugName' => 'Enoxaparina',
+            'dose' => '40 mg',
+            'route' => 'SC',
+            'frequency' => 'cada 24 horas',
+        ])
+            ->assertCreated()
+            ->assertJsonCount(3, 'prescription.items');
+
+        $active = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')->json('prescription.items');
+        $omeprazolId = (int) collect($active)->firstWhere('drugName', 'Omeprazol')['id'];
+
+        $this->deleteJson("/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items/{$omeprazolId}")
+            ->assertOk()
+            ->assertJsonCount(2, 'prescription.items');
     }
 
     public function test_continue_plan_keeps_previous_items_when_requested(): void

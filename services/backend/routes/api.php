@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
+use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -85,6 +86,9 @@ Route::prefix('v1')->group(function () {
             // RF-21: CPOE — médico tratante; kardex CPOE consultable por clínica de piso/médicos.
             Route::middleware('role:medico_tratante')->group(function () {
                 Route::post('encounters/{encounterId}/prescriptions', [CpoeController::class, 'store']);
+                Route::post('encounters/{encounterId}/prescriptions/active/items', [CpoeController::class, 'storeItem']);
+                Route::put('encounters/{encounterId}/prescriptions/active/items/{itemId}', [CpoeController::class, 'updateItem']);
+                Route::delete('encounters/{encounterId}/prescriptions/active/items/{itemId}', [CpoeController::class, 'destroyItem']);
             });
 
             Route::middleware('role:medico_tratante,medico_residente,enfermera_piso')->group(function () {
@@ -100,16 +104,19 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:enfermera_piso,auxiliar_enfermeria,medico_residente,medico_tratante')->group(function () {
                 Route::get('encounters/{encounterId}/vital-signs/chart', [VitalSignsMonitoringController::class, 'chart']);
+                Route::get('encounters/{encounterId}/clinical-chart', [PatientClinicalChartController::class, 'show']);
             });
 
-            // RF-28–31: e-MAR; RF-32 evolución enfermería; RF-33 cuidados auxiliares.
+            // RF-28–31: e-MAR; RF-32 evolución enfermería; RF-33 cuidados.
             Route::middleware('role:enfermera_piso')->group(function () {
                 Route::get('encounters/{encounterId}/emar', [EmarCareController::class, 'emar']);
                 Route::post('encounters/{encounterId}/emar/{doseId}/administer', [EmarCareController::class, 'administer']);
-                Route::post('encounters/{encounterId}/nursing-evolution-notes', [EmarCareController::class, 'storeNursingNote']);
             });
 
-            Route::middleware('role:auxiliar_enfermeria')->group(function () {
+            Route::middleware('role:enfermera_piso,auxiliar_enfermeria')->group(function () {
+                Route::get('encounters/{encounterId}/nursing-evolution-notes', [EmarCareController::class, 'listNursingNotes']);
+                Route::post('encounters/{encounterId}/nursing-evolution-notes', [EmarCareController::class, 'storeNursingNote']);
+                Route::get('encounters/{encounterId}/care-activities', [EmarCareController::class, 'listCareActivities']);
                 Route::post('encounters/{encounterId}/care-activities', [EmarCareController::class, 'storeCareActivity']);
             });
         });

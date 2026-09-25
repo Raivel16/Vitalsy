@@ -7,6 +7,7 @@ use App\Models\Prescription;
 use App\Models\PrescriptionItem;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CpoeService
@@ -61,20 +62,69 @@ class CpoeService
                 ]);
             }
 
-            $prescription->load('items');
-            $kardex = $this->kardexFromPrescription($prescription);
-
-            $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->firstOrFail();
-            $payload = $encounter->clinical_payload ?? [];
-            $payload['cpoeKardex'] = $kardex;
-            $encounter->clinical_payload = $payload;
-            $encounter->save();
-
-            return [
-                'prescription' => $this->present($prescription),
-                'kardex' => $kardex,
-            ];
+            return $this->finalize($encounterId, $prescription->fresh('items'));
         });
+    }
+
+    /**
+     * @param  array{drugName: string, dose: string, route: string, frequency: string}  $item
+     * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
+     */
+    public function addItem(string $encounterId, array $item): array
+    {
+        $prescription = $this->requireActive($encounterId);
+        $prescription->items()->create([
+            'drug_name' => $item['drugName'],
+            'dose' => $item['dose'],
+            'route' => $item['route'],
+            'frequency' => $item['frequency'],
+        ]);
+
+        return $this->finalize($encounterId, $prescription->fresh('items'));
+    }
+
+    /**
+     * @param  array{drugName: string, dose: string, route: string, frequency: string}  $item
+     * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
+     */
+    public function updateItem(string $encounterId, int $itemId, array $item): array
+    {
+        $prescription = $this->requireActive($encounterId);
+        $row = $prescription->items()->whereKey($itemId)->first();
+        if (! $row) {
+            throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
+        }
+
+        $row->update([
+            'drug_name' => $item['drugName'],
+            'dose' => $item['dose'],
+            'route' => $item['route'],
+            'frequency' => $item['frequency'],
+        ]);
+
+        return $this->finalize($encounterId, $prescription->fresh('items'));
+    }
+
+    /**
+     * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
+     */
+    public function deleteItem(string $encounterId, int $itemId): array
+    {
+        $prescription = $this->requireActive($encounterId);
+        $row = $prescription->items()->whereKey($itemId)->first();
+        if (! $row) {
+            throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
+        }
+
+        if ($prescription->items()->count() <= 1) {
+            throw ValidationException::withMessages([
+                'item' => ['No puede eliminar el último medicamento. Agregue otro o reemplace el plan.'],
+            ]);
+        }
+
+        $row->delete();
+
+        return $this->finalize($encounterId, $prescription->fresh('items'));
     }
 
     /**
@@ -120,6 +170,14 @@ class CpoeService
         ];
     }
 
+    public static function drugBarcodeFor(string $drugName, string $dose): string
+    {
+        $name = strtoupper(preg_replace('/\s+/', '', $drugName) ?? '');
+        $doseCode = strtoupper(preg_replace('/\s+/', '', $dose) ?? '');
+
+        return "DRUG-{$name}-{$doseCode}";
+    }
+
     private function requireEncounter(string $encounterId): AdmissionEncounter
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
@@ -128,6 +186,42 @@ class CpoeService
         }
 
         return $encounter;
+    }
+
+    private function requireActive(string $encounterId): Prescription
+    {
+        $this->requireEncounter($encounterId);
+        $prescription = Prescription::query()
+            ->with('items')
+            ->where('encounter_id', $encounterId)
+            ->where('status', 'activo')
+            ->latest('id')
+            ->first();
+
+        if (! $prescription) {
+            throw new NotFoundHttpException('No hay prescripción CPOE activa.');
+        }
+
+        return $prescription;
+    }
+
+    /**
+     * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
+     */
+    private function finalize(string $encounterId, Prescription $prescription): array
+    {
+        $kardex = $this->kardexFromPrescription($prescription);
+
+        $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->firstOrFail();
+        $payload = $encounter->clinical_payload ?? [];
+        $payload['cpoeKardex'] = $kardex;
+        $encounter->clinical_payload = $payload;
+        $encounter->save();
+
+        return [
+            'prescription' => $this->present($prescription),
+            'kardex' => $kardex,
+        ];
     }
 
     /**
@@ -146,7 +240,7 @@ class CpoeService
     }
 
     /**
-     * @return array{id: int, status: string, signedAt: string|null, items: list<array{id: int, drugName: string, dose: string, route: string, frequency: string}>}
+     * @return array{id: int, status: string, signedAt: string|null, items: list<array{id: int, drugName: string, dose: string, route: string, frequency: string, drugBarcode: string}>}
      */
     private function present(Prescription $prescription): array
     {
@@ -160,6 +254,7 @@ class CpoeService
                 'dose' => $item->dose,
                 'route' => $item->route,
                 'frequency' => $item->frequency,
+                'drugBarcode' => self::drugBarcodeFor($item->drug_name, $item->dose),
             ])->all(),
         ];
     }
