@@ -72,4 +72,21 @@ describe("nota de evolución médica (RF-20)", () => {
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/evolución registrada/i);
     expect(screen.getByText(/evolución favorable\. continuar plan actual\./i)).toBeInTheDocument();
   });
+
+  it("permite al médico tratante abrir la pantalla de evolución", async () => {
+    sessionStorage.setItem("vitalsy-role", "medico_tratante");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+        if (url.includes("/medical-evolution-notes")) return jsonResponse(200, { notes: [] });
+        return jsonResponse(404, { message: "No se encontró lo solicitado." });
+      }),
+    );
+
+    renderApp("/atencion/evolucion?ingreso=ENC-HOSP-0001");
+    expect(await screen.findByRole("heading", { name: /evolución médica/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /registrar evolución/i })).toBeInTheDocument();
+  });
 });

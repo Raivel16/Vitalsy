@@ -72,13 +72,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('encounters/{encounterId}/imaging-reports', [ImagingReportsController::class, 'index']);
             });
 
-            // RF-19: visita consolidada — solo médicos.
-            // RF-20: nota de evolución — solo médico residente.
+            // RF-19: visita consolidada — médicos.
+            // RF-20: nota de evolución — médico residente y médico tratante.
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {
                 Route::get('encounters/{encounterId}/clinical-visit', [ClinicalVisitController::class, 'show']);
-            });
-
-            Route::middleware('role:medico_residente')->group(function () {
                 Route::get('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'index']);
                 Route::post('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'store']);
             });

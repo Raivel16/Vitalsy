@@ -35,7 +35,7 @@ Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
 | `/atencion/laboratorio` | residente, tratante, enfermera |
 | `/atencion/imagenes` | residente, tratante, enfermera |
 | `/atencion/visita` | residente, tratante |
-| `/atencion/evolucion` | residente |
+| `/atencion/evolucion` | residente, tratante |
 | `/atencion/cpoe` | tratante |
 | `/atencion/constantes` | enfermera, auxiliar |
 | `/atencion/emar` | enfermera |

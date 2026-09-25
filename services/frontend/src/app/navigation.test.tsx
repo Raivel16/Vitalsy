@@ -12,6 +12,7 @@ describe("navegación módulo 2", () => {
 
     expect(screen.getByRole("link", { name: /^expediente clínico$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^visita médica$/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^evolución médica$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^laboratorio$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^imágenes$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^cpoe$/i })).toBeInTheDocument();

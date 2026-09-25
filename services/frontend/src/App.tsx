@@ -28,6 +28,7 @@ import { EmarPage } from "./modules/e-mar/pages/EmarPage";
 import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
 import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
 import { Button } from "./shared/ui/Button";
+import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
@@ -161,7 +162,7 @@ function Shell() {
               <Route
                 path="/atencion/evolucion"
                 element={
-                  <Guard roles={["medico_residente"]}>
+                  <Guard roles={["medico_residente", "medico_tratante"]}>
                     <MedicalEvolutionPage />
                   </Guard>
                 }
@@ -208,7 +209,7 @@ function Shell() {
 
 function Gate() {
   const { user, ready } = useAuth();
-  if (!ready) return <p role="status">Cargando sesión.</p>;
+  if (!ready) return <LoadingState label="Cargando sesión…" />;
   if (!user) return <LoginPage />;
   return <Shell />;
 }

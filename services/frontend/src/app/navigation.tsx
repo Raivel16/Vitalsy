@@ -14,6 +14,7 @@ import {
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
+import { safeNextPath } from "../shared/navigation/returnTo";
 
 export type NavItem = {
   to: string;
@@ -51,7 +52,7 @@ export const NAV: NavGroup[] = [
       { to: "/atencion/visita", label: "Visita médica", icon: IconStethoscope, roles: ["medico_residente", "medico_tratante"], needsIngreso: true },
       { to: "/atencion/laboratorio", label: "Laboratorio", icon: IconFlask, roles: ["medico_residente", "medico_tratante", "enfermera_piso"], needsIngreso: true },
       { to: "/atencion/imagenes", label: "Imágenes", icon: IconPhoto, roles: ["medico_residente", "medico_tratante", "enfermera_piso"], needsIngreso: true },
-      { to: "/atencion/evolucion", label: "Evolución médica", icon: IconNotes, roles: ["medico_residente"], needsIngreso: true },
+      { to: "/atencion/evolucion", label: "Evolución médica", icon: IconNotes, roles: ["medico_residente", "medico_tratante"], needsIngreso: true },
       { to: "/atencion/cpoe", label: "CPOE", icon: IconPill, roles: ["medico_tratante"], needsIngreso: true },
       { to: "/atencion/constantes", label: "Constantes", icon: IconHeartbeat, roles: ["enfermera_piso", "auxiliar_enfermeria"], needsIngreso: true },
       { to: "/atencion/emar", label: "e-MAR", icon: IconClipboardList, roles: ["enfermera_piso"], needsIngreso: true },
@@ -78,7 +79,12 @@ export function isClinicalRole(role: Role): boolean {
   return CLINICAL.includes(role);
 }
 
-export function primaryAttentionPath(role: Role, encounterId: string): string {
+export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {
+  const safeNext = safeNextPath(next);
+  if (safeNext) {
+    const sep = safeNext.includes("?") ? "&" : "?";
+    return `${safeNext}${sep}ingreso=${encodeURIComponent(encounterId)}`;
+  }
   const base =
     role === "medico_tratante" || role === "medico_residente"
       ? "/atencion/chart"

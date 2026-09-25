@@ -1,9 +1,11 @@
 import { useEffect, useId, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
+import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { DateRangeFilter, DaySection } from "../../../shared/ui/DateRangeFilter";
 import { formatDate, formatDateTime, formatTime } from "../../../shared/datetime/format";
 import {
@@ -92,11 +94,13 @@ function cleanRiskLabel(value?: string | null): string {
 export function PatientChartPage() {
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
+  const { user } = useAuth();
   const tabsId = useId();
   const [data, setData] = useState<ChartPayload | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<ChartTab>("admision");
   const [range, setRange] = useState<DateRangeValue>(() => resolveDateRange("30d"));
+  const canRegisterEvolution = user?.role === "medico_residente" || user?.role === "medico_tratante";
 
   useEffect(() => {
     if (!ingreso) return;
@@ -127,7 +131,7 @@ export function PatientChartPage() {
   }
 
   if (!data) {
-    return <p role="status">Cargando expediente clínico.</p>;
+    return <LoadingState label="Cargando expediente clínico…" />;
   }
 
   const { encounter: patient, admission } = data;
@@ -275,7 +279,7 @@ export function PatientChartPage() {
           aria-labelledby={`${tabsId}-constantes`}
           aria-label="Constantes"
         >
-          <VitalSignsChartPanel encounterId={ingreso} />
+          <VitalSignsChartPanel encounterId={ingreso} range={range} showTable={false} />
           <section className="result-block" aria-label="Lecturas de constantes">
             <h3>Lecturas por fecha</h3>
             {vitalGroups.length === 0 ? (
@@ -434,6 +438,13 @@ export function PatientChartPage() {
         >
           <section className="result-block" aria-label="Evoluciones médicas">
             <h3>Evoluciones médicas</h3>
+            {canRegisterEvolution && ingreso ? (
+              <p className="actions">
+                <Link to={`/atencion/evolucion?ingreso=${encodeURIComponent(ingreso)}`}>
+                  Registrar evolución médica
+                </Link>
+              </p>
+            ) : null}
             {medicalGroups.length === 0 ? <Feedback tone="info">Sin notas médicas en el rango seleccionado.</Feedback> : (
               medicalGroups.map((group, index) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>

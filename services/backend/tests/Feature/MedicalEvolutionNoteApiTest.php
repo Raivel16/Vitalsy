@@ -73,17 +73,17 @@ class MedicalEvolutionNoteApiTest extends TestCase
             ->assertJsonPath('message', 'El campo nota de evolución es obligatorio.');
     }
 
-    public function test_tratante_cannot_register_evolution_note(): void
+    public function test_tratante_can_register_evolution_note(): void
     {
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
         $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes', [
-            'body' => 'No corresponde a este rol.',
+            'body' => 'Evolución clínica del paciente durante la visita.',
             'sign' => true,
         ])
-            ->assertForbidden()
-            ->assertJsonPath('message', 'No tiene permiso para esta acción.');
+            ->assertCreated()
+            ->assertJsonPath('note.signed', true);
     }
 
     public function test_resident_can_list_evolution_notes(): void

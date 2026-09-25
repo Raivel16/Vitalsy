@@ -39,7 +39,7 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 17. RF-17: Integrar resultados de laboratorio (LIS) vía API. El sistema debe consumir e integrar automáticamente, mediante interoperabilidad HL7/FHIR, los resultados de laboratorio del paciente. Actor: Sistema.
 18. RF-18: Integrar informes de imágenes (PACS) vía API. El sistema debe consumir e integrar automáticamente los informes de imágenes diagnósticas. Actor: Sistema.
 19. RF-19: Consolidar información clínica para la visita médica. El sistema debe desplegar en una sola pantalla los resultados de laboratorio, informes de imágenes y notas de enfermería del día. Actor: Médico tratante (`medico_tratante`) / Médico residente (`medico_residente`).
-20. RF-20: Registrar nota de evolución médica digital. El sistema debe permitir el registro de la evolución clínica del paciente durante la visita médica. Actor: Médico residente (`medico_residente`).
+20. RF-20: Registrar nota de evolución médica digital. El sistema debe permitir el registro de la evolución clínica del paciente durante la visita médica. Actor: Médico residente (`medico_residente`) / Médico tratante (`medico_tratante`).
 21. RF-21: Gestionar prescripción electrónica (CPOE). El sistema debe permitir modificar o continuar el plan terapéutico y actualizar automáticamente el Kardex electrónico. Actor: Médico tratante (`medico_tratante`).
 22. RF-22: Capturar constantes vitales manual o automáticamente. El sistema debe permitir el ingreso manual de constantes vitales o su ingesta automática desde monitores compatibles vía API REST. Actor: Auxiliar de enfermería (`auxiliar_enfermeria`) / Enfermera de piso (`enfermera_piso`) / Sistema.
 23. RF-23: Filtrar digitalmente señales fisiológicas. El sistema debe aplicar un filtro digital (Butterworth de cuarto orden, fase cero) para atenuar ruido o interferencias en las señales capturadas. Actor: Sistema.
@@ -132,7 +132,7 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 | `enfermera_piso` | Enfermera de piso | Módulo 1 (RF-09–15) y Módulo 2 (RF-22, RF-28–32, RF-93) |
 | `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22), cuidados (RF-33) y expediente (RF-93) |
 | `medico_residente` | Médico residente | Indicaciones (RF-16), visita/evolución (RF-19–20) y expediente (RF-93) |
-| `medico_tratante` | Médico tratante | Visita (RF-19), CPOE (RF-21) y expediente (RF-93) |
+| `medico_tratante` | Médico tratante | Visita/evolución (RF-19–20), CPOE (RF-21) y expediente (RF-93) |
 
 - RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 - RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
