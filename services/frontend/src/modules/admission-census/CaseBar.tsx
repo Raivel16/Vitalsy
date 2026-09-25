@@ -60,6 +60,7 @@ export function CaseBar({ children }: { children: ReactNode }) {
     coverageStatus,
     setCoverageStatus,
     applyEncounter: (next: Encounter) => {
+      if (!next?.encounterId) return;
       setEncounter(next);
       setCoverageStatus(asCoverage(next.coverage.status));
     },
