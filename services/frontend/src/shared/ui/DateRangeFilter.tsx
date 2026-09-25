@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { IconChevronDown } from "@tabler/icons-react";
 import { type DateRangePreset, type DateRangeValue, resolveDateRange } from "../datetime/range";
 
 const PRESETS: { id: DateRangePreset; label: string }[] = [
@@ -66,8 +67,14 @@ export function DaySection({ label, count, defaultOpen = false, children }: DayS
   return (
     <details className="day-section" open={defaultOpen}>
       <summary>
-        <span>{label}</span>
-        <span className="day-section-count">{count}</span>
+        <span className="day-section-title">
+          <IconChevronDown className="day-section-chevron" size={18} stroke={2} aria-hidden />
+          <span>{label}</span>
+        </span>
+        <span className="day-section-meta">
+          <span className="day-section-hint">Pulse para expandir o plegar</span>
+          <span className="day-section-count">{count}</span>
+        </span>
       </summary>
       <div className="day-section-body">{children}</div>
     </details>

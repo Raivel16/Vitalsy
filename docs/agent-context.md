@@ -70,3 +70,9 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Cuidados: tabs Notas / Actividades; actividades exponen `completedByName`.
 - Expediente: incluye `careActivities`; historiales agrupados por día con filtro (Hoy/7/30/Todo/rango); API `from`/`to`.
 - Título de admisión sin «Proceso 1».
+
+## 2026-09-25 — UX chart/censo + RF-20 ambos médicos
+
+- Gráfica evolutiva respeta el filtro de fechas; loader centrado; menú lateral a altura completa.
+- Censo: sin paginación si hay 1 página; botón Acción a ancho de celda; `?next=` restaura la pantalla pedida.
+- RF-20: evolución médica para `medico_residente` y `medico_tratante`.

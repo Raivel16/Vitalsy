@@ -106,5 +106,6 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - RF-32–33: `enfermera_piso` y `auxiliar_enfermeria` pueden notas y cuidados directos.
 - Cuidados: tabs Notas/Actividades + `completedByName`; expediente con timeline por fecha y filtro `from`/`to`.
 - Admisión en chart: sin etiqueta «Proceso 1».
+- RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
 
 <!-- END AGENT ANNOTATIONS -->

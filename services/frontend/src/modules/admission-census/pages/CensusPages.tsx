@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { ROLE_LABEL } from "../../../app/roles";
@@ -10,6 +10,8 @@ import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { LoadingState } from "../../../shared/ui/LoadingState";
+import { safeNextPath } from "../../../shared/navigation/returnTo";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
 import { canActOnEncounter, stepPath } from "../domain/steps";
 import { AdmissionStepper } from "../ui/AdmissionStepper";
@@ -26,6 +28,8 @@ const EMPTY_META: CensusMeta = { total: 0, page: 1, perPage: 10, lastPage: 1 };
 export function CensusPage() {
   const { user } = useAuth();
   const role = user?.role ?? "admision";
+  const [searchParams] = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [encounters, setEncounters] = useState<Encounter[] | null>(null);
   const [meta, setMeta] = useState<CensusMeta>(EMPTY_META);
   const [search, setSearch] = useState("");
@@ -105,7 +109,7 @@ export function CensusPage() {
         </div>
       </div>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {loading && !encounters ? <p role="status">Cargando pacientes.</p> : null}
+      {loading && !encounters ? <LoadingState label="Cargando pacientes…" /> : null}
       {encounters && mine.length === 0 && meta.total > 0 ? (
         <Feedback tone="info">No hay pacientes esperando su turno en esta página. Use la búsqueda o cambie de página.</Feedback>
       ) : null}
@@ -148,13 +152,13 @@ export function CensusPage() {
                       </td>
                       <td>{locationText(item)}</td>
                       <td>{deliverableCount(item)}</td>
-                      <td>
+                      <td className="col-action">
                         {own ? (
                           <ButtonLink to={stepPath(item.currentStep, item.encounterId)}>
                             Continuar
                           </ButtonLink>
                         ) : canAttend ? (
-                          <ButtonLink to={primaryAttentionPath(role, item.encounterId)}>
+                          <ButtonLink to={primaryAttentionPath(role, item.encounterId, nextPath)}>
                             Atención
                           </ButtonLink>
                         ) : (
@@ -171,24 +175,26 @@ export function CensusPage() {
             <p role="status">
               Página {meta.page} de {meta.lastPage}
             </p>
-            <div className="pager-actions">
-              <Button
-                variant="quiet"
-                type="button"
-                disabled={meta.page <= 1 || loading}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="quiet"
-                type="button"
-                disabled={meta.page >= meta.lastPage || loading}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                Siguiente
-              </Button>
-            </div>
+            {meta.lastPage > 1 ? (
+              <div className="pager-actions">
+                <Button
+                  variant="quiet"
+                  type="button"
+                  disabled={meta.page <= 1 || loading}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="quiet"
+                  type="button"
+                  disabled={meta.page >= meta.lastPage || loading}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            ) : null}
           </nav>
         </>
       ) : null}
@@ -225,7 +231,7 @@ export function EncounterFilePage() {
       </Sheet>
     );
   }
-  if (!encounter) return <p role="status">Cargando ficha del ingreso.</p>;
+  if (!encounter) return <LoadingState label="Cargando ficha del ingreso…" />;
 
   const own = canActOnEncounter(role, encounter);
   const canAttend = isClinicalRole(role) && encounter.currentStep === "cerrado";
