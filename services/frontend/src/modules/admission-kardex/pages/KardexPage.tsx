@@ -6,6 +6,8 @@ import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
@@ -58,8 +60,6 @@ export function KardexPage() {
     };
   }, [encounter, ingreso]);
 
-  if (ingreso && !encounter) return <p role="status">Cargando el ingreso en curso.</p>;
-
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
@@ -87,11 +87,14 @@ export function KardexPage() {
     }
   }
 
-  if (loading) return <p role="status">Cargando Kardex de ingreso.</p>;
+  if (loading) return <LoadingState label="Cargando Kardex…" />;
   if (error && !kardex) return <Feedback tone="error">{error}</Feedback>;
 
   return (
     <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
+      <p className="lead">
+        Revise el resumen clínico de ingreso de {activeEncounter.patientName} antes de confirmar el Kardex.
+      </p>
       {kardex ? (
         <>
           <h3>{kardex.patientName}</h3>
@@ -108,9 +111,11 @@ export function KardexPage() {
       ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
-        Confirmar revisión del Kardex
-      </Button>
+      <FormActions align="center">
+        <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
+          Confirmar revisión del Kardex
+        </Button>
+      </FormActions>
       <StepNav role={role} encounter={activeEncounter} viewingStep="kardex" canContinue={advanced} />
     </Sheet>
   );

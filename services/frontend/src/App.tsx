@@ -126,7 +126,7 @@ function Shell() {
               <Route path="/enfermeria/conciliacion" element={<Guard roles={["enfermera_piso"]}><ReconciliationPage /></Guard>} />
               <Route path="/enfermeria/riesgos" element={<Guard roles={["enfermera_piso"]}><RiskScalesPage /></Guard>} />
               <Route path="/enfermeria/kardex" element={<Guard roles={["enfermera_piso"]}><KardexPage /></Guard>} />
-              <Route path="/medico/indicaciones" element={<Guard roles={["medico_residente"]}><MedicalOrdersPage /></Guard>} />
+              <Route path="/medico/indicaciones" element={<Guard roles={["medico_residente", "medico_tratante"]}><MedicalOrdersPage /></Guard>} />
               <Route
                 path="/atencion/laboratorio"
                 element={

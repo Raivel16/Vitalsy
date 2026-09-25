@@ -25,7 +25,7 @@ A continuación se detallan los requisitos funcionales organizados por módulos 
 13. RF-13: Gestionar conciliación farmacéutica de ingreso (BPMH). El sistema debe permitir registrar los medicamentos domiciliarios del paciente y contrastarlos automáticamente contra alergias e interacciones conocidas. Actor: Enfermera de piso.
 14. RF-14: Registrar escalas de riesgo. El sistema debe permitir completar digitalmente las escalas de riesgo de caídas y de úlceras por presión. Actor: Enfermera de piso.
 15. RF-15: Generar Kardex electrónico de ingreso. El sistema debe generar automáticamente el Kardex electrónico a partir de la valoración y conciliación registradas. Actor: Sistema.
-16. RF-16: Validar y firmar indicaciones médicas basales. El sistema debe permitir al médico residente revisar la valoración de ingreso, validar el BPMH y firmar electrónicamente la hoja de indicaciones médicas. Actor: Médico residente (`medico_residente`).
+16. RF-16: Validar y firmar indicaciones médicas basales. El sistema debe permitir al médico residente o al médico tratante revisar la valoración de ingreso, validar el BPMH y firmar electrónicamente la hoja de indicaciones médicas. Actor: Médico residente (`medico_residente`) / Médico tratante (`medico_tratante`).
 
 Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al orden del proceso 1. No renumeran RF-01 a RF-82.
 
@@ -132,7 +132,7 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 | `enfermera_piso` | Enfermera de piso | Módulo 1 (RF-09–15) y Módulo 2 (RF-22, RF-28–32, RF-93) |
 | `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22), cuidados (RF-33) y expediente (RF-93) |
 | `medico_residente` | Médico residente | Indicaciones (RF-16), visita/evolución (RF-19–20) y expediente (RF-93) |
-| `medico_tratante` | Médico tratante | Visita/evolución (RF-19–20), CPOE (RF-21) y expediente (RF-93) |
+| `medico_tratante` | Médico tratante | Indicaciones (RF-16), visita/evolución (RF-19–20), CPOE (RF-21) y expediente (RF-93) |
 
 - RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 - RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.

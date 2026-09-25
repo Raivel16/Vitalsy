@@ -82,3 +82,9 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Cabeceras sin franja azul uniforme; tipografía de lectura más contrastada.
 - Loader solo barra; menú `position: fixed`; fondo con patrón salud muy sutil.
 - Evoluciones/labs/imágenes en tarjetas; gap Editar/Eliminar; CTA de ficha centrado.
+
+## 2026-09-25 — RF-16 tratante + loader global
+
+- Indicaciones basales: `medico_tratante` también firma (API + Continuar en censo).
+- CaseBar: una sola barra de carga global antes de montar la pantalla con `ingreso`.
+- Valoración/Kardex: botones alineados/centrados + lead en Kardex.

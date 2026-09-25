@@ -108,5 +108,6 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Admisión en chart: sin etiqueta «Proceso 1».
 - RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
 - Pulido visual: sin cabeceras azul uniforme, menú fixed, fondo patrón sutil, CTA ficha centrado.
+- RF-16: tratante firma indicaciones; loader global único al abrir ingreso.
 
 <!-- END AGENT ANNOTATIONS -->

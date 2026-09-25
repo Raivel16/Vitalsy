@@ -252,4 +252,40 @@ class HospitalAdmissionApiTest extends TestCase
             'confirmed' => true,
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
     }
+
+    public function test_tratante_can_sign_medical_orders(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-TRAT-ORD',
+            'order_number' => 'OI-2026-TRAT-1',
+            'source' => 'manual',
+            'patient_name' => 'Paciente Tratante Demo',
+            'document_type' => 'DNI',
+            'document_number' => '11223344',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'Essalud',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'Regular',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => [
+                'medicalOrders' => [
+                    'status' => 'pendiente',
+                    'statusLabel' => 'Pendiente de firma',
+                    'items' => ['Reposo relativo'],
+                ],
+            ],
+        ]);
+
+        $this->asRole('medico_tratante');
+        $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD')
+            ->assertOk()
+            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');
+
+        $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD/sign', [
+            'physicianName' => 'Dra. Tratante Demo',
+            'credential' => 'CMP 55443',
+            'confirmed' => true,
+        ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
+    }
 }

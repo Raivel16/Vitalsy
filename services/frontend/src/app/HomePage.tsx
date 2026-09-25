@@ -10,7 +10,7 @@ const GUIDE: Record<Role, string> = {
   enfermera_piso: "Abra Pacientes, elija un hospitalizado y use Atención en piso (e-MAR, constantes y cuidados). El menú lateral abre cada pantalla del turno.",
   auxiliar_enfermeria: "Abra Pacientes, elija un hospitalizado y registre constantes o cuidados desde Atención en piso.",
   medico_residente: "Abra Pacientes, elija un hospitalizado y use Visita médica, laboratorio, imágenes o evolución desde el menú Atención en piso.",
-  medico_tratante: "Abra Pacientes, elija un hospitalizado y use Visita médica, laboratorio, imágenes o CPOE desde el menú Atención en piso.",
+  medico_tratante: "Abra Pacientes: firme indicaciones de admisión si corresponden, o use Visita médica, laboratorio, imágenes, evolución y CPOE en Atención en piso.",
 };
 
 export function HomePage() {

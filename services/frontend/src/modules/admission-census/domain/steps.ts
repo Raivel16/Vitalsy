@@ -26,7 +26,7 @@ export const ROLE_STEPS: Record<Role, string[]> = {
   enfermera_piso: ["recepcion", "valoracion", "constantes", "conciliacion", "escalas", "kardex"],
   auxiliar_enfermeria: ["constantes"],
   medico_residente: ["indicaciones"],
-  medico_tratante: [],
+  medico_tratante: ["indicaciones"],
 };
 
 export function stepPath(step: string, encounterId: string): string {
@@ -61,6 +61,14 @@ export function canActOnEncounter(role: Role, encounter: Pick<Encounter, "nextRo
     role === "auxiliar_enfermeria"
     && encounter.currentStep === "constantes"
     && encounter.nextRole === "enfermera_piso"
+  ) {
+    return true;
+  }
+  // RF-16: médico tratante también puede firmar indicaciones basales.
+  if (
+    role === "medico_tratante"
+    && encounter.currentStep === "indicaciones"
+    && encounter.nextRole === "medico_residente"
   ) {
     return true;
   }

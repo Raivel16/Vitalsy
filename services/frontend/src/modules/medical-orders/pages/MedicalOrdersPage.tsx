@@ -7,6 +7,8 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
@@ -54,8 +56,6 @@ export function MedicalOrdersPage() {
     };
   }, [encounter, ingreso]);
 
-  if (ingreso && !encounter) return <p role="status">Cargando el ingreso en curso.</p>;
-
   if (!encounter) {
     return (
       <Sheet kicker="Médico" title="Indicaciones médicas basales">
@@ -92,7 +92,7 @@ export function MedicalOrdersPage() {
     }
   }
 
-  if (loading) return <p role="status">Cargando indicaciones basales.</p>;
+  if (loading) return <LoadingState label="Cargando indicaciones…" />;
   if (!orders) return <Feedback tone="error">{error || "Indicaciones no disponibles."}</Feedback>;
 
   return (
@@ -105,7 +105,9 @@ export function MedicalOrdersPage() {
         <TextField id="credential" label="Colegiatura" value={credential} onChange={(event) => setCredential(event.target.value)} error={errors.credential} />
         <CheckField id="sign-confirmed" label="Confirmo la firma de las indicaciones" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        <Button type="submit">Firmar indicaciones</Button>
+        <FormActions align="center">
+          <Button type="submit">Firmar indicaciones</Button>
+        </FormActions>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="indicaciones" canContinue={advanced} />
     </Sheet>

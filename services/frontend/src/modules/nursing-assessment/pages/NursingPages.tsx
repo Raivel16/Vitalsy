@@ -6,6 +6,7 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
@@ -78,26 +79,30 @@ export function NursingAssessmentPage() {
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField id="complaint" label="Motivo de consulta" value={complaint} onChange={(event) => setComplaint(event.target.value)} error={errors.complaint} required />
         <TextField id="history" label="Antecedentes" value={history} onChange={(event) => setHistory(event.target.value)} error={errors.history} required />
-        <div className="inline-add">
+        <div className="allergy-add">
           <TextField id="allergy" label="Alergia (opcional)" value={allergy} onChange={(event) => setAllergy(event.target.value)} hint="Solo si el paciente declara alergias." />
-          <Button
-            variant="quiet"
-            type="button"
-            onClick={() => {
-              if (!allergy.trim()) return;
-              setAllergies((current) => [...current, allergy.trim()]);
-              setAllergy("");
-            }}
-          >
-            Agregar alergia
-          </Button>
+          <FormActions>
+            <Button
+              variant="quiet"
+              type="button"
+              onClick={() => {
+                if (!allergy.trim()) return;
+                setAllergies((current) => [...current, allergy.trim()]);
+                setAllergy("");
+              }}
+            >
+              Agregar alergia
+            </Button>
+          </FormActions>
         </div>
         {allergies.length > 0 ? (
           <ul>{allergies.map((item) => <li key={item}>{item}</li>)}</ul>
         ) : <p className="empty">Sin alergias registradas en esta valoración.</p>}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
-        <Button type="submit" pending={pending}>Guardar valoración</Button>
+        <FormActions align="center">
+          <Button type="submit" pending={pending}>Guardar valoración</Button>
+        </FormActions>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="valoracion" canContinue={advanced} />
     </Sheet>

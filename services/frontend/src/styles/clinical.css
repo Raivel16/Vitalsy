@@ -291,6 +291,10 @@ legend { padding: 0 0.3rem; }
 .choice-row label { min-height: 44px; display: flex; align-items: center; gap: 0.4rem; }
 .inline-add { align-items: end; }
 .inline-add .field { flex: 1; }
+.allergy-add {
+  display: grid;
+  gap: 0.55rem;
+}
 
 .button, .chip {
   border: 0;
