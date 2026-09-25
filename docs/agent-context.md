@@ -58,3 +58,15 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - UX: chart + acciones (`/atencion/*`), no stepper de admisión.
 - Cubierto: LIS, PACS, visita, evolución médica, CPOE, vitals/NEWS2/Butterworth/alertas, e-MAR, cuidados.
 - Yaak: `docs/api/yaak-modulo-2.postman_collection.json` (pendiente validar auth Sanctum en cliente).
+
+## 2026-09-25 — Expediente con pestañas + cuidados compartidos
+
+- Expediente clínico: tabs Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
+- Notas de evolución y cuidados directos disponibles para `enfermera_piso` y `auxiliar_enfermeria` (API + UI).
+- Pruebas: `patient-chart.test.tsx`, `nursing-care.test.tsx`, `EmarAndCareApiTest`.
+
+## 2026-09-25 — Timeline por fecha + trazabilidad de cuidados
+
+- Cuidados: tabs Notas / Actividades; actividades exponen `completedByName`.
+- Expediente: incluye `careActivities`; historiales agrupados por día con filtro (Hoy/7/30/Todo/rango); API `from`/`to`.
+- Título de admisión sin «Proceso 1».

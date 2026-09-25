@@ -54,6 +54,8 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 32. RF-32: Registrar nota de evolución de enfermería. El sistema debe permitir documentar la evolución y cuidados brindados durante el turno. Actor: Enfermera de piso (`enfermera_piso`).
 33. RF-33: Registrar finalización de cuidados directos. El sistema debe permitir marcar la finalización de actividades de higiene y cuidados básicos. Actor: Auxiliar de enfermería (`auxiliar_enfermeria`).
 
+- RF-93 (agregado): Consultar el expediente clínico del ingreso hospitalizado. El sistema debe mostrar, en una sola pantalla de lectura, el historial clínico del paciente desde la hospitalización: registros del proceso de admisión (valoración, constantes basales, BPMH, escalas, indicaciones), constantes y NEWS2 con gráfica evolutiva, laboratorio e imágenes, evoluciones médica y de enfermería, plan CPOE/Kardex y administraciones e-MAR relevantes. Actor: Médico tratante (`medico_tratante`) / Médico residente (`medico_residente`) / Enfermera de piso (`enfermera_piso`) / Auxiliar de enfermería (`auxiliar_enfermeria`).
+
 ### Módulo 3: Gestión de Alertas y Respuesta ante Alteraciones del Estado Clínico
 
 34. RF-34: Generar alerta automática ante alteración fisiológica. El sistema debe generar y dirigir automáticamente una alerta a la enfermera de piso responsable al detectar una alteración. Actor: Sistema.
@@ -127,10 +129,10 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 |---|---|---|
 | `admision` | Admisión / Personal administrativo de admisión | Módulo 1 (RF-01–06, RF-83–85) |
 | `camillero` | Celador / Camillero | Módulo 1 (RF-07–08, RF-92) |
-| `enfermera_piso` | Enfermera de piso | Módulo 1 (RF-09–15) y Módulo 2 (RF-22, RF-28–32) |
-| `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22) y cuidados directos (RF-33) |
-| `medico_residente` | Médico residente | Indicaciones de ingreso (RF-16), visita/evolución (RF-19–20) |
-| `medico_tratante` | Médico tratante | Visita consolidada (RF-19) y CPOE (RF-21) |
+| `enfermera_piso` | Enfermera de piso | Módulo 1 (RF-09–15) y Módulo 2 (RF-22, RF-28–32, RF-93) |
+| `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22), cuidados (RF-33) y expediente (RF-93) |
+| `medico_residente` | Médico residente | Indicaciones (RF-16), visita/evolución (RF-19–20) y expediente (RF-93) |
+| `medico_tratante` | Médico tratante | Visita (RF-19), CPOE (RF-21) y expediente (RF-93) |
 
 - RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 - RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
