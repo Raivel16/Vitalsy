@@ -104,6 +104,11 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 
 - Expediente: pestañas Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
 - RF-32–33: `enfermera_piso` y `auxiliar_enfermeria` pueden notas y cuidados directos.
+
+### 2026-09-25 — Censo genérico + indicaciones tratante
+
+- Censo listado: «Pacientes» / «Listado»; búsqueda con botón (no por tecla).
+- Morse: radios simples. Advance `indicaciones` también para `medico_tratante`.
 - Cuidados: tabs Notas/Actividades + `completedByName`; expediente con timeline por fecha y filtro `from`/`to`.
 - Admisión en chart: sin etiqueta «Proceso 1».
 - RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.

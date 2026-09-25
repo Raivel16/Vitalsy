@@ -211,6 +211,21 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounter.deliverables.10.done', true);
     }
 
+    public function test_tratante_can_advance_indicaciones_step(): void
+    {
+        $this->asRole('medico_tratante');
+        app(AdmissionBoard::class)->ensureDemo();
+        $encounter = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
+        $this->assertNotNull($encounter);
+        $encounter->update(['current_step' => 'indicaciones']);
+
+        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'indicaciones'])
+            ->assertOk()
+            ->assertJsonPath('encounter.currentStep', 'cerrado')
+            ->assertJsonPath('encounter.nextRole', null)
+            ->assertJsonPath('encounter.deliverables.10.done', true);
+    }
+
     public function test_rejected_coverage_does_not_open_the_wristband_step(): void
     {
         $this->asRole('admision');

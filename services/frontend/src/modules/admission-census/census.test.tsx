@@ -124,11 +124,28 @@ describe("censo de ingresos", () => {
     expect(screen.getByRole("link", { name: /Ana María Quispe Rojas/i })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/buscar paciente/i), "Quispe");
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("q=Quispe"))).toBe(false);
+    await user.click(screen.getByRole("button", { name: /^buscar$/i }));
     await waitFor(() => {
       const searchCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("q=Quispe"));
       expect(searchCall).toBeTruthy();
     });
     expect(await screen.findByText(/1–1 de 1/i)).toBeInTheDocument();
+  });
+
+  it("muestra títulos genéricos del listado de pacientes", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounters: [luis],
+      meta: { total: 1, page: 1, perPage: 10, lastPage: 1 },
+    })));
+    renderApp("/pacientes");
+
+    expect(await screen.findByRole("heading", { name: /^pacientes$/i })).toBeInTheDocument();
+    expect(screen.getByText(/^listado$/i)).toBeInTheDocument();
+    expect(screen.getByText(/pacientes \(1–1 de 1\)/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ingreso hospitalario/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pacientes en admisión/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/admisión y recepción/i)).not.toBeInTheDocument();
   });
 
   it("busca por código de brazalete al escanear", async () => {

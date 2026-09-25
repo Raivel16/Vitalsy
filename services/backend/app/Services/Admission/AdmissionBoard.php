@@ -277,7 +277,10 @@ class AdmissionBoard
         if ($encounter->current_step === 'cerrado' || $encounter->current_step !== $step) {
             throw new AdmissionBoardException('Este no es el paso vigente del ingreso.', 422);
         }
-        if ($definition['role'] !== $role) {
+        $allowedRoles = $step === 'indicaciones'
+            ? ['medico_residente', 'medico_tratante']
+            : [$definition['role']];
+        if (! in_array($role, $allowedRoles, true)) {
             throw new AdmissionBoardException('Este paso corresponde a otro perfil.', 403);
         }
 

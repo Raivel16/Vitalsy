@@ -40,14 +40,6 @@ export function CensusPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setQuery(search.trim());
-      setPage(1);
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
     let active = true;
     setLoading(true);
     const params = new URLSearchParams({
@@ -74,6 +66,11 @@ export function CensusPage() {
     };
   }, [page, query]);
 
+  const applySearch = useCallback(() => {
+    setQuery(search.trim());
+    setPage(1);
+  }, [search]);
+
   const onWristbandScan = useCallback((code: string) => {
     const trimmed = code.trim();
     if (!trimmed) return;
@@ -87,9 +84,9 @@ export function CensusPage() {
   const to = Math.min(meta.page * meta.perPage, meta.total);
 
   return (
-    <Sheet kicker="Ingreso hospitalario" title="Pacientes en admisión" wide>
+    <Sheet kicker="Listado" title="Pacientes" wide>
       <p className="lead">
-        Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente.
+        Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente, o Atención si el ingreso ya está cerrado.
       </p>
       {role === "admision" ? (
         <p><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
@@ -101,10 +98,19 @@ export function CensusPage() {
             label="Buscar paciente"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applySearch();
+              }
+            }}
             placeholder="Nombre, DNI, orden o brazalete"
-            hint="Busca por nombre, documento, ID de ingreso, orden o código de brazalete."
+            hint="Escriba el criterio y pulse Buscar. También puede escanear el brazalete."
           />
           <div className="census-toolbar-actions">
+            <Button type="button" variant="quiet" onClick={applySearch} disabled={loading}>
+              Buscar
+            </Button>
             <BarcodeScanner onScan={onWristbandScan} />
           </div>
         </div>
@@ -126,7 +132,7 @@ export function CensusPage() {
           <div className="table-wrap">
             <table>
               <caption>
-                Pacientes en curso de admisión y recepción ({from}–{to} de {meta.total})
+                Pacientes ({from}–{to} de {meta.total})
               </caption>
               <thead>
                 <tr>

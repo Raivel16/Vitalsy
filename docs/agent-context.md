@@ -93,3 +93,10 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 
 - `medicalOrders` ya no 404 en ingresos reales sin payload previo (plantilla pendiente).
 - Acordeones cerrados por defecto; CPOE «Agregar medicamento» como sección; Morse con opciones claras; alergias en chips.
+
+## 2026-09-25 — Censo genérico + búsqueda + avance tratante
+
+- Censo: títulos genéricos («Pacientes» / «Listado»); sin «admisión» ni «ingreso hospitalario» en el listado.
+- Búsqueda solo con botón Buscar o Enter (el escáner sigue buscando al instante).
+- Escalas Morse: radios simples (sin pastillas).
+- RF-16: `advance` de `indicaciones` acepta `medico_tratante` además de residente.
