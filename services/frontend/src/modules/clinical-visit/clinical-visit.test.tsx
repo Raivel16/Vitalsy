@@ -40,6 +40,9 @@ describe("visita médica consolidada (RF-19)", () => {
       vi.fn(async (input: RequestInfo) => {
         const url = String(input);
         if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+        if (url.includes("/vital-signs/chart")) {
+          return jsonResponse(200, { series: [] });
+        }
         if (url.includes("/clinical-visit")) {
           return jsonResponse(200, {
             day: "2026-09-21",
@@ -55,7 +58,7 @@ describe("visita médica consolidada (RF-19)", () => {
     renderApp("/atencion/visita?ingreso=ENC-HOSP-0001");
 
     expect(await screen.findByRole("heading", { name: /visita médica/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /laboratorio/i })).toHaveTextContent(/hemoglobina 11\.2 g\/dl/i);
+    expect(await screen.findByRole("region", { name: /laboratorio/i })).toHaveTextContent(/hemoglobina 11\.2 g\/dl/i);
     expect(screen.getByRole("region", { name: /imágenes/i })).toHaveTextContent(/radiografía de tórax/i);
     expect(screen.getByRole("region", { name: /notas de enfermería/i })).toHaveTextContent(/tolera medicación oral/i);
   });
