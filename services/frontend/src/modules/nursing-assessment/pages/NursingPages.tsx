@@ -94,10 +94,26 @@ export function NursingAssessmentPage() {
               Agregar alergia
             </Button>
           </FormActions>
+          {allergies.length > 0 ? (
+            <ul className="allergy-chips" aria-label="Alergias registradas">
+              {allergies.map((item) => (
+                <li key={item}>
+                  <span>{item}</span>
+                  <button
+                    type="button"
+                    className="allergy-chip-remove"
+                    aria-label={`Quitar alergia ${item}`}
+                    onClick={() => setAllergies((current) => current.filter((entry) => entry !== item))}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty">Sin alergias registradas en esta valoración.</p>
+          )}
         </div>
-        {allergies.length > 0 ? (
-          <ul>{allergies.map((item) => <li key={item}>{item}</li>)}</ul>
-        ) : <p className="empty">Sin alergias registradas en esta valoración.</p>}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
         <FormActions align="center">

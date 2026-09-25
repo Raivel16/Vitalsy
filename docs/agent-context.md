@@ -88,3 +88,8 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Indicaciones basales: `medico_tratante` también firma (API + Continuar en censo).
 - CaseBar: una sola barra de carga global antes de montar la pantalla con `ingreso`.
 - Valoración/Kardex: botones alineados/centrados + lead en Kardex.
+
+## 2026-09-25 — Indicaciones plantilla + UX escalas/CPOE
+
+- `medicalOrders` ya no 404 en ingresos reales sin payload previo (plantilla pendiente).
+- Acordeones cerrados por defecto; CPOE «Agregar medicamento» como sección; Morse con opciones claras; alergias en chips.

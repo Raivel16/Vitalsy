@@ -286,7 +286,7 @@ export function PatientChartPage() {
               <Feedback tone="info">No hay constantes en el rango seleccionado.</Feedback>
             ) : (
               vitalGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead>
@@ -350,7 +350,7 @@ export function PatientChartPage() {
             <h3>Administraciones e-MAR</h3>
             {adminGroups.length === 0 ? <Feedback tone="info">Sin dosis en el rango seleccionado.</Feedback> : (
               adminGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead>
@@ -387,7 +387,7 @@ export function PatientChartPage() {
             <h3>Laboratorio</h3>
             {labGroups.length === 0 ? <Feedback tone="info">Sin resultados en el rango seleccionado.</Feedback> : (
               labGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Hora</th><th>Resumen</th></tr></thead>
@@ -406,7 +406,7 @@ export function PatientChartPage() {
             <h3>Imágenes</h3>
             {imagingGroups.length === 0 ? <Feedback tone="info">Sin informes en el rango seleccionado.</Feedback> : (
               imagingGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Hora</th><th>Modalidad</th><th>Resumen</th></tr></thead>
@@ -447,7 +447,7 @@ export function PatientChartPage() {
             ) : null}
             {medicalGroups.length === 0 ? <Feedback tone="info">Sin notas médicas en el rango seleccionado.</Feedback> : (
               medicalGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Hora</th><th>Autor</th><th>Nota</th></tr></thead>
@@ -470,7 +470,7 @@ export function PatientChartPage() {
             <h3>Evoluciones de enfermería</h3>
             {nursingGroups.length === 0 ? <Feedback tone="info">Sin notas de enfermería en el rango seleccionado.</Feedback> : (
               nursingGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Hora</th><th>Autor</th><th>Nota</th></tr></thead>
@@ -493,7 +493,7 @@ export function PatientChartPage() {
             <h3>Cuidados directos</h3>
             {careGroups.length === 0 ? <Feedback tone="info">Sin actividades en el rango seleccionado.</Feedback> : (
               careGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Hora</th><th>Registrado por</th><th>Actividad</th></tr></thead>

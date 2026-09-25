@@ -288,4 +288,29 @@ class HospitalAdmissionApiTest extends TestCase
             'confirmed' => true,
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
     }
+
+    public function test_medical_orders_default_template_without_prior_payload(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-ORD-EMPTY',
+            'order_number' => 'OI-2026-ORD-EMPTY',
+            'source' => 'manual',
+            'patient_name' => 'Paciente Sin Indicaciones Previas',
+            'document_type' => 'DNI',
+            'document_number' => '55667788',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'SIS',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => [],
+        ]);
+
+        $this->asRole('medico_residente');
+        $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY')
+            ->assertOk()
+            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma')
+            ->assertJsonFragment(['Reposo relativo']);
+    }
 }

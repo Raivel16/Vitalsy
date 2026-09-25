@@ -202,7 +202,7 @@ export function NursingEvolutionCarePage() {
               <Feedback tone="info">No hay notas en el rango seleccionado.</Feedback>
             ) : (
               noteGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead>
@@ -274,7 +274,7 @@ export function NursingEvolutionCarePage() {
               <Feedback tone="info">No hay actividades en el rango seleccionado.</Feedback>
             ) : (
               activityGroups.map((group, index) => (
-                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={index === 0}>
+                <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
                       <thead>

@@ -295,6 +295,100 @@ legend { padding: 0 0.3rem; }
   display: grid;
   gap: 0.55rem;
 }
+.allergy-chips {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.allergy-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 650;
+}
+.allergy-chip-remove {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.scale-fieldset {
+  display: grid;
+  gap: 0.85rem;
+}
+.scale-item {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.scale-question {
+  margin: 0;
+  font-weight: 700;
+  color: var(--navy);
+}
+.scale-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.scale-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fafbfc;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scale-options label.is-selected {
+  border-color: #9ec9e4;
+  background: #eef6fb;
+  color: var(--navy);
+}
+.kardex-summary {
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.kardex-summary h3 {
+  margin: 0 0 0.35rem;
+}
+.kardex-summary .facts {
+  margin-top: 0.5rem;
+}
+.sheet.sheet-wide .kardex-summary {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+.reception-panel {
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.result-block + .result-block,
+section.result-block + form.result-block,
+form.result-block {
+  margin-top: 1.35rem;
+}
 
 .button, .chip {
   border: 0;

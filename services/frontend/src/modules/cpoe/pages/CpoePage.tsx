@@ -229,8 +229,9 @@ export function CpoePage() {
                 </tbody>
               </table>
             </div>
-            <form className="stack" onSubmit={onAddItem} noValidate>
+            <form className="stack result-block" onSubmit={onAddItem} noValidate aria-label="Agregar medicamento">
               <h3>Agregar medicamento</h3>
+              <p className="hint">Añada un medicamento individual al plan activo.</p>
               <div className="form-grid">
                 <TextField id="add-drug" label="Medicamento" value={addForm.drugName} onChange={(e) => setAddForm({ ...addForm, drugName: e.target.value })} required />
                 <TextField id="add-dose" label="Dosis" value={addForm.dose} onChange={(e) => setAddForm({ ...addForm, dose: e.target.value })} required />

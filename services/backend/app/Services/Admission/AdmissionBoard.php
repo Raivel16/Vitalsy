@@ -506,10 +506,7 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
         $payload = $encounter->clinical_payload ?? [];
-        $orders = $payload['medicalOrders'] ?? null;
-        if (! $orders && $encounter->encounter_id !== 'ENC-0001') {
-            throw new AdmissionBoardException('Indicaciones no disponibles.', 404);
-        }
+        $orders = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
 
         return [
             'status' => $orders['status'] ?? 'pendiente',

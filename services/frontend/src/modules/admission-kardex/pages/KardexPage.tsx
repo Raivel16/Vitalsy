@@ -96,18 +96,18 @@ export function KardexPage() {
         Revise el resumen clínico de ingreso de {activeEncounter.patientName} antes de confirmar el Kardex.
       </p>
       {kardex ? (
-        <>
+        <div className="kardex-summary">
           <h3>{kardex.patientName}</h3>
           <dl className="facts">
             <div><dt>Valoración</dt><dd>{kardex.assessment}</dd></div>
-            <div><dt>Alergias</dt><dd>{kardex.allergies.join(", ")}</dd></div>
+            <div><dt>Alergias</dt><dd>{kardex.allergies.join(", ") || "Ninguna registrada"}</dd></div>
             <div><dt>Medicamentos</dt><dd>{kardex.medications.join(", ")}</dd></div>
             <div><dt>Constantes</dt><dd>{kardex.vitals}</dd></div>
             <div><dt>NEWS2</dt><dd>{kardex.news2}</dd></div>
             <div><dt>Caídas</dt><dd>{kardex.fallRisk}</dd></div>
             <div><dt>Úlceras por presión</dt><dd>{kardex.pressureRisk}</dd></div>
           </dl>
-        </>
+        </div>
       ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
