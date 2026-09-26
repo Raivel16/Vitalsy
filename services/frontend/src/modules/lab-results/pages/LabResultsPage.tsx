@@ -8,7 +8,6 @@ import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
-import { StatusStamp } from "../../../shared/ui/StatusStamp";
 
 type LabResultRow = {
   id: number;
@@ -79,7 +78,7 @@ export function LabResultsPage() {
       {loading ? <LoadingState label="Cargando resultados…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
-      <StatusStamp label="Origen">Integración LIS / FHIR</StatusStamp>
+      <Feedback tone="info" label="Origen">Integración LIS / FHIR</Feedback>
       {results && results.length === 0 ? (
         <Feedback tone="info">Aún no hay resultados integrados para este ingreso.</Feedback>
       ) : null}

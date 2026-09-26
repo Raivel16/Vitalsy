@@ -285,7 +285,7 @@ export function PatientChartPage() {
             {vitalGroups.length === 0 ? (
               <Feedback tone="info">No hay constantes en el rango seleccionado.</Feedback>
             ) : (
-              vitalGroups.map((group, index) => (
+              vitalGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -349,7 +349,7 @@ export function PatientChartPage() {
           <section className="result-block" aria-label="Administraciones e-MAR">
             <h3>Administraciones e-MAR</h3>
             {adminGroups.length === 0 ? <Feedback tone="info">Sin dosis en el rango seleccionado.</Feedback> : (
-              adminGroups.map((group, index) => (
+              adminGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -386,7 +386,7 @@ export function PatientChartPage() {
           <section className="result-block" aria-label="Laboratorio">
             <h3>Laboratorio</h3>
             {labGroups.length === 0 ? <Feedback tone="info">Sin resultados en el rango seleccionado.</Feedback> : (
-              labGroups.map((group, index) => (
+              labGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -405,7 +405,7 @@ export function PatientChartPage() {
           <section className="result-block" aria-label="Imágenes">
             <h3>Imágenes</h3>
             {imagingGroups.length === 0 ? <Feedback tone="info">Sin informes en el rango seleccionado.</Feedback> : (
-              imagingGroups.map((group, index) => (
+              imagingGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -446,7 +446,7 @@ export function PatientChartPage() {
               </p>
             ) : null}
             {medicalGroups.length === 0 ? <Feedback tone="info">Sin notas médicas en el rango seleccionado.</Feedback> : (
-              medicalGroups.map((group, index) => (
+              medicalGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -469,7 +469,7 @@ export function PatientChartPage() {
           <section className="result-block" aria-label="Evoluciones de enfermería">
             <h3>Evoluciones de enfermería</h3>
             {nursingGroups.length === 0 ? <Feedback tone="info">Sin notas de enfermería en el rango seleccionado.</Feedback> : (
-              nursingGroups.map((group, index) => (
+              nursingGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -492,7 +492,7 @@ export function PatientChartPage() {
           <section className="result-block" aria-label="Cuidados directos">
             <h3>Cuidados directos</h3>
             {careGroups.length === 0 ? <Feedback tone="info">Sin actividades en el rango seleccionado.</Feedback> : (
-              careGroups.map((group, index) => (
+              careGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>

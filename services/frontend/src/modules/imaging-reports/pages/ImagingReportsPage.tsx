@@ -8,7 +8,6 @@ import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
-import { StatusStamp } from "../../../shared/ui/StatusStamp";
 
 type ImagingReportRow = {
   id: number;
@@ -80,7 +79,7 @@ export function ImagingReportsPage() {
       {loading ? <LoadingState label="Cargando informes…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
-      <StatusStamp label="Origen">Integración PACS / FHIR</StatusStamp>
+      <Feedback tone="info" label="Origen">Integración PACS / FHIR</Feedback>
       {reports && reports.length === 0 ? (
         <Feedback tone="info">Aún no hay informes integrados para este ingreso.</Feedback>
       ) : null}

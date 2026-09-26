@@ -201,7 +201,7 @@ export function NursingEvolutionCarePage() {
             {noteGroups.length === 0 ? (
               <Feedback tone="info">No hay notas en el rango seleccionado.</Feedback>
             ) : (
-              noteGroups.map((group, index) => (
+              noteGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
@@ -273,7 +273,7 @@ export function NursingEvolutionCarePage() {
             {activityGroups.length === 0 ? (
               <Feedback tone="info">No hay actividades en el rango seleccionado.</Feedback>
             ) : (
-              activityGroups.map((group, index) => (
+              activityGroups.map((group) => (
                 <DaySection key={group.day} label={group.label} count={group.items.length} defaultOpen={false}>
                   <div className="table-wrap">
                     <table>
