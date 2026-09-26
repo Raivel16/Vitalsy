@@ -71,6 +71,19 @@ Sobre las tablas ya existentes del módulo 3 se agregaron columnas de enrutamien
 
 `alert_events` es append-only: el modelo bloquea `updating` y `deleting` para cumplir RNF-07.
 
+## RF-94: campana, aviso emergente y sirena
+
+| Pieza | Ubicación |
+|---|---|
+| Campana del header | `AlertBell` en `.session-box` |
+| Avisos emergentes | `ToastProvider` propio (`shared/ui/toast/`) |
+| Sirena | `shared/audio/alertSiren.ts` (Web Audio, sin archivo) |
+| Fuente | `GET /clinical-alerts/inbox` cada 15 s; se pausa con la pestaña oculta |
+
+«Confirmar lectura» llama a `POST .../{id}/acknowledge` (RF-39 / RF-42). La sirena cesa cuando no queda ninguna alerta pendiente del usuario.
+
+El contexto de audio se desbloquea en el envío del login. Si la sesión se restaura sin gesto, el primer clic reanuda el sonido.
+
 ## Deuda conocida
 
-La bandeja se refresca por consulta al abrir la pantalla. El despacho en menos de 2 segundos por WebSockets (RNF-01) y la resincronización tras caída de red (RNF-11) quedan pendientes en una rama propia.
+El despacho en menos de 2 segundos por WebSockets (RNF-01) y la resincronización tras caída de red (RNF-11) quedan pendientes en `feature/RNF-01-alert-websockets`. Al llegar, toast y sirena se reutilizan y solo cambia la fuente de eventos.
