@@ -5,6 +5,7 @@ namespace App\Services\ClinicalAlerts;
 use App\Models\AlertEvent;
 use App\Models\ClinicalAlert;
 use App\Models\User;
+use App\Services\Staff\StaffRoster;
 
 /**
  * Apertura y bitácora de alertas. Se mantiene separado de AlertWorkflow para
@@ -27,6 +28,7 @@ class AlertRecorder
             'message' => "NEWS2 {$news2Total}: se activa el proceso de gestión de alertas.",
             'status' => ClinicalAlert::STATUS_OPEN,
             'assigned_role' => 'enfermera_piso',
+            'assigned_user_id' => app(StaffRoster::class)->assignedNurseId($encounterId),
             'created_by' => $user?->id,
             'generated_at' => now(),
             'acknowledge_due_at' => now()->addMinutes((int) config('vitalsy.alerts.nurse_ack_minutes')),

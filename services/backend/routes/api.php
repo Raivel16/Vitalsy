@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
+use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -220,6 +221,38 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:auxiliar_enfermeria')->group(function () {
                 Route::post('{bedId}/equip', [BedManagementController::class, 'equip']);
+            });
+        });
+
+        // Módulo 6 — Gestión del personal asistencial (RF-72–82)
+        Route::prefix('staff')->group(function () {
+            Route::middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos')->group(function () {
+                Route::get('shift-plans/{yearMonth}', [StaffRosterController::class, 'showPlan']);
+            });
+
+            Route::middleware('role:jefatura_enfermeria')->group(function () {
+                Route::post('shift-plans', [StaffRosterController::class, 'publishPlan']);
+                Route::post('coverage-requests/{id}/approve', [StaffRosterController::class, 'approveCoverage']);
+            });
+
+            Route::middleware('role:enfermera_supervisora')->group(function () {
+                Route::post('assignments/suggest', [StaffRosterController::class, 'suggest']);
+                Route::post('assignments/approve', [StaffRosterController::class, 'approve']);
+                Route::post('absences', [StaffRosterController::class, 'storeAbsence']);
+                Route::post('coverage-requests/{id}/confirm', [StaffRosterController::class, 'confirmRetainer']);
+            });
+
+            Route::middleware('role:enfermera_supervisora,jefatura_enfermeria,recursos_humanos')->group(function () {
+                Route::get('coverage-requests', [StaffRosterController::class, 'coverageRequests']);
+            });
+
+            Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('handover', [StaffRosterController::class, 'handoverPreview']);
+                Route::post('handover', [StaffRosterController::class, 'signHandover']);
+            });
+
+            Route::middleware('role:recursos_humanos')->group(function () {
+                Route::post('coverage-requests/{id}/authorize', [StaffRosterController::class, 'authorizeCoverage']);
             });
         });
     });
