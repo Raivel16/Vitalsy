@@ -73,6 +73,8 @@ Los siguientes requisitos se agregan al módulo 1 para unir las pantallas al ord
 46. RF-46: Registrar evaluación y orden de traslado a UCI. El sistema debe permitir al Equipo de Respuesta Rápida registrar su evaluación y emitir la orden digital de traslado cuando corresponda. Actor: Equipo de Respuesta Rápida (ERR).
 47. RF-47: Consolidar historial de eventos y alertas. El sistema debe almacenar de forma trazable la generación, recepción, atención, escalamiento y cierre de cada evento. Actor: Sistema.
 
+- RF-94 (agregado): Notificar las alertas pendientes con campana, aviso emergente y señal sonora. El sistema debe mostrar en la cabecera un indicador con la cantidad de alertas clínicas pendientes para el usuario, presentar avisos emergentes al iniciar sesión cuando existan alertas sin atender y emitir una señal sonora continua que solo cesa cuando el usuario confirma la lectura de la alerta. Actor: el perfil destinatario de la alerta (`enfermera_piso`, `auxiliar_enfermeria`, `enfermera_supervisora`, `medico_residente`, `medico_tratante`, `equipo_respuesta_rapida`).
+
 ### Módulo 4: Alta y Egreso Hospitalario
 
 48. RF-48: Registrar orden digital de alta. El sistema debe permitir autorizar y registrar el egreso del paciente según criterios clínicos. Actor: Médico tratante / residente.
