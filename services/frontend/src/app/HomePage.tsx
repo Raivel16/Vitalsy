@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { ROLE_LABEL, type Role } from "./roles";
 import { useAuth } from "./AuthProvider";
-import { canOpenPatientWorklist, isBedRole, isClinicalRole, isDischargeRole } from "./navigation";
+import { canOpenPatientWorklist, isBedRole, isClinicalRole, isDischargeRole, isStaffRole } from "./navigation";
 import { ButtonLink } from "../shared/ui/Button";
 
 const GUIDE: Record<Role, string> = {
@@ -50,7 +50,10 @@ export function HomePage() {
       {isBedRole(role) ? (
         <p><ButtonLink to={role === "servicios_generales" || role === "auxiliar_enfermeria" ? "/camas/limpieza" : "/camas"}>Abrir gestión de camas</ButtonLink></p>
       ) : null}
-      {!canOpenPatientWorklist(role) && !isDischargeRole(role) && !isBedRole(role) ? (
+      {isStaffRole(role) ? (
+        <p><ButtonLink to="/personal">Abrir turnos y cobertura</ButtonLink></p>
+      ) : null}
+      {!canOpenPatientWorklist(role) && !isDischargeRole(role) && !isBedRole(role) && !isStaffRole(role) ? (
         <p className="hint">Su espacio de trabajo estará disponible cuando se publique su módulo.</p>
       ) : null}
       {role === "admision" ? (

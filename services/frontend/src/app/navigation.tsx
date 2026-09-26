@@ -16,6 +16,7 @@ import {
   IconDoorExit,
   IconBed,
   IconSparkles,
+  IconCalendarEvent,
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
@@ -52,6 +53,7 @@ export const ALERT_ROLES: Role[] = [
 /** Perfiles del proceso 4 de alta y egreso. */
 export const BED_ROLES: Role[] = ["gestion_camas", "enfermera_supervisora"];
 export const CLEANING_ROLES: Role[] = ["servicios_generales", "auxiliar_enfermeria", "enfermera_supervisora"];
+export const STAFF_ROLES: Role[] = ["jefatura_enfermeria", "enfermera_supervisora", "enfermera_piso", "recursos_humanos"];
 
 export const DISCHARGE_ROLES: Role[] = [
   "medico_residente",
@@ -127,6 +129,13 @@ export const NAV: NavGroup[] = [
       { to: "/camas/limpieza", label: "Limpieza", icon: IconSparkles, roles: CLEANING_ROLES },
     ],
   },
+  {
+    id: "personal",
+    label: "Personal",
+    items: [
+      { to: "/personal", label: "Turnos y cobertura", icon: IconCalendarEvent, roles: STAFF_ROLES, end: true },
+    ],
+  },
 ];
 
 export function navFor(role: Role): NavGroup[] {
@@ -161,6 +170,10 @@ export function isDischargeRole(role: Role): boolean {
 
 export function isBedRole(role: Role): boolean {
   return BED_ROLES.includes(role) || CLEANING_ROLES.includes(role);
+}
+
+export function isStaffRole(role: Role): boolean {
+  return STAFF_ROLES.includes(role);
 }
 
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {

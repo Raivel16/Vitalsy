@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -34,6 +34,7 @@ import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage
 import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
 import { BedCensusPage } from "./modules/bed-management/pages/BedCensusPage";
 import { CleaningOrdersPage } from "./modules/bed-management/pages/CleaningOrdersPage";
+import { StaffBoardPage } from "./modules/staff-roster/pages/StaffBoardPage";
 import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { Button } from "./shared/ui/Button";
@@ -254,6 +255,10 @@ function Shell() {
               <Route
                 path="/camas/limpieza"
                 element={<Guard roles={CLEANING_ROLES} requirement="limpieza, auxiliar o supervisión"><CleaningOrdersPage /></Guard>}
+              />
+              <Route
+                path="/personal"
+                element={<Guard roles={STAFF_ROLES} requirement="un perfil de gestión del personal"><StaffBoardPage /></Guard>}
               />
             </Routes>
           </CaseBar>
