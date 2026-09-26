@@ -10,9 +10,7 @@ use Illuminate\Support\Carbon;
 
 class PatientClinicalChartController extends Controller
 {
-    public function __construct(private readonly PatientClinicalChart $chart)
-    {
-    }
+    public function __construct(private readonly PatientClinicalChart $chart) {}
 
     public function show(Request $request, string $encounterId): JsonResponse
     {

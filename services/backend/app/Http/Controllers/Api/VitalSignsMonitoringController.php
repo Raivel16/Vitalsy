@@ -10,9 +10,7 @@ use InvalidArgumentException;
 
 class VitalSignsMonitoringController extends Controller
 {
-    public function __construct(private readonly VitalSignsMonitoring $monitoring)
-    {
-    }
+    public function __construct(private readonly VitalSignsMonitoring $monitoring) {}
 
     public function store(Request $request, string $encounterId): JsonResponse
     {

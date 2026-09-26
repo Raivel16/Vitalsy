@@ -16,8 +16,7 @@ class VitalSignsMonitoring
     public function __construct(
         private readonly News2Calculator $news2,
         private readonly ButterworthFilter $filter,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $input

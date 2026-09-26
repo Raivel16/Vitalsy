@@ -13,9 +13,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EmarCareController extends Controller
 {
-    public function __construct(private readonly EmarService $emar)
-    {
-    }
+    public function __construct(private readonly EmarService $emar) {}
 
     public function emar(string $encounterId): JsonResponse
     {

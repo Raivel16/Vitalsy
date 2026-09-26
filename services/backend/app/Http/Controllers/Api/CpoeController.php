@@ -10,9 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class CpoeController extends Controller
 {
-    public function __construct(private readonly CpoeService $cpoe)
-    {
-    }
+    public function __construct(private readonly CpoeService $cpoe) {}
 
     public function store(Request $request, string $encounterId): JsonResponse
     {

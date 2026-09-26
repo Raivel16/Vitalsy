@@ -9,7 +9,7 @@ class ButterworthFilterTest extends TestCase
 {
     public function test_zero_phase_fourth_order_attenuates_high_frequency_noise(): void
     {
-        $filter = new ButterworthFilter();
+        $filter = new ButterworthFilter;
         $n = 128;
         $noisy = [];
         for ($i = 0; $i < $n; $i++) {

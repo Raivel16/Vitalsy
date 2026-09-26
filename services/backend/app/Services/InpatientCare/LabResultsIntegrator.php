@@ -10,9 +10,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class LabResultsIntegrator
 {
-    public function __construct(private readonly LisClient $lis)
-    {
-    }
+    public function __construct(private readonly LisClient $lis) {}
 
     /**
      * @return list<array{id: int, externalId: string|null, summary: string, resultedAt: string|null, payload: array<string, mixed>|null}>

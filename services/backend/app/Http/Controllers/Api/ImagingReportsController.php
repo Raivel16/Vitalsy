@@ -8,9 +8,7 @@ use Illuminate\Http\JsonResponse;
 
 class ImagingReportsController extends Controller
 {
-    public function __construct(private readonly ImagingReportsIntegrator $integrator)
-    {
-    }
+    public function __construct(private readonly ImagingReportsIntegrator $integrator) {}
 
     public function sync(string $encounterId): JsonResponse
     {

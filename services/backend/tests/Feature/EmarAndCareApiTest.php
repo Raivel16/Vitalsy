@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
-use App\Models\CareActivityCompletion;
 use App\Models\MedicationAdministration;
-use App\Models\NursingEvolutionNote;
 use App\Models\Prescription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

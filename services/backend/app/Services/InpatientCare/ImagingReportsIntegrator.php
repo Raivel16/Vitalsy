@@ -10,9 +10,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ImagingReportsIntegrator
 {
-    public function __construct(private readonly PacsClient $pacs)
-    {
-    }
+    public function __construct(private readonly PacsClient $pacs) {}
 
     /**
      * @return list<array{id: int, externalId: string|null, modality: string|null, summary: string, reportedAt: string|null, payload: array<string, mixed>|null}>

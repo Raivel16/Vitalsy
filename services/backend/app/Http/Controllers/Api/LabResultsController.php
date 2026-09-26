@@ -8,9 +8,7 @@ use Illuminate\Http\JsonResponse;
 
 class LabResultsController extends Controller
 {
-    public function __construct(private readonly LabResultsIntegrator $integrator)
-    {
-    }
+    public function __construct(private readonly LabResultsIntegrator $integrator) {}
 
     public function sync(string $encounterId): JsonResponse
     {

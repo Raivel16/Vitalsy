@@ -8,9 +8,7 @@ use Illuminate\Http\JsonResponse;
 
 class ClinicalVisitController extends Controller
 {
-    public function __construct(private readonly ClinicalVisitBoard $board)
-    {
-    }
+    public function __construct(private readonly ClinicalVisitBoard $board) {}
 
     public function show(string $encounterId): JsonResponse
     {
