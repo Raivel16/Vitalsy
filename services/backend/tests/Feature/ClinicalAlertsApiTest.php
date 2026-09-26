@@ -163,6 +163,12 @@ class ClinicalAlertsApiTest extends TestCase
         ]);
         $this->assertSame('en_atencion', $alert->refresh()->status);
 
+        // RF-94: tras confirmar la lectura la alerta deja de sonar / salir en la campana.
+        $this->getJson('/api/v1/clinical-alerts/inbox')
+            ->assertOk()
+            ->assertJsonCount(0, 'alerts')
+            ->assertJsonPath('pending', 0);
+
         // Vencido el plazo, el escalamiento ya no debe dispararse.
         Carbon::setTestNow('2026-09-26 08:30:00');
         $this->artisan('alerts:process-slas')->assertSuccessful();

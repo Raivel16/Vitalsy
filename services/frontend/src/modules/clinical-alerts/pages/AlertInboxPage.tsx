@@ -7,6 +7,7 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { STATUS_LABEL, severityVisual, type ClinicalAlert } from "../domain/alert";
+import { notifyAlertAcknowledged } from "../domain/inboxEvents";
 
 export function AlertInboxPage() {
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
@@ -36,6 +37,7 @@ export function AlertInboxPage() {
     setError("");
     try {
       await api(`/api/v1/clinical-alerts/${alert.id}/acknowledge`, { method: "POST" });
+      notifyAlertAcknowledged(alert.id);
       setNotice(`Confirmó la recepción de la alerta de ${alert.patientName ?? "el paciente"}.`);
       await load();
     } catch (caught) {

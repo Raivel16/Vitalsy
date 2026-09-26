@@ -53,8 +53,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 type="button"
                 className="btn"
                 onClick={() => {
+                  const confirm = toast.onConfirm();
                   dismiss(toast.id);
-                  void toast.onConfirm();
+                  void confirm;
                 }}
               >
                 {toast.confirmLabel}

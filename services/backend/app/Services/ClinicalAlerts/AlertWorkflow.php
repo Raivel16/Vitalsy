@@ -319,8 +319,18 @@ class AlertWorkflow
      */
     public function inboxFor(User $user): array
     {
+        // Solo alertas que aún exigen confirmación de lectura (RF-39, RF-42, RF-94).
+        // Tras el acuse pasan a "en atención" y dejan de sonar / ocupar la campana.
+        $awaitingAck = [
+            ClinicalAlert::STATUS_OPEN,
+            ClinicalAlert::STATUS_SUPERVISOR,
+            ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
+            ClinicalAlert::STATUS_RRT_REQUESTED,
+            ClinicalAlert::STATUS_RRT_ESCALATED,
+        ];
+
         $alerts = ClinicalAlert::query()
-            ->where('status', '!=', ClinicalAlert::STATUS_CLOSED)
+            ->whereIn('status', $awaitingAck)
             ->where(function ($query) use ($user) {
                 $query->where('assigned_role', $user->role)
                     ->orWhere('assigned_user_id', $user->id);

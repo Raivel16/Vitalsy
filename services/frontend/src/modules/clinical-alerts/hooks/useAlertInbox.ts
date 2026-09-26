@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../app/api";
+import { alertSiren } from "../../../shared/audio/alertSiren";
 import type { ClinicalAlert } from "../domain/alert";
+import { ALERT_ACKNOWLEDGED_EVENT, notifyAlertAcknowledged } from "../domain/inboxEvents";
 
 const POLL_MS = 15000;
 
@@ -51,18 +53,39 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
     function onVisible() {
       if (!document.hidden) void refresh();
     }
+    function onAcknowledged(event: Event) {
+      const alertId = (event as CustomEvent<{ alertId?: number }>).detail?.alertId;
+      if (typeof alertId !== "number") return;
+      setAlerts((current) => {
+        const next = current.filter((alert) => alert.id !== alertId);
+        if (next.length === 0) alertSiren.stop();
+        return next;
+      });
+      // No refresh aquí: el acuse aún puede estar en vuelo; quien confirma refresca después del POST.
+    }
+
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener(ALERT_ACKNOWLEDGED_EVENT, onAcknowledged);
 
     return () => {
       activeRef.current = false;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(ALERT_ACKNOWLEDGED_EVENT, onAcknowledged);
     };
   }, [pollingEnabled, refresh]);
 
   const acknowledge = useCallback(async (alertId: number) => {
-    await api(`/api/v1/clinical-alerts/${alertId}/acknowledge`, { method: "POST" });
-    await refresh();
+    // Retiro optimista: la sirena y el badge no deben esperar al servidor.
+    setAlerts((current) => current.filter((alert) => alert.id !== alertId));
+    notifyAlertAcknowledged(alertId);
+    try {
+      await api(`/api/v1/clinical-alerts/${alertId}/acknowledge`, { method: "POST" });
+      await refresh();
+    } catch (error) {
+      await refresh();
+      throw error;
+    }
   }, [refresh]);
 
   return { alerts, pending: alerts.length, acknowledge, refresh };

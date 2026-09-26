@@ -41,7 +41,16 @@ export function AlertNotifications({ enabled }: { enabled: boolean }) {
         body: toastBody(alert),
         note: alert.location ?? undefined,
         confirmLabel: "Confirmar lectura",
-        onConfirm: () => acknowledge(alert.id).catch(() => undefined),
+        onConfirm: async () => {
+          announced.current.delete(alert.id);
+          // Para el sonido de inmediato; el efecto lo reinicia si quedan otras pendientes.
+          alertSiren.stop();
+          try {
+            await acknowledge(alert.id);
+          } catch {
+            // Si el acuse falla, el siguiente refresco volverá a mostrar la alerta.
+          }
+        },
       });
     }
 
