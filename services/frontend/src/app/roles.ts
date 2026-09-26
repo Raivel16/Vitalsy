@@ -5,6 +5,14 @@ export const ROLES = [
   "auxiliar_enfermeria",
   "medico_residente",
   "medico_tratante",
+  "enfermera_supervisora",
+  "equipo_respuesta_rapida",
+  "trabajo_social",
+  "altas_caja",
+  "gestion_camas",
+  "servicios_generales",
+  "jefatura_enfermeria",
+  "recursos_humanos",
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -16,6 +24,14 @@ export const ROLE_LABEL: Record<Role, string> = {
   auxiliar_enfermeria: "Auxiliar de enfermería",
   medico_residente: "Médico residente",
   medico_tratante: "Médico tratante",
+  enfermera_supervisora: "Enfermera supervisora de piso",
+  equipo_respuesta_rapida: "Equipo de Respuesta Rápida",
+  trabajo_social: "Trabajo social",
+  altas_caja: "Altas / Caja",
+  gestion_camas: "Gestión de camas",
+  servicios_generales: "Servicios generales / Limpieza",
+  jefatura_enfermeria: "Jefatura de enfermería",
+  recursos_humanos: "Recursos humanos",
 };
 
 export function isRole(value: string): value is Role {

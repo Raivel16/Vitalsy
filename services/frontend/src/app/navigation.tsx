@@ -34,13 +34,22 @@ export type NavGroup = {
 
 const CLINICAL: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "medico_residente", "medico_tratante"];
 
+/** Perfiles que trabajan sobre el censo de pacientes en curso. */
+export const PATIENT_WORKLIST: Role[] = [
+  "admision",
+  "camillero",
+  ...CLINICAL,
+  "enfermera_supervisora",
+  "equipo_respuesta_rapida",
+];
+
 export const NAV: NavGroup[] = [
   {
     id: "trabajo",
     label: "Trabajo del turno",
     items: [
       { to: "/", label: "Inicio", icon: IconLayoutDashboard, roles: [...ROLES], end: true },
-      { to: "/pacientes", label: "Pacientes", icon: IconUsers, roles: [...ROLES] },
+      { to: "/pacientes", label: "Pacientes", icon: IconUsers, roles: PATIENT_WORKLIST },
       { to: "/pacientes/nuevo", label: "Registrar ingreso", icon: IconUserPlus, roles: ["admision"] },
     ],
   },
@@ -77,6 +86,10 @@ export function withIngreso(path: string): string {
 
 export function isClinicalRole(role: Role): boolean {
   return CLINICAL.includes(role);
+}
+
+export function canOpenPatientWorklist(role: Role): boolean {
+  return PATIENT_WORKLIST.includes(role);
 }
 
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {

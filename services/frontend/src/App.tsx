@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -32,12 +32,12 @@ import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
-function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {
+function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: string; children: ReactNode }) {
   const { user } = useAuth();
   if (user && roles.includes(user.role)) return children;
   return (
     <p className="banner banner-warning" role="alert">
-      Esta vista no está disponible para su perfil. Se requiere {roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
+      Esta vista no está disponible para su perfil. Se requiere {requirement ?? roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
     </p>
   );
 }
@@ -107,9 +107,23 @@ function Shell() {
           <CaseBar>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/pacientes" element={<CensusPage />} />
+              <Route
+                path="/pacientes"
+                element={
+                  <Guard roles={PATIENT_WORKLIST} requirement="un perfil que atienda pacientes en curso">
+                    <CensusPage />
+                  </Guard>
+                }
+              />
               <Route path="/pacientes/nuevo" element={<Guard roles={["admision"]}><PatientRegistrationPage /></Guard>} />
-              <Route path="/pacientes/:encounterId" element={<EncounterFilePage />} />
+              <Route
+                path="/pacientes/:encounterId"
+                element={
+                  <Guard roles={PATIENT_WORKLIST} requirement="un perfil que atienda pacientes en curso">
+                    <EncounterFilePage />
+                  </Guard>
+                }
+              />
               <Route path="/admision/orden" element={<Guard roles={["admision"]}><AdmissionOrderPage /></Guard>} />
               <Route path="/admision/filiacion" element={<Guard roles={["admision"]}><FiliationPage /></Guard>} />
               <Route path="/admision/cobertura" element={<Guard roles={["admision"]}><CoveragePage /></Guard>} />
