@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { ROLE_LABEL, type Role } from "./roles";
 import { useAuth } from "./AuthProvider";
-import { canOpenPatientWorklist, isClinicalRole } from "./navigation";
+import { canOpenPatientWorklist, isClinicalRole, isDischargeRole } from "./navigation";
 import { ButtonLink } from "../shared/ui/Button";
 
 const GUIDE: Record<Role, string> = {
@@ -43,9 +43,13 @@ export function HomePage() {
       <p className="lead">{GUIDE[role]} Su perfil es {ROLE_LABEL[role]}.</p>
       {canOpenPatientWorklist(role) ? (
         <p><ButtonLink to="/pacientes">Ver pacientes en curso</ButtonLink></p>
-      ) : (
+      ) : null}
+      {isDischargeRole(role) ? (
+        <p><ButtonLink to="/egreso">Abrir altas y egresos</ButtonLink></p>
+      ) : null}
+      {!canOpenPatientWorklist(role) && !isDischargeRole(role) ? (
         <p className="hint">Su espacio de trabajo estará disponible cuando se publique su módulo.</p>
-      )}
+      ) : null}
       {role === "admision" ? (
         <p><Link to="/pacientes/nuevo">Registrar un ingreso manual</Link></p>
       ) : null}

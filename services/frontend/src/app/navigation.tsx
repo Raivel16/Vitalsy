@@ -13,6 +13,7 @@ import {
   IconNotebook,
   IconBellRinging,
   IconActivityHeartbeat,
+  IconDoorExit,
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
@@ -46,6 +47,16 @@ export const ALERT_ROLES: Role[] = [
   "equipo_respuesta_rapida",
 ];
 
+/** Perfiles del proceso 4 de alta y egreso. */
+export const DISCHARGE_ROLES: Role[] = [
+  "medico_residente",
+  "medico_tratante",
+  "trabajo_social",
+  "enfermera_piso",
+  "altas_caja",
+  "camillero",
+];
+
 /** Perfiles que trabajan sobre el censo de pacientes en curso. */
 export const PATIENT_WORKLIST: Role[] = [
   "admision",
@@ -53,6 +64,8 @@ export const PATIENT_WORKLIST: Role[] = [
   ...CLINICAL,
   "enfermera_supervisora",
   "equipo_respuesta_rapida",
+  "trabajo_social",
+  "altas_caja",
 ];
 
 export const NAV: NavGroup[] = [
@@ -94,6 +107,13 @@ export const NAV: NavGroup[] = [
       },
     ],
   },
+  {
+    id: "egreso",
+    label: "Alta y egreso",
+    items: [
+      { to: "/egreso", label: "Egreso", icon: IconDoorExit, roles: DISCHARGE_ROLES, end: true },
+    ],
+  },
 ];
 
 export function navFor(role: Role): NavGroup[] {
@@ -120,6 +140,10 @@ export function canOpenPatientWorklist(role: Role): boolean {
 
 export function isAlertRole(role: Role): boolean {
   return ALERT_ROLES.includes(role);
+}
+
+export function isDischargeRole(role: Role): boolean {
+  return DISCHARGE_ROLES.includes(role);
 }
 
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {

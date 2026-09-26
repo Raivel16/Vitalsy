@@ -25,8 +25,8 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
   const refresh = useCallback(async () => {
     if (!enabled) return;
     try {
-      const data = await api<{ alerts: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
-      if (activeRef.current) setAlerts(data.alerts);
+      const data = await api<{ alerts?: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
+      if (activeRef.current) setAlerts(data.alerts ?? []);
     } catch {
       // Una consulta fallida no debe interrumpir el trabajo del turno; el
       // siguiente ciclo lo reintenta.

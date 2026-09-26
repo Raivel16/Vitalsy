@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, isAlertRole, ALERT_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -30,6 +30,8 @@ import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage
 import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
 import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage";
 import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
+import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage";
+import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
 import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { Button } from "./shared/ui/Button";
@@ -234,6 +236,14 @@ function Shell() {
               <Route
                 path="/alertas/:alertId"
                 element={<Guard roles={ALERT_ROLES} requirement="un perfil del proceso de alertas"><AlertDetailPage /></Guard>}
+              />
+              <Route
+                path="/egreso"
+                element={<Guard roles={DISCHARGE_ROLES} requirement="un perfil del proceso de alta"><DischargeBoardPage /></Guard>}
+              />
+              <Route
+                path="/egreso/:encounterId"
+                element={<Guard roles={DISCHARGE_ROLES} requirement="un perfil del proceso de alta"><DischargeCasePage /></Guard>}
               />
             </Routes>
           </CaseBar>
