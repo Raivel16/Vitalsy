@@ -116,7 +116,7 @@ describe("bandeja de alertas clínicas (RF-34, RF-39)", () => {
 
     expect(await screen.findByText(/paciente con deterioro demo/i)).toBeInTheDocument();
     expect(screen.getByText(/habitación 507, lecho b/i)).toBeInTheDocument();
-    expect(screen.getByText(/NEWS2 8/)).toBeInTheDocument();
+    expect(screen.getByText("NEWS2 8")).toBeInTheDocument();
   });
 
   it("confirma la recepción de la alerta y la retira de los pendientes", async () => {
