@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BedManagementController;
 use App\Http\Controllers\Api\ClinicalAlertsController;
 use App\Http\Controllers\Api\ClinicalVisitController;
 use App\Http\Controllers\Api\CpoeController;
@@ -188,6 +189,37 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:camillero')->group(function () {
                 Route::get('authorized-exits', [DischargeController::class, 'authorizedExits']);
+            });
+        });
+
+        // Módulo 5 — Gestión y asignación de camas (RF-62–71)
+        Route::prefix('beds')->group(function () {
+            Route::middleware('role:gestion_camas,enfermera_supervisora')->group(function () {
+                Route::get('census', [BedManagementController::class, 'census']);
+                Route::get('requests', [BedManagementController::class, 'requests']);
+                Route::get('requests/{requestId}/suggestions', [BedManagementController::class, 'suggestions']);
+            });
+
+            Route::middleware('role:gestion_camas')->group(function () {
+                Route::post('requests', [BedManagementController::class, 'storeRequest']);
+                Route::post('requests/{requestId}/assign', [BedManagementController::class, 'assign']);
+            });
+
+            Route::middleware('role:enfermera_supervisora')->group(function () {
+                Route::post('projections', [BedManagementController::class, 'storeProjection']);
+                Route::post('{bedId}/release', [BedManagementController::class, 'release']);
+            });
+
+            Route::middleware('role:servicios_generales,enfermera_supervisora,auxiliar_enfermeria')->group(function () {
+                Route::get('cleaning-orders', [BedManagementController::class, 'cleaningOrders']);
+            });
+
+            Route::middleware('role:servicios_generales')->group(function () {
+                Route::post('cleaning-orders/{orderId}/complete', [BedManagementController::class, 'completeCleaning']);
+            });
+
+            Route::middleware('role:auxiliar_enfermeria')->group(function () {
+                Route::post('{bedId}/equip', [BedManagementController::class, 'equip']);
             });
         });
     });
