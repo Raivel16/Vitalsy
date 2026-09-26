@@ -133,6 +133,14 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 | `auxiliar_enfermeria` | Auxiliar de enfermería | Constantes (RF-12, RF-22), cuidados (RF-33) y expediente (RF-93) |
 | `medico_residente` | Médico residente | Indicaciones (RF-16), visita/evolución (RF-19–20) y expediente (RF-93) |
 | `medico_tratante` | Médico tratante | Indicaciones (RF-16), visita/evolución (RF-19–20), CPOE (RF-21) y expediente (RF-93) |
+| `enfermera_supervisora` | Enfermera supervisora de piso | Escalamiento de alertas (RF-40, RF-43), camas (RF-65, RF-71) y personal (RF-74, RF-78–79, RF-82) |
+| `equipo_respuesta_rapida` | Equipo de Respuesta Rápida (ERR) | Intervención especializada y traslado a UCI (RF-43, RF-46) |
+| `trabajo_social` | Profesional de trabajo social | Valoración social pre-egreso (RF-51–52) |
+| `altas_caja` | Personal administrativo de altas / caja | Cuenta hospitalaria y pase de salida (RF-57–58) |
+| `gestion_camas` | Unidad Central de Gestión de Camas | Solicitudes, censo y asignación de lechos (RF-62–64, RF-66–67) |
+| `servicios_generales` | Personal de servicios generales / limpieza | Desinfección terminal de la unidad (RF-69) |
+| `jefatura_enfermeria` | Jefatura de enfermería / Dirección médica | Rol mensual de turnos (RF-72) y convocatoria de retén (RF-80) |
+| `recursos_humanos` | Personal de recursos humanos | Autorización de cobertura extraordinaria (RF-81) |
 
 - RF-86 (agregado): Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 - RF-87 (agregado): Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
