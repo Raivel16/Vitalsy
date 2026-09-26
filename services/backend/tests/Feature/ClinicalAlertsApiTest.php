@@ -88,7 +88,7 @@ class ClinicalAlertsApiTest extends TestCase
         $this->asRole('enfermera_piso');
 
         $this->postJson('/api/v1/inpatient-care/encounters/ENC-ALERT-0001/vital-signs', $this->vitalsPayload())
-            ->assertOk()
+            ->assertCreated()
             ->assertJsonPath('alertActivated', true);
 
         $alert = ClinicalAlert::query()->firstOrFail();
