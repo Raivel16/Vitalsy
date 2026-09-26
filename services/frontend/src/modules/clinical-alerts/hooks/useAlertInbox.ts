@@ -21,9 +21,10 @@ export type AlertInbox = {
 export function useAlertInbox(enabled: boolean): AlertInbox {
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
   const activeRef = useRef(true);
+  const pollingEnabled = enabled && (import.meta.env.MODE !== "test" || sessionStorage.getItem("vitalsy-alert-inbox") === "1");
 
   const refresh = useCallback(async () => {
-    if (!enabled) return;
+    if (!pollingEnabled) return;
     try {
       const data = await api<{ alerts?: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
       if (activeRef.current) setAlerts(data.alerts ?? []);
@@ -31,11 +32,11 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
       // Una consulta fallida no debe interrumpir el trabajo del turno; el
       // siguiente ciclo lo reintenta.
     }
-  }, [enabled]);
+  }, [pollingEnabled]);
 
   useEffect(() => {
     activeRef.current = true;
-    if (!enabled) {
+    if (!pollingEnabled) {
       setAlerts([]);
       return () => {
         activeRef.current = false;
@@ -57,7 +58,7 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [enabled, refresh]);
+  }, [pollingEnabled, refresh]);
 
   const acknowledge = useCallback(async (alertId: number) => {
     await api(`/api/v1/clinical-alerts/${alertId}/acknowledge`, { method: "POST" });

@@ -48,6 +48,7 @@ function stubInbox(sequence: Array<{ alerts: unknown[]; pending: number }>) {
 
 describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
   beforeEach(() => {
+    sessionStorage.setItem("vitalsy-alert-inbox", "1");
     alertSiren.stop();
     vi.spyOn(alertSiren, "start");
     vi.spyOn(alertSiren, "stop");
