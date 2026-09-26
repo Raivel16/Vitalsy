@@ -11,6 +11,8 @@ import {
   IconClipboardList,
   IconNurse,
   IconNotebook,
+  IconBellRinging,
+  IconActivityHeartbeat,
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
@@ -33,6 +35,16 @@ export type NavGroup = {
 };
 
 const CLINICAL: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "medico_residente", "medico_tratante"];
+
+/** Perfiles que intervienen en el proceso 3 de gestión de alertas. */
+export const ALERT_ROLES: Role[] = [
+  "enfermera_piso",
+  "auxiliar_enfermeria",
+  "enfermera_supervisora",
+  "medico_residente",
+  "medico_tratante",
+  "equipo_respuesta_rapida",
+];
 
 /** Perfiles que trabajan sobre el censo de pacientes en curso. */
 export const PATIENT_WORKLIST: Role[] = [
@@ -68,6 +80,20 @@ export const NAV: NavGroup[] = [
       { to: "/atencion/cuidados", label: "Cuidados", icon: IconNurse, roles: ["enfermera_piso", "auxiliar_enfermeria"], needsIngreso: true },
     ],
   },
+  {
+    id: "alertas",
+    label: "Alertas clínicas",
+    items: [
+      { to: "/alertas", label: "Alertas", icon: IconBellRinging, roles: ALERT_ROLES, end: true },
+      {
+        to: "/alertas/deterioro",
+        label: "Registrar deterioro",
+        icon: IconActivityHeartbeat,
+        roles: ["auxiliar_enfermeria", "enfermera_piso", "enfermera_supervisora"],
+        needsIngreso: true,
+      },
+    ],
+  },
 ];
 
 export function navFor(role: Role): NavGroup[] {
@@ -90,6 +116,10 @@ export function isClinicalRole(role: Role): boolean {
 
 export function canOpenPatientWorklist(role: Role): boolean {
   return PATIENT_WORKLIST.includes(role);
+}
+
+export function isAlertRole(role: Role): boolean {
+  return ALERT_ROLES.includes(role);
 }
 
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {

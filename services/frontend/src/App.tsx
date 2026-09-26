@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, ALERT_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -27,6 +27,9 @@ import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonit
 import { EmarPage } from "./modules/e-mar/pages/EmarPage";
 import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
 import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
+import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
+import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage";
+import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
 import { Button } from "./shared/ui/Button";
 import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
@@ -212,6 +215,22 @@ function Shell() {
                     <NursingEvolutionCarePage />
                   </Guard>
                 }
+              />
+              <Route
+                path="/alertas"
+                element={<Guard roles={ALERT_ROLES} requirement="un perfil del proceso de alertas"><AlertInboxPage /></Guard>}
+              />
+              <Route
+                path="/alertas/deterioro"
+                element={
+                  <Guard roles={["auxiliar_enfermeria", "enfermera_piso", "enfermera_supervisora"]}>
+                    <DeteriorationPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/alertas/:alertId"
+                element={<Guard roles={ALERT_ROLES} requirement="un perfil del proceso de alertas"><AlertDetailPage /></Guard>}
               />
             </Routes>
           </CaseBar>

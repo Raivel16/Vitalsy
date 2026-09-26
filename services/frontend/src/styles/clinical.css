@@ -677,6 +677,29 @@ form.result-block {
 }
 .news { border-left: 4px solid currentColor; padding: 0.8rem 1rem; border-radius: 12px; }
 .empty { color: var(--muted); }
+
+/* Módulo 3: bandeja de alertas clínicas e historial del evento. */
+.alert-list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.9rem; }
+.alert-card {
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  display: grid;
+  gap: 0.5rem;
+}
+.alert-card h3 { margin: 0; font-size: 1.05rem; }
+.alert-card p { margin: 0; }
+.alert-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.alert-card-head .news { margin: 0; white-space: nowrap; }
+.alert-card-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.alert-red { border-left-color: var(--danger); }
+.alert-yellow { border-left-color: var(--warning); }
+.alert-green { border-left-color: var(--success); }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 1rem; display: grid; gap: 0.85rem; }
+.timeline > li { border-left: 2px solid var(--line); padding-left: 0.9rem; }
+.timeline > li > p { margin: 0 0 0.15rem; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.95rem; margin: 1rem 0; }
 .facts div { border-top: 1px solid var(--line); padding-top: 0.55rem; min-width: 0; }
 dt {
