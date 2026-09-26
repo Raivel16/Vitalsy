@@ -60,9 +60,10 @@ El Kardex y la ficha digital siguen apoyados en `admission_encounters.clinical_p
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `clinical_alerts` | Alerta (sin soft deletes; historial inmutable) | RF-34–36, RF-47 |
+| `clinical_alerts` | Alerta con enrutamiento y plazos (`assigned_role`, `acknowledge_due_at`, `medical_due_at`, `closed_at`) | RF-34–36, RF-47 |
 | `alert_acknowledgements` | Confirmación por rol | RF-39, RF-42 |
 | `alert_escalations` | Escalamiento a otro rol | RF-40, RF-41, RF-43 |
+| `alert_events` | Bitácora append-only del evento (RNF-07) | RF-44–47 |
 | `monitoring_schedules` | Próximo control / frecuencia | RF-27, RF-37 |
 
 ---
