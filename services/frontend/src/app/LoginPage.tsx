@@ -8,6 +8,7 @@ import { Button } from "../shared/ui/Button";
 import { SealIcon } from "../shared/ui/Icons";
 import { TextField } from "../shared/ui/Field";
 import { Feedback } from "../shared/ui/Sheet";
+import { alertSiren } from "../shared/audio/alertSiren";
 
 export function LoginPage() {
   const { notice, setNotice, setUser } = useAuth();
@@ -30,6 +31,9 @@ export function LoginPage() {
 
     setLoading(true);
     setError("");
+    // RF-94: los navegadores solo permiten audio tras un gesto del usuario;
+    // este envío habilita la sirena de alertas de la sesión.
+    alertSiren.unlock();
     try {
       const data = await loginRequest(email.trim().toLowerCase(), password);
       setUser(data.user);

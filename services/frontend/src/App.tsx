@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, ALERT_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -30,6 +30,8 @@ import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage
 import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
 import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage";
 import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
+import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
+import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { Button } from "./shared/ui/Button";
 import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
@@ -84,6 +86,7 @@ function Shell() {
           </div>
         </div>
         <div className="session-box">
+          <AlertNotifications enabled={isAlertRole(role)} />
           <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
           <Button variant="quiet" type="button" onClick={() => void logout()}>
             <IconLogout size={18} stroke={1.75} aria-hidden />
@@ -250,7 +253,9 @@ function Gate() {
 export default function App() {
   return (
     <AuthProvider>
-      <Gate />
+      <ToastProvider>
+        <Gate />
+      </ToastProvider>
     </AuthProvider>
   );
 }
