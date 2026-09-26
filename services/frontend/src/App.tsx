@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, isAlertRole, ALERT_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -32,6 +32,8 @@ import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage
 import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
 import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage";
 import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
+import { BedCensusPage } from "./modules/bed-management/pages/BedCensusPage";
+import { CleaningOrdersPage } from "./modules/bed-management/pages/CleaningOrdersPage";
 import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { Button } from "./shared/ui/Button";
@@ -244,6 +246,14 @@ function Shell() {
               <Route
                 path="/egreso/:encounterId"
                 element={<Guard roles={DISCHARGE_ROLES} requirement="un perfil del proceso de alta"><DischargeCasePage /></Guard>}
+              />
+              <Route
+                path="/camas"
+                element={<Guard roles={BED_ROLES} requirement="gestión de camas o supervisión"><BedCensusPage /></Guard>}
+              />
+              <Route
+                path="/camas/limpieza"
+                element={<Guard roles={CLEANING_ROLES} requirement="limpieza, auxiliar o supervisión"><CleaningOrdersPage /></Guard>}
               />
             </Routes>
           </CaseBar>

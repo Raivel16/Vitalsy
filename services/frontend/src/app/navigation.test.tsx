@@ -35,14 +35,13 @@ describe("acceso de los roles de apoyo", () => {
     sessionStorage.clear();
   });
 
-  it("no ofrece el censo de admisión a un rol de apoyo sin pantallas propias", () => {
+  it("no ofrece el censo de admisión a un rol de apoyo de camas", () => {
     sessionStorage.setItem("vitalsy-role", "gestion_camas");
     renderApp("/");
 
     expect(screen.getByRole("link", { name: /^inicio$/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^pacientes$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /ver pacientes en curso/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/estará disponible cuando se publique su módulo/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /censo de camas/i })).toBeInTheDocument();
   });
 
   it("mantiene el censo para los roles clínicos que intervienen en alertas", () => {
