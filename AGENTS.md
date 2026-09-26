@@ -115,4 +115,13 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Pulido visual: sin cabeceras azul uniforme, menú fixed, fondo patrón sutil, CTA ficha centrado.
 - RF-16: tratante firma indicaciones; loader global único al abrir ingreso.
 
+### 2026-09-26 — Módulos 3–6 + RF-94
+
+- Roles nuevos: `enfermera_supervisora`, `equipo_respuesta_rapida`, `trabajo_social`, `altas_caja`, `gestion_camas`, `servicios_generales`, `jefatura_enfermeria`, `recursos_humanos`.
+- M3: bandeja `/alertas`, SLA `alerts:process-slas`, timeline inmutable.
+- RF-94: campana en header, toast propio y sirena Web Audio; para solo al confirmar lectura (`acknowledge`).
+- M4: `/egreso` con gates de secuencia; `PatientExited` libera cama.
+- M5: `/camas` censo + espera + limpieza; listener de egreso despacha desinfección.
+- M6: `/personal` rol, balanceo NEWS2, handover y retén; RF-34 usa `daily_patient_assignments`.
+
 <!-- END AGENT ANNOTATIONS -->
