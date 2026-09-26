@@ -8,6 +8,7 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
@@ -200,7 +201,7 @@ export function FloorReceptionPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -246,12 +247,18 @@ export function FloorReceptionPage() {
   return (
     <Sheet kicker="Enfermería" title="Recepción física en piso">
       <p className="lead">Confirme que {activeEncounter.patientName} llegó a la habitación y al lecho asignados.</p>
-      <form onSubmit={onSubmit}>
-        <Button type="submit" pending={pending}>Confirmar recepción</Button>
-      </form>
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {status ? <Feedback tone="success">Paciente {status} en el lecho asignado.</Feedback> : null}
-      <p><Link to={`/piso/reubicacion?ingreso=${encodeURIComponent(activeEncounter.encounterId)}`}>Registrar reubicación</Link></p>
+      <div className="stack reception-panel">
+        <FormActions align="center">
+          <form onSubmit={onSubmit}>
+            <Button type="submit" pending={pending}>Confirmar recepción</Button>
+          </form>
+        </FormActions>
+        {error ? <Feedback tone="error">{error}</Feedback> : null}
+        {status ? <Feedback tone="success">Paciente {status} en el lecho asignado.</Feedback> : null}
+        <p className="actions actions-center">
+          <Link to={`/piso/reubicacion?ingreso=${encodeURIComponent(activeEncounter.encounterId)}`}>Registrar reubicación</Link>
+        </p>
+      </div>
       <StepNav role={role} encounter={activeEncounter} viewingStep="recepcion" canContinue={advanced} />
     </Sheet>
   );

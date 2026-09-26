@@ -39,3 +39,64 @@ Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-s
 - RF-08: al escanear en verificación de identidad se valida y avanza sin segundo clic.
 - RF-92: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
 - `BarcodeScanner` movido a `shared/ui/BarcodeScanner.tsx`.
+
+## 2026-09-21 — Módulo 2: roles clínicos separados
+
+Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualizado).
+
+- Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante` (sin claves genéricas `enfermeria`/`medico`). Catálogo en `requerimientos.md`.
+- UX Módulo 2 orientativa: censo + chart (Opción A), no stepper de admisión.
+
+## 2026-09-21 — RF-17 integración LIS
+
+- `LisClient`/`StubLisClient`, `LabResultsIntegrator`, API `inpatient-care/.../lab-results`, UI `/atencion/laboratorio`.
+- Guía: `docs/architecture/modulo-2-atencion.md`.
+
+## 2026-09-21 — Módulo 2 RF-17–33 completo (rama feature)
+
+- Commits atómicos por RF/subproceso en `feature/RF-17-modulo-2-atencion-seguimiento`.
+- UX: chart + acciones (`/atencion/*`), no stepper de admisión.
+- Cubierto: LIS, PACS, visita, evolución médica, CPOE, vitals/NEWS2/Butterworth/alertas, e-MAR, cuidados.
+- Yaak: `docs/api/yaak-modulo-2.postman_collection.json` (pendiente validar auth Sanctum en cliente).
+
+## 2026-09-25 — Expediente con pestañas + cuidados compartidos
+
+- Expediente clínico: tabs Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
+- Notas de evolución y cuidados directos disponibles para `enfermera_piso` y `auxiliar_enfermeria` (API + UI).
+- Pruebas: `patient-chart.test.tsx`, `nursing-care.test.tsx`, `EmarAndCareApiTest`.
+
+## 2026-09-25 — Timeline por fecha + trazabilidad de cuidados
+
+- Cuidados: tabs Notas / Actividades; actividades exponen `completedByName`.
+- Expediente: incluye `careActivities`; historiales agrupados por día con filtro (Hoy/7/30/Todo/rango); API `from`/`to`.
+- Título de admisión sin «Proceso 1».
+
+## 2026-09-25 — UX chart/censo + RF-20 ambos médicos
+
+- Gráfica evolutiva respeta el filtro de fechas; loader centrado; menú lateral a altura completa.
+- Censo: sin paginación si hay 1 página; botón Acción a ancho de celda; `?next=` restaura la pantalla pedida.
+- RF-20: evolución médica para `medico_residente` y `medico_tratante`.
+
+## 2026-09-25 — Pulido visual (menos azul uniforme)
+
+- Cabeceras sin franja azul uniforme; tipografía de lectura más contrastada.
+- Loader solo barra; menú `position: fixed`; fondo con patrón salud muy sutil.
+- Evoluciones/labs/imágenes en tarjetas; gap Editar/Eliminar; CTA de ficha centrado.
+
+## 2026-09-25 — RF-16 tratante + loader global
+
+- Indicaciones basales: `medico_tratante` también firma (API + Continuar en censo).
+- CaseBar: una sola barra de carga global antes de montar la pantalla con `ingreso`.
+- Valoración/Kardex: botones alineados/centrados + lead en Kardex.
+
+## 2026-09-25 — Indicaciones plantilla + UX escalas/CPOE
+
+- `medicalOrders` ya no 404 en ingresos reales sin payload previo (plantilla pendiente).
+- Acordeones cerrados por defecto; CPOE «Agregar medicamento» como sección; Morse con opciones claras; alergias en chips.
+
+## 2026-09-25 — Censo genérico + búsqueda + avance tratante
+
+- Censo: títulos genéricos («Pacientes» / «Listado»); sin «admisión» ni «ingreso hospitalario» en el listado.
+- Búsqueda solo con botón Buscar o Enter (el escáner sigue buscando al instante).
+- Escalas Morse: radios simples (sin pastillas).
+- RF-16: `advance` de `indicaciones` acepta `medico_tratante` además de residente.

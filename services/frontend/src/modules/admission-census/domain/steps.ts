@@ -23,8 +23,10 @@ export const STEP_PATH: Record<string, string> = {
 export const ROLE_STEPS: Record<Role, string[]> = {
   admision: ["orden", "filiacion", "cobertura", "brazalete", "expediente", "consentimiento"],
   camillero: ["traslado", "identidad"],
-  enfermeria: ["recepcion", "valoracion", "constantes", "conciliacion", "escalas", "kardex"],
-  medico: ["indicaciones"],
+  enfermera_piso: ["recepcion", "valoracion", "constantes", "conciliacion", "escalas", "kardex"],
+  auxiliar_enfermeria: ["constantes"],
+  medico_residente: ["indicaciones"],
+  medico_tratante: ["indicaciones"],
 };
 
 export function stepPath(step: string, encounterId: string): string {
@@ -44,10 +46,33 @@ export function previousRoleStep(role: Role, viewingStep: string): string | null
 }
 
 export function nextContinuePath(encounter: Encounter, role: Role): string {
-  if (encounter.nextRole === role) {
+  if (canActOnEncounter(role, encounter)) {
     return stepPath(encounter.currentStep, encounter.encounterId);
   }
   return `/pacientes/${encounter.encounterId}`;
+}
+
+/** Quién puede pulsar Continuar en el paso vigente del ingreso. */
+export function canActOnEncounter(role: Role, encounter: Pick<Encounter, "nextRole" | "currentStep">): boolean {
+  if (encounter.nextRole === role) return true;
+  if (role === "admision" && encounter.currentStep === "derivacion") return true;
+  // RF-12: auxiliar puede registrar constantes basales cuando el paso es de enfermera de piso.
+  if (
+    role === "auxiliar_enfermeria"
+    && encounter.currentStep === "constantes"
+    && encounter.nextRole === "enfermera_piso"
+  ) {
+    return true;
+  }
+  // RF-16: médico tratante también puede firmar indicaciones basales.
+  if (
+    role === "medico_tratante"
+    && encounter.currentStep === "indicaciones"
+    && encounter.nextRole === "medico_residente"
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function canViewRoleStep(role: Role, step: string, progress: ProgressStep[] | undefined, currentStep: string): boolean {

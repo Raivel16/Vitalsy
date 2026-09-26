@@ -8,7 +8,7 @@ El trabajo empieza en **Pacientes**. El menú solo muestra Inicio, Pacientes y, 
 
 1. Desde la raíz del repositorio: `docker compose up --build`.
 2. Abrir http://localhost:8080.
-3. Iniciar sesión con una cuenta local. La contraseña de las cuatro es `Vitalsy.2026`.
+3. Iniciar sesión con una cuenta local. La contraseña de las cuentas demo es `Vitalsy.2026`.
 4. En **Pacientes** vea el censo. Si el caso está en su turno, pulse **Continuar**.
 5. Complete el formulario y use el botón de registro o confirmación de esa pantalla: al guardar con éxito el ingreso avanza. Ya no hay un botón aparte de «Confirmar paso en el censo».
 6. Un stepper en la barra del caso muestra los pasos hechos, el actual y los pendientes.
@@ -37,8 +37,8 @@ Los códigos de traslado y brazalete son propios de cada paciente: consultar o v
 Para recorrer el camino completo de Ana:
 
 1. Entre como camillero (`camillero@vitalsy.local`), abra a Ana, consulte el traslado y confírmelo; luego verifique el brazalete (el escaneo confirma solo).
-2. Entre como enfermería. Confirme recepción y siga valoración, constantes, conciliación, escalas y Kardex.
-3. Entre como médico. Firme las indicaciones.
+2. Entre como enfermera de piso (`enfermera_piso@vitalsy.local`). Confirme recepción y siga valoración, constantes, conciliación, escalas y Kardex.
+3. Entre como médico residente (`medico_residente@vitalsy.local`). Firme las indicaciones.
 
 Si la cobertura no está aprobada, derive el trámite y registre: el ingreso queda en trámite. Cuando se apruebe, vuelva a cobertura, marque **Aprobada** y registre.
 
@@ -48,8 +48,12 @@ Si la cobertura no está aprobada, derive el trámite y registre: el ingreso que
 |---|---|---|
 | Admisión | `admision@vitalsy.local` | RF-01 a RF-06 y registro/intake |
 | Celador / Camillero | `camillero@vitalsy.local` | RF-07 y RF-08 |
-| Enfermería | `enfermeria@vitalsy.local` | RF-09 a RF-15 |
-| Médico | `medico@vitalsy.local` | RF-16 |
+| Enfermera de piso | `enfermera_piso@vitalsy.local` | RF-09 a RF-15 |
+| Auxiliar de enfermería | `auxiliar_enfermeria@vitalsy.local` | RF-12 (constantes basales) |
+| Médico residente | `medico_residente@vitalsy.local` | RF-16 |
+| Médico tratante | `medico_tratante@vitalsy.local` | Módulo 2 (visita / CPOE) |
+
+Contraseña de las cuentas demo: `Vitalsy.2026`.
 
 Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los pasos sueltos: se llegan desde el censo con paciente cargado.
 

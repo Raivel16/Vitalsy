@@ -303,8 +303,8 @@ class HospitalAdmissionController extends Controller
             $this->board->putClinical($data['encounterId'], 'risks', [
                 'morse' => $morse,
                 'braden' => $pressure,
-                'fallRisk' => ($morse['levelLabel'] ?? 'Riesgo').' de caídas, '.($morse['total'] ?? 0).' puntos',
-                'pressureRisk' => ($pressure['levelLabel'] ?? 'Riesgo').' de úlceras por presión, '.($pressure['total'] ?? 0).' puntos',
+                'fallRisk' => ($morse['levelLabel'] ?? 'Riesgo').', '.($morse['total'] ?? 0).' puntos',
+                'pressureRisk' => ($pressure['levelLabel'] ?? 'Riesgo').', '.($pressure['total'] ?? 0).' puntos',
             ]);
         }
 

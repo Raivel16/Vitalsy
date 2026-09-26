@@ -16,7 +16,7 @@ export function RiskScalesPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
   const { user } = useAuth();
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [historyOfFalling, setHistoryOfFalling] = useState(false);
   const [secondaryDiagnosis, setSecondaryDiagnosis] = useState(false);
   const [ambulatoryAid, setAmbulatoryAid] = useState<"none" | "device" | "furniture">("none");
@@ -89,33 +89,48 @@ export function RiskScalesPage() {
     <Sheet kicker="Enfermería" title="Escalas de riesgo">
       <p className="lead">Morse y Braden para {activeEncounter.patientName}.</p>
       <form className="stack" onSubmit={onSubmit}>
-        <fieldset>
+        <fieldset className="scale-fieldset">
           <legend>Escala de Morse</legend>
-          <div className="choice-row">
-            <label><input type="radio" name="falls" checked={!historyOfFalling} onChange={() => setHistoryOfFalling(false)} /> Antecedente de caídas: no</label>
-            <label><input type="radio" name="falls" checked={historyOfFalling} onChange={() => setHistoryOfFalling(true)} /> Antecedente de caídas: sí</label>
+          <div className="scale-item">
+            <p className="scale-question" id="q-falls">¿Antecedente de caídas?</p>
+            <div className="scale-options" role="group" aria-labelledby="q-falls">
+              <label className={!historyOfFalling ? "is-selected" : undefined}><input type="radio" name="falls" checked={!historyOfFalling} onChange={() => setHistoryOfFalling(false)} aria-label="Antecedente de caídas: no" /> No</label>
+              <label className={historyOfFalling ? "is-selected" : undefined}><input type="radio" name="falls" checked={historyOfFalling} onChange={() => setHistoryOfFalling(true)} aria-label="Antecedente de caídas: sí" /> Sí</label>
+            </div>
           </div>
-          <div className="choice-row">
-            <label><input type="radio" name="dx" checked={!secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(false)} /> Diagnóstico secundario: no</label>
-            <label><input type="radio" name="dx" checked={secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(true)} /> Diagnóstico secundario: sí</label>
+          <div className="scale-item">
+            <p className="scale-question" id="q-dx">¿Diagnóstico secundario?</p>
+            <div className="scale-options" role="group" aria-labelledby="q-dx">
+              <label className={!secondaryDiagnosis ? "is-selected" : undefined}><input type="radio" name="dx" checked={!secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(false)} aria-label="Diagnóstico secundario: no" /> No</label>
+              <label className={secondaryDiagnosis ? "is-selected" : undefined}><input type="radio" name="dx" checked={secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(true)} aria-label="Diagnóstico secundario: sí" /> Sí</label>
+            </div>
           </div>
           <SelectField id="aid" label="Ayuda para deambular" value={ambulatoryAid} onChange={(event) => setAmbulatoryAid(event.target.value as typeof ambulatoryAid)}>
             <option value="none">Ninguna, reposo o ayuda de enfermería</option>
             <option value="device">Bastón, muleta o andador</option>
             <option value="furniture">Se apoya en el mobiliario</option>
           </SelectField>
-          <div className="choice-row">
-            <label><input type="radio" name="iv" checked={!intravenousAccess} onChange={() => setIntravenousAccess(false)} /> Vía intravenosa: no</label>
-            <label><input type="radio" name="iv" checked={intravenousAccess} onChange={() => setIntravenousAccess(true)} /> Vía intravenosa: sí</label>
+          <div className="scale-item">
+            <p className="scale-question" id="q-iv">¿Vía intravenosa?</p>
+            <div className="scale-options" role="group" aria-labelledby="q-iv">
+              <label className={!intravenousAccess ? "is-selected" : undefined}><input type="radio" name="iv" checked={!intravenousAccess} onChange={() => setIntravenousAccess(false)} aria-label="Vía intravenosa: no" /> No</label>
+              <label className={intravenousAccess ? "is-selected" : undefined}><input type="radio" name="iv" checked={intravenousAccess} onChange={() => setIntravenousAccess(true)} aria-label="Vía intravenosa: sí" /> Sí</label>
+            </div>
           </div>
-          <div className="choice-row">
-            <label><input type="radio" name="gait" checked={gait === "normal"} onChange={() => setGait("normal")} /> Marcha: normal</label>
-            <label><input type="radio" name="gait" checked={gait === "weak"} onChange={() => setGait("weak")} /> Marcha: débil</label>
-            <label><input type="radio" name="gait" checked={gait === "impaired"} onChange={() => setGait("impaired")} /> Marcha: alterada</label>
+          <div className="scale-item">
+            <p className="scale-question" id="q-gait">Marcha</p>
+            <div className="scale-options" role="group" aria-labelledby="q-gait">
+              <label className={gait === "normal" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "normal"} onChange={() => setGait("normal")} aria-label="Marcha: normal" /> Normal</label>
+              <label className={gait === "weak" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "weak"} onChange={() => setGait("weak")} aria-label="Marcha: débil" /> Débil</label>
+              <label className={gait === "impaired" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "impaired"} onChange={() => setGait("impaired")} aria-label="Marcha: alterada" /> Alterada</label>
+            </div>
           </div>
-          <div className="choice-row">
-            <label><input type="radio" name="mental" checked={mentalStatus === "oriented"} onChange={() => setMentalStatus("oriented")} /> Conoce sus límites</label>
-            <label><input type="radio" name="mental" checked={mentalStatus === "overestimates"} onChange={() => setMentalStatus("overestimates")} /> Sobreestima o olvida sus límites</label>
+          <div className="scale-item">
+            <p className="scale-question" id="q-mental">Estado mental</p>
+            <div className="scale-options" role="group" aria-labelledby="q-mental">
+              <label className={mentalStatus === "oriented" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "oriented"} onChange={() => setMentalStatus("oriented")} aria-label="Conoce sus límites" /> Conoce sus límites</label>
+              <label className={mentalStatus === "overestimates" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "overestimates"} onChange={() => setMentalStatus("overestimates")} aria-label="Sobreestima o olvida límites" /> Sobreestima o olvida límites</label>
+            </div>
           </div>
           <p role="status" aria-label="Resultado de caídas">
             {morse.total} puntos. {morse.levelLabel}. {morse.recommendations.join(" ")}

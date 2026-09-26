@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { ROLE_LABEL } from "../../../app/roles";
 import { useAuth } from "../../../app/AuthProvider";
+import { isClinicalRole, primaryAttentionPath } from "../../../app/navigation";
 import { errorText } from "../../../app/userMessage";
 import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
+import { safeNextPath } from "../../../shared/navigation/returnTo";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
-import { stepPath } from "../domain/steps";
+import { canActOnEncounter, stepPath } from "../domain/steps";
 import { AdmissionStepper } from "../ui/AdmissionStepper";
 
 type CensusMeta = {
@@ -25,6 +29,8 @@ const EMPTY_META: CensusMeta = { total: 0, page: 1, perPage: 10, lastPage: 1 };
 export function CensusPage() {
   const { user } = useAuth();
   const role = user?.role ?? "admision";
+  const [searchParams] = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [encounters, setEncounters] = useState<Encounter[] | null>(null);
   const [meta, setMeta] = useState<CensusMeta>(EMPTY_META);
   const [search, setSearch] = useState("");
@@ -32,14 +38,6 @@ export function CensusPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setQuery(search.trim());
-      setPage(1);
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [search]);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +66,11 @@ export function CensusPage() {
     };
   }, [page, query]);
 
+  const applySearch = useCallback(() => {
+    setQuery(search.trim());
+    setPage(1);
+  }, [search]);
+
   const onWristbandScan = useCallback((code: string) => {
     const trimmed = code.trim();
     if (!trimmed) return;
@@ -76,14 +79,14 @@ export function CensusPage() {
     setPage(1);
   }, []);
 
-  const mine = encounters?.filter((item) => item.nextRole === role) ?? [];
+  const mine = encounters?.filter((item) => canActOnEncounter(role, item)) ?? [];
   const from = meta.total === 0 ? 0 : (meta.page - 1) * meta.perPage + 1;
   const to = Math.min(meta.page * meta.perPage, meta.total);
 
   return (
-    <Sheet kicker="Ingreso hospitalario" title="Pacientes en admisión" wide>
+    <Sheet kicker="Listado" title="Pacientes" wide>
       <p className="lead">
-        Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente.
+        Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente, o Atención si el ingreso ya está cerrado.
       </p>
       {role === "admision" ? (
         <p><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
@@ -95,16 +98,25 @@ export function CensusPage() {
             label="Buscar paciente"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applySearch();
+              }
+            }}
             placeholder="Nombre, DNI, orden o brazalete"
-            hint="Busca por nombre, documento, ID de ingreso, orden o código de brazalete."
+            hint="Escriba el criterio y pulse Buscar. También puede escanear el brazalete."
           />
           <div className="census-toolbar-actions">
+            <Button type="button" variant="quiet" onClick={applySearch} disabled={loading}>
+              Buscar
+            </Button>
             <BarcodeScanner onScan={onWristbandScan} />
           </div>
         </div>
       </div>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {loading && !encounters ? <p role="status">Cargando pacientes.</p> : null}
+      {loading && !encounters ? <LoadingState label="Cargando pacientes…" /> : null}
       {encounters && mine.length === 0 && meta.total > 0 ? (
         <Feedback tone="info">No hay pacientes esperando su turno en esta página. Use la búsqueda o cambie de página.</Feedback>
       ) : null}
@@ -120,7 +132,7 @@ export function CensusPage() {
           <div className="table-wrap">
             <table>
               <caption>
-                Pacientes en curso de admisión y recepción ({from}–{to} de {meta.total})
+                Pacientes ({from}–{to} de {meta.total})
               </caption>
               <thead>
                 <tr>
@@ -133,7 +145,8 @@ export function CensusPage() {
               </thead>
               <tbody>
                 {encounters.map((item) => {
-                  const own = item.nextRole === role || (role === "admision" && item.currentStep === "derivacion");
+                  const own = canActOnEncounter(role, item);
+                  const canAttend = isClinicalRole(role) && item.currentStep === "cerrado";
                   return (
                     <tr key={item.encounterId}>
                       <td>
@@ -146,10 +159,14 @@ export function CensusPage() {
                       </td>
                       <td>{locationText(item)}</td>
                       <td>{deliverableCount(item)}</td>
-                      <td>
+                      <td className="col-action">
                         {own ? (
                           <ButtonLink to={stepPath(item.currentStep, item.encounterId)}>
                             Continuar
+                          </ButtonLink>
+                        ) : canAttend ? (
+                          <ButtonLink to={primaryAttentionPath(role, item.encounterId, nextPath)}>
+                            Atención
                           </ButtonLink>
                         ) : (
                           <span>{item.nextRole ? `En curso con ${ROLE_LABEL[item.nextRole]}` : item.statusLabel}</span>
@@ -165,24 +182,26 @@ export function CensusPage() {
             <p role="status">
               Página {meta.page} de {meta.lastPage}
             </p>
-            <div className="pager-actions">
-              <Button
-                variant="quiet"
-                type="button"
-                disabled={meta.page <= 1 || loading}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="quiet"
-                type="button"
-                disabled={meta.page >= meta.lastPage || loading}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                Siguiente
-              </Button>
-            </div>
+            {meta.lastPage > 1 ? (
+              <div className="pager-actions">
+                <Button
+                  variant="quiet"
+                  type="button"
+                  disabled={meta.page <= 1 || loading}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="quiet"
+                  type="button"
+                  disabled={meta.page >= meta.lastPage || loading}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            ) : null}
           </nav>
         </>
       ) : null}
@@ -199,6 +218,7 @@ export function EncounterFilePage() {
 
   useEffect(() => {
     let active = true;
+    sessionStorage.setItem("vitalsy-ingreso", encounterId);
     api<{ encounter: Encounter }>(`/api/v1/hospital-admission/encounters/${encodeURIComponent(encounterId)}`)
       .then((data) => {
         if (active) setEncounter(data.encounter);
@@ -218,9 +238,10 @@ export function EncounterFilePage() {
       </Sheet>
     );
   }
-  if (!encounter) return <p role="status">Cargando ficha del ingreso.</p>;
+  if (!encounter) return <LoadingState label="Cargando ficha del ingreso…" />;
 
-  const own = encounter.nextRole === role || (role === "admision" && encounter.currentStep === "derivacion");
+  const own = canActOnEncounter(role, encounter);
+  const canAttend = isClinicalRole(role) && encounter.currentStep === "cerrado";
 
   return (
     <Sheet kicker="Ficha del ingreso" title={encounter.patientName}>
@@ -234,11 +255,17 @@ export function EncounterFilePage() {
         />
       ) : null}
       {own ? (
-        <p>
+        <FormActions align="center">
           <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
             {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
           </ButtonLink>
-        </p>
+        </FormActions>
+      ) : canAttend ? (
+        <FormActions align="center">
+          <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
+            Abrir atención en piso
+          </ButtonLink>
+        </FormActions>
       ) : (
         <Feedback tone="info">
           {encounter.nextRole

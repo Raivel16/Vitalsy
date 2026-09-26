@@ -5,7 +5,7 @@ import { jsonResponse, renderApp } from "../../test/renderApp";
 
 describe("escalas de riesgo", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "enfermeria");
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });
 
   afterEach(() => {
@@ -31,7 +31,7 @@ describe("escalas de riesgo", () => {
       subprocessLabel: "x",
       currentStep: "escalas",
       currentStepLabel: "Escalas",
-      nextRole: "enfermeria",
+      nextRole: "enfermera_piso",
       statusLabel: "Escalas",
       deliverables: [],
       progress: [],
@@ -42,7 +42,7 @@ describe("escalas de riesgo", () => {
         .mockResolvedValueOnce(jsonResponse(200, { encounter }))
         .mockResolvedValueOnce(jsonResponse(201, { status: "registrada" }))
         .mockResolvedValueOnce(jsonResponse(200, {
-          encounter: { ...encounter, currentStep: "kardex", nextRole: "enfermeria" },
+          encounter: { ...encounter, currentStep: "kardex", nextRole: "enfermera_piso" },
         })),
     );
     renderApp("/enfermeria/riesgos?ingreso=ENC-0001");

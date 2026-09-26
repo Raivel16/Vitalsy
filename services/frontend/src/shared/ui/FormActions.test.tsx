@@ -16,4 +16,13 @@ describe("FormActions", () => {
     expect(actions).toHaveClass("actions");
     expect(screen.getByRole("link", { name: /derivar trámite/i })).toBeInTheDocument();
   });
+
+  it("permite alinear el CTA al centro", () => {
+    render(
+      <FormActions align="center">
+        <Button type="button">Abrir atención en piso</Button>
+      </FormActions>,
+    );
+    expect(screen.getByRole("button", { name: /abrir atención en piso/i }).parentElement).toHaveClass("actions-center");
+  });
 });

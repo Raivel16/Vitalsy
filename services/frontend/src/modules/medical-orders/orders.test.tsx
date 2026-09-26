@@ -19,7 +19,7 @@ const encounter = {
   subprocessLabel: "Valoración",
   currentStep: "indicaciones",
   currentStepLabel: "Indicaciones",
-  nextRole: "medico",
+  nextRole: "medico_residente",
   statusLabel: "Indicaciones por firmar",
   deliverables: [],
   progress: [],
@@ -27,7 +27,7 @@ const encounter = {
 
 describe("indicaciones médicas basales", () => {
   beforeEach(() => {
-    sessionStorage.setItem("vitalsy-role", "medico");
+    sessionStorage.setItem("vitalsy-role", "medico_residente");
   });
 
   afterEach(() => {
@@ -68,6 +68,37 @@ describe("indicaciones médicas basales", () => {
     await user.click(screen.getByLabelText(/confirmo la firma de las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
 
+    expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);
+  });
+
+  it("permite al médico tratante abrir y firmar indicaciones", async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem("vitalsy-role", "medico_tratante");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          orders: {
+            status: "pendiente",
+            statusLabel: "Pendiente de firma",
+            items: ["Reposo relativo"],
+          },
+        }))
+        .mockResolvedValueOnce(jsonResponse(201, {
+          signature: { status: "firmado", physicianName: "Dra. Tratante" },
+        }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          encounter: { ...encounter, currentStep: "cerrado", nextRole: null, statusLabel: "Ingreso cerrado" },
+        })),
+    );
+
+    renderApp("/medico/indicaciones?ingreso=ENC-0001");
+    expect(await screen.findByRole("heading", { name: /indicaciones médicas basales/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/nombre del médico/i), "Dra. Tratante");
+    await user.type(screen.getByLabelText(/colegiatura/i), "CMP 99887");
+    await user.click(screen.getByLabelText(/confirmo la firma de las indicaciones/i));
+    await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);
   });
 });

@@ -95,7 +95,7 @@ class AdmissionCensusApiTest extends TestCase
 
     public function test_file_shows_deliverables_and_unknown_encounter_is_spanish_not_found(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
 
         $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')
             ->assertOk()
@@ -198,7 +198,22 @@ class AdmissionCensusApiTest extends TestCase
 
     public function test_closing_the_admission_removes_it_from_the_physician_queue(): void
     {
-        $this->asRole('medico');
+        $this->asRole('medico_residente');
+        app(AdmissionBoard::class)->ensureDemo();
+        $encounter = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
+        $this->assertNotNull($encounter);
+        $encounter->update(['current_step' => 'indicaciones']);
+
+        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'indicaciones'])
+            ->assertOk()
+            ->assertJsonPath('encounter.currentStep', 'cerrado')
+            ->assertJsonPath('encounter.nextRole', null)
+            ->assertJsonPath('encounter.deliverables.10.done', true);
+    }
+
+    public function test_tratante_can_advance_indicaciones_step(): void
+    {
+        $this->asRole('medico_tratante');
         app(AdmissionBoard::class)->ensureDemo();
         $encounter = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first();
         $this->assertNotNull($encounter);

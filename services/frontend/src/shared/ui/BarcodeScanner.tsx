@@ -5,6 +5,8 @@ import { Feedback } from "./Sheet";
 
 type Props = {
   onScan: (code: string) => void;
+  /** Etiqueta del botón (p. ej. brazalete o medicamento). */
+  label?: string;
 };
 
 const BARCODE_FORMATS = [
@@ -15,7 +17,7 @@ const BARCODE_FORMATS = [
   Html5QrcodeSupportedFormats.EAN_8,
 ];
 
-export function BarcodeScanner({ onScan }: Props) {
+export function BarcodeScanner({ onScan, label = "Escanear brazalete" }: Props) {
   const reactId = useId().replace(/:/g, "");
   const elementId = `scanner-${reactId}`;
   const [open, setOpen] = useState(false);
@@ -88,7 +90,7 @@ export function BarcodeScanner({ onScan }: Props) {
     <div className="scanner-box">
       {!open ? (
         <Button variant="quiet" type="button" onClick={() => setOpen(true)}>
-          Escanear brazalete
+          {label}
         </Button>
       ) : (
         <Button variant="quiet" type="button" onClick={() => setOpen(false)}>

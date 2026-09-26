@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "./api";
 import { bindIdleTimer } from "./idleTimer";
-import { ROLE_LABEL, type Role, type SessionUser } from "./roles";
+import { ROLE_LABEL, isRole, type SessionUser } from "./roles";
 
 type AuthState = {
   user: SessionUser | null;
@@ -18,8 +18,8 @@ function testUser(): SessionUser | null {
   const stored = sessionStorage.getItem("vitalsy-user");
   if (stored) return JSON.parse(stored) as SessionUser;
   const role = sessionStorage.getItem("vitalsy-role");
-  if (role === "admision" || role === "enfermeria" || role === "camillero" || role === "medico") {
-    return { name: ROLE_LABEL[role as Role], email: `${role}@vitalsy.local`, role };
+  if (role && isRole(role)) {
+    return { name: ROLE_LABEL[role], email: `${role}@vitalsy.local`, role };
   }
   return null;
 }

@@ -84,4 +84,35 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - RF-08: escaneo en identidad valida solo. RF-92: escáner en censo; `q` incluye brazalete.
 - Escáner compartido: `shared/ui/BarcodeScanner.tsx`.
 
+### 2026-09-21 — Módulo 2 roles clínicos
+
+- Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante`.
+- Catálogo en `docs/requirements/requerimientos.md`.
+
+### 2026-09-21 — RF-17 LIS
+
+- Stub FHIR + API `lab-results` + UI `/atencion/laboratorio`. Ver `docs/architecture/modulo-2-atencion.md`.
+
+### 2026-09-22 — UX Módulo 2 + RF-93
+
+- Stepper de admisión oculto en `/atencion/*` e ingresos cerrados.
+- Constantes M2 = campos NEWS2 de M1 + gráfica SVG; sin precargas.
+- CPOE: panel plan activo + enlace a e-MAR; e-MAR regenera dosis del plan activo.
+- RF-93: `Expediente clínico` (`/atencion/chart`) — lectura consolidada del ingreso.
+
+### 2026-09-25 — Expediente tabs + cuidados compartidos
+
+- Expediente: pestañas Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
+- RF-32–33: `enfermera_piso` y `auxiliar_enfermeria` pueden notas y cuidados directos.
+
+### 2026-09-25 — Censo genérico + indicaciones tratante
+
+- Censo listado: «Pacientes» / «Listado»; búsqueda con botón (no por tecla).
+- Morse: radios simples. Advance `indicaciones` también para `medico_tratante`.
+- Cuidados: tabs Notas/Actividades + `completedByName`; expediente con timeline por fecha y filtro `from`/`to`.
+- Admisión en chart: sin etiqueta «Proceso 1».
+- RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
+- Pulido visual: sin cabeceras azul uniforme, menú fixed, fondo patrón sutil, CTA ficha centrado.
+- RF-16: tratante firma indicaciones; loader global único al abrir ingreso.
+
 <!-- END AGENT ANNOTATIONS -->

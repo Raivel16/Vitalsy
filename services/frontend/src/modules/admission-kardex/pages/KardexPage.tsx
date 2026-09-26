@@ -6,6 +6,8 @@ import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { FormActions } from "../../../shared/ui/FormActions";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
@@ -27,7 +29,7 @@ export function KardexPage() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
-  const role = user?.role ?? "enfermeria";
+  const role = user?.role ?? "enfermera_piso";
   const [kardex, setKardex] = useState<Kardex | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(Boolean(ingreso));
@@ -58,8 +60,6 @@ export function KardexPage() {
     };
   }, [encounter, ingreso]);
 
-  if (ingreso && !encounter) return <p role="status">Cargando el ingreso en curso.</p>;
-
   if (!encounter) {
     return (
       <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
@@ -87,30 +87,35 @@ export function KardexPage() {
     }
   }
 
-  if (loading) return <p role="status">Cargando Kardex de ingreso.</p>;
+  if (loading) return <LoadingState label="Cargando Kardex…" />;
   if (error && !kardex) return <Feedback tone="error">{error}</Feedback>;
 
   return (
     <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
+      <p className="lead">
+        Revise el resumen clínico de ingreso de {activeEncounter.patientName} antes de confirmar el Kardex.
+      </p>
       {kardex ? (
-        <>
+        <div className="kardex-summary">
           <h3>{kardex.patientName}</h3>
           <dl className="facts">
             <div><dt>Valoración</dt><dd>{kardex.assessment}</dd></div>
-            <div><dt>Alergias</dt><dd>{kardex.allergies.join(", ")}</dd></div>
+            <div><dt>Alergias</dt><dd>{kardex.allergies.join(", ") || "Ninguna registrada"}</dd></div>
             <div><dt>Medicamentos</dt><dd>{kardex.medications.join(", ")}</dd></div>
             <div><dt>Constantes</dt><dd>{kardex.vitals}</dd></div>
             <div><dt>NEWS2</dt><dd>{kardex.news2}</dd></div>
             <div><dt>Caídas</dt><dd>{kardex.fallRisk}</dd></div>
             <div><dt>Úlceras por presión</dt><dd>{kardex.pressureRisk}</dd></div>
           </dl>
-        </>
+        </div>
       ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
-        Confirmar revisión del Kardex
-      </Button>
+      <FormActions align="center">
+        <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
+          Confirmar revisión del Kardex
+        </Button>
+      </FormActions>
       <StepNav role={role} encounter={activeEncounter} viewingStep="kardex" canContinue={advanced} />
     </Sheet>
   );

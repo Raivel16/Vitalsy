@@ -142,7 +142,6 @@ describe("admisión administrativa", () => {
       "fetch",
       vi.fn()
         .mockResolvedValueOnce(jsonResponse(200, { encounter: coverage }))
-        .mockResolvedValueOnce(jsonResponse(200, { encounter: coverage }))
         .mockResolvedValueOnce(jsonResponse(201, {
           referral: { destination: "trabajo_social", status: "derivado", relativeName: "Rosa Quispe" },
         }))

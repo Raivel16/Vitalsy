@@ -150,7 +150,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
 
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/floor-receptions', [
             'encounterId' => 'ENC-0001',
             'confirmed' => true,
@@ -166,7 +166,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_nursing_vitals_calculate_news2_and_reject_impossible_values(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/nursing-assessments', [
             'chiefComplaint' => 'Disnea de dos días',
             'allergies' => ['Penicilina'],
@@ -197,7 +197,7 @@ class HospitalAdmissionApiTest extends TestCase
 
     public function test_reconciliation_risk_kardex_and_signature(): void
     {
-        $this->asRole('enfermeria');
+        $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/medication-reconciliations', [
             'allergies' => 'Penicilina',
             'medications' => [[
@@ -236,7 +236,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('kardex.patientName', 'Ana María Quispe Rojas')
             ->assertJsonMissingPath('simulated');
 
-        $this->asRole('medico');
+        $this->asRole('medico_residente');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-0001')
             ->assertOk()
             ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');
@@ -251,5 +251,66 @@ class HospitalAdmissionApiTest extends TestCase
             'credential' => 'CMP 12345',
             'confirmed' => true,
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
+    }
+
+    public function test_tratante_can_sign_medical_orders(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-TRAT-ORD',
+            'order_number' => 'OI-2026-TRAT-1',
+            'source' => 'manual',
+            'patient_name' => 'Paciente Tratante Demo',
+            'document_type' => 'DNI',
+            'document_number' => '11223344',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'Essalud',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'Regular',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => [
+                'medicalOrders' => [
+                    'status' => 'pendiente',
+                    'statusLabel' => 'Pendiente de firma',
+                    'items' => ['Reposo relativo'],
+                ],
+            ],
+        ]);
+
+        $this->asRole('medico_tratante');
+        $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD')
+            ->assertOk()
+            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');
+
+        $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD/sign', [
+            'physicianName' => 'Dra. Tratante Demo',
+            'credential' => 'CMP 55443',
+            'confirmed' => true,
+        ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
+    }
+
+    public function test_medical_orders_default_template_without_prior_payload(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-ORD-EMPTY',
+            'order_number' => 'OI-2026-ORD-EMPTY',
+            'source' => 'manual',
+            'patient_name' => 'Paciente Sin Indicaciones Previas',
+            'document_type' => 'DNI',
+            'document_number' => '55667788',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'SIS',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => [],
+        ]);
+
+        $this->asRole('medico_residente');
+        $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY')
+            ->assertOk()
+            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma')
+            ->assertJsonFragment(['Reposo relativo']);
     }
 }

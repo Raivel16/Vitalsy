@@ -153,7 +153,7 @@ export function ReferralPage() {
       setError("");
       if (encounter && (encounter.currentStep === "cobertura" || encounter.currentStep === "derivacion")) {
         const advanced = await advanceEncounter(encounter.encounterId, encounter.currentStep, "pendiente");
-        applyEncounter(advanced);
+        if (advanced?.encounterId) applyEncounter(advanced);
       }
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar la derivación."));
