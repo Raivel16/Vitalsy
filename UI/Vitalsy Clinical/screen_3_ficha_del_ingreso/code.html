@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitalsy Clinical — Ficha del ingreso</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  :root {
+    --canvas: #ECEEF1;
+    --surface: #FFFFFF;
+    --surface-sunken: #F4F6F8;
+    --text: #1B2228;
+    --text-muted: #4E5C68;
+    --border: #D1D6DC;
+    --accent: #1E6B7B;
+    --accent-hover: #165360;
+    --accent-soft: #E6EFF1;
+  }
+</style>
+</head>
+<body class="bg-[#ECEEF1] text-[#1B2228] antialiased min-h-screen flex flex-col">
+
+  <!-- TOP BAR (Sticky 68px, Surface, 1px bottom border) -->
+  <header class="sticky top-0 z-40 w-full h-[68px] bg-white border-b border-[#D1D6DC] px-6 flex items-center justify-between">
+    <!-- Left cluster: Approved Wordmark (Opción 2) + Subtitle -->
+    <div class="flex items-center gap-4">
+      <div class="flex flex-col">
+        <div class="flex items-center">
+          <svg class="h-[26px] w-auto overflow-visible" viewBox="0 0 115 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="21" fill="#1B2228" font-family="'Source Sans 3', sans-serif" font-size="22" font-weight="600" letter-spacing="-0.02em">Vitalsy</text>
+            <path d="M 1 29 L 46 29 L 50 26 L 54 32 L 58 28 L 62 29 L 105 29" stroke="#1E6B7B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="text-[12px] text-[#4E5C68] font-normal leading-tight mt-0.5">Gestión clínica hospitalaria</span>
+      </div>
+    </div>
+
+    <!-- Right cluster -->
+    <div class="flex items-center gap-4">
+      <div class="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[#F4F6F8] cursor-pointer text-[#4E5C68]">
+        <svg class="w-5 h-5 text-[#1B2228]" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+        </svg>
+        <span class="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[11px] font-bold text-white bg-[#B3261E] rounded-full tabular-nums">2</span>
+      </div>
+
+      <div class="text-right leading-tight pr-1">
+        <div class="text-[14px] font-bold text-[#1B2228]">María Quispe</div>
+        <div class="text-[12px] text-[#4E5C68]">Enfermera de piso</div>
+      </div>
+
+      <button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-[#1B2228] bg-transparent hover:bg-[#F4F6F8] border border-[#D1D6DC] rounded-[10px] transition-colors">
+        <svg class="w-4 h-4 text-[#4E5C68]" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- BODY: SIDEBAR + MAIN -->
+  <div class="flex flex-1 min-h-[calc(100vh-68px)]">
+
+    <!-- SIDEBAR (Pacientes context) -->
+    <aside class="w-[256px] flex-shrink-0 bg-white border-r border-[#D1D6DC] p-3 flex flex-col justify-between">
+      <nav class="space-y-4">
+        <div>
+          <div class="px-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#4E5C68]">Trabajo del turno</div>
+          <a href="#" class="flex items-center gap-2.5 h-11 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-semibold text-[14px] transition-colors">
+            <svg class="w-5 h-5 text-[#4E5C68]" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <span>Inicio</span>
+          </a>
+          <a href="#" class="relative flex items-center gap-2.5 h-11 px-3 rounded-[8px] bg-[#E6EFF1] text-[#1E6B7B] font-semibold text-[14px] mt-0.5">
+            <span class="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-[#1E6B7B] rounded-r"></span>
+            <svg class="w-5 h-5 text-[#1E6B7B]" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+            <span>Pacientes</span>
+          </a>
+        </div>
+
+        <div>
+          <div class="px-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#4E5C68]">Atención en piso</div>
+          <div class="space-y-0.5 text-[14px]">
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Expediente clínico</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Laboratorio</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Imágenes</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Constantes</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Controles</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">e-MAR</a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Cuidados</a>
+          </div>
+        </div>
+
+        <div>
+          <div class="px-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#4E5C68]">Alertas clínicas</div>
+          <div class="space-y-0.5 text-[14px]">
+            <a href="#" class="flex items-center justify-between h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">
+              <span>Alertas</span>
+              <span class="inline-flex items-center justify-center h-5 px-1.5 text-[11px] font-bold text-white bg-[#B3261E] rounded-full">2</span>
+            </a>
+            <a href="#" class="flex items-center gap-2.5 h-9 px-3 rounded-[8px] text-[#1B2228] hover:bg-[#F4F6F8] font-medium transition-colors">Registrar deterioro</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="pt-3 border-t border-[#D1D6DC] space-y-1 text-[13px] text-[#4E5C68]">
+        <div class="flex items-center justify-between px-3 py-1 hover:text-[#1B2228] cursor-pointer">
+          <span>Egreso</span>
+          <span class="text-[11px] uppercase tracking-wider text-[#4E5C68]">Alta</span>
+        </div>
+        <div class="flex items-center justify-between px-3 py-1 hover:text-[#1B2228] cursor-pointer">
+          <span>Limpieza</span>
+          <span class="text-[11px] uppercase tracking-wider text-[#4E5C68]">Camas</span>
+        </div>
+        <div class="flex items-center justify-between px-3 py-1 hover:text-[#1B2228] cursor-pointer">
+          <span>Turnos y cobertura</span>
+          <span class="text-[11px] uppercase tracking-wider text-[#4E5C68]">Personal</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- WORKSPACE: CASE BAR + SHEET -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <div class="max-w-[1120px] mx-auto space-y-6">
+
+        <!-- ================= CASE BAR (before the sheet) ================= -->
+        <div class="bg-white border border-[#D1D6DC] rounded-[12px] p-5 shadow-sm space-y-4">
+          <!-- Top Row: Patient Name, Status pill, and Quick navigation links -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#D1D6DC] pb-3">
+            <div class="flex items-center gap-3">
+              <span class="text-[20px] font-bold text-[#1B2228]">Ana María Quispe Rojas</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 text-[12px] font-bold bg-[#EAF2ED] text-[#237039] border border-[#237039]/20 rounded-md">
+                Hospitalizado
+              </span>
+            </div>
+
+            <!-- Quick links in Case Bar -->
+            <div class="flex items-center gap-4 text-[13px]">
+              <a href="#" class="text-[#1E6B7B] font-semibold underline decoration-2">Ver ficha</a>
+              <span class="text-[#D1D6DC]">|</span>
+              <a href="#" class="text-[#1E6B7B] font-semibold hover:underline">Expediente clínico</a>
+              <span class="text-[#D1D6DC]">|</span>
+              <a href="#" class="text-[#1E6B7B] font-semibold hover:underline">Atención en piso</a>
+            </div>
+          </div>
+
+          <!-- Admission Stepper: 15 compact steps (most done because admission is closed) -->
+          <div>
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[#4E5C68] mb-2">Flujo de admisión hospitalaria (Cerrado)</div>
+            <div class="flex items-center justify-between overflow-x-auto pb-1 gap-1 text-[11px]">
+              <!-- Step items: Orden, Filiación, Cobertura, Brazalete, Expediente, Consentimiento, Traslado, Identidad, Recepción, Valoración, Constantes, Conciliación, Escalas, Kardex, Indicaciones -->
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Orden</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Filiación</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Cobertura</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Brazalete</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Expediente</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Consentimiento</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Traslado</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Identidad</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Recepción</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Valoración</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Constantes</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Conciliación</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Escalas</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-semibold text-[#237039] bg-[#EAF2ED] px-2 py-1 rounded">✓ Kardex</span>
+              <span class="text-[#D1D6DC]">›</span>
+              <span class="flex items-center gap-1 font-bold text-white bg-[#1E6B7B] px-2 py-1 rounded">✓ Indicaciones</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= MAIN SHEET ================= -->
+        <div class="bg-white border border-[#D1D6DC] rounded-[12px] p-8 shadow-sm space-y-8">
+
+          <!-- Sheet Header & Primary CTA -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D1D6DC] pb-6">
+            <div>
+              <div class="text-[12px] font-bold uppercase tracking-[0.04em] text-[#1E6B7B]">Ficha del ingreso</div>
+              <h1 class="text-[28px] font-bold text-[#1B2228] mt-0.5">Ana María Quispe Rojas</h1>
+              <p class="text-[15px] font-medium text-[#237039] mt-0.5">Hospitalizado.</p>
+            </div>
+
+            <button class="inline-flex items-center gap-2 px-6 py-3 bg-[#1E6B7B] hover:bg-[#165360] text-white font-semibold text-[15px] rounded-[10px] shadow-sm transition-colors">
+              <span>Abrir atención en piso</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- DEFINITION LIST TWO COLUMNS -->
+          <div>
+            <h2 class="text-[16px] font-bold text-[#1B2228] mb-4">Datos administrativos y clínicos del ingreso</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 text-[14px]">
+
+              <!-- Columna 1 -->
+              <div class="space-y-4">
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Documento</span>
+                  <span class="font-bold text-[#1B2228] tabular-nums">DNI 45678901</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Orden</span>
+                  <span class="font-bold text-[#1B2228] tabular-nums">OI-2026-0103</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Origen</span>
+                  <span class="font-semibold text-[#1B2228]">Emergencia adultos</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Cobertura</span>
+                  <span class="font-semibold text-[#1B2228] flex items-center gap-1.5">
+                    <span>SIS</span>
+                    <span class="text-[#237039] font-bold">· aprobada</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Columna 2 -->
+              <div class="space-y-4">
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Ubicación</span>
+                  <span class="font-bold text-[#1B2228]">Habitación 312 · Lecho B · Medicina</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Expediente</span>
+                  <span class="font-bold text-[#1B2228] tabular-nums">HC-2026-8841</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Brazalete</span>
+                  <span class="font-bold text-[#1B2228] tabular-nums">BRZ-0001-ANA</span>
+                </div>
+                <div class="flex items-baseline justify-between border-b border-[#ECEEF1] pb-2">
+                  <span class="text-[#4E5C68] font-medium">Avance</span>
+                  <span class="inline-flex items-center px-2 py-0.5 text-[12px] font-bold bg-[#EAF2ED] text-[#237039] rounded tabular-nums">11/11 completado</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SECTION: ENTREGABLES DEL INGRESO (11 ITEMS ALL "LISTO") -->
+          <div class="border-t border-[#D1D6DC] pt-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-[16px] font-bold text-[#1B2228]">Entregables del ingreso</h2>
+                <p class="text-[13px] text-[#4E5C68]">Comprobación de paquetes y registros completados para el ingreso formal en piso.</p>
+              </div>
+              <span class="text-[12px] font-bold text-[#237039] bg-[#EAF2ED] px-2.5 py-1 rounded-full tabular-nums">
+                11 de 11 listos
+              </span>
+            </div>
+
+            <!-- 11 items grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <!-- Item 1 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Ficha digital</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 2 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Brazalete</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 3 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Expediente clínico</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 4 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Consentimiento</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 5 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Recepción en piso</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 6 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Valoración inicial</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 7 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Constantes basales</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 8 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Conciliación farmacéutica</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 9 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Escalas de riesgo</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 10 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Kardex electrónico</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+              <!-- Item 11 -->
+              <div class="p-3 bg-[#F4F6F8] rounded-[8px] border border-[#D1D6DC] flex items-center justify-between text-[13px]">
+                <span class="font-semibold text-[#1B2228]">Indicaciones médicas</span>
+                <span class="inline-flex items-center gap-1 font-bold text-[#237039]">✓ Listo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER ACTION: VOLVER AL CENSO -->
+          <div class="border-t border-[#D1D6DC] pt-4 flex items-center justify-between">
+            <a href="#" class="inline-flex items-center gap-2 text-[14px] font-semibold text-[#1E6B7B] hover:text-[#165360] transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              <span>Volver al censo</span>
+            </a>
+
+            <span class="text-[12px] text-[#4E5C68]">Registro verificado por Enfermería · Hospital Central</span>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

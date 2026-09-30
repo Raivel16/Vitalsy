@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-lowest":"#ffffff","outline":"#6f797b","tertiary":"#6d3f10","surface-tint":"#186777","surface-container-highest":"#dce3eb","on-tertiary":"#ffffff","surface":"#f6f9ff","on-primary":"#ffffff","on-primary-fixed-variant":"#004e5c","tertiary-fixed-dim":"#fcb97f","inverse-surface":"#2a3137","secondary-fixed":"#d6e4f3","tertiary-fixed":"#ffdcc2","primary-fixed-dim":"#8cd1e3","on-primary-fixed":"#001f26","on-surface":"#151c22","error":"#ba1a1a","background":"#f6f9ff","surface-variant":"#dce3eb","tertiary-container":"#895626","surface-dim":"#d4dbe3","secondary-fixed-dim":"#bac8d6","surface-container-low":"#edf4fd","primary":"#005260","on-tertiary-fixed-variant":"#693c0d","surface-container":"#e8eff7","on-error-container":"#93000a","surface-container-high":"#e2e9f1","on-background":"#151c22","surface-bright":"#f6f9ff","on-secondary-fixed":"#0f1d27","on-secondary":"#ffffff","on-error":"#ffffff","primary-container":"#1e6b7b","primary-fixed":"#aaedff","inverse-on-surface":"#ebf1fa","error-container":"#ffdad6","on-surface-variant":"#3f484b","secondary":"#52606c","on-tertiary-fixed":"#2e1500","on-primary-container":"#a4e9fc","inverse-primary":"#8cd1e3","on-tertiary-container":"#ffd6b7","on-secondary-container":"#566470","outline-variant":"#bfc8cb","secondary-container":"#d3e1f0","on-secondary-fixed-variant":"#3b4854"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-lg":"1rem",margin:"1.5rem",gutter:"1rem","space-sm":"0.5rem","space-xl":"1.5rem","space-md":"0.75rem","space-xs":"0.25rem"},fontFamily:{"body-md":["\"Source Sans 3\""],"headline-sm":["\"Source Sans 3\""],"headline-md":["\"Source Sans 3\""],"body-lg":["\"Source Sans 3\""],"headline-xl":["\"Source Sans 3\""],"metric-display":["\"Source Sans 3\""],"headline-lg":["\"Source Sans 3\""],"body-sm":["\"Source Sans 3\""],"label-lg":["\"Source Sans 3\""],"label-md":["\"Source Sans 3\""],"label-sm":["\"Source Sans 3\""]},fontSize:{"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"headline-sm":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",fontWeight:"700"}],"metric-display":["28px",{lineHeight:"32px",fontWeight:"700"}],"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"16px",fontWeight:"400"}],"label-lg":["14px",{lineHeight:"20px",letterSpacing:"0.1px",fontWeight:"600"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.2px",fontWeight:"600"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.3px",fontWeight:"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface"><header class="fixed top-0 left-0 right-0 h-[68px] bg-surface-container-lowest border-b border-outline-variant z-50 px-margin flex items-center justify-between"><div class="flex flex-col justify-center select-none"><span class="font-headline-md text-headline-md tracking-tight text-primary leading-none font-semibold">Vitalsy</span><svg class="w-24 h-2 my-0.5" fill="none" viewbox="0 0 96 8" xmlns="http://www.w3.org/2000/svg"><path d="M0 4H36L40 1L44 7L48 4H96" stroke="#1E6B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path></svg><span class="font-body-sm text-body-sm text-on-surface-variant leading-none">Gestión clínica hospitalaria</span></div><div class="flex items-center gap-space-lg"><div class="relative"><button aria-label="Notificaciones" class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span></button><span class="absolute top-2 right-2 w-4 h-4 bg-error text-on-error font-label-sm text-[10px] leading-none rounded-full flex items-center justify-center font-bold">2</span></div><div class="h-8 w-[1px] bg-outline-variant"></div><div class="flex items-center gap-space-md"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left leading-tight"><span class="font-label-lg text-label-lg text-on-surface">María Quispe</span><span class="font-body-sm text-body-sm text-on-surface-variant">Enfermera de piso</span></div></div><div class="h-8 w-[1px] bg-outline-variant"></div><button class="font-label-md text-label-md text-secondary hover:text-error transition-colors px-space-sm py-space-xs rounded" type="button">Cerrar sesión</button></div></header><aside class="fixed left-0 top-[68px] bottom-0 w-64 bg-surface-container-lowest border-r border-outline-variant z-40 overflow-y-auto py-space-md flex flex-col"><nav class="flex-1 px-space-sm space-y-space-md" data-active-classes="bg-secondary-container text-primary font-semibold"><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Trabajo del turno</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="inicio-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span>Inicio</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="pacientes-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">groups</span><span>Pacientes</span></a></div><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Atención en piso</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="expediente-clinico-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span>Expediente clínico</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="laboratorio-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">chips</span><span>Laboratorio</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="imagenes-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">radiology</span><span>Imágenes</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="constantes-vitales" href="#"><span class="material-symbols-outlined text-[20px]">vital_signs</span><span>Constantes</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="controles-clinicos" href="#"><span class="material-symbols-outlined text-[20px]">checklist</span><span>Controles</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="emar-administracion" href="#"><span class="material-symbols-outlined text-[20px]">medication</span><span>e-MAR</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="cuidados-de-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">monitor_heart</span><span>Cuidados</span></a></div><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Alertas clínicas</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="alertas-clinicas" href="#"><span class="material-symbols-outlined text-[20px]">crisis_alert</span><span>Alertas</span></a><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="registrar-deterioro" href="#"><span class="material-symbols-outlined text-[20px]">notification_important</span><span>Registrar deterioro</span></a></div><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Alta y egreso</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="egreso-paciente" href="#"><span class="material-symbols-outlined text-[20px]">output</span><span>Egreso</span></a></div><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Camas</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="limpieza-y-camas" href="#"><span class="material-symbols-outlined text-[20px]">sanitizer</span><span>Limpieza</span></a></div><div class="space-y-space-xs"><div class="px-space-md py-space-xs font-label-sm text-label-sm text-outline uppercase tracking-wider">Personal</div><a class="flex items-center gap-space-md px-space-md py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="turnos-y-cobertura" href="#"><span class="material-symbols-outlined text-[20px]">calendar_month</span><span>Turnos y cobertura</span></a></div></nav></aside><div class="pl-64"><main class="w-full min-h-[calc(100vh-68px)] pt-[68px] p-margin bg-[#ECEEF1]"><div class="flex flex-col w-full">
+<!-- Case Bar / Clinical Header Context -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-sm mb-space-lg p-space-md flex flex-col gap-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-11 h-11 rounded-full bg-secondary-container flex items-center justify-center text-primary font-headline-sm">
+          AQ
+        </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Ana María Quispe Rojas</span>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">DNI 45678901</span>
+<span class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              En valoración de ingreso
+            </span>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm mt-0.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">single_bed</span> Cama 304-B</span>
+<span>•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">domain</span> Hospitalización Medicina Interna</span>
+<span>•</span>
+<span>Ingreso: 24 May 2024 · 07:15</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md" type="button">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+          Ver ficha
+        </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md" type="button">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+          Expediente clínico
+        </button>
+</div>
+</div>
+<!-- Micro Flow Stepper (Steps 1 to 15) -->
+<div class="w-full bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between overflow-x-auto gap-2">
+<!-- Steps 1-12 Done -->
+<div class="flex items-center gap-1.5 shrink-0">
+<div class="flex items-center gap-1" title="Pasos 1 al 12 completados">
+<span class="w-5 h-5 rounded-full bg-surface-container-highest text-primary flex items-center justify-center font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[13px] text-[#237039]">check</span>
+</span>
+<span class="w-5 h-5 rounded-full bg-surface-container-highest text-primary flex items-center justify-center font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[13px] text-[#237039]">check</span>
+</span>
+<span class="w-5 h-5 rounded-full bg-surface-container-highest text-primary flex items-center justify-center font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[13px] text-[#237039]">check</span>
+</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm px-1 font-semibold">1 - 12 Completados</span>
+</div>
+</div>
+<div class="h-4 w-px bg-outline-variant shrink-0"></div>
+<!-- Step 13 Active -->
+<div class="flex items-center gap-2 shrink-0 px-3 py-1 rounded-md bg-primary-container text-on-primary">
+<span class="w-5 h-5 rounded-full bg-white/20 text-on-primary flex items-center justify-center font-label-sm text-[11px] font-bold">13</span>
+<span class="font-label-md text-label-md font-semibold">Escalas de riesgo</span>
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+</div>
+<div class="h-4 w-px bg-outline-variant shrink-0"></div>
+<!-- Step 14 -->
+<div class="flex items-center gap-2 shrink-0 opacity-60 text-on-surface-variant">
+<span class="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center font-label-sm text-[11px]">14</span>
+<span class="font-label-md text-label-md">Kardex</span>
+</div>
+<div class="h-4 w-px bg-outline-variant shrink-0"></div>
+<!-- Step 15 -->
+<div class="flex items-center gap-2 shrink-0 opacity-60 text-on-surface-variant">
+<span class="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center font-label-sm text-[11px]">15</span>
+<span class="font-label-md text-label-md">Indicaciones</span>
+</div>
+</div>
+</div>
+<!-- Centered Clinical Assessment Canvas (~960px) -->
+<div class="w-full max-w-[980px] mx-auto flex flex-col gap-space-xl">
+<!-- Header of Sheet -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded bg-secondary-container text-primary font-label-sm text-label-sm tracking-wider uppercase font-semibold">
+          Enfermería de piso · Valoración protocolar
+        </span>
+<span class="text-on-surface-variant font-body-sm text-body-sm">Criterio MINSA / Protocolo Hospitalario</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Escalas de riesgo</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+        Evaluación obligatoria de riesgo de caídas y úlceras por presión para determinación de cuidados de enfermería basales.
+      </p>
+</div>
+<!-- Form Container -->
+<form class="flex flex-col gap-space-xl" id="escalas-form" onsubmit="event.preventDefault();">
+<!-- SECTION 1: Escala Morse (Caídas) -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="px-space-lg py-space-md bg-surface-container-low flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">transfer_within_a_station</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">1. Escala Morse (Riesgo de Caídas)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Estratificación continua durante la hospitalización</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Puntaje calculado</span>
+<span class="font-metric-display text-metric-display text-primary leading-none" id="morse-score-display">35 pts</span>
+</div>
+<span class="px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#FCF6E8] text-[#8C6008]" id="morse-chip">
+              Riesgo Moderado
+            </span>
+</div>
+</div>
+<div class="p-space-lg flex flex-col gap-space-lg">
+<!-- Item 1: Antecedentes -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Antecedentes de caídas (últimos 3 meses)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">¿Ha sufrido caídas previas antes del ingreso hospitalario?</span>
+</div>
+<div class="flex items-center gap-space-md bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_caidas" onchange="updateMorse()" type="radio" value="0"/>
+<span>No (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_caidas" onchange="updateMorse()" type="radio" value="25"/>
+<span>Sí (25 pts)</span>
+</label>
+</div>
+</div>
+<!-- Item 2: Diagnóstico secundario -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Diagnóstico secundario</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Más de un diagnóstico activo en la historia clínica</span>
+</div>
+<div class="flex items-center gap-space-md bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_diag" onchange="updateMorse()" type="radio" value="0"/>
+<span>No (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_diag" onchange="updateMorse()" type="radio" value="15"/>
+<span>Sí (+15 pts)</span>
+</label>
+</div>
+</div>
+<!-- Item 3: Ayuda para deambular -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Ayuda para deambular</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Uso de soportes de marcha, muletas o apoyo físico</span>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_ayuda" onchange="updateMorse()" type="radio" value="0"/>
+<span>Ninguna / Reposo (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_ayuda" onchange="updateMorse()" type="radio" value="15"/>
+<span>Muletas / Bastón (15 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_ayuda" onchange="updateMorse()" type="radio" value="30"/>
+<span>Se apoya en muebles (30 pts)</span>
+</label>
+</div>
+</div>
+<!-- Item 4: Vía endovenosa -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Vía endovenosa / catéter heparinizado</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Presencia de perfusión o acceso venoso activo</span>
+</div>
+<div class="flex items-center gap-space-md bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_via" onchange="updateMorse()" type="radio" value="0"/>
+<span>No (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_via" onchange="updateMorse()" type="radio" value="20"/>
+<span>Sí (+20 pts)</span>
+</label>
+</div>
+</div>
+<!-- Item 5: Marcha -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Marcha / Traslado</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Calidad de paso, zancada y equilibrio al incorporarse</span>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_marcha" onchange="updateMorse()" type="radio" value="0"/>
+<span>Normal / Inmóvil (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_marcha" onchange="updateMorse()" type="radio" value="10"/>
+<span>Débil (10 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_marcha" onchange="updateMorse()" type="radio" value="20"/>
+<span>Alterada (20 pts)</span>
+</label>
+</div>
+</div>
+<!-- Item 6: Estado mental -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex flex-col max-w-md">
+<span class="font-label-lg text-label-lg text-on-surface">Estado mental</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Autopercepción de su propia capacidad física</span>
+</div>
+<div class="flex items-center gap-space-md bg-surface-container-low p-1.5 rounded-lg">
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md">
+<input checked="" class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_mental" onchange="updateMorse()" type="radio" value="0"/>
+<span>Conoce sus limitaciones (0 pts)</span>
+</label>
+<label class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md">
+<input class="w-4 h-4 text-primary accent-[#1E6B7B]" name="morse_mental" onchange="updateMorse()" type="radio" value="15"/>
+<span>Olvida limitaciones (15 pts)</span>
+</label>
+</div>
+</div>
+<!-- Preventive Action Notice -->
+<div class="mt-space-sm p-space-md rounded-xl bg-surface-container-low flex items-start gap-space-md">
+<span class="material-symbols-outlined text-[24px] text-[#8C6008] mt-0.5">notification_important</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Medida preventiva protocolizada:</span>
+<p class="font-body-md text-body-md text-on-surface-variant" id="morse-recomendacion">
+                Instalar barandales arriba permanentemente por riesgo de caídas moderado. Timbre de llamado a mano del paciente y asistencia programada en bipedestación.
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: Escala Braden (Úlceras por Presión) -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="px-space-lg py-space-md bg-surface-container-low flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">healing</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">2. Escala Braden (Riesgo de Úlceras por Presión)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Valoración cutánea basal para plan de rotación y protección</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Puntaje calculado</span>
+<span class="font-metric-display text-metric-display text-primary leading-none" id="braden-score-display">17 pts</span>
+</div>
+<span class="px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#EBF6EE] text-[#237039]" id="braden-chip">
+              Riesgo Bajo
+            </span>
+</div>
+</div>
+<div class="p-space-lg grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Braden Select 1: Percepción sensorial -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_sensorial">
+<span>Percepción sensorial</span>
+<span class="text-on-surface-variant font-body-sm">Respuesta a la presión</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_sensorial" name="braden_sensorial" onchange="updateBraden()">
+<option value="1">1 - Completamente limitada</option>
+<option value="2">2 - Muy limitada</option>
+<option value="3">3 - Ligeramente limitada</option>
+<option selected="" value="4">4 - Totalmente adecuada (4 pts)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Braden Select 2: Humedad -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_humedad">
+<span>Exposición a la humedad</span>
+<span class="text-on-surface-variant font-body-sm">Piel y contacto con fluidos</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_humedad" name="braden_humedad" onchange="updateBraden()">
+<option value="1">1 - Constantemente húmeda</option>
+<option value="2">2 - Muy húmeda</option>
+<option selected="" value="3">3 - Ocasionalmente húmeda (3 pts)</option>
+<option value="4">4 - Raramente húmeda</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Braden Select 3: Actividad -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_actividad">
+<span>Actividad física</span>
+<span class="text-on-surface-variant font-body-sm">Nivel de bipedestación</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_actividad" name="braden_actividad" onchange="updateBraden()">
+<option value="1">1 - Encamado permanente</option>
+<option value="2">2 - En silla de ruedas</option>
+<option selected="" value="3">3 - Deambula ocasionalmente (3 pts)</option>
+<option value="4">4 - Deambula frecuentemente</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Braden Select 4: Movilidad -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_movilidad">
+<span>Movilidad en cama</span>
+<span class="text-on-surface-variant font-body-sm">Capacidad de cambiar posición</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_movilidad" name="braden_movilidad" onchange="updateBraden()">
+<option value="1">1 - Totalmente inmóvil</option>
+<option selected="" value="2">2 - Muy limitada (2 pts)</option>
+<option value="3">3 - Ligeramente limitada</option>
+<option value="4">4 - Sin limitaciones</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Braden Select 5: Nutrición -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_nutricion">
+<span>Patrón nutricional</span>
+<span class="text-on-surface-variant font-body-sm">Ingesta oral o soporte enteral</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_nutricion" name="braden_nutricion" onchange="updateBraden()">
+<option value="1">1 - Muy pobre</option>
+<option value="2">2 - Probablemente inadecuada</option>
+<option selected="" value="3">3 - Adecuada (3 pts)</option>
+<option value="4">4 - Excelente</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Braden Select 6: Fricción y cizallamiento -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="braden_friccion">
+<span>Fricción y cizallamiento</span>
+<span class="text-on-surface-variant font-body-sm">Roce en sábanas y superficies</span>
+</label>
+<div class="relative">
+<select class="w-full h-10 px-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest" id="braden_friccion" name="braden_friccion" onchange="updateBraden()">
+<option value="1">1 - Problema constante</option>
+<option selected="" value="2">2 - Problema potencial (2 pts)</option>
+<option value="3">3 - No existe problema aparente</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-on-surface-variant text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Braden Summary Indicator -->
+<div class="px-space-lg pb-space-lg">
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between flex-wrap gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-[#237039]">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Interpretación Braden: Puntuación de 17</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Riesgo Bajo (15-18 pts). Protocolo preventivo: lubricación cutánea diaria y movilización postural cada 4 horas.</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Última revisión:</span>
+<span class="font-label-sm text-label-sm text-on-surface bg-surface-container px-2 py-1 rounded">Hoy 08:30 · M. Quispe</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Signature & Submission Actions -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-xs pb-space-xl">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+<span>Registrado bajo rol de Enfermería de turno · Firma digital activa</span>
+</div>
+<div class="flex items-center gap-space-md w-full sm:w-auto">
+<button class="w-full sm:w-auto px-space-lg py-2.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+            Guardar borrador de escalas
+          </button>
+<button class="w-full sm:w-auto px-space-xl py-2.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-colors font-label-lg text-label-lg shadow-sm flex items-center justify-center gap-2" onclick="confirmRegistration()" type="button">
+<span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+            Registrar escalas
+          </button>
+</div>
+</div>
+</form>
+</div>
+</div>
+<script>
+  function updateMorse() {
+    const caidas = parseInt(document.querySelector('input[name="morse_caidas"]:checked')?.value || 0);
+    const diag = parseInt(document.querySelector('input[name="morse_diag"]:checked')?.value || 0);
+    const ayuda = parseInt(document.querySelector('input[name="morse_ayuda"]:checked')?.value || 0);
+    const via = parseInt(document.querySelector('input[name="morse_via"]:checked')?.value || 0);
+    const marcha = parseInt(document.querySelector('input[name="morse_marcha"]:checked')?.value || 0);
+    const mental = parseInt(document.querySelector('input[name="morse_mental"]:checked')?.value || 0);
+
+    const total = caidas + diag + ayuda + via + marcha + mental;
+    const scoreDisplay = document.getElementById('morse-score-display');
+    const chip = document.getElementById('morse-chip');
+    const recomendacion = document.getElementById('morse-recomendacion');
+
+    if (scoreDisplay) scoreDisplay.textContent = total + ' pts';
+
+    // Style active labels dynamically
+    document.querySelectorAll('#escalas-form input[type="radio"]').forEach(radio => {
+      const parentLabel = radio.closest('label');
+      if (radio.checked) {
+        parentLabel.className = 'flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-surface-container-lowest shadow-sm text-primary font-semibold text-body-md';
+      } else {
+        parentLabel.className = 'flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-surface-container text-on-surface text-body-md';
+      }
+    });
+
+    if (chip && recomendacion) {
+      if (total >= 45) {
+        chip.textContent = 'Riesgo Alto';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#FDF0ED] text-[#B3261E]';
+        recomendacion.textContent = 'Protocolo de Alto Riesgo: Cama en posición mínima, barandales dobles instalados permanentemente, acompañamiento estricto para traslados y brazalete amarillo de advertencia.';
+      } else if (total >= 25) {
+        chip.textContent = 'Riesgo Moderado';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#FCF6E8] text-[#8C6008]';
+        recomendacion.textContent = 'Instalar barandales arriba permanentemente por riesgo de caídas moderado. Timbre de llamado a mano del paciente y asistencia programada en bipedestación.';
+      } else {
+        chip.textContent = 'Riesgo Bajo';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#EBF6EE] text-[#237039]';
+        recomendacion.textContent = 'Riesgo leve/estándar: Medidas generales de seguridad ambiental, calzado antideslizante e iluminación nocturna en habitación.';
+      }
+    }
+  }
+
+  function updateBraden() {
+    const s1 = parseInt(document.getElementById('braden_sensorial')?.value || 0);
+    const s2 = parseInt(document.getElementById('braden_humedad')?.value || 0);
+    const s3 = parseInt(document.getElementById('braden_actividad')?.value || 0);
+    const s4 = parseInt(document.getElementById('braden_movilidad')?.value || 0);
+    const s5 = parseInt(document.getElementById('braden_nutricion')?.value || 0);
+    const s6 = parseInt(document.getElementById('braden_friccion')?.value || 0);
+
+    const total = s1 + s2 + s3 + s4 + s5 + s6;
+    const scoreDisplay = document.getElementById('braden-score-display');
+    const chip = document.getElementById('braden-chip');
+
+    if (scoreDisplay) scoreDisplay.textContent = total + ' pts';
+
+    if (chip) {
+      if (total <= 12) {
+        chip.textContent = 'Riesgo Alto';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#FDF0ED] text-[#B3261E]';
+      } else if (total <= 14) {
+        chip.textContent = 'Riesgo Moderado';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#FCF6E8] text-[#8C6008]';
+      } else if (total <= 18) {
+        chip.textContent = 'Riesgo Bajo';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#EBF6EE] text-[#237039]';
+      } else {
+        chip.textContent = 'Sin Riesgo';
+        chip.className = 'px-3 py-1 rounded-md text-[13px] font-semibold tracking-wide bg-[#EBF6EE] text-[#237039]';
+      }
+    }
+  }
+
+  function confirmRegistration() {
+    const banner = document.createElement('div');
+    banner.className = 'fixed bottom-6 right-6 bg-primary-container text-on-primary px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50 animate-bounce';
+    banner.innerHTML = '<span class="material-symbols-outlined text-[20px]">check_circle</span><span class="font-body-md text-body-md font-semibold">Escalas Morse (35 pts) y Braden (17 pts) registradas correctamente</span>';
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 3500);
+  }
+
+  // Initial calculation check on mount
+  document.addEventListener('DOMContentLoaded', () => {
+    updateMorse();
+    updateBraden();
+  });
+</script></main></div></body></html>

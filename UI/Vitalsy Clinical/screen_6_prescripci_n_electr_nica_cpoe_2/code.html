@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_standard" name="shell-type"/>
+<title>Vitalsy - Prescripción Electrónica (CPOE)</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "clin-teal": "#1E6B7B",
+            "clin-teal-dark": "#15505C",
+            "clin-teal-light": "#E6EFF1",
+            "clin-teal-subtle": "#EDF5F7",
+            "clin-border": "#D1D6DC",
+            "clin-bg": "#ECEEF1",
+            "clin-text-primary": "#151C22",
+            "clin-text-secondary": "#4E5C68",
+            "clin-text-muted": "#6F797B",
+            "clin-card": "#FFFFFF",
+            "clin-hover": "#F4F6F8",
+            "clin-alert-bg": "#FDEDEC",
+            "clin-alert-border": "#F5C2C0",
+            "clin-alert-text": "#90221E",
+            "clin-blue-bg": "#EBF3F8",
+            "clin-blue-text": "#2B6CB0",
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-clin-bg text-clin-text-primary antialiased min-h-screen flex">
+<!-- 1) BARRA LATERAL (Rol: Médico tratante · Dra. Elena Vargas, 256px) -->
+<aside class="fixed left-0 top-0 h-full w-[256px] bg-clin-card z-50 flex flex-col border-r border-clin-border shadow-xs">
+<!-- Logo Header -->
+<div class="h-[68px] px-6 flex flex-col justify-center border-b border-clin-border">
+<div class="w-fit flex flex-col">
+<span class="text-[20px] font-semibold text-clin-teal leading-none tracking-tight">Vitalsy</span>
+<!-- Línea vital fina con muesca de pulso -->
+<svg class="w-[68px] h-[6px] my-[3px] text-clin-teal" fill="none" preserveaspectratio="none" viewbox="0 0 68 6">
+<path d="M0 3H26L29 0.5L32 5.5L35 1.5L38 3H68" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+</svg>
+<span class="text-xs text-clin-text-secondary leading-none">Gestión clínica hospitalaria</span>
+</div>
+</div>
+<!-- Grupos de navegación -->
+<div class="flex-1 overflow-y-auto py-5 px-3">
+<nav class="space-y-5 text-[14px]">
+<!-- TRABAJO DEL TURNO -->
+<div class="space-y-1">
+<span class="px-3 text-[11px] font-semibold text-clin-text-secondary uppercase tracking-wider block mb-1.5">Trabajo del Turno</span>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">dashboard</span>Inicio
+          </a>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">personal_injury</span>Pacientes
+          </a>
+</div>
+<!-- ATENCIÓN EN PISO -->
+<div class="space-y-1">
+<span class="px-3 text-[11px] font-semibold text-clin-text-secondary uppercase tracking-wider block mb-1.5">Atención en Piso</span>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">folder_shared</span>Expediente clínico
+          </a>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">clinical_notes</span>Visita médica
+          </a>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">science</span>Laboratorio
+          </a>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">radiology</span>Imágenes
+          </a>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">edit_note</span>Evolución médica
+          </a>
+<!-- CPOE Activo: fondo #E6EFF1, borde izquierdo 3px #1E6B7B, texto #1E6B7B font-medium -->
+<a class="flex items-center px-3 py-2 rounded-lg bg-[#E6EFF1] border-l-[3px] border-clin-teal text-clin-teal font-medium transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-teal" style="font-variation-settings: 'FILL' 1;">prescriptions</span>CPOE
+          </a>
+</div>
+<!-- ALERTAS CLÍNICAS -->
+<div class="space-y-1">
+<span class="px-3 text-[11px] font-semibold text-clin-text-secondary uppercase tracking-wider block mb-1.5">Alertas Clínicas</span>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">notifications_active</span>Alertas
+          </a>
+</div>
+<!-- ALTA Y EGRESO -->
+<div class="space-y-1">
+<span class="px-3 text-[11px] font-semibold text-clin-text-secondary uppercase tracking-wider block mb-1.5">Alta y Egreso</span>
+<a class="flex items-center px-3 py-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px] mr-2.5 text-clin-text-muted">output</span>Egreso
+          </a>
+</div>
+</nav>
+</div>
+</aside>
+<!-- Content Container (offset by sidebar width 256px) -->
+<div class="pl-[256px] min-h-screen flex flex-col flex-1">
+<!-- 2) TOP BAR -->
+<header class="fixed top-0 left-[256px] right-0 h-[68px] bg-clin-card border-b border-clin-border z-40 px-6 flex items-center justify-between shadow-xs">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-semibold uppercase tracking-wider text-clin-text-secondary">Servicio:</span>
+<span class="text-[15px] font-semibold text-clin-text-primary">Hospitalización Medicina Interna Piso 3</span>
+</div>
+<div class="flex items-center gap-4">
+<!-- Campana silenciosa -->
+<button aria-label="Notificaciones" class="p-2 rounded-lg text-clin-text-secondary hover:bg-clin-hover hover:text-clin-text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[21px]">notifications</span>
+</button>
+<div class="h-6 w-[1px] bg-clin-border"></div>
+<!-- Usuario: Dra. Elena Vargas con rol Médico tratante -->
+<div class="flex flex-col text-right">
+<span class="text-[14px] font-semibold text-clin-text-primary leading-tight">Dra. Elena Vargas</span>
+<span class="text-[12px] text-clin-text-secondary leading-tight">Médico tratante</span>
+</div>
+<div class="h-6 w-[1px] bg-clin-border"></div>
+<!-- Botón Cerrar sesión -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-clin-border bg-clin-card text-clin-text-primary hover:bg-clin-hover transition-colors text-[13px] font-medium" type="button">
+<span class="material-symbols-outlined text-[17px] text-clin-text-secondary">logout</span>Cerrar sesión
+        </button>
+</div>
+</header>
+<!-- 3) & 4) MAIN WORKSPACE -->
+<main class="flex-1 pt-[68px] w-full px-6 py-6 max-w-[1400px]">
+<!-- 3) CASE BAR: Banda superior compacta del paciente (Sin stepper) -->
+<section class="w-full bg-clin-card rounded-xl border border-clin-border px-5 py-3 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-xs">
+<div class="flex flex-wrap items-center gap-4">
+<!-- Avatar AQ -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-clin-teal-light text-clin-teal font-semibold flex items-center justify-center text-[15px]">
+              AQ
+            </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2.5">
+<span class="text-[16px] font-bold text-clin-text-primary">Ana María Quispe Rojas</span>
+<!-- Chip de estado: Hospitalizado (#EBF3F8, texto #2B6CB0) -->
+<span class="px-2 py-0.5 rounded-md bg-[#EBF3F8] text-[#2B6CB0] text-xs font-semibold uppercase tracking-wide">
+                  Hospitalizado
+                </span>
+</div>
+<span class="text-xs text-clin-text-secondary">DNI: 45678901 · 58 años · Femenino</span>
+</div>
+</div>
+<div class="h-8 w-[1px] bg-clin-border hidden md:block"></div>
+<!-- Ubicación -->
+<div class="flex items-center gap-1.5 text-clin-text-secondary text-xs">
+<span class="material-symbols-outlined text-[17px] text-clin-teal">meeting_room</span>
+<span class="font-medium text-clin-text-primary">Habitación 312 · Lecho B</span>
+<span>(Medicina Interna)</span>
+</div>
+</div>
+<!-- Botones a la derecha -->
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg border border-clin-border bg-clin-card hover:bg-clin-hover text-clin-text-primary text-[13px] font-medium transition-colors flex items-center gap-1.5 shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px] text-clin-teal">visibility</span>Ver ficha
+          </button>
+<button class="px-3 py-1.5 rounded-lg border border-clin-border bg-clin-card hover:bg-clin-hover text-clin-text-primary text-[13px] font-medium transition-colors flex items-center gap-1.5 shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px] text-clin-teal">folder_shared</span>Expediente clínico
+          </button>
+</div>
+</section>
+<!-- 4) CONTENIDO PRINCIPAL -->
+<div class="space-y-6">
+<!-- Kicker, Título, Lead -->
+<div class="flex flex-col gap-1">
+<span class="text-xs font-bold uppercase tracking-wider text-clin-teal">Atención en piso</span>
+<div class="flex flex-wrap items-baseline justify-between gap-2">
+<h1 class="text-2xl font-bold text-clin-text-primary">Prescripción electrónica (CPOE)</h1>
+<span class="text-xs text-clin-text-secondary font-medium">Protocolo asistencial vigente · Validez 24 horas</span>
+</div>
+<p class="text-[14px] text-clin-text-secondary">
+            Gestione el plan terapéutico. Edite, elimine o agregue medicamentos de forma individual.
+          </p>
+</div>
+<!-- A) ALERTA DE ALERGIAS CONFIRMADAS -->
+<div class="bg-clin-alert-bg border border-clin-alert-border text-clin-alert-text rounded-xl p-4 flex items-start gap-3 shadow-xs">
+<span class="material-symbols-outlined text-[22px] text-[#BA1A1A] flex-shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="flex-1 space-y-1 text-sm">
+<div class="flex items-center gap-2">
+<span class="font-bold uppercase tracking-wide text-xs text-[#90221E]">Alergias confirmadas:</span>
+<span class="px-2 py-0.5 rounded bg-white text-[#90221E] font-semibold text-xs border border-clin-alert-border">
+                Betalactámicos · AINEs (Ketorolaco, Ibuprofeno)
+              </span>
+</div>
+<p class="text-xs text-[#90221E] leading-relaxed">
+              El sistema CPOE bloquea automáticamente cualquier indicación de penicilinas, cefalosporinas o antiinflamatorios no esteroideos.
+            </p>
+</div>
+</div>
+<!-- Two Column Layout: Main Orders (Left 7cols) + Kardex (Right 5cols) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+<!-- Left Column (Prescripción Activa + Formulario Agregar + Nueva Prescripción contingente) -->
+<div class="xl:col-span-8 space-y-6">
+<!-- B) SECCIÓN "Prescripción activa" -->
+<div class="bg-clin-card rounded-xl border border-clin-border shadow-xs overflow-hidden">
+<div class="px-5 py-4 border-b border-clin-border bg-white flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-clin-teal text-[20px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<h2 class="text-[16px] font-bold text-clin-text-primary">Prescripción activa</h2>
+</div>
+<span class="text-xs px-2.5 py-1 rounded-full bg-clin-teal-subtle text-clin-teal font-semibold">
+                  Firmado vigente: 24 May 2024 · 08:30 hrs
+                </span>
+</div>
+<!-- Nota / hint -->
+<div class="px-5 py-2.5 bg-clin-hover border-b border-clin-border flex items-center gap-2 text-xs text-clin-text-secondary">
+<span class="material-symbols-outlined text-[16px] text-clin-teal">info</span>
+<span>Plan prescrito firmado vigente (24 May 2024 · 08:30 hrs). Enfermería administra desde e-MAR con validación en punto de atención.</span>
+</div>
+<!-- Tabla de medicamentos activos con columnas exactas:
+                   Medicamento | Dosis | Vía | Frecuencia | Código barras | Acciones -->
+<div class="overflow-x-auto">
+<table class="w-full text-left text-[13px] border-collapse">
+<thead>
+<tr class="bg-slate-50 border-b border-clin-border text-clin-text-secondary text-[11px] font-bold uppercase tracking-wider">
+<th class="py-3 px-4">Medicamento</th>
+<th class="py-3 px-3">Dosis</th>
+<th class="py-3 px-3">Vía</th>
+<th class="py-3 px-3">Frecuencia</th>
+<th class="py-3 px-3">Código barras</th>
+<th class="py-3 px-4 text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-clin-border">
+<!-- Fila 1 (modo normal) -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-3 px-4 font-semibold text-clin-text-primary">
+                        Omeprazol
+                      </td>
+<td class="py-3 px-3 text-clin-text-primary">40 mg</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-clin-hover text-clin-text-secondary text-xs">EV directa lenta</span>
+</td>
+<td class="py-3 px-3 text-clin-text-primary">c/ 24 hrs (08:00 hrs)</td>
+<td class="py-3 px-3">
+<span class="font-mono text-xs text-clin-text-secondary bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">BC-OMEP-40</span>
+</td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-clin-teal hover:border-clin-teal text-xs font-medium transition-colors" type="button">
+                            Editar
+                          </button>
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-red-600 hover:border-red-300 text-xs font-medium transition-colors" type="button">
+                            Eliminar
+                          </button>
+</div>
+</td>
+</tr>
+<!-- Fila 2 (EN MODO EDICIÓN COMO EJEMPLO ACTIVO): Resaltada con fondo #F4F6F8 y borde sutil -->
+<tr class="bg-[#F4F6F8] border-y-2 border-clin-teal/30">
+<td class="py-3 px-4">
+<input class="w-full text-xs font-semibold text-clin-text-primary bg-white border border-clin-teal rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-clin-teal shadow-xs" type="text" value="Cloruro de Sodio 0.9% 1000 cc"/>
+</td>
+<td class="py-3 px-3">
+<input class="w-20 text-xs text-clin-text-primary bg-white border border-clin-teal rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-clin-teal shadow-xs" type="text" value="1000 ml"/>
+</td>
+<td class="py-3 px-3">
+<select class="text-xs text-clin-text-primary bg-white border border-clin-teal rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-clin-teal shadow-xs">
+<option selected="">EV infusión continua</option>
+<option>EV directa lenta</option>
+<option>Vía Oral</option>
+<option>Subcutánea</option>
+</select>
+</td>
+<td class="py-3 px-3">
+<input class="w-36 text-xs text-clin-text-primary bg-white border border-clin-teal rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-clin-teal shadow-xs" type="text" value="30 gotas/min c/12h"/>
+</td>
+<td class="py-3 px-3">
+<span class="font-mono text-xs text-clin-text-muted bg-slate-200/70 px-1.5 py-0.5 rounded">BC-NACL-1000</span>
+</td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-3 py-1.5 rounded bg-clin-teal text-white text-xs font-semibold hover:bg-clin-teal-dark shadow-xs transition-colors" type="button">
+                            Guardar
+                          </button>
+<button class="px-2.5 py-1.5 rounded border border-clin-border bg-white text-clin-text-secondary text-xs font-medium hover:bg-slate-100 transition-colors" type="button">
+                            Cancelar
+                          </button>
+</div>
+</td>
+</tr>
+<!-- Fila 3 (modo normal) -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-3 px-4 font-semibold text-clin-text-primary">
+                        Enalapril
+                      </td>
+<td class="py-3 px-3 text-clin-text-primary">10 mg</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-clin-hover text-clin-text-secondary text-xs">Vía Oral</span>
+</td>
+<td class="py-3 px-3 text-clin-text-primary">c/ 12 hrs (08:00 - 20:00 hrs)</td>
+<td class="py-3 px-3">
+<span class="font-mono text-xs text-clin-text-secondary bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">BC-ENAL-10</span>
+</td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-clin-teal hover:border-clin-teal text-xs font-medium transition-colors" type="button">
+                            Editar
+                          </button>
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-red-600 hover:border-red-300 text-xs font-medium transition-colors" type="button">
+                            Eliminar
+                          </button>
+</div>
+</td>
+</tr>
+<!-- Fila 4 (modo condicional) -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-3 px-4 font-semibold text-clin-text-primary flex items-center gap-1.5">
+                        Paracetamol
+                        <span class="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold border border-amber-200">SOS</span>
+</td>
+<td class="py-3 px-3 text-clin-text-primary">1 g</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-clin-hover text-clin-text-secondary text-xs">EV infusión 100cc</span>
+</td>
+<td class="py-3 px-3 text-clin-text-primary">Condicional c/8h (EVA ≥ 4 o T° ≥ 38°C)</td>
+<td class="py-3 px-3">
+<span class="font-mono text-xs text-clin-text-secondary bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">BC-PARA-1G</span>
+</td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-clin-teal hover:border-clin-teal text-xs font-medium transition-colors" type="button">
+                            Editar
+                          </button>
+<button class="px-2.5 py-1 rounded border border-clin-border bg-white text-clin-text-secondary hover:text-red-600 hover:border-red-300 text-xs font-medium transition-colors" type="button">
+                            Eliminar
+                          </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- C) SECCIÓN "Agregar medicamento" (visible cuando el plan está activo) -->
+<div class="bg-clin-card rounded-xl border border-clin-border p-5 shadow-xs space-y-4">
+<div class="flex items-center justify-between pb-1 border-b border-slate-100">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-clin-teal text-[20px]">add_circle</span>
+<h3 class="text-[15px] font-bold text-clin-text-primary">Agregar medicamento al plan activo</h3>
+</div>
+<span class="text-xs text-clin-text-secondary">Incorporación directa con firma digital</span>
+</div>
+<!-- Formulario de incorporación individual -->
+<form class="grid grid-cols-1 md:grid-cols-12 gap-3" onsubmit="event.preventDefault();">
+<!-- Medicamento (input vademécum) -->
+<div class="md:col-span-5 flex flex-col gap-1">
+<label class="text-xs font-semibold text-clin-text-secondary" for="med-nombre">Medicamento (Búsqueda Vademécum)</label>
+<div class="relative">
+<input class="w-full text-xs text-clin-text-primary bg-white border border-clin-border rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-clin-teal focus:border-clin-teal" id="med-nombre" placeholder="ej. Furosemida, Atorvastatina..." type="text"/>
+<span class="material-symbols-outlined text-[17px] text-clin-text-muted absolute left-2.5 top-2">search</span>
+</div>
+</div>
+<!-- Dosis -->
+<div class="md:col-span-2 flex flex-col gap-1">
+<label class="text-xs font-semibold text-clin-text-secondary" for="med-dosis">Dosis</label>
+<input class="w-full text-xs text-clin-text-primary bg-white border border-clin-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-clin-teal focus:border-clin-teal" id="med-dosis" placeholder="ej. 20 mg" type="text"/>
+</div>
+<!-- Vía -->
+<div class="md:col-span-2 flex flex-col gap-1">
+<label class="text-xs font-semibold text-clin-text-secondary" for="med-via">Vía</label>
+<select class="w-full text-xs text-clin-text-primary bg-white border border-clin-border rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-clin-teal focus:border-clin-teal" id="med-via">
+<option value="EV">EV (Endovenosa)</option>
+<option value="VO">VO (Vía Oral)</option>
+<option value="SC">SC (Subcutánea)</option>
+<option value="IM">IM (Intramuscular)</option>
+<option value="Topica">Tópica</option>
+</select>
+</div>
+<!-- Frecuencia -->
+<div class="md:col-span-3 flex flex-col gap-1">
+<label class="text-xs font-semibold text-clin-text-secondary" for="med-frec">Frecuencia / Pauta</label>
+<input class="w-full text-xs text-clin-text-primary bg-white border border-clin-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-clin-teal focus:border-clin-teal" id="med-frec" placeholder="ej. c/ 12 hrs (08:00 - 20:00)" type="text"/>
+</div>
+<!-- Botón primario: Agregar al plan -->
+<div class="md:col-span-12 flex justify-end pt-1">
+<button class="px-4 py-2 bg-clin-teal hover:bg-clin-teal-dark text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors" type="button">
+<span class="material-symbols-outlined text-[17px]">add</span>
+                    Agregar al plan
+                  </button>
+</div>
+</form>
+</div>
+<!-- D) SECCIÓN "Nueva prescripción" (Contingencia / Cuando no hay plan activo) -->
+<details class="group bg-clin-card rounded-xl border border-clin-border shadow-xs overflow-hidden">
+<summary class="px-5 py-3.5 bg-slate-50 cursor-pointer list-none flex items-center justify-between hover:bg-slate-100 transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-clin-teal text-[19px]">note_add</span>
+<span class="text-sm font-bold text-clin-text-primary">Nueva prescripción (Apertura de plan desde cero)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-clin-text-secondary">Pauta de contingencia o nuevo ciclo</span>
+<span class="material-symbols-outlined text-clin-text-secondary text-[20px] group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="p-5 border-t border-clin-border space-y-4">
+<!-- Banner de estado vacío de ejemplo -->
+<div class="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs text-[#2B6CB0] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span><strong>Nota de contingencia:</strong> En caso de requerir un ciclo totalmente nuevo o cambio de cama, cree la primera prescripción abajo.</span>
+</div>
+<!-- Formulario multi-línea -->
+<div class="space-y-3">
+<div class="grid grid-cols-12 gap-2 text-xs font-semibold text-clin-text-secondary px-1">
+<span class="col-span-4">Medicamento</span>
+<span class="col-span-2">Dosis</span>
+<span class="col-span-2">Vía</span>
+<span class="col-span-3">Frecuencia</span>
+<span class="col-span-1 text-center">Quitar</span>
+</div>
+<!-- Línea 1 ejemplo -->
+<div class="grid grid-cols-12 gap-2 items-center">
+<input class="col-span-4 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="ej. Ceftriaxona..." type="text"/>
+<input class="col-span-2 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="1 g" type="text"/>
+<select class="col-span-2 text-xs bg-white border border-clin-border rounded-lg px-2 py-1.5">
+<option>EV</option><option>VO</option><option>SC</option><option>IM</option>
+</select>
+<input class="col-span-3 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="c/ 24 hrs" type="text"/>
+<button class="col-span-1 flex items-center justify-center text-clin-text-muted hover:text-red-600" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+<!-- Línea 2 ejemplo -->
+<div class="grid grid-cols-12 gap-2 items-center">
+<input class="col-span-4 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="ej. Dextrosa 5%..." type="text"/>
+<input class="col-span-2 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="1000 cc" type="text"/>
+<select class="col-span-2 text-xs bg-white border border-clin-border rounded-lg px-2 py-1.5">
+<option>EV</option><option>VO</option><option>SC</option><option>IM</option>
+</select>
+<input class="col-span-3 text-xs bg-white border border-clin-border rounded-lg px-2.5 py-1.5" placeholder="c/ 8 hrs" type="text"/>
+<button class="col-span-1 flex items-center justify-center text-clin-text-muted hover:text-red-600" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Botones de acción del formulario nuevo -->
+<div class="flex items-center justify-between pt-2 border-t border-slate-100">
+<button class="px-3 py-1.5 border border-clin-border bg-white rounded-lg text-xs font-semibold text-clin-text-primary hover:bg-slate-50 flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-clin-teal">playlist_add</span>
+                    Agregar línea
+                  </button>
+<button class="px-4 py-2 bg-clin-teal text-white rounded-lg text-xs font-semibold hover:bg-clin-teal-dark shadow-xs flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[17px]">assignment_turned_in</span>
+                    Registrar CPOE
+                  </button>
+</div>
+</div>
+</details>
+</div>
+<!-- Right Column: E) SECCIÓN "Kardex electrónico" (Vista sincronizada e-MAR) -->
+<div class="xl:col-span-4 space-y-5">
+<!-- Tarjeta Kardex electrónico -->
+<div class="bg-clin-card rounded-xl border border-clin-border shadow-xs overflow-hidden">
+<div class="px-5 py-4 border-b border-clin-border flex items-center justify-between bg-white">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-clin-teal text-[20px]">sync_saved_locally</span>
+<h3 class="text-[15px] font-bold text-clin-text-primary">Kardex electrónico</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-clin-teal-subtle text-clin-teal text-[11px] font-semibold uppercase tracking-wider">
+                  e-MAR Sincronizado
+                </span>
+</div>
+<div class="p-5 space-y-4">
+<p class="text-xs text-clin-text-secondary leading-relaxed">
+                  Refleja en tiempo real las indicaciones validadas para el personal de enfermería en el piso.
+                </p>
+<!-- Estado del responsable actual -->
+<div class="p-3 bg-clin-hover rounded-lg border border-slate-200/60 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-clin-card flex items-center justify-center text-clin-teal border border-clin-border">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-clin-text-primary">Lic. María Quispe (Enfermería)</span>
+<span class="text-[11px] text-clin-text-secondary">Turno Mañana · Estación de Enfermería Piso 3</span>
+</div>
+</div>
+<!-- Tabla / lista de solo lectura de medicamentos vigentes en Kardex -->
+<div class="space-y-3">
+<span class="text-[11px] font-bold uppercase tracking-wider text-clin-text-secondary block">
+                    Horarios y Pautas Programadas:
+                  </span>
+<!-- 08:00 hrs -->
+<div class="p-3 rounded-lg border border-clin-border bg-slate-50/50 space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-clin-text-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-clin-teal">schedule</span> 08:00 hrs
+                      </span>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200">
+                        Administrado
+                      </span>
+</div>
+<ul class="text-xs text-clin-text-secondary space-y-1 pl-4 list-disc">
+<li><strong class="text-clin-text-primary">Omeprazol</strong> 40 mg EV directa lenta</li>
+<li><strong class="text-clin-text-primary">Enalapril</strong> 10 mg VO (Control PA previo: 125/80)</li>
+</ul>
+</div>
+<!-- 14:00 hrs -->
+<div class="p-3 rounded-lg border border-clin-border bg-slate-50/50 space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-clin-text-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-clin-teal">schedule</span> 14:00 hrs
+                      </span>
+<span class="px-2 py-0.5 rounded bg-blue-50 text-[#2B6CB0] text-[10px] font-semibold border border-blue-200">
+                        En curso
+                      </span>
+</div>
+<ul class="text-xs text-clin-text-secondary space-y-1 pl-4 list-disc">
+<li><strong class="text-clin-text-primary">Cloruro de Sodio 0.9%</strong> 1000 ml EV (30 gotas/min)</li>
+<li>Recambio de infusión endovenosa continua</li>
+</ul>
+</div>
+<!-- 20:00 hrs -->
+<div class="p-3 rounded-lg border border-clin-border bg-slate-50/50 space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-clin-text-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-clin-teal">schedule</span> 20:00 hrs
+                      </span>
+<span class="px-2 py-0.5 rounded bg-slate-200 text-clin-text-secondary text-[10px] font-semibold">
+                        Pendiente
+                      </span>
+</div>
+<ul class="text-xs text-clin-text-secondary space-y-1 pl-4 list-disc">
+<li><strong class="text-clin-text-primary">Enalapril</strong> 10 mg VO (Segunda toma reglamentaria)</li>
+</ul>
+</div>
+<!-- Condicional PRN -->
+<div class="p-3 rounded-lg border border-amber-200 bg-amber-50/40 space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-amber-600">emergency</span> Condicional (PRN)
+                      </span>
+<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                        A demanda
+                      </span>
+</div>
+<ul class="text-xs text-clin-text-secondary space-y-1 pl-4 list-disc">
+<li><strong class="text-clin-text-primary">Paracetamol</strong> 1 g EV infusión 100cc (EVA ≥ 4 o T° ≥ 38°C)</li>
+</ul>
+</div>
+</div>
+<!-- Información de trazabilidad de enfermería -->
+<div class="pt-2 text-[11px] text-clin-text-muted flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">barcode_scanner</span>
+<span>Verificación por escaneo de pulsera y código de barras activa.</span>
+</div>
+</div>
+</div>
+<!-- Protocolo Farmacológico y Seguridad -->
+<div class="bg-clin-card rounded-xl border border-clin-border p-4 shadow-xs space-y-2">
+<div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-clin-text-secondary">
+<span class="material-symbols-outlined text-[17px] text-clin-teal">security</span>
+<span>Validación farmacológica cruzada</span>
+</div>
+<p class="text-xs text-clin-text-secondary leading-relaxed">
+                Todo fármaco prescrito se coteja contra el historial de interacciones medicamentosas y tasa de filtración glomerular calculada (<span class="font-semibold text-clin-text-primary">eGFR: 62 ml/min</span>).
+              </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

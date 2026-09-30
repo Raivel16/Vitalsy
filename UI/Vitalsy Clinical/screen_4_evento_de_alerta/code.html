@@ -1,0 +1,461 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"error":"#ba1a1a","tertiary-container":"#895626","primary":"#005260","primary-fixed-dim":"#8cd1e3","primary-container":"#1e6b7b","tertiary-fixed-dim":"#fcb97f","background":"#f6f9ff","on-primary-fixed-variant":"#004e5c","outline":"#6f797b","on-tertiary-fixed":"#2e1500","surface-container-highest":"#dce3eb","secondary-fixed":"#d6e4f3","on-surface-variant":"#3f484b","surface-dim":"#d4dbe3","secondary":"#52606c","on-tertiary-container":"#ffd6b7","on-tertiary":"#ffffff","inverse-primary":"#8cd1e3","on-background":"#151c22","on-tertiary-fixed-variant":"#693c0d","secondary-container":"#d3e1f0","on-secondary-fixed":"#0f1d27","error-container":"#ffdad6","inverse-on-surface":"#ebf1fa","inverse-surface":"#2a3137","surface":"#f6f9ff","on-error-container":"#93000a","on-secondary-container":"#566470","surface-container":"#e8eff7","secondary-fixed-dim":"#bac8d6","on-primary":"#ffffff","surface-container-high":"#e2e9f1","tertiary-fixed":"#ffdcc2","on-error":"#ffffff","on-primary-fixed":"#001f26","surface-variant":"#dce3eb","surface-tint":"#186777","on-primary-container":"#a4e9fc","tertiary":"#6d3f10","surface-container-low":"#edf4fd","outline-variant":"#bfc8cb","on-secondary-fixed-variant":"#3b4854","on-surface":"#151c22","on-secondary":"#ffffff","primary-fixed":"#aaedff","surface-bright":"#f6f9ff","surface-container-lowest":"#ffffff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"margin":"1.5rem","space-sm":"0.5rem","space-xl":"1.5rem","space-md":"0.75rem","space-lg":"1rem","space-xs":"0.25rem","gutter":"1rem"},"fontFamily":{"headline-lg":["\"Source Sans 3\""],"headline-md":["\"Source Sans 3\""],"headline-xl":["\"Source Sans 3\""],"body-md":["\"Source Sans 3\""],"label-md":["\"Source Sans 3\""],"label-lg":["\"Source Sans 3\""],"body-sm":["\"Source Sans 3\""],"headline-sm":["\"Source Sans 3\""],"body-lg":["\"Source Sans 3\""],"label-sm":["\"Source Sans 3\""],"metric-display":["\"Source Sans 3\""]},"fontSize":{"headline-lg":["24px",{"lineHeight":"32px","fontWeight":"600"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"headline-xl":["32px",{"lineHeight":"40px","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.2px","fontWeight":"600"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.1px","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"headline-sm":["16px",{"lineHeight":"24px","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.3px","fontWeight":"600"}],"metric-display":["28px",{"lineHeight":"32px","fontWeight":"700"}]}}}}</script></head><body class="bg-surface text-on-surface font-body-md text-body-md"><header class="fixed top-0 left-0 right-0 h-[68px] z-50 bg-surface-container-lowest border-b border-outline-variant/30 flex items-center justify-between px-margin shadow-[0_1px_4px_rgba(27,34,40,0.04)]"><div class="w-64 flex flex-col justify-center select-none"><span class="text-[22px] font-bold text-[#151c22] leading-none tracking-tight">Vitalsy</span><svg class="w-24 h-1.5 my-1" fill="none" viewBox="0 0 96 6" xmlns="http://www.w3.org/2000/svg"><path d="M0 3H36L40 0.5L44 5.5L48 1L52 4L56 3H96" stroke="#1E6B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg><span class="text-[11px] text-[#3f484b] uppercase tracking-wider font-semibold leading-none">Gestión clínica hospitalaria</span></div><div class="flex items-center justify-end gap-space-lg flex-1"><button aria-label="Notificaciones" class="relative p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-error text-on-error font-label-sm text-[10px] font-bold leading-none">2</span></button><div class="flex items-center gap-space-md pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden lg:flex flex-col text-left"><span class="font-label-lg text-label-lg text-on-surface leading-tight">María Quispe</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">Enfermera de piso</span></div></div><div class="h-7 w-[1px] bg-outline-variant/40"></div><a class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-colors font-label-md text-label-md" data-path="login" href="#"><span class="material-symbols-outlined text-[18px]">logout</span><span class="hidden sm:inline">Cerrar sesión</span></a></div></header><aside class="fixed left-0 top-[68px] bottom-0 w-[256px] bg-[#FFFFFF] border-r border-[#D1D6DC] z-40 flex flex-col py-4 overflow-y-auto text-[14px]"><nav class="flex-1 flex flex-col gap-4"><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">TRABAJO DEL TURNO</span><div class="flex flex-col mt-1"><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span class="">Inicio</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="">Pacientes</span></a></div></div><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">ATENCIÓN EN PISO</span><div class="flex flex-col mt-1"><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="">Expediente clínico</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">biotechnology</span><span class="">Laboratorio</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">radiology</span><span class="">Imágenes</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">vital_signs</span><span class="">Constantes</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span class="">Controles</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">medication</span><span class="">e-MAR</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">healing</span><span class="">Cuidados</span></a></div></div><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">ALERTAS CLÍNICAS</span><div class="flex flex-col mt-1"><a class="flex items-center justify-between px-4 py-2 bg-[#E6EFF1] text-[#1E6B7B] font-semibold border-l-[3px] border-[#1E6B7B] transition-colors" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px]">warning</span><span class="">Alertas</span></div><span class="flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#ba1a1a] text-white text-[10px] font-bold leading-none">2</span></a><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">add_alert</span><span class="">Registrar deterioro</span></a></div></div><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">ALTA Y EGRESO</span><div class="flex flex-col mt-1"><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">output</span><span class="">Egreso</span></a></div></div><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">CAMAS</span><div class="flex flex-col mt-1"><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">cleaning_services</span><span class="">Limpieza</span></a></div></div><div class="flex flex-col"><span class="px-4 py-1 text-[11px] font-bold text-[#3f484b] uppercase tracking-wider">PERSONAL</span><div class="flex flex-col mt-1"><a class="flex items-center gap-3 px-4 py-2 text-[#3f484b] hover:bg-[#e8eff7] hover:text-[#151c22] transition-colors rounded-none" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Turnos y cobertura</span></a></div></div></nav></aside><div class="pl-64"><main class="relative pt-[68px] min-h-screen bg-surface w-full p-margin"><div class="flex flex-col w-full">
+<!-- Case Context Bar -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<div class="flex flex-wrap items-center gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline-sm text-headline-sm">
+          AQ
+        </span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Ana María Quispe Rojas</span>
+<span class="font-label-md text-label-md text-on-surface-variant">DNI 45678901 · 58 años</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Ubicación: Habitación 312 · Lecho B (Medicina Interna)</span>
+</div>
+</div>
+<div class="h-8 w-[1px] bg-surface-container-highest hidden sm:block"></div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="bg-error-container text-on-error-container font-label-md text-label-md font-bold px-3 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+          NEWS2: 8
+        </span>
+<span class="bg-error-container/30 text-error font-label-md text-label-md px-2.5 py-1 rounded-md font-semibold">
+          Alerta crítica activa
+        </span>
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1 bg-surface-container-high px-2.5 py-1 rounded-md">
+<span class="material-symbols-outlined text-[16px] text-tertiary">timer</span>
+          Reevaluación mandatoria antes de 13:45 hrs
+        </span>
+</div>
+</div>
+<div class="flex items-center gap-space-md shrink-0 self-end xl:self-auto">
+<a class="font-label-md text-label-md text-primary hover:text-primary-container flex items-center gap-1 transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">folder_shared</span>
+        Ver en el expediente clínico
+      </a>
+<a class="font-label-md text-label-md text-secondary hover:text-on-surface flex items-center gap-1 transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        Volver a bandeja de alertas
+      </a>
+</div>
+</div>
+<!-- Page Header -->
+<div class="mb-space-lg flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
+        ALERTAS CLÍNICAS · EVENTO DE DETERIORO AGUDO #EV-2024-0524
+      </span>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mt-0.5">
+        Evento de alerta
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+        Gestión multidisciplinaria y resolución protocolizada del evento de deterioro clínico agudo.
+      </p>
+</div>
+<!-- Role State Switcher Bar -->
+<div class="inline-flex p-1 bg-surface-container-high rounded-xl self-start md:self-auto shadow-inner" id="role-switcher">
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md shadow-sm flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px]">assignment_ind</span>
+        Vista Rol Enfermera (Activo)
+      </button>
+<button class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px]">stethoscope</span>
+        Vista Rol Médico Residente
+      </button>
+<button class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px]">e911_emergency</span>
+        Vista Equipo de Respuesta Rápida (ERR)
+      </button>
+</div>
+</div>
+<!-- Prioritary Alert Banner -->
+<div class="bg-tertiary-fixed text-on-tertiary-fixed p-space-md md:p-space-lg rounded-xl mb-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-md shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">notifications_paused</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-tertiary-fixed leading-snug">
+          Sirena en estación silenciada temporalmente.
+        </p>
+<p class="font-body-sm text-body-sm text-on-tertiary-fixed-variant">
+          Debe confirmar la toma de constantes de reevaluación clínica en menos de 15 minutos.
+        </p>
+</div>
+</div>
+<button class="bg-primary text-on-primary hover:bg-primary-container px-space-lg py-2 rounded-lg font-label-lg text-label-lg transition-colors shrink-0 shadow-sm">
+      Confirmar recepción formal
+    </button>
+</div>
+<!-- Main Grid Content -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg">
+<!-- Left Column: Nursing Workflow (Cols 8) -->
+<div class="xl:col-span-8 flex flex-col gap-space-lg">
+<!-- Workflow Mode Selector -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+<div class="flex items-center gap-space-md pb-space-md bg-surface-container-low p-1.5 rounded-xl mb-space-lg">
+<button class="flex-1 py-2 px-space-md rounded-lg bg-surface-container-lowest text-primary font-headline-sm text-headline-sm shadow-sm flex items-center justify-center gap-2 transition-all" id="tab-btn-vitals">
+<span class="material-symbols-outlined text-[18px]">vital_signs</span>
+            Pestaña: Nueva toma / Recalcular NEWS2
+          </button>
+<button class="flex-1 py-2 px-space-md rounded-lg text-on-surface-variant hover:text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-2 transition-all" id="tab-btn-clinical">
+<span class="material-symbols-outlined text-[18px]">report_problem</span>
+            Pestaña: Deterioro / Preocupación clínica
+          </button>
+</div>
+<!-- Tab 1: Vitals Form Grid -->
+<div class="flex flex-col gap-space-lg" id="tab-content-vitals">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-on-surface">Registro de Reevaluación de Constantes</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hora actual del protocolo: 13:31 hrs</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Respiratory Rate -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">FR (Frecuencia respiratoria)</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-error-container text-on-error-container font-bold">NEWS2: +3</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<input class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none focus:bg-surface-container-high transition-colors" type="number" value="24">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-space-sm py-2.5 rounded-lg select-none">rpm</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Rango normal: 12 - 20 rpm</span>
+</div>
+<!-- Oxygen Saturation -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">SpO2 (Saturación de oxígeno)</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-error-container text-on-error-container font-bold">NEWS2: +3</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<input class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none focus:bg-surface-container-high transition-colors" type="number" value="90">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-space-sm py-2.5 rounded-lg select-none">% Escala 1</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Objetivo de escala estándar ≥ 96%</span>
+</div>
+<!-- Supplemental Oxygen -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">Oxígeno suplementario</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-tertiary-fixed text-on-tertiary-fixed font-bold">NEWS2: +2</span>
+</div>
+<div class="mt-1">
+<select class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none cursor-pointer">
+<option selected="">Máscara Venturi al 35%</option>
+<option>Aire ambiental (Sin soporte)</option>
+<option>Cánula binasal (2 - 4 L/min)</option>
+<option>Máscara de reservorio (10 - 15 L/min)</option>
+</select>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Fracción inspirada FIO2 ~ 0.35</span>
+</div>
+<!-- Blood Pressure -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">PA sistólica / diastólica</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-bold">NEWS2: 0</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<input class="w-1/2 bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none" type="number" value="142">
+<span class="text-on-surface-variant">/</span>
+<input class="w-1/2 bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none" type="number" value="88">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-space-sm py-2.5 rounded-lg select-none">mmHg</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Presión arterial media: 106 mmHg</span>
+</div>
+<!-- Heart Rate / Pulse -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">Pulso / FC</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container font-bold">NEWS2: +1</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<input class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none" type="number" value="108">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-space-sm py-2.5 rounded-lg select-none">lpm</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Taquicardia moderada sinusal</span>
+</div>
+<!-- Temperature -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">Temperatura axilar</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-bold">NEWS2: 0</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<input class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none" type="text" value="37.4">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-space-sm py-2.5 rounded-lg select-none">°C</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Subfebril en rango estable</span>
+</div>
+<!-- Consciousness -->
+<div class="md:col-span-2 bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface">Nivel de conciencia (Escala AVPU)</label>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-bold">NEWS2: 0</span>
+</div>
+<div class="mt-1">
+<select class="w-full bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm px-space-md py-2 rounded-lg outline-none cursor-pointer">
+<option selected="">Alerta (AVPU: A)</option>
+<option>Responde a la Voz (AVPU: V) [+3]</option>
+<option>Responde al Dolor (AVPU: P) [+3]</option>
+<option>No responde / Inconsciente (AVPU: U) [+3]</option>
+<option>Confusión nueva (AVPU: C) [+3]</option>
+</select>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Paciente orientado en tiempo, espacio y persona.</span>
+</div>
+</div>
+<!-- Calculated Score Highlight -->
+<div class="bg-error-container text-on-error-container p-space-lg rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-space-md shadow-sm">
+<div class="flex items-center gap-space-md">
+<span class="w-12 h-12 rounded-xl bg-error text-on-error flex items-center justify-center font-metric-display text-metric-display shrink-0">
+                9
+              </span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold text-on-error-container">Nuevo puntaje calculado: NEWS2 = 9</span>
+<span class="font-body-sm text-body-sm text-on-error-container">Riesgo Fisiológico Alto - Respuesta Médica Crítica Inmediata</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary hover:bg-primary-container px-space-lg py-2.5 rounded-lg font-headline-sm text-headline-sm transition-colors shadow-sm self-start md:self-auto">
+              Recalcular NEWS2 y actualizar evento
+            </button>
+</div>
+<!-- Collapsed/Disabled Control Interval Subsection -->
+<div class="bg-surface-container-high/60 rounded-xl p-space-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md opacity-85">
+<div class="flex items-center gap-space-md">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant">lock_clock</span>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Programar control (solo si NEWS2 = 0)</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Deshabilitado mientras NEWS2 ≥ 1. Si el puntaje disminuye a 0, se habilitará la programación de intervalo de control a 12 horas.
+                </p>
+</div>
+</div>
+<a class="font-label-md text-label-md text-primary font-semibold hover:underline shrink-0" href="#">
+              Ver en Controles de constantes →
+            </a>
+</div>
+</div>
+<!-- Tab 2: Clinical Concern / Escalation Form (Initially hidden / switchable) -->
+<div class="hidden flex-col gap-space-lg" id="tab-content-clinical">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-on-surface">Escalamiento por Juicio Clínico de Enfermería</h2>
+<span class="font-label-sm text-label-sm text-error font-bold">Criterio autónomo de activación</span>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface">Motivo de escalamiento y juicio clínico de enfermería</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md p-space-md rounded-lg outline-none resize-none" rows="4">Paciente presenta disnea súbita con tiraje intercostal y caída de saturación refractaria a incremento de O2. Se solicita evaluación médica urgente presencial.</textarea>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Este reporte quedará asentado de forma indeleble en la hoja de evolución de enfermería.</span>
+</div>
+<div class="flex items-center justify-end">
+<button class="bg-error text-on-error hover:opacity-90 px-space-lg py-2.5 rounded-lg font-headline-sm text-headline-sm transition-opacity shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">e911_emergency</span>
+              Solicitar atención médica urgente
+            </button>
+</div>
+</div>
+</div>
+<!-- Immutable Timeline Audit Log -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+<div class="flex items-center justify-between mb-space-lg pb-space-sm bg-surface-container-low p-space-md rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">history_edu</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Registro cronológico inmutable del evento (Auditoría clínica)</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hash criptográfico SHA-256 verificado</span>
+</div>
+<div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-highest">
+<!-- Event 1 -->
+<div class="relative flex items-start gap-space-md">
+<span class="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-error border-2 border-surface-container-lowest"></span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-bold">13:26 hrs</span>
+<span class="font-body-md text-body-md text-on-surface">Disparo automático de alerta NEWS2 = 8 por registro de constantes</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Registrado automáticamente por Sistema Vitalsy</span>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="relative flex items-start gap-space-md">
+<span class="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-tertiary border-2 border-surface-container-lowest"></span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-bold">13:28 hrs</span>
+<span class="font-body-md text-body-md text-on-surface">Recepción confirmada y alarma de estación silenciada</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Operado por Lic. María Quispe (Enfermera de piso)</span>
+</div>
+</div>
+<!-- Event 3 -->
+<div class="relative flex items-start gap-space-md">
+<span class="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-primary border-2 border-surface-container-lowest"></span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-bold">13:30 hrs</span>
+<span class="font-body-md text-body-md text-on-surface">Notificación enviada a busca médico residente y buscapersonas ERR</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Despachado por Módulo de Alertas Automatizado</span>
+</div>
+</div>
+<!-- Event 4 -->
+<div class="relative flex items-start gap-space-md">
+<span class="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-error border-2 border-surface-container-lowest"></span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-bold">13:32 hrs</span>
+<span class="font-body-md text-body-md text-on-surface">Reevaluación de signos vitales registrada (NEWS2: 9)</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Ingresado por Lic. María Quispe</span>
+</div>
+</div>
+<!-- Event 5 -->
+<div class="relative flex items-start gap-space-md">
+<span class="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-secondary border-2 border-surface-container-lowest"></span>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-bold">13:35 hrs</span>
+<span class="font-body-md text-body-md text-on-surface">Presencia de médico residente Dr. Carlos Ruiz en habitación 312</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Validado por sensor de proximidad RFID / Lector de Credencial</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Doctor & ERR Integrated State Previews (Cols 4) -->
+<div class="xl:col-span-4 flex flex-col gap-space-lg">
+<!-- Clinical Support Protocols Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-sm">Protocolo NEWS2 Nivel Crítico (≥ 7)</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+          Acciones mandatorias que deben ejecutarse simultáneamente en piso de hospitalización:
+        </p>
+<div class="space-y-space-sm">
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Reevaluación continua con monitor multiparámetro de transporte.</span>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Oxigenoterapia para mantener SpO2 ≥ 94% (o 88-92% en hipercapnia).</span>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Disponibilidad inmediata del carro de reanimación en pasillo.</span>
+</div>
+</div>
+</div>
+<!-- Box: Módulo Médico Tratante / Residente -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-secondary-container/40 p-space-sm rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">medical_services</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Módulo Médico Tratante / Residente</h3>
+</div>
+<span class="bg-surface-container-lowest font-label-sm text-label-sm text-primary px-2 py-0.5 rounded font-semibold">13:32 hrs</span>
+</div>
+<div class="flex items-start gap-space-sm mb-space-md">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold shrink-0">
+            CR
+          </div>
+<div>
+<span class="font-label-lg text-label-lg text-on-surface">Dr. Carlos Ruiz (R3 Medicina Interna)</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">CMP 67210 · RNE 33412</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-space-md rounded-xl space-y-space-xs">
+<span class="font-label-md text-label-md text-on-surface font-semibold block">Indicaciones inmediatas prescritas:</span>
+<p class="font-body-md text-body-md text-on-surface">
+            Nebulización con Salbutamol + Bromuro de Ipratropio cada 20 min x 3 dosis.
+          </p>
+<p class="font-body-md text-body-md text-on-surface">
+            Gasometría arterial (AGA) y EKG de 12 derivaciones urgente.
+          </p>
+<div class="mt-space-sm pt-space-xs flex items-center gap-1.5 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">task_alt</span>
+<span class="">Órdenes transmitidas a e-MAR y Laboratorio central</span>
+</div>
+</div>
+</div>
+<!-- Box: Módulo Equipo de Respuesta Rápida (ERR) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-error-container/30 p-space-sm rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[20px]">e911_emergency</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Módulo Equipo de Respuesta Rápida (ERR)</h3>
+</div>
+<span class="bg-error text-on-error font-label-sm text-label-sm px-2 py-0.5 rounded font-bold">Activo</span>
+</div>
+<div class="space-y-space-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Protocolo ERR activado</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Evaluación presencial realizada por Lic. Soto (ERR UCI). Parámetros ventilatorios comprometidos.
+          </p>
+<div class="space-y-space-xs bg-surface-container-low p-space-md rounded-xl">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Criterio de cama UCI:</span>
+<span class="font-semibold text-tertiary">Pendiente de resultado gasometría</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Cama de aislamiento:</span>
+<span class="font-semibold text-primary">Cama 402 Reservada preventivamente</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Ventilador invasivo disponible:</span>
+<span class="font-semibold text-on-surface">Estación UCI Móvil #03</span>
+</div>
+</div>
+<button class="w-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg text-label-lg py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">clinical_notes</span>
+            Abrir ficha de interconsulta ERR completa
+          </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const tabVitals = document.getElementById('tab-btn-vitals');
+    const tabClinical = document.getElementById('tab-btn-clinical');
+    const contentVitals = document.getElementById('tab-content-vitals');
+    const contentClinical = document.getElementById('tab-content-clinical');
+
+    if (tabVitals && tabClinical && contentVitals && contentClinical) {
+      tabVitals.addEventListener('click', function() {
+        tabVitals.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        tabVitals.classList.remove('text-on-surface-variant');
+
+        tabClinical.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        tabClinical.classList.add('text-on-surface-variant');
+
+        contentVitals.classList.remove('hidden');
+        contentVitals.classList.add('flex');
+        contentClinical.classList.add('hidden');
+        contentClinical.classList.remove('flex');
+      });
+
+      tabClinical.addEventListener('click', function() {
+        tabClinical.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        tabClinical.classList.remove('text-on-surface-variant');
+
+        tabVitals.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        tabVitals.classList.add('text-on-surface-variant');
+
+        contentClinical.classList.remove('hidden');
+        contentClinical.classList.add('flex');
+        contentVitals.classList.add('hidden');
+        contentVitals.classList.remove('flex');
+      });
+    }
+  })();
+</script></main></div>
+
+</body></html>
