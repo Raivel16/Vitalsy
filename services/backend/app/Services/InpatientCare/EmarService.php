@@ -93,7 +93,7 @@ class EmarService
         $dose->barcode_ok = true;
         $dose->save();
 
-        app(\App\Services\InpatientCare\MonitoringControlsBoard::class)
+        app(MonitoringControlsBoard::class)
             ->closeComplianceAlert('emar:'.$dose->id, 'Dosis administrada en e-MAR.', $nurse);
 
         return ['dose' => $this->present($dose->fresh('prescriptionItem'), $encounter)];
