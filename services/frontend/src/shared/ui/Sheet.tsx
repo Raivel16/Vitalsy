@@ -13,8 +13,12 @@ export function Sheet({
 }) {
   return (
     <article className={wide ? "sheet sheet-wide" : "sheet"}>
-      <p className="kicker">{kicker}</p>
-      <h2>{title}</h2>
+      <header className="page-head">
+        <div>
+          <p className="kicker">{kicker}</p>
+          <h2>{title}</h2>
+        </div>
+      </header>
       {children}
     </article>
   );

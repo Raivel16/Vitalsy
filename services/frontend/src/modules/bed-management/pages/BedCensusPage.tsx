@@ -3,6 +3,7 @@ import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
+import { BedTile, MetricRow } from "../../../shared/ui/clinical";
 import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
@@ -104,20 +105,23 @@ export function BedCensusPage() {
       <p className="lead">Disponibilidad de lechos por servicio, lista de espera y asignación.</p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      {wards.map((ward) => (
-        <section key={ward.code} className="stack">
-          <h3>{ward.name}</h3>
-          <p className="hint">Disponibles {ward.available} · Ocupadas {ward.occupied} · Limpieza {ward.cleaning}</p>
-          <ul>
-            {ward.beds.map((bed) => (
-              <li key={bed.id}>
-                Habitación {bed.room} {bed.bedCode} · {bed.status}
-                {bed.isolation ? " · aislamiento" : ""}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <div className="bed-board">
+        {wards.map((ward) => (
+          <section key={ward.code} className="bed-ward">
+            <h3>{ward.name}</h3>
+            <MetricRow items={[
+              { label: "Disponibles", value: ward.available },
+              { label: "Ocupadas", value: ward.occupied },
+              { label: "Limpieza", value: ward.cleaning },
+            ]} />
+            <div className="bed-grid">
+              {ward.beds.map((bed) => (
+                <BedTile key={bed.id} room={bed.room} code={bed.bedCode} status={bed.status} isolation={bed.isolation} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
       {role === "gestion_camas" ? (
         <form className="stack" onSubmit={(event) => void createRequest(event)}>
           <h3>Nueva solicitud</h3>

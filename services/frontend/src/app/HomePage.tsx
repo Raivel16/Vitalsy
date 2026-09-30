@@ -36,29 +36,42 @@ export function HomePage() {
   const role = user?.role ?? "admision";
   const { kicker, title } = area(role);
 
+  const tasks = [
+    canOpenPatientWorklist(role) ? { to: "/pacientes", label: "Ver pacientes en curso", hint: "Cola del turno" } : null,
+    role === "admision" ? { to: "/pacientes/nuevo", label: "Registrar un ingreso manual", hint: "Ingreso sin orden previa" } : null,
+    isDischargeRole(role) ? { to: "/egreso", label: "Abrir altas y egresos", hint: "Pacientes en proceso de alta" } : null,
+    isBedRole(role) ? {
+      to: role === "servicios_generales" || role === "auxiliar_enfermeria" ? "/camas/limpieza" : "/camas",
+      label: "Abrir gestión de camas",
+      hint: "Censo y habilitación",
+    } : null,
+    isStaffRole(role) ? { to: "/personal", label: "Abrir turnos y cobertura", hint: "Rol y asignación del día" } : null,
+  ].filter((item): item is { to: string; label: string; hint: string } => item !== null);
+
   return (
     <section className="home">
-      <p className="kicker">{kicker}</p>
-      <h2>{title}</h2>
+      <header className="page-head">
+        <div>
+          <p className="kicker">{kicker}</p>
+          <h2>{title}</h2>
+        </div>
+      </header>
       <p className="lead">{GUIDE[role]} Su perfil es {ROLE_LABEL[role]}.</p>
-      {canOpenPatientWorklist(role) ? (
-        <p><ButtonLink to="/pacientes">Ver pacientes en curso</ButtonLink></p>
-      ) : null}
-      {isDischargeRole(role) ? (
-        <p><ButtonLink to="/egreso">Abrir altas y egresos</ButtonLink></p>
-      ) : null}
-      {isBedRole(role) ? (
-        <p><ButtonLink to={role === "servicios_generales" || role === "auxiliar_enfermeria" ? "/camas/limpieza" : "/camas"}>Abrir gestión de camas</ButtonLink></p>
-      ) : null}
-      {isStaffRole(role) ? (
-        <p><ButtonLink to="/personal">Abrir turnos y cobertura</ButtonLink></p>
-      ) : null}
-      {!canOpenPatientWorklist(role) && !isDischargeRole(role) && !isBedRole(role) && !isStaffRole(role) ? (
+      {tasks.length > 0 ? (
+        <section>
+          <h3>Cola de trabajo</h3>
+          <ul className="work-queue">
+            {tasks.map((task) => (
+              <li className="work-card" key={task.to}>
+                <p>{task.hint}</p>
+                {task.to === "/pacientes/nuevo" ? <Link to={task.to}>{task.label}</Link> : <ButtonLink to={task.to}>{task.label}</ButtonLink>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
         <p className="hint">Su espacio de trabajo estará disponible cuando se publique su módulo.</p>
-      ) : null}
-      {role === "admision" ? (
-        <p><Link to="/pacientes/nuevo">Registrar un ingreso manual</Link></p>
-      ) : null}
+      )}
       {isClinicalRole(role) ? (
         <p className="hint">Primero abra un paciente hospitalizado; el menú lateral conservará ese ingreso al cambiar de pantalla.</p>
       ) : null}
