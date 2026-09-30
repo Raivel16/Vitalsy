@@ -100,3 +100,10 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Búsqueda solo con botón Buscar o Enter (el escáner sigue buscando al instante).
 - Escalas Morse: radios simples (sin pastillas).
 - RF-16: `advance` de `indicaciones` acepta `medico_tratante` además de residente.
+
+## 2026-09-29 — Pizarra clínica (RNF-16)
+
+- Tokens en `clinical.css`: canvas `#ECEEF1`, texto `#1B2228`, acento `#1E6B7B`. Tipografía Source Sans 3.
+- Wordmark: «Vitalsy» con la línea vital debajo. Top bar 68px, sidebar 256px, ítem activo con fondo `#E6EFF1` y barra de 3px.
+- NEWS2 usa `--news-low|mid|high`, aparte de los banners de éxito, aviso y error.
+- No cambia rutas, roles, textos ni APIs.
