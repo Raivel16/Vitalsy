@@ -25,7 +25,7 @@ const encounter = {
   progress: [{ id: "orden", label: "Orden", status: "done" }],
 };
 
-describe("monitoreo de constantes (RF-22–27)", () => {
+describe("monitoreo de constantes (RF-26–27)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });

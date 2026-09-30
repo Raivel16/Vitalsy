@@ -22,7 +22,7 @@ function stubStaff() {
   );
 }
 
-describe("personal asistencial (RF-72 a RF-82)", () => {
+describe("personal asistencial (RF-78 a RF-88)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();

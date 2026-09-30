@@ -35,7 +35,7 @@ function stubBeds() {
   );
 }
 
-describe("gestión de camas (RF-62 a RF-71)", () => {
+describe("gestión de camas (RF-68 a RF-77)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();

@@ -31,7 +31,7 @@ const encounter = {
   progress: [],
 };
 
-describe("e-MAR (RF-28–31)", () => {
+describe("e-MAR (RF-32–35)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "enfermera_piso");
   });

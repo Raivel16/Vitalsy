@@ -58,7 +58,7 @@ function stubDischarge(onCall?: (url: string, init?: RequestInit) => unknown) {
   return calls;
 }
 
-describe("alta y egreso (RF-48 a RF-61)", () => {
+describe("alta y egreso (RF-54 a RF-67)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();

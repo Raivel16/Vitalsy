@@ -25,7 +25,7 @@ const encounter = {
   progress: [],
 };
 
-describe("prescripción CPOE (RF-21)", () => {
+describe("prescripción CPOE (RF-25)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_tratante");
   });
