@@ -85,26 +85,28 @@ export function FiliationPage() {
     <Sheet kicker="Admisión" title="Datos filiatorios">
       <p className="lead">Contraste los datos de {activeEncounter.patientName} antes de continuar.</p>
       <form className="stack" onSubmit={onSubmit} noValidate>
-        <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" required />
-        <TextField
-          id="document-number"
-          label="Número de documento"
-          inputMode="numeric"
-          value={documentNumber}
-          onChange={(event) => setDocumentNumber(digitsOnly(event.target.value, 12))}
-          error={errors.documentNumber}
-          hint="Solo números (DNI u otro documento numérico)."
-          required
-        />
-        <TextField
-          id="birth-date"
-          label="Fecha de nacimiento"
-          type="date"
-          value={birthDate}
-          onChange={(event) => setBirthDate(event.target.value)}
-          error={errors.birthDate}
-          required
-        />
+        <div className="form-grid">
+          <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" required />
+          <TextField
+            id="document-number"
+            label="Número de documento"
+            inputMode="numeric"
+            value={documentNumber}
+            onChange={(event) => setDocumentNumber(digitsOnly(event.target.value, 12))}
+            error={errors.documentNumber}
+            hint="Solo números (DNI u otro documento numérico)."
+            required
+          />
+          <TextField
+            id="birth-date"
+            label="Fecha de nacimiento"
+            type="date"
+            value={birthDate}
+            onChange={(event) => setBirthDate(event.target.value)}
+            error={errors.birthDate}
+            required
+          />
+        </div>
         <CheckField id="filiation-confirmed" label="Los datos coinciden con la orden de internamiento" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {success ? <Feedback tone="success">{success}</Feedback> : null}

@@ -72,18 +72,18 @@ export function CleaningOrdersPage() {
   if (loading) return <LoadingState label="Cargando órdenes de limpieza…" />;
 
   return (
-    <Sheet kicker="Gestión de camas" title="Habilitación de unidades" wide>
+    <Sheet kicker="Gestión de camas" title="Habilitación de unidades y protocolo de higiene" wide>
       <p className="lead">Desinfección terminal, equipamiento y confirmación de disponibilidad.</p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {orders.length === 0 ? (
         <Feedback tone="info">No hay órdenes de limpieza pendientes.</Feedback>
       ) : (
-        <ul className="alert-list">
+        <ul className="pipeline">
           {orders.map((order) => (
-            <li key={order.id} className="alert-card">
+            <li key={order.id} className="pipeline-card">
               <h3>Habitación {order.room} {order.bedCode}</h3>
-              <p>Protocolo {order.protocol === "deep" ? "profundo" : "estándar"} · {order.status}</p>
+              <p className="pipeline-meta">Protocolo {order.protocol === "deep" ? "profundo" : "estándar"} · {order.status}</p>
               {role === "servicios_generales" && order.status === "pendiente" ? (
                 <Button type="button" onClick={() => void complete(order)}>Limpieza completada</Button>
               ) : null}

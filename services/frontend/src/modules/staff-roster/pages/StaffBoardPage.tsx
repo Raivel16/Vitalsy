@@ -3,6 +3,7 @@ import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
+import { Panel } from "../../../shared/ui/clinical";
 import { TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 
@@ -132,51 +133,59 @@ export function StaffBoardPage() {
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
 
       {role === "jefatura_enfermeria" ? (
-        <form className="stack" onSubmit={(event) => void publish(event)}>
-          <TextField id="plan-user" label="Identificador de la enfermera" value={plan} onChange={(event) => setPlan(event.target.value)} />
-          <Button type="submit">Publicar rol mensual</Button>
-        </form>
+        <Panel title="Rol mensual de turnos">
+          <form className="stack" onSubmit={(event) => void publish(event)}>
+            <TextField id="plan-user" label="Identificador de la enfermera" value={plan} onChange={(event) => setPlan(event.target.value)} />
+            <Button type="submit">Publicar rol mensual</Button>
+          </form>
+        </Panel>
       ) : null}
 
       {role === "enfermera_supervisora" ? (
         <>
-          <form className="stack" onSubmit={(event) => void suggest(event)}>
-            <TextField id="nurse-ids" label="Identificadores de enfermeras (separados por coma)" value={nurseIds} onChange={(event) => setNurseIds(event.target.value)} />
-            <Button type="submit">Sugerir distribución</Button>
-          </form>
-          {suggestion ? <Button type="button" onClick={() => void approve()}>Aprobar asignación</Button> : null}
-          <form className="stack" onSubmit={(event) => void recordAbsence(event)}>
-            <TextField id="absence-user" label="Identificador de quien falta" value={absenceUserId} onChange={(event) => setAbsenceUserId(event.target.value)} />
-            <Button type="submit">Registrar inasistencia</Button>
-          </form>
+          <Panel title="Distribución del turno">
+            <form className="stack" onSubmit={(event) => void suggest(event)}>
+              <TextField id="nurse-ids" label="Identificadores de enfermeras (separados por coma)" value={nurseIds} onChange={(event) => setNurseIds(event.target.value)} />
+              <Button type="submit">Sugerir distribución</Button>
+            </form>
+            {suggestion ? <Button type="button" onClick={() => void approve()}>Aprobar asignación</Button> : null}
+          </Panel>
+          <Panel title="Ausencias">
+            <form className="stack" onSubmit={(event) => void recordAbsence(event)}>
+              <TextField id="absence-user" label="Identificador de quien falta" value={absenceUserId} onChange={(event) => setAbsenceUserId(event.target.value)} />
+              <Button type="submit">Registrar inasistencia</Button>
+            </form>
+          </Panel>
         </>
       ) : null}
 
       {role === "enfermera_piso" ? (
-        <>
+        <Panel title="Entrega de turno">
           <Button type="button" onClick={() => void loadHandover()}>Consolidar handover</Button>
           {handover ? <TextAreaField id="handover" label="Resumen del turno" value={handover} readOnly /> : null}
           <form className="stack" onSubmit={(event) => void signHandover(event)}>
             <TextField id="from-user" label="Identificador de la enfermera saliente" value={fromUserId} onChange={(event) => setFromUserId(event.target.value)} />
             <Button type="submit">Firmar recepción de turno</Button>
           </form>
-        </>
+        </Panel>
       ) : null}
 
       {requests.length > 0 ? (
-        <ul className="alert-list">
-          {requests.map((request) => (
-            <li key={request.id} className="alert-card">
-              <p>Cobertura #{request.id} · {request.status}</p>
-              {role === "jefatura_enfermeria" ? (
-                <Button type="button" onClick={() => void api(`/api/v1/staff/coverage-requests/${request.id}/approve`, { method: "POST" }).then(() => setNotice("Convocatoria de retén aprobada."))}>Aprobar retén</Button>
-              ) : null}
-              {role === "recursos_humanos" ? (
-                <Button type="button" onClick={() => void api(`/api/v1/staff/coverage-requests/${request.id}/authorize`, { method: "POST" }).then(() => setNotice("Cobertura extraordinaria autorizada."))}>Autorizar cobertura</Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <Panel title="Coberturas y retén">
+          <ul className="work-queue">
+            {requests.map((request) => (
+              <li key={request.id} className="work-card">
+                <p>Cobertura #{request.id} · {request.status}</p>
+                {role === "jefatura_enfermeria" ? (
+                  <Button type="button" onClick={() => void api(`/api/v1/staff/coverage-requests/${request.id}/approve`, { method: "POST" }).then(() => setNotice("Convocatoria de retén aprobada."))}>Aprobar retén</Button>
+                ) : null}
+                {role === "recursos_humanos" ? (
+                  <Button type="button" onClick={() => void api(`/api/v1/staff/coverage-requests/${request.id}/authorize`, { method: "POST" }).then(() => setNotice("Cobertura extraordinaria autorizada."))}>Autorizar cobertura</Button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Panel>
       ) : null}
     </Sheet>
   );

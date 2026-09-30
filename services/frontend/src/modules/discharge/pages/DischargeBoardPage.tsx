@@ -65,9 +65,9 @@ export function DischargeBoardPage() {
       {cases.length === 0 ? (
         <Feedback tone="info">No hay egresos pendientes para su perfil.</Feedback>
       ) : (
-        <ul className="alert-list">
+        <ul className="work-queue">
           {cases.map((item) => (
-            <li key={item.encounterId} className="alert-card">
+            <li key={item.encounterId} className="work-card">
               <h3>{item.patientName}</h3>
               <p className="hint">{item.location ?? "Ubicación no registrada"}</p>
               <p>{item.nextAction ? ACTION_LABEL[item.nextAction] ?? item.nextAction : "Egreso en curso"}</p>

@@ -8,6 +8,7 @@ import { isClinicalRole, primaryAttentionPath } from "../../../app/navigation";
 import { errorText } from "../../../app/userMessage";
 import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
+import { Panel } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
@@ -273,45 +274,49 @@ export function EncounterFilePage() {
             : encounter.statusLabel}
         </Feedback>
       )}
-      <dl className="facts">
-        <div><dt>Documento</dt><dd>{encounter.documentType} {encounter.documentNumber}</dd></div>
-        <div><dt>Orden</dt><dd>{encounter.orderNumber}</dd></div>
-        <div><dt>Origen</dt><dd>{encounter.originService}</dd></div>
-        <div><dt>Cobertura</dt><dd>{encounter.coverage.payer} · {encounter.coverage.status}</dd></div>
-        <div><dt>Ubicación</dt><dd>{locationText(encounter)}</dd></div>
-        <div><dt>Expediente</dt><dd>{encounter.recordId ?? "Aún no aperturado"}</dd></div>
-        <div><dt>Brazalete</dt><dd>{encounter.wristbandCode ?? "Aún no emitido"}</dd></div>
-        <div><dt>Avance</dt><dd>{deliverableCount(encounter)}</dd></div>
-      </dl>
+      <Panel title="Resumen del ingreso">
+        <dl className="facts">
+          <div><dt>Documento</dt><dd>{encounter.documentType} {encounter.documentNumber}</dd></div>
+          <div><dt>Orden</dt><dd>{encounter.orderNumber}</dd></div>
+          <div><dt>Origen</dt><dd>{encounter.originService}</dd></div>
+          <div><dt>Cobertura</dt><dd>{encounter.coverage.payer} · {encounter.coverage.status}</dd></div>
+          <div><dt>Ubicación</dt><dd>{locationText(encounter)}</dd></div>
+          <div><dt>Expediente</dt><dd>{encounter.recordId ?? "Aún no aperturado"}</dd></div>
+          <div><dt>Brazalete</dt><dd>{encounter.wristbandCode ?? "Aún no emitido"}</dd></div>
+          <div><dt>Avance</dt><dd>{deliverableCount(encounter)}</dd></div>
+        </dl>
+      </Panel>
       {encounter.coverageReferral ? (
-        <section className="referral-status" role="region" aria-label="Estado de la derivación de cobertura">
-          <h3>Derivación de cobertura</h3>
-          <Feedback tone="info">
-            Trámite derivado a {encounter.coverageReferral.destinationLabel}. Estado: {encounter.coverageReferral.status}.
-          </Feedback>
-          <dl className="facts">
-            <div><dt>Destino</dt><dd>{encounter.coverageReferral.destinationLabel}</dd></div>
-            <div><dt>Estado</dt><dd>{encounter.coverageReferral.status}</dd></div>
-            <div><dt>Familiar notificado</dt><dd>{encounter.coverageReferral.relativeName}</dd></div>
-            <div><dt>Teléfono</dt><dd>{encounter.coverageReferral.relativePhone ?? "No indicado"}</dd></div>
-            {encounter.coverageReferral.note ? (
-              <div><dt>Observación</dt><dd>{encounter.coverageReferral.note}</dd></div>
-            ) : null}
-          </dl>
-        </section>
+        <Panel title="Derivación de cobertura">
+          <section className="referral-status" role="region" aria-label="Estado de la derivación de cobertura">
+            <Feedback tone="info">
+              Trámite derivado a {encounter.coverageReferral.destinationLabel}. Estado: {encounter.coverageReferral.status}.
+            </Feedback>
+            <dl className="facts">
+              <div><dt>Destino</dt><dd>{encounter.coverageReferral.destinationLabel}</dd></div>
+              <div><dt>Estado</dt><dd>{encounter.coverageReferral.status}</dd></div>
+              <div><dt>Familiar notificado</dt><dd>{encounter.coverageReferral.relativeName}</dd></div>
+              <div><dt>Teléfono</dt><dd>{encounter.coverageReferral.relativePhone ?? "No indicado"}</dd></div>
+              {encounter.coverageReferral.note ? (
+                <div><dt>Observación</dt><dd>{encounter.coverageReferral.note}</dd></div>
+              ) : null}
+            </dl>
+          </section>
+        </Panel>
       ) : encounter.coverage.status !== "aprobada" ? (
         <Feedback tone="info">Aún no hay una derivación registrada para este ingreso.</Feedback>
       ) : null}
-      <h3>Entregables del ingreso</h3>
-      <ul className="deliverables">
-        {encounter.deliverables.map((item) => (
-          <li key={item.id} className={item.done ? "done" : undefined}>
-            {item.done ? <IconCircleCheck size={20} stroke={1.75} aria-hidden /> : <IconClock size={20} stroke={1.75} aria-hidden />}
-            <span>{item.label}</span>
-            <strong>{item.done ? "Listo" : "Pendiente"}</strong>
-          </li>
-        ))}
-      </ul>
+      <Panel title="Entregables del ingreso">
+        <ul className="deliverables">
+          {encounter.deliverables.map((item) => (
+            <li key={item.id} className={item.done ? "done" : undefined}>
+              {item.done ? <IconCircleCheck size={20} stroke={1.75} aria-hidden /> : <IconClock size={20} stroke={1.75} aria-hidden />}
+              <span>{item.label}</span>
+              <strong>{item.done ? "Listo" : "Pendiente"}</strong>
+            </li>
+          ))}
+        </ul>
+      </Panel>
       <p><Link to="/pacientes">Volver al censo</Link></p>
     </Sheet>
   );

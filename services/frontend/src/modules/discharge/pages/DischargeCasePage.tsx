@@ -4,6 +4,7 @@ import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
+import { Panel } from "../../../shared/ui/clinical";
 import { TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
@@ -59,15 +60,20 @@ export function DischargeCasePage() {
   if (!item) return <Feedback tone="error">{error || "No se encontró el ingreso."}</Feedback>;
 
   return (
-    <Sheet kicker="Alta y egreso" title={item.patientName} wide>
-      <p className="lead">{item.location ?? "Ubicación no registrada"}</p>
+    <Sheet kicker="Alta y egreso" title="Conciliación, educación e informe de alta" wide>
+      <p className="lead">{item.patientName} · {item.location ?? "Ubicación no registrada"}</p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado del egreso">{notice}</Feedback> : null}
-      <ul className="deliverable-list">
-        {item.deliverables.map((deliverable) => (
-          <li key={deliverable.id}>{deliverable.done ? "Listo" : "Pendiente"} · {deliverable.label}</li>
-        ))}
-      </ul>
+      <Panel title="Entregables del egreso">
+        <ul className="deliverables">
+          {item.deliverables.map((deliverable) => (
+            <li key={deliverable.id} className={deliverable.done ? "done" : undefined}>
+              <span>{deliverable.label}</span>
+              <strong>{deliverable.done ? "Listo" : "Pendiente"}</strong>
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
       {(role === "medico_tratante" || role === "medico_residente") && !item.order ? (
         <form className="stack" onSubmit={(event) => { event.preventDefault(); void submit(`/api/v1/discharge/encounters/${encounterId}/order`, {}, "Orden digital de alta registrada. Trabajo social ya fue notificado."); }}>
