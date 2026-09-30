@@ -25,7 +25,7 @@ function Harness() {
   );
 }
 
-describe("avisos emergentes de alertas (RF-94)", () => {
+describe("avisos emergentes de alertas (RF-53)", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -61,6 +61,45 @@ describe("avisos emergentes de alertas (RF-94)", () => {
 
     await user.click(screen.getByRole("button", { name: /confirmar lectura/i }));
     expect(screen.queryByText(/NEWS2 8/)).not.toBeInTheDocument();
+  });
+
+  it("mantiene el aviso si la confirmación falla", async () => {
+    const user = userEvent.setup();
+
+    function FailHarness() {
+      const { push } = useToast();
+      return (
+        <button
+          type="button"
+          onClick={() =>
+            push({
+              id: "a-fail",
+              tone: "critical",
+              title: "Alerta",
+              body: "Cuerpo",
+              confirmLabel: "Confirmar lectura",
+              onConfirm: async () => {
+                throw new Error("falló");
+              },
+            })
+          }
+        >
+          Emitir
+        </button>
+      );
+    }
+
+    render(
+      <ToastProvider>
+        <FailHarness />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /emitir/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar lectura/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no se pudo confirmar la lectura/i);
+    expect(screen.getByText(/cuerpo/i)).toBeInTheDocument();
   });
 
   it("ejecuta la confirmación entregada por quien emite el aviso", async () => {

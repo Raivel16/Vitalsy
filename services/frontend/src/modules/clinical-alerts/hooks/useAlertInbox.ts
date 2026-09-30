@@ -16,9 +16,6 @@ export type AlertInbox = {
 /**
  * Bandeja de alertas del perfil. Consulta al montar y cada 15 segundos; se
  * detiene mientras la pestaña está oculta para no gastar red en vano.
- *
- * El despacho en menos de 2 segundos (RNF-01) requiere WebSockets y queda
- * pendiente; al llegar, solo cambia la fuente que alimenta este estado.
  */
 export function useAlertInbox(enabled: boolean): AlertInbox {
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
@@ -31,8 +28,7 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
       const data = await api<{ alerts?: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
       if (activeRef.current) setAlerts(data.alerts ?? []);
     } catch {
-      // Una consulta fallida no debe interrumpir el trabajo del turno; el
-      // siguiente ciclo lo reintenta.
+      // Una consulta fallida no debe interrumpir el trabajo del turno.
     }
   }, [pollingEnabled]);
 
@@ -57,11 +53,12 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
       const alertId = (event as CustomEvent<{ alertId?: number }>).detail?.alertId;
       if (typeof alertId !== "number") return;
       setAlerts((current) => {
-        const next = current.filter((alert) => alert.id !== alertId);
-        if (next.length === 0) alertSiren.stop();
+        const next = current.map((alert) => (
+          alert.id === alertId ? { ...alert, needsSiren: false } : alert
+        ));
+        if (!next.some((alert) => alert.needsSiren)) alertSiren.stop();
         return next;
       });
-      // No refresh aquí: el acuse aún puede estar en vuelo; quien confirma refresca después del POST.
     }
 
     document.addEventListener("visibilitychange", onVisible);
@@ -76,11 +73,13 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
   }, [pollingEnabled, refresh]);
 
   const acknowledge = useCallback(async (alertId: number) => {
-    // Retiro optimista: la sirena y el badge no deben esperar al servidor.
-    setAlerts((current) => current.filter((alert) => alert.id !== alertId));
-    notifyAlertAcknowledged(alertId);
+    // Optimista solo tras éxito del POST: si falla, el toast permanece y reintenta.
     try {
       await api(`/api/v1/clinical-alerts/${alertId}/acknowledge`, { method: "POST" });
+      setAlerts((current) => current.map((alert) => (
+        alert.id === alertId ? { ...alert, needsSiren: false } : alert
+      )));
+      notifyAlertAcknowledged(alertId);
       await refresh();
     } catch (error) {
       await refresh();
@@ -88,5 +87,7 @@ export function useAlertInbox(enabled: boolean): AlertInbox {
     }
   }, [refresh]);
 
-  return { alerts, pending: alerts.length, acknowledge, refresh };
+  const pending = alerts.filter((alert) => alert.needsSiren).length;
+
+  return { alerts, pending, acknowledge, refresh };
 }

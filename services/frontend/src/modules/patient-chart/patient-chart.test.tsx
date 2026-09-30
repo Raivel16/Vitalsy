@@ -25,7 +25,7 @@ const encounter = {
   progress: [{ id: "orden", label: "Orden", status: "done" }],
 };
 
-describe("expediente clínico (RF-93)", () => {
+describe("expediente clínico (RF-38)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_tratante");
   });

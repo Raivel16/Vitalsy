@@ -23,7 +23,7 @@ function defaultFactory(): AudioContext {
 }
 
 /**
- * RF-94: señal sonora continua mientras existan alertas sin confirmar. Se
+ * RF-53: señal sonora continua mientras existan alertas sin confirmar. Se
  * genera con osciladores Web Audio para no depender de un archivo de audio.
  */
 export function createAlertSiren(factory: AudioContextFactory = defaultFactory): AlertSiren {

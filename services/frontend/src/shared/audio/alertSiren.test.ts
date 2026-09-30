@@ -33,7 +33,7 @@ function fakeAudioContext() {
   return { context, oscillators };
 }
 
-describe("sirena de alertas (RF-94)", () => {
+describe("sirena de alertas (RF-53)", () => {
   afterEach(() => {
     vi.useRealTimers();
   });

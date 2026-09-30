@@ -6,13 +6,16 @@ import { STATUS_LABEL, severityVisual, type ClinicalAlert } from "../domain/aler
 
 export function AlertBell({ alerts }: { alerts: ClinicalAlert[] }) {
   const [open, setOpen] = useState(false);
-  const pending = alerts.length;
+  const worklist = alerts.length;
+  const urgent = alerts.filter((alert) => alert.needsSiren).length;
 
-  const label = pending === 0
+  const label = worklist === 0
     ? "Sin alertas pendientes"
-    : `${pending} ${pending === 1 ? "alerta pendiente" : "alertas pendientes"}`;
+    : urgent > 0
+      ? `${urgent} ${urgent === 1 ? "alerta urgente" : "alertas urgentes"}`
+      : `${worklist} ${worklist === 1 ? "alerta en seguimiento" : "alertas en seguimiento"}`;
 
-  const Icon = pending > 0 ? IconBellRinging : IconBell;
+  const Icon = urgent > 0 ? IconBellRinging : IconBell;
 
   return (
     <div className="bell">
@@ -24,11 +27,11 @@ export function AlertBell({ alerts }: { alerts: ClinicalAlert[] }) {
         onClick={() => setOpen((current) => !current)}
       >
         <Icon size={20} stroke={1.75} aria-hidden />
-        {pending > 0 ? <span className="bell-badge" aria-hidden>{pending}</span> : null}
+        {worklist > 0 ? <span className="bell-badge" aria-hidden>{worklist}</span> : null}
       </button>
       {open ? (
         <div className="bell-panel" role="region" aria-label="Alertas pendientes">
-          {pending === 0 ? (
+          {worklist === 0 ? (
             <p className="hint">No tiene alertas pendientes en este momento.</p>
           ) : (
             <ul>
@@ -39,6 +42,7 @@ export function AlertBell({ alerts }: { alerts: ClinicalAlert[] }) {
                   <p className={`news news-${severityVisual(alert.severity)}`}>
                     {alert.news2Total !== null ? `NEWS2 ${alert.news2Total} · ` : ""}
                     {STATUS_LABEL[alert.status]}
+                    {alert.needsSiren ? " · Requiere confirmación" : ""}
                   </p>
                   <p className="hint">Generada {formatDateTime(alert.generatedAt)}</p>
                   <Link to={`/alertas/${alert.id}`} onClick={() => setOpen(false)}>Abrir el evento</Link>

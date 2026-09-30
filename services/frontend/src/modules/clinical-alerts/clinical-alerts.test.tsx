@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -38,8 +38,11 @@ const openAlert = {
   assignedRole: "enfermera_piso",
   generatedAt: "2026-09-26T08:00:00+00:00",
   acknowledgeDueAt: "2026-09-26T08:05:00+00:00",
+  followUpDueAt: null,
+  reassessedAt: null,
   medicalDueAt: null,
   closedAt: null,
+  needsSiren: true,
 };
 
 function stubAlertApis(overrides?: {
@@ -104,7 +107,7 @@ function stubAlertApis(overrides?: {
   return calls;
 }
 
-describe("bandeja de alertas clínicas (RF-34, RF-39)", () => {
+describe("bandeja de alertas clínicas (RF-39, RF-44)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();
@@ -119,8 +122,27 @@ describe("bandeja de alertas clínicas (RF-34, RF-39)", () => {
     expect(screen.getByText("NEWS2 8")).toBeInTheDocument();
   });
 
-  it("confirma la recepción de la alerta y la retira de los pendientes", async () => {
-    const calls = stubAlertApis();
+  it("confirma la recepción de la alerta y deja el caso en seguimiento", async () => {
+    let inboxCalls = 0;
+    const calls = stubAlertApis({
+      onCall: (url) => {
+        if (!url.includes("/clinical-alerts/inbox")) return undefined;
+        inboxCalls += 1;
+        if (inboxCalls === 1) {
+          return jsonResponse(200, { alerts: [openAlert], pending: 1 });
+        }
+        return jsonResponse(200, {
+          alerts: [{
+            ...openAlert,
+            status: "en_atencion",
+            needsSiren: false,
+            acknowledgeDueAt: null,
+            followUpDueAt: "2026-09-26T08:18:00+00:00",
+          }],
+          pending: 0,
+        });
+      },
+    });
     const user = userEvent.setup();
     renderApp("/alertas", { role: "enfermera_piso" });
 
@@ -145,7 +167,7 @@ describe("bandeja de alertas clínicas (RF-34, RF-39)", () => {
   });
 });
 
-describe("registro de deterioro imprevisto (RF-35)", () => {
+describe("registro de deterioro imprevisto (RF-40)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();
@@ -179,25 +201,44 @@ describe("registro de deterioro imprevisto (RF-35)", () => {
   });
 });
 
-describe("atención de la alerta (RF-36, RF-37, RF-38)", () => {
+describe("atención de la alerta (RF-41, RF-42, RF-43)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     sessionStorage.clear();
   });
 
-  it("muestra el historial del evento y las acciones de la enfermera", async () => {
-    stubAlertApis();
+  const inProgressAlert = {
+    ...openAlert,
+    status: "en_atencion",
+    needsSiren: false,
+    acknowledgeDueAt: null,
+    followUpDueAt: "2026-09-26T08:18:00+00:00",
+    reassessedAt: null,
+  };
+
+  const reassessedAlert = {
+    ...inProgressAlert,
+    reassessedAt: "2026-09-26T08:12:00+00:00",
+    news2Total: 0,
+  };
+
+  it("muestra el historial del evento y las acciones de la enfermera tras confirmar lectura", async () => {
+    stubAlertApis({
+      timeline: { alert: inProgressAlert, events: [{ id: 1, type: "recepcion", detail: "Confirmó la recepción de la alerta.", role: "enfermera_piso", userName: "Enfermera", occurredAt: "2026-09-26T08:03:00+00:00" }], escalations: [] },
+    });
     renderApp("/alertas/7", { role: "enfermera_piso" });
 
     expect(await screen.findByText(/paciente con deterioro demo/i)).toBeInTheDocument();
-    const history = screen.getByRole("region", { name: /historial del evento/i });
-    expect(within(history).getByText(/se activa el proceso de gestión de alertas/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /programar control/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /solicitar atención médica/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /nueva toma/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /deterioro/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /recalcular news2/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /programar control/i })).toBeDisabled();
   });
 
-  it("programa una nueva frecuencia de control", async () => {
-    const calls = stubAlertApis();
+  it("programa una nueva frecuencia de control tras recalcular NEWS2", async () => {
+    const calls = stubAlertApis({
+      timeline: { alert: reassessedAlert, events: [], escalations: [] },
+    });
     const user = userEvent.setup();
     renderApp("/alertas/7", { role: "enfermera_piso" });
 
@@ -207,13 +248,41 @@ describe("atención de la alerta (RF-36, RF-37, RF-38)", () => {
 
     const scheduled = calls.find((call) => call.url.includes("/monitoring-schedule"));
     expect(scheduled?.body).toMatchObject({ frequencyMinutes: 240 });
+    expect(await screen.findByText(/próximo control/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /abrir bandeja de controles/i })).toHaveAttribute(
+      "href",
+      "/atencion/controles",
+    );
   });
 
-  it("exige el motivo antes de solicitar atención médica", async () => {
-    const calls = stubAlertApis();
+  it("permite solicitar atención médica desde la pestaña de deterioro sin toma previa", async () => {
+    const calls = stubAlertApis({
+      timeline: { alert: inProgressAlert, events: [], escalations: [] },
+    });
     const user = userEvent.setup();
     renderApp("/alertas/7", { role: "enfermera_piso" });
 
+    await user.click(await screen.findByRole("tab", { name: /deterioro/i }));
+    await user.type(
+      await screen.findByLabelText(/motivo de la atención médica/i),
+      "Persiste taquipnea y preocupación clínica.",
+    );
+    await user.click(screen.getByRole("button", { name: /solicitar atención médica/i }));
+
+    const request = calls.find((call) => call.url.includes("/medical-request"));
+    expect(request?.body).toMatchObject({ reason: "Persiste taquipnea y preocupación clínica." });
+    expect(await screen.findByText(/médicos de guardia/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ver bandeja de alertas/i })).toHaveAttribute("href", "/alertas");
+  });
+
+  it("exige el motivo antes de solicitar atención médica", async () => {
+    const calls = stubAlertApis({
+      timeline: { alert: inProgressAlert, events: [], escalations: [] },
+    });
+    const user = userEvent.setup();
+    renderApp("/alertas/7", { role: "enfermera_piso" });
+
+    await user.click(await screen.findByRole("tab", { name: /deterioro/i }));
     await user.click(await screen.findByRole("button", { name: /solicitar atención médica/i }));
 
     expect(await screen.findByText(/indique por qué el caso requiere atención médica/i)).toBeInTheDocument();
@@ -221,10 +290,13 @@ describe("atención de la alerta (RF-36, RF-37, RF-38)", () => {
   });
 
   it("solicita atención médica con el motivo registrado", async () => {
-    const calls = stubAlertApis();
+    const calls = stubAlertApis({
+      timeline: { alert: reassessedAlert, events: [], escalations: [] },
+    });
     const user = userEvent.setup();
     renderApp("/alertas/7", { role: "enfermera_piso" });
 
+    await user.click(await screen.findByRole("tab", { name: /deterioro/i }));
     await user.type(
       await screen.findByLabelText(/motivo de la atención médica/i),
       "Persiste taquipnea y preocupación clínica.",
@@ -235,10 +307,10 @@ describe("atención de la alerta (RF-36, RF-37, RF-38)", () => {
     expect(request?.body).toMatchObject({ reason: "Persiste taquipnea y preocupación clínica." });
   });
 
-  it("ofrece al médico registrar la evaluación de urgencia", async () => {
+  it("ofrece al médico registrar la evaluación tras confirmar la lectura", async () => {
     stubAlertApis({
       timeline: {
-        alert: { ...openAlert, status: "medico_notificado", assignedRole: "medico_residente" },
+        alert: { ...openAlert, status: "medico_en_atencion", assignedRole: "medico_residente", needsSiren: false },
         events: [],
         escalations: [],
       },
@@ -253,7 +325,7 @@ describe("atención de la alerta (RF-36, RF-37, RF-38)", () => {
   it("ofrece al equipo de respuesta rápida la orden de traslado a UCI", async () => {
     stubAlertApis({
       timeline: {
-        alert: { ...openAlert, status: "err_solicitado", assignedRole: "equipo_respuesta_rapida" },
+        alert: { ...openAlert, status: "err_solicitado", assignedRole: "equipo_respuesta_rapida", needsSiren: false },
         events: [],
         escalations: [],
       },

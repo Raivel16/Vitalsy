@@ -17,8 +17,19 @@ const pendingAlert = {
   assignedRole: "enfermera_piso",
   generatedAt: "2026-09-26T08:00:00+00:00",
   acknowledgeDueAt: "2026-09-26T08:05:00+00:00",
+  followUpDueAt: null,
+  reassessedAt: null,
   medicalDueAt: null,
   closedAt: null,
+  needsSiren: true,
+};
+
+const acknowledgedAlert = {
+  ...pendingAlert,
+  status: "en_atencion",
+  acknowledgeDueAt: null,
+  followUpDueAt: "2026-09-26T08:18:00+00:00",
+  needsSiren: false,
 };
 
 function stubInbox(sequence: Array<{ alerts: unknown[]; pending: number }>) {
@@ -37,7 +48,7 @@ function stubInbox(sequence: Array<{ alerts: unknown[]; pending: number }>) {
         return jsonResponse(200, payload);
       }
       if (url.includes("/acknowledge")) {
-        return jsonResponse(200, { alert: { ...pendingAlert, status: "en_atencion" } });
+        return jsonResponse(200, { alert: acknowledgedAlert });
       }
       return jsonResponse(200, {});
     }),
@@ -46,7 +57,7 @@ function stubInbox(sequence: Array<{ alerts: unknown[]; pending: number }>) {
   return calls;
 }
 
-describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
+describe("campana y avisos de alertas al iniciar sesión (RF-53)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-alert-inbox", "1");
     alertSiren.stop();
@@ -64,7 +75,7 @@ describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
     stubInbox([{ alerts: [pendingAlert], pending: 1 }]);
     renderApp("/", { role: "enfermera_piso" });
 
-    expect(await screen.findByRole("button", { name: /1 alerta pendiente/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /1 alerta urgente/i })).toBeInTheDocument();
   });
 
   it("emite el aviso emergente y la señal sonora cuando hay alertas sin atender", async () => {
@@ -76,10 +87,10 @@ describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
     await waitFor(() => expect(alertSiren.start).toHaveBeenCalled());
   });
 
-  it("detiene el sonido solo cuando se confirma la lectura", async () => {
+  it("detiene el sonido al confirmar la lectura y ofrece ir al evento o cerrar", async () => {
     const calls = stubInbox([
       { alerts: [pendingAlert], pending: 1 },
-      { alerts: [], pending: 0 },
+      { alerts: [acknowledgedAlert], pending: 0 },
     ]);
     const user = userEvent.setup();
     renderApp("/", { role: "enfermera_piso" });
@@ -88,7 +99,58 @@ describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
 
     expect(calls.some((call) => call === "POST /api/v1/clinical-alerts/7/acknowledge")).toBe(true);
     await waitFor(() => expect(alertSiren.stop).toHaveBeenCalled());
-    await waitFor(() => expect(screen.queryByText(/paciente con deterioro demo/i)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("button", { name: /confirmar lectura/i })).not.toBeInTheDocument());
+    expect(await screen.findByRole("link", { name: /ir al evento/i })).toHaveAttribute("href", "/alertas/7");
+    expect(screen.getByRole("button", { name: /^cerrar$/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /1 alerta en seguimiento/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^cerrar$/i }));
+    await waitFor(() => expect(screen.queryByRole("link", { name: /ir al evento/i })).not.toBeInTheDocument());
+  });
+
+  it("mantiene el aviso y la sirena si el acuse falla", async () => {
+    let inboxCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/clinical-alerts/inbox")) {
+          inboxCalls += 1;
+          return jsonResponse(200, { alerts: [pendingAlert], pending: 1 });
+        }
+        if (url.includes("/acknowledge")) {
+          return jsonResponse(500, { message: "Error interno" });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp("/", { role: "enfermera_piso" });
+
+    await user.click(await screen.findByRole("button", { name: /confirmar lectura/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no se pudo confirmar la lectura/i);
+    expect(screen.getByRole("button", { name: /confirmar lectura/i })).toBeInTheDocument();
+    expect(inboxCalls).toBeGreaterThan(0);
+  });
+
+  it("vuelve a sonar cuando el seguimiento de 15 minutos vence sin atención", async () => {
+    const overdueAlert = { ...acknowledgedAlert, needsSiren: true, followUpDueAt: "2026-09-26T08:00:00+00:00" };
+    stubInbox([
+      { alerts: [acknowledgedAlert], pending: 0 },
+      { alerts: [overdueAlert], pending: 1 },
+    ]);
+    renderApp("/", { role: "enfermera_piso" });
+
+    expect(await screen.findByRole("button", { name: /1 alerta en seguimiento/i })).toBeInTheDocument();
+    expect(alertSiren.start).not.toHaveBeenCalled();
+
+    // Segundo ciclo de polling (simulado forzando un remount con la secuencia).
+    // El stub avanza en cada GET; disparamos visibility para forzar refresh.
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(alertSiren.start).toHaveBeenCalled());
+    expect(await screen.findByRole("button", { name: /1 alerta urgente/i })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /avisos de alertas/i })).toHaveTextContent(/paciente con deterioro demo/i);
   });
 
   it("abre el detalle de la alerta desde el panel de la campana", async () => {
@@ -96,7 +158,7 @@ describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
     const user = userEvent.setup();
     renderApp("/", { role: "enfermera_piso" });
 
-    await user.click(await screen.findByRole("button", { name: /1 alerta pendiente/i }));
+    await user.click(await screen.findByRole("button", { name: /1 alerta urgente/i }));
     const panel = screen.getByRole("region", { name: /alertas pendientes/i });
     expect(within(panel).getByRole("link", { name: /abrir el evento/i })).toHaveAttribute("href", "/alertas/7");
   });
@@ -107,7 +169,7 @@ describe("campana y avisos de alertas al iniciar sesión (RF-94)", () => {
 
     await screen.findByRole("heading", { name: /admisión y recepción/i });
     expect(calls.some((call) => call.includes("/clinical-alerts/inbox"))).toBe(false);
-    expect(screen.queryByRole("button", { name: /alerta pendiente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /alerta (urgente|en seguimiento|pendiente)/i })).not.toBeInTheDocument();
     expect(alertSiren.start).not.toHaveBeenCalled();
   });
 

@@ -31,7 +31,7 @@ export function LoginPage() {
 
     setLoading(true);
     setError("");
-    // RF-94: los navegadores solo permiten audio tras un gesto del usuario;
+    // RF-53: los navegadores solo permiten audio tras un gesto del usuario;
     // este envío habilita la sirena de alertas de la sesión.
     alertSiren.unlock();
     try {

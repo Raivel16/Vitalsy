@@ -52,8 +52,9 @@ export function AlertInboxPage() {
   return (
     <Sheet kicker="Alertas clínicas" title="Alertas pendientes" wide>
       <p className="lead">
-        Confirme la recepción de cada alerta y continúe con la verificación del paciente. El tiempo de respuesta queda
-        registrado.
+        Confirme la lectura para callar la sirena y continúe con la reevaluación del paciente. La alerta permanece
+        abierta hasta programar un nuevo control o solicitar atención médica. Si no se completa en 15 minutos, la
+        sirena vuelve a sonar.
       </p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de la alerta">{notice}</Feedback> : null}
@@ -78,9 +79,12 @@ export function AlertInboxPage() {
               <p className="hint">
                 {STATUS_LABEL[alert.status]} · Generada {formatDateTime(alert.generatedAt)}
                 {alert.acknowledgeDueAt ? ` · Confirmar antes de ${formatDateTime(alert.acknowledgeDueAt)}` : ""}
+                {alert.followUpDueAt && alert.status === "en_atencion"
+                  ? ` · Completar atención antes de ${formatDateTime(alert.followUpDueAt)}`
+                  : ""}
               </p>
               <div className="alert-card-actions">
-                {alert.status === "abierta" || alert.status === "escalada_supervisora" || alert.status === "medico_notificado" || alert.status === "escalada_err" ? (
+                {alert.needsSiren ? (
                   <Button type="button" disabled={busyId === alert.id} onClick={() => void acknowledge(alert)}>
                     {busyId === alert.id ? "Confirmando…" : "Confirmar recepción"}
                   </Button>

@@ -1,5 +1,5 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { type FormEvent, useCallback, useEffect, useId, useState } from "react";
+import { Link, useParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { useAuth } from "../../../app/AuthProvider";
@@ -19,9 +19,12 @@ import {
   type AlertEvent,
   type ClinicalAlert,
 } from "../domain/alert";
+import { notifyAlertAcknowledged } from "../domain/inboxEvents";
 
 const NURSING_ROLES = ["enfermera_piso", "enfermera_supervisora"];
 const MEDICAL_ROLES = ["medico_residente", "medico_tratante"];
+
+type NurseTab = "vitals" | "deterioro";
 
 const emptyVitals = {
   respiratoryRate: "",
@@ -35,31 +38,48 @@ export function AlertDetailPage() {
   const { alertId } = useParams();
   const { user } = useAuth();
   const role = user?.role ?? "enfermera_piso";
+  const tabsId = useId();
 
   const [alert, setAlert] = useState<ClinicalAlert | null>(null);
   const [events, setEvents] = useState<AlertEvent[]>([]);
   const [escalations, setEscalations] = useState<AlertEscalation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [pageError, setPageError] = useState("");
   const [saving, setSaving] = useState("");
+  const [tab, setTab] = useState<NurseTab>("vitals");
 
   const [vitals, setVitals] = useState(emptyVitals);
   const [consciousness, setConsciousness] = useState<Consciousness>("alert");
   const [vitalsSubmitted, setVitalsSubmitted] = useState(false);
+  const [vitalsError, setVitalsError] = useState("");
+  const [vitalsNotice, setVitalsNotice] = useState("");
   const [frequency, setFrequency] = useState("60");
   const [scheduleNote, setScheduleNote] = useState("");
-  const [frequencyError, setFrequencyError] = useState("");
+  const [scheduleError, setScheduleError] = useState("");
+  const [scheduleNotice, setScheduleNotice] = useState("");
   const [medicalReason, setMedicalReason] = useState("");
   const [medicalReasonError, setMedicalReasonError] = useState("");
+  const [medicalNotice, setMedicalNotice] = useState("");
   const [assessment, setAssessment] = useState("");
   const [orders, setOrders] = useState("");
   const [medicalError, setMedicalError] = useState("");
+  const [medicalActionNotice, setMedicalActionNotice] = useState("");
   const [errReason, setErrReason] = useState("");
   const [errReasonError, setErrReasonError] = useState("");
   const [errAssessment, setErrAssessment] = useState("");
   const [errAssessmentError, setErrAssessmentError] = useState("");
+  const [errNotice, setErrNotice] = useState("");
   const [transferToIcu, setTransferToIcu] = useState(false);
+  const [icuError, setIcuError] = useState("");
+  const [icuNotice, setIcuNotice] = useState("");
+  const [icuRoom, setIcuRoom] = useState("UCI-1");
+  const [icuBed, setIcuBed] = useState("A");
+  const [returnRoom, setReturnRoom] = useState("507");
+  const [returnBed, setReturnBed] = useState("B");
+  const [returnService, setReturnService] = useState("Medicina");
+  const [returnNote, setReturnNote] = useState("");
+  const [ackError, setAckError] = useState("");
+  const [ackNotice, setAckNotice] = useState("");
 
   const load = useCallback(async () => {
     if (!alertId) return;
@@ -70,9 +90,9 @@ export function AlertDetailPage() {
       setAlert(data.alert);
       setEvents(data.events);
       setEscalations(data.escalations);
-      setError("");
+      setPageError("");
     } catch (caught) {
-      setError(errorText(caught, "No se pudo cargar el evento."));
+      setPageError(errorText(caught, "No se pudo cargar el evento."));
     } finally {
       setLoading(false);
     }
@@ -82,139 +102,255 @@ export function AlertDetailPage() {
     void load();
   }, [load]);
 
-  async function send(action: string, body: unknown, successMessage: string, label: string) {
-    setSaving(label);
-    setError("");
-    setNotice("");
-    try {
-      await api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
-        method: "POST",
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      });
-      setNotice(successMessage);
-      await load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la acción."));
-    } finally {
-      setSaving("");
-    }
+  async function postAction(action: string, body: unknown | null): Promise<Record<string, unknown>> {
+    return api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
+      method: "POST",
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
   }
 
   const vitalsErrors = validateVitalSigns(vitals);
   const visibleVitalsErrors = vitalsSubmitted ? vitalsErrors : {};
 
+  async function onAcknowledge() {
+    setSaving("acknowledge");
+    setAckError("");
+    setAckNotice("");
+    try {
+      await postAction("acknowledge", null);
+      if (alertId) notifyAlertAcknowledged(Number(alertId));
+      setAckNotice("Confirmó la lectura. Continúe con la atención del paciente.");
+      await load();
+    } catch (caught) {
+      setAckError(errorText(caught, "No se pudo confirmar la recepción."));
+    } finally {
+      setSaving("");
+    }
+  }
+
   async function onReassess(event: FormEvent) {
     event.preventDefault();
     setVitalsSubmitted(true);
+    setVitalsError("");
+    setVitalsNotice("");
     if (Object.keys(vitalsErrors).length > 0) return;
 
-    await send(
-      "reassessment",
-      {
+    setSaving("reassessment");
+    try {
+      const data = await postAction("reassessment", {
         respiratoryRate: Number(vitals.respiratoryRate),
         oxygenSaturation: Number(vitals.oxygenSaturation),
         systolicBloodPressure: Number(vitals.systolicBloodPressure),
         pulse: Number(vitals.pulse),
         temperature: Number(vitals.temperature.replace(",", ".")),
         consciousness,
-      },
-      "Se registró la nueva toma y se recalculó el NEWS2.",
-      "reassessment",
-    );
-    setVitals(emptyVitals);
-    setVitalsSubmitted(false);
+      }) as { medicalNotified?: boolean };
+      setVitals(emptyVitals);
+      setVitalsSubmitted(false);
+      setVitalsNotice(
+        data.medicalNotified
+          ? "NEWS2 sigue alterado: se notificó automáticamente al médico de guardia."
+          : "Se recalculó el NEWS2. Si es 0, puede programar el próximo control.",
+      );
+      await load();
+    } catch (caught) {
+      setVitalsError(errorText(caught, "No se pudo recalcular el NEWS2."));
+    } finally {
+      setSaving("");
+    }
   }
 
   async function onSchedule(event: FormEvent) {
     event.preventDefault();
+    setScheduleError("");
+    setScheduleNotice("");
     const minutes = Number(frequency);
     if (!Number.isInteger(minutes) || minutes < 15 || minutes > 1440) {
-      setFrequencyError("Indique entre 15 y 1440 minutos.");
+      setScheduleError("Indique entre 15 y 1440 minutos.");
       return;
     }
-    setFrequencyError("");
-    await send(
-      "monitoring-schedule",
-      { frequencyMinutes: minutes, note: scheduleNote.trim() || undefined },
-      "Se programó el próximo control y se cerró la alerta.",
-      "schedule",
-    );
+    setSaving("schedule");
+    try {
+      const result = await postAction("monitoring-schedule", {
+        frequencyMinutes: minutes,
+        note: scheduleNote.trim() || undefined,
+      });
+      const schedule = result.schedule as { nextDueAt?: string } | undefined;
+      const when = schedule?.nextDueAt ? formatDateTime(schedule.nextDueAt) : null;
+      setScheduleNotice(
+        when
+          ? `Se programó el próximo control para ${when}. Consúltelo en Controles.`
+          : "Se programó el próximo control y se cerró la alerta.",
+      );
+      await load();
+    } catch (caught) {
+      setScheduleError(errorText(caught, "No se pudo programar el control."));
+    } finally {
+      setSaving("");
+    }
   }
 
   async function onRequestMedical(event: FormEvent) {
     event.preventDefault();
+    setMedicalReasonError("");
+    setMedicalNotice("");
     if (medicalReason.trim().length < 5) {
       setMedicalReasonError("Indique por qué el caso requiere atención médica.");
       return;
     }
-    setMedicalReasonError("");
-    await send(
-      "medical-request",
-      { reason: medicalReason.trim() },
-      "Se notificó al médico de guardia con prioridad alta.",
-      "medical-request",
-    );
-    setMedicalReason("");
+    setSaving("medical-request");
+    try {
+      await postAction("medical-request", { reason: medicalReason.trim() });
+      setMedicalNotice(
+        "Se notificó a los médicos de guardia (residente y tratante). Campana y sirena hasta confirmar lectura.",
+      );
+      setMedicalReason("");
+      await load();
+    } catch (caught) {
+      setMedicalReasonError(errorText(caught, "No se pudo solicitar atención médica."));
+    } finally {
+      setSaving("");
+    }
   }
 
   async function onMedicalAssessment(event: FormEvent) {
     event.preventDefault();
+    setMedicalError("");
+    setMedicalActionNotice("");
     if (assessment.trim().length < 5 || orders.trim().length < 5) {
       setMedicalError("Registre la evaluación y las indicaciones de urgencia.");
       return;
     }
-    setMedicalError("");
-    await send(
-      "medical-assessment",
-      { assessment: assessment.trim(), orders: orders.trim() },
-      "Se registró la atención médica de urgencia.",
-      "medical-assessment",
-    );
-    setAssessment("");
-    setOrders("");
+    setSaving("medical-assessment");
+    try {
+      await postAction("medical-assessment", { assessment: assessment.trim(), orders: orders.trim() });
+      setMedicalActionNotice("Se registró la atención médica y se cerró el evento. Continuidad en sala.");
+      setAssessment("");
+      setOrders("");
+      await load();
+    } catch (caught) {
+      setMedicalError(errorText(caught, "No se pudo registrar la atención médica."));
+    } finally {
+      setSaving("");
+    }
   }
 
   async function onRequestRrt(event: FormEvent) {
     event.preventDefault();
+    setErrReasonError("");
     if (errReason.trim().length < 5) {
       setErrReasonError("Indique por qué se requiere el equipo de respuesta rápida.");
       return;
     }
-    setErrReasonError("");
-    await send(
-      "rapid-response-request",
-      { reason: errReason.trim() },
-      "Se solicitó la intervención del equipo de respuesta rápida.",
-      "rrt-request",
-    );
-    setErrReason("");
+    setSaving("rrt-request");
+    try {
+      await postAction("rapid-response-request", { reason: errReason.trim() });
+      setMedicalActionNotice("Se solicitó la intervención del equipo de respuesta rápida.");
+      setErrReason("");
+      await load();
+    } catch (caught) {
+      setErrReasonError(errorText(caught, "No se pudo solicitar el ERR."));
+    } finally {
+      setSaving("");
+    }
   }
 
   async function onErrAssessment(event: FormEvent) {
     event.preventDefault();
+    setErrAssessmentError("");
+    setErrNotice("");
     if (errAssessment.trim().length < 5) {
       setErrAssessmentError("Registre la evaluación del equipo de respuesta rápida.");
       return;
     }
-    setErrAssessmentError("");
-    await send(
-      "err-assessment",
-      { assessment: errAssessment.trim(), transferToIcu },
-      transferToIcu
-        ? "Se registró la evaluación y la orden de traslado a cuidados intensivos."
-        : "Se registró la evaluación; el paciente continúa en sala general.",
-      "err-assessment",
-    );
+    setSaving("err-assessment");
+    try {
+      await postAction("err-assessment", { assessment: errAssessment.trim(), transferToIcu });
+      setErrNotice(
+        transferToIcu
+          ? "Se emitió la orden de UCI. Médico y enfermera deben autorizarla."
+          : "Paciente estabilizado; la alerta se cerró en sala general.",
+      );
+      await load();
+    } catch (caught) {
+      setErrAssessmentError(errorText(caught, "No se pudo registrar la evaluación del ERR."));
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function onIcuAuthorize() {
+    setSaving("icu-authorize");
+    setIcuError("");
+    setIcuNotice("");
+    try {
+      await postAction("icu-authorize", null);
+      setIcuNotice("Autorización de traslado a UCI registrada.");
+      await load();
+    } catch (caught) {
+      setIcuError(errorText(caught, "No se pudo autorizar el traslado."));
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function onIcuTransfer(event: FormEvent) {
+    event.preventDefault();
+    setSaving("icu-transfer");
+    setIcuError("");
+    setIcuNotice("");
+    try {
+      await postAction("icu-transfer", { service: "UCI", room: icuRoom.trim(), bed: icuBed.trim() || undefined });
+      setIcuNotice("Traslado efectivo a UCI registrado. La ubicación del ingreso se actualizó.");
+      await load();
+    } catch (caught) {
+      setIcuError(errorText(caught, "No se pudo registrar el traslado a UCI."));
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function onIcuReturn(event: FormEvent) {
+    event.preventDefault();
+    setSaving("icu-return");
+    setIcuError("");
+    setIcuNotice("");
+    try {
+      await postAction("icu-return", {
+        service: returnService.trim(),
+        room: returnRoom.trim(),
+        bed: returnBed.trim() || undefined,
+        note: returnNote.trim() || undefined,
+      });
+      setIcuNotice("Retorno a sala registrado. La alerta quedó cerrada con trazabilidad completa.");
+      await load();
+    } catch (caught) {
+      setIcuError(errorText(caught, "No se pudo registrar el retorno a sala."));
+    } finally {
+      setSaving("");
+    }
   }
 
   if (loading) return <LoadingState label="Cargando el evento…" />;
-  if (!alert) return <Feedback tone="error">{error || "No se encontró el evento."}</Feedback>;
+  if (!alert) return <Feedback tone="error">{pageError || "No se encontró el evento."}</Feedback>;
 
   const closed = alert.status === "cerrada";
-  const pendingAck = ["abierta", "escalada_supervisora", "medico_notificado", "escalada_err"].includes(alert.status);
-  const isNurse = NURSING_ROLES.includes(role);
+  const pendingAck = alert.needsSiren
+    && !["orden_uci", "uci_autorizada", "en_uci"].includes(alert.status);
+  const canNurseCare = NURSING_ROLES.includes(role) && !closed && alert.status === "en_atencion";
+  const canSchedule = canNurseCare && Boolean(alert.reassessedAt) && (alert.news2Total ?? 1) < 1;
   const isDoctor = MEDICAL_ROLES.includes(role);
   const isRrt = role === "equipo_respuesta_rapida";
+  const icu = alert.icuTransfer;
+  const canAuthorizeIcu = !closed
+    && alert.status === "orden_uci"
+    && ((isDoctor && !icu?.doctorAuthorized) || (role === "enfermera_piso" && !icu?.nurseAuthorized));
+  const canTransferIcu = !closed
+    && alert.status === "uci_autorizada"
+    && ["enfermera_piso", "enfermera_supervisora", "camillero"].includes(role);
+  const canReturnIcu = !closed
+    && alert.status === "en_uci"
+    && NURSING_ROLES.includes(role);
 
   return (
     <Sheet kicker="Alertas clínicas" title="Evento de alerta" wide>
@@ -224,143 +360,231 @@ export function AlertDetailPage() {
       <p className={`news news-${severityVisual(alert.severity)}`} role="status" aria-label="Estado de la alerta">
         {alert.news2Total !== null ? `NEWS2 ${alert.news2Total} · ` : ""}
         {STATUS_LABEL[alert.status]}
+        {alert.followUpDueAt && alert.status === "en_atencion"
+          ? ` · Completar antes de ${formatDateTime(alert.followUpDueAt)}`
+          : ""}
       </p>
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success" label="Resultado de la acción">{notice}</Feedback> : null}
+      {pageError ? <Feedback tone="error">{pageError}</Feedback> : null}
+      <p className="hint">
+        <Link to={`/atencion/chart?ingreso=${encodeURIComponent(alert.encounterId)}`}>Ver en el expediente clínico</Link>
+      </p>
 
       {pendingAck && !closed ? (
-        <FormActions>
-          <Button
-            type="button"
-            disabled={saving === "acknowledge"}
-            onClick={() => void send("acknowledge", null, "Confirmó la recepción de la alerta.", "acknowledge")}
-          >
-            {saving === "acknowledge" ? "Confirmando…" : "Confirmar recepción"}
-          </Button>
-        </FormActions>
+        <section className="result-block" aria-label="Confirmación de lectura">
+          {ackError ? <Feedback tone="error">{ackError}</Feedback> : null}
+          {ackNotice ? <Feedback tone="success">{ackNotice}</Feedback> : null}
+          <FormActions>
+            <Button type="button" disabled={saving === "acknowledge"} onClick={() => void onAcknowledge()}>
+              {saving === "acknowledge" ? "Confirmando…" : "Confirmar recepción"}
+            </Button>
+            <Link to="/alertas">Volver a la bandeja</Link>
+          </FormActions>
+        </section>
       ) : null}
 
-      {isNurse && !closed ? (
+      {canNurseCare ? (
         <>
-          <section className="result-block" aria-label="Nueva toma de constantes">
-            <h3>Nueva toma de constantes</h3>
-            <form className="stack" onSubmit={onReassess} noValidate>
-              <div className="form-grid">
-                <TextField id="alert-rr" label="Frecuencia respiratoria" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleVitalsErrors.respiratoryRate} hint="respiraciones/min" />
-                <TextField id="alert-spo2" label="Saturación" inputMode="numeric" value={vitals.oxygenSaturation} onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })} error={visibleVitalsErrors.oxygenSaturation} hint="%" />
-                <TextField id="alert-sbp" label="Presión sistólica" inputMode="numeric" value={vitals.systolicBloodPressure} onChange={(e) => setVitals({ ...vitals, systolicBloodPressure: e.target.value })} error={visibleVitalsErrors.systolicBloodPressure} hint="mmHg" />
-                <TextField id="alert-pulse" label="Pulso" inputMode="numeric" value={vitals.pulse} onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })} error={visibleVitalsErrors.pulse} hint="latidos/min" />
-                <TextField id="alert-temp" label="Temperatura" inputMode="decimal" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} error={visibleVitalsErrors.temperature} hint="°C" />
-              </div>
-              <SelectField id="alert-consciousness" label="Conciencia" value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>
-                <option value="alert">Alerta</option>
-                <option value="confusion">Confusión</option>
-                <option value="voice">Responde a la voz</option>
-                <option value="pain">Responde al dolor</option>
-                <option value="unresponsive">No responde</option>
-              </SelectField>
-              <FormActions>
-                <Button type="submit" variant="quiet" disabled={saving === "reassessment"}>
-                  {saving === "reassessment" ? "Recalculando…" : "Recalcular NEWS2"}
-                </Button>
-              </FormActions>
-            </form>
-          </section>
+          <div className="chart-tabs" role="tablist" aria-label="Acciones de enfermería">
+            {([
+              { id: "vitals" as const, label: "Nueva toma / NEWS2" },
+              { id: "deterioro" as const, label: "Deterioro / preocupación clínica" },
+            ]).map((item) => {
+              const selected = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  id={`${tabsId}-${item.id}`}
+                  aria-selected={selected}
+                  aria-controls={`${tabsId}-panel-${item.id}`}
+                  className={selected ? "chart-tab is-active" : "chart-tab"}
+                  onClick={() => setTab(item.id)}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-          <section className="result-block" aria-label="Programación del control">
-            <h3>Alteración aislada de baja severidad</h3>
-            <form className="stack" onSubmit={onSchedule} noValidate>
-              <TextField
-                id="alert-frequency"
-                label="¿Cada cuántos minutos se repetirá el control?"
-                inputMode="numeric"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value.replace(/\D/g, ""))}
-                error={frequencyError}
-                hint="Entre 15 minutos y 24 horas."
-              />
-              <TextAreaField
-                id="alert-schedule-note"
-                label="Observación del control (opcional)"
-                rows={2}
-                value={scheduleNote}
-                onChange={(e) => setScheduleNote(e.target.value)}
-              />
-              <FormActions>
-                <Button type="submit" variant="quiet" disabled={saving === "schedule"}>
-                  {saving === "schedule" ? "Programando…" : "Programar control"}
-                </Button>
-              </FormActions>
-            </form>
-          </section>
+          {tab === "vitals" ? (
+            <div className="chart-tab-panel" role="tabpanel" id={`${tabsId}-panel-vitals`} aria-labelledby={`${tabsId}-vitals`} aria-label="Nueva toma de constantes">
+              <Feedback tone="info">
+                Registre la nueva toma. Si el NEWS2 sigue ≥ 1, el sistema notifica al médico automáticamente. Si queda en 0, programe el control.
+              </Feedback>
+              {vitalsError ? <Feedback tone="error">{vitalsError}</Feedback> : null}
+              {vitalsNotice ? <Feedback tone="success">{vitalsNotice}</Feedback> : null}
+              <form className="stack" onSubmit={onReassess} noValidate>
+                <div className="form-grid">
+                  <TextField id="alert-rr" label="Frecuencia respiratoria" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleVitalsErrors.respiratoryRate} hint="respiraciones/min" />
+                  <TextField id="alert-spo2" label="Saturación" inputMode="numeric" value={vitals.oxygenSaturation} onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })} error={visibleVitalsErrors.oxygenSaturation} hint="%" />
+                  <TextField id="alert-sbp" label="Presión sistólica" inputMode="numeric" value={vitals.systolicBloodPressure} onChange={(e) => setVitals({ ...vitals, systolicBloodPressure: e.target.value })} error={visibleVitalsErrors.systolicBloodPressure} hint="mmHg" />
+                  <TextField id="alert-pulse" label="Pulso" inputMode="numeric" value={vitals.pulse} onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })} error={visibleVitalsErrors.pulse} hint="latidos/min" />
+                  <TextField id="alert-temp" label="Temperatura" inputMode="decimal" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} error={visibleVitalsErrors.temperature} hint="°C" />
+                </div>
+                <SelectField id="alert-consciousness" label="Conciencia" value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>
+                  <option value="alert">Alerta</option>
+                  <option value="confusion">Confusión</option>
+                  <option value="voice">Responde a la voz</option>
+                  <option value="pain">Responde al dolor</option>
+                  <option value="unresponsive">No responde</option>
+                </SelectField>
+                <FormActions>
+                  <Button type="submit" disabled={saving === "reassessment"}>
+                    {saving === "reassessment" ? "Recalculando…" : "Recalcular NEWS2"}
+                  </Button>
+                </FormActions>
+              </form>
 
-          <section className="result-block" aria-label="Solicitud de atención médica">
-            <h3>Deterioro significativo o preocupación clínica</h3>
-            <form className="stack" onSubmit={onRequestMedical} noValidate>
-              <TextAreaField
-                id="alert-medical-reason"
-                label="Motivo de la atención médica"
-                rows={3}
-                value={medicalReason}
-                onChange={(e) => setMedicalReason(e.target.value)}
-                error={medicalReasonError}
-              />
-              <FormActions>
-                <Button type="submit" disabled={saving === "medical-request"}>
-                  {saving === "medical-request" ? "Notificando…" : "Solicitar atención médica"}
-                </Button>
-              </FormActions>
-            </form>
-          </section>
+              <section className="result-block" aria-label="Programación del control">
+                <h3>Programar control (solo si NEWS2 = 0)</h3>
+                {scheduleError ? <Feedback tone="error">{scheduleError}</Feedback> : null}
+                {scheduleNotice ? (
+                  <Feedback tone="success">
+                    {scheduleNotice}{" "}
+                    <Link to="/atencion/controles">Abrir bandeja de controles</Link>
+                  </Feedback>
+                ) : null}
+                <form className="stack" onSubmit={onSchedule} noValidate>
+                  <TextField
+                    id="alert-frequency"
+                    label="¿Cada cuántos minutos se repetirá el control?"
+                    inputMode="numeric"
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value.replace(/\D/g, ""))}
+                    hint="Entre 15 minutos y 24 horas."
+                  />
+                  <TextAreaField id="alert-schedule-note" label="Observación del control (opcional)" rows={2} value={scheduleNote} onChange={(e) => setScheduleNote(e.target.value)} />
+                  <FormActions>
+                    <Button type="submit" variant="quiet" disabled={saving === "schedule" || !canSchedule}>
+                      {saving === "schedule" ? "Programando…" : "Programar control"}
+                    </Button>
+                  </FormActions>
+                </form>
+              </section>
+            </div>
+          ) : (
+            <div className="chart-tab-panel" role="tabpanel" id={`${tabsId}-panel-deterioro`} aria-labelledby={`${tabsId}-deterioro`} aria-label="Deterioro clínico">
+              <Feedback tone="info">
+                Use esta pestaña si nota deterioro o preocupación clínica (nurse&apos;s worry) aunque aún no haya segunda toma. El médico recibe la alerta de inmediato.
+              </Feedback>
+              {medicalReasonError ? <Feedback tone="error">{medicalReasonError}</Feedback> : null}
+              {medicalNotice ? (
+                <Feedback tone="success">
+                  {medicalNotice}{" "}
+                  <Link to="/alertas">Ver bandeja de alertas</Link>
+                </Feedback>
+              ) : null}
+              <form className="stack" onSubmit={onRequestMedical} noValidate>
+                <TextAreaField
+                  id="alert-medical-reason"
+                  label="Motivo de la atención médica"
+                  rows={3}
+                  value={medicalReason}
+                  onChange={(e) => setMedicalReason(e.target.value)}
+                />
+                <FormActions>
+                  <Button type="submit" disabled={saving === "medical-request"}>
+                    {saving === "medical-request" ? "Notificando…" : "Solicitar atención médica"}
+                  </Button>
+                </FormActions>
+              </form>
+            </div>
+          )}
         </>
       ) : null}
 
-      {isDoctor && !closed ? (
-        <>
-          <section className="result-block" aria-label="Atención médica de urgencia">
-            <h3>Evaluación e indicaciones de urgencia</h3>
-            <form className="stack" onSubmit={onMedicalAssessment} noValidate>
-              <TextAreaField id="alert-assessment" label="Evaluación del paciente" rows={3} value={assessment} onChange={(e) => setAssessment(e.target.value)} error={medicalError} />
-              <TextAreaField id="alert-orders" label="Indicaciones médicas de urgencia" rows={3} value={orders} onChange={(e) => setOrders(e.target.value)} />
-              <FormActions>
-                <Button type="submit" disabled={saving === "medical-assessment"}>
-                  {saving === "medical-assessment" ? "Registrando…" : "Registrar atención médica"}
-                </Button>
-              </FormActions>
-            </form>
-          </section>
-
-          <section className="result-block" aria-label="Solicitud al equipo de respuesta rápida">
-            <h3>El paciente no se estabiliza</h3>
-            <form className="stack" onSubmit={onRequestRrt} noValidate>
-              <TextAreaField id="alert-rrt-reason" label="Motivo de la intervención especializada" rows={3} value={errReason} onChange={(e) => setErrReason(e.target.value)} error={errReasonError} />
-              <FormActions>
-                <Button type="submit" variant="quiet" disabled={saving === "rrt-request"}>
-                  {saving === "rrt-request" ? "Solicitando…" : "Solicitar equipo de respuesta rápida"}
-                </Button>
-              </FormActions>
-            </form>
-          </section>
-        </>
-      ) : null}
-
-      {isRrt && !closed ? (
-        <section className="result-block" aria-label="Evaluación del equipo de respuesta rápida">
-          <h3>Evaluación del equipo de respuesta rápida</h3>
-          <form className="stack" onSubmit={onErrAssessment} noValidate>
-            <TextAreaField id="alert-err-assessment" label="Evaluación del paciente" rows={3} value={errAssessment} onChange={(e) => setErrAssessment(e.target.value)} error={errAssessmentError} />
-            <CheckField
-              id="alert-icu"
-              label="Requiere traslado a cuidados intensivos"
-              checked={transferToIcu}
-              onChange={(e) => setTransferToIcu(e.target.checked)}
-            />
+      {isDoctor && !closed && !["orden_uci", "uci_autorizada", "en_uci"].includes(alert.status) ? (
+        <section className="result-block" aria-label="Atención médica de urgencia">
+          {medicalError ? <Feedback tone="error">{medicalError}</Feedback> : null}
+          {errReasonError ? <Feedback tone="error">{errReasonError}</Feedback> : null}
+          {medicalActionNotice ? <Feedback tone="success">{medicalActionNotice}</Feedback> : null}
+          <h3>Evaluación e indicaciones de urgencia</h3>
+          <form className="stack" onSubmit={onMedicalAssessment} noValidate>
+            <TextAreaField id="alert-assessment" label="Evaluación del paciente" rows={3} value={assessment} onChange={(e) => setAssessment(e.target.value)} />
+            <TextAreaField id="alert-orders" label="Indicaciones médicas de urgencia" rows={3} value={orders} onChange={(e) => setOrders(e.target.value)} />
             <FormActions>
-              <Button type="submit" disabled={saving === "err-assessment"}>
+              <Button type="submit" disabled={saving === "medical-assessment" || pendingAck}>
+                {saving === "medical-assessment" ? "Registrando…" : "Registrar atención médica"}
+              </Button>
+            </FormActions>
+          </form>
+          <form className="stack" onSubmit={onRequestRrt} noValidate>
+            <h3>El paciente no se estabiliza</h3>
+            <TextAreaField id="alert-rrt-reason" label="Motivo de la intervención especializada" rows={3} value={errReason} onChange={(e) => setErrReason(e.target.value)} />
+            <FormActions>
+              <Button type="submit" variant="quiet" disabled={saving === "rrt-request" || pendingAck}>
+                {saving === "rrt-request" ? "Solicitando…" : "Solicitar equipo de respuesta rápida"}
+              </Button>
+            </FormActions>
+          </form>
+        </section>
+      ) : null}
+
+      {isRrt && !closed && (alert.status === "err_solicitado" || alert.status === "escalada_err") ? (
+        <section className="result-block" aria-label="Evaluación del equipo de respuesta rápida">
+          {errAssessmentError ? <Feedback tone="error">{errAssessmentError}</Feedback> : null}
+          {errNotice ? <Feedback tone="success">{errNotice}</Feedback> : null}
+          <form className="stack" onSubmit={onErrAssessment} noValidate>
+            <TextAreaField id="alert-err-assessment" label="Evaluación del paciente" rows={3} value={errAssessment} onChange={(e) => setErrAssessment(e.target.value)} />
+            <CheckField id="alert-icu" label="Requiere traslado a cuidados intensivos" checked={transferToIcu} onChange={(e) => setTransferToIcu(e.target.checked)} />
+            <FormActions>
+              <Button type="submit" disabled={saving === "err-assessment" || pendingAck}>
                 {saving === "err-assessment" ? "Registrando…" : "Registrar evaluación del equipo"}
               </Button>
             </FormActions>
           </form>
+        </section>
+      ) : null}
+
+      {!closed && icu?.ordered ? (
+        <section className="result-block" aria-label="Ciclo de traslado a UCI">
+          <h3>Traslado a UCI</h3>
+          <ul className="hint">
+            <li>Orden: {icu.orderedAt ? formatDateTime(icu.orderedAt) : "—"}</li>
+            <li>Autorización médica: {icu.doctorAuthorized ? formatDateTime(icu.doctorAuthorizedAt) : "Pendiente"}</li>
+            <li>Autorización enfermería: {icu.nurseAuthorized ? formatDateTime(icu.nurseAuthorizedAt) : "Pendiente"}</li>
+            <li>Traslado efectivo: {icu.transferredAt ? formatDateTime(icu.transferredAt) : "Pendiente"}</li>
+            <li>Retorno a sala: {icu.returnedAt ? formatDateTime(icu.returnedAt) : "—"}</li>
+          </ul>
+          {icuError ? <Feedback tone="error">{icuError}</Feedback> : null}
+          {icuNotice ? <Feedback tone="success">{icuNotice}</Feedback> : null}
+          {canAuthorizeIcu ? (
+            <FormActions>
+              <Button type="button" disabled={saving === "icu-authorize"} onClick={() => void onIcuAuthorize()}>
+                {saving === "icu-authorize" ? "Autorizando…" : "Autorizar traslado a UCI"}
+              </Button>
+            </FormActions>
+          ) : null}
+          {canTransferIcu ? (
+            <form className="stack" onSubmit={onIcuTransfer} noValidate>
+              <div className="form-grid">
+                <TextField id="icu-room" label="Unidad / habitación UCI" value={icuRoom} onChange={(e) => setIcuRoom(e.target.value)} />
+                <TextField id="icu-bed" label="Lecho" value={icuBed} onChange={(e) => setIcuBed(e.target.value)} />
+              </div>
+              <FormActions>
+                <Button type="submit" disabled={saving === "icu-transfer"}>
+                  {saving === "icu-transfer" ? "Registrando…" : "Registrar traslado efectivo"}
+                </Button>
+              </FormActions>
+            </form>
+          ) : null}
+          {canReturnIcu ? (
+            <form className="stack" onSubmit={onIcuReturn} noValidate>
+              <h3>Retorno a sala general</h3>
+              <div className="form-grid">
+                <TextField id="return-service" label="Servicio" value={returnService} onChange={(e) => setReturnService(e.target.value)} />
+                <TextField id="return-room" label="Habitación" value={returnRoom} onChange={(e) => setReturnRoom(e.target.value)} />
+                <TextField id="return-bed" label="Lecho" value={returnBed} onChange={(e) => setReturnBed(e.target.value)} />
+              </div>
+              <TextAreaField id="return-note" label="Observación (opcional)" rows={2} value={returnNote} onChange={(e) => setReturnNote(e.target.value)} />
+              <FormActions>
+                <Button type="submit" disabled={saving === "icu-return"}>
+                  {saving === "icu-return" ? "Registrando…" : "Registrar retorno a sala"}
+                </Button>
+              </FormActions>
+            </form>
+          ) : null}
         </section>
       ) : null}
 
@@ -374,7 +598,7 @@ export function AlertDetailPage() {
               <li key={item.id}>
                 <p><strong>{eventLabel(item.type)}</strong> · {formatDateTime(item.occurredAt)}</p>
                 {item.detail ? <p>{item.detail}</p> : null}
-                {item.userName ? <p className="hint">{item.userName}</p> : null}
+                {item.userName ? <p className="hint">{item.userName}{item.role ? ` · ${item.role}` : ""}</p> : null}
               </li>
             ))}
           </ol>

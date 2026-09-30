@@ -25,6 +25,7 @@ import { MedicalEvolutionPage } from "./modules/medical-evolution/pages/MedicalE
 import { CpoePage } from "./modules/cpoe/pages/CpoePage";
 import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonitoringPage";
 import { EmarPage } from "./modules/e-mar/pages/EmarPage";
+import { VitalControlsPage } from "./modules/vital-controls/pages/VitalControlsPage";
 import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
 import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
 import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
@@ -213,6 +214,14 @@ function Shell() {
                 element={
                   <Guard roles={["enfermera_piso"]}>
                     <EmarPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/atencion/controles"
+                element={
+                  <Guard roles={["enfermera_piso", "auxiliar_enfermeria", "enfermera_supervisora"]}>
+                    <VitalControlsPage />
                   </Guard>
                 }
               />
