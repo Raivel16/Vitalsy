@@ -112,7 +112,7 @@ describe("campana y avisos de alertas al iniciar sesión (RF-53)", () => {
     let inboxCalls = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      vi.fn(async (input: RequestInfo) => {
         const url = String(input);
         if (url.includes("/clinical-alerts/inbox")) {
           inboxCalls += 1;
