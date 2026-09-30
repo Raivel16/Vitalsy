@@ -55,3 +55,13 @@ export function BedTile({
     </article>
   );
 }
+
+/** Contenedor de una sola responsabilidad para bloques de una pantalla clínica. */
+export function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="panel">
+      <h3>{title}</h3>
+      {children}
+    </section>
+  );
+}
