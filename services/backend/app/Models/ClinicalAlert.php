@@ -22,11 +22,18 @@ class ClinicalAlert extends Model
 
     public const STATUS_RRT_ESCALATED = 'escalada_err';
 
+    public const STATUS_ICU_ORDERED = 'orden_uci';
+
+    public const STATUS_ICU_AUTHORIZED = 'uci_autorizada';
+
+    public const STATUS_IN_ICU = 'en_uci';
+
     public const STATUS_CLOSED = 'cerrada';
 
     protected $fillable = [
         'encounter_id',
         'source',
+        'compliance_key',
         'severity',
         'news2_total',
         'message',
@@ -36,6 +43,18 @@ class ClinicalAlert extends Model
         'created_by',
         'generated_at',
         'acknowledge_due_at',
+        'follow_up_due_at',
+        'reassessed_at',
+        'icu_ordered_at',
+        'icu_doctor_authorized_at',
+        'icu_doctor_authorized_by',
+        'icu_nurse_authorized_at',
+        'icu_nurse_authorized_by',
+        'icu_transferred_at',
+        'icu_returned_at',
+        'icu_previous_room',
+        'icu_previous_bed',
+        'icu_previous_service',
         'medical_notified_at',
         'medical_due_at',
         'closed_at',
@@ -47,6 +66,13 @@ class ClinicalAlert extends Model
         return [
             'generated_at' => 'datetime',
             'acknowledge_due_at' => 'datetime',
+            'follow_up_due_at' => 'datetime',
+            'reassessed_at' => 'datetime',
+            'icu_ordered_at' => 'datetime',
+            'icu_doctor_authorized_at' => 'datetime',
+            'icu_nurse_authorized_at' => 'datetime',
+            'icu_transferred_at' => 'datetime',
+            'icu_returned_at' => 'datetime',
             'medical_notified_at' => 'datetime',
             'medical_due_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -56,6 +82,11 @@ class ClinicalAlert extends Model
     public function isClosed(): bool
     {
         return $this->status === self::STATUS_CLOSED;
+    }
+
+    public function icuFullyAuthorized(): bool
+    {
+        return $this->icu_doctor_authorized_at !== null && $this->icu_nurse_authorized_at !== null;
     }
 
     public function acknowledgements(): HasMany

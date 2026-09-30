@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Proceso 3: gestión de alertas y respuesta ante alteraciones del estado
- * clínico (RF-34 a RF-47).
+ * clínico (RF-39 a RF-52).
  */
 class AlertWorkflow
 {
@@ -29,7 +29,7 @@ class AlertWorkflow
     ) {}
 
     /**
-     * RF-35: deterioro observado de forma imprevista por el auxiliar de
+     * RF-40: deterioro observado de forma imprevista por el auxiliar de
      * enfermería; queda asociado al paciente y dirigido a la enfermera.
      *
      * @param  array<string, mixed>  $input
@@ -58,12 +58,21 @@ class AlertWorkflow
     }
 
     /**
-     * RF-39 y RF-42: confirmación de recepción. Detiene el control de tiempo
-     * del nivel vigente.
+     * RF-44, RF-47 y RF-53: confirmación de lectura. Calla la sirena y arranca
+     * el plazo de seguimiento clínico (15 min) hasta reevaluar y disponer.
+     * Si ese plazo ya venció, un nuevo acuse reinicia el reloj sin cerrar el caso.
      */
     public function acknowledge(ClinicalAlert $alert, User $user): ClinicalAlert
     {
         $this->requireAssignedTo($alert, $user);
+
+        $isFollowUpReminder = $alert->status === ClinicalAlert::STATUS_IN_PROGRESS
+            && $alert->follow_up_due_at !== null
+            && $alert->follow_up_due_at->lte(now());
+
+        if (! $isFollowUpReminder && ! $this->awaitsAcknowledgement($alert)) {
+            throw new ClinicalRuleException('La alerta ya está en atención; complete la reevaluación del paciente.');
+        }
 
         AlertAcknowledgement::query()->create([
             'alert_id' => $alert->id,
@@ -72,13 +81,33 @@ class AlertWorkflow
             'acknowledged_at' => now(),
         ]);
 
+        if ($isFollowUpReminder) {
+            $alert->update([
+                'follow_up_due_at' => now()->addMinutes($this->minutes('nurse_follow_up_minutes')),
+            ]);
+            $this->record(
+                $alert,
+                'recepcion',
+                'Confirmó de nuevo la lectura; queda pendiente reevaluar y disponer la alerta.',
+                $user,
+            );
+
+            return $alert->refresh();
+        }
+
+        $isMedical = in_array($user->role, self::MEDICAL_ROLES, true);
+
         $alert->update([
-            'status' => in_array($user->role, self::MEDICAL_ROLES, true)
+            'status' => $isMedical
                 ? ClinicalAlert::STATUS_DOCTOR_IN_PROGRESS
                 : ClinicalAlert::STATUS_IN_PROGRESS,
             'assigned_user_id' => $user->id,
             'acknowledge_due_at' => null,
-            'medical_due_at' => in_array($user->role, self::MEDICAL_ROLES, true) ? null : $alert->medical_due_at,
+            'follow_up_due_at' => $isMedical
+                ? null
+                : now()->addMinutes($this->minutes('nurse_follow_up_minutes')),
+            'reassessed_at' => null,
+            'medical_due_at' => $isMedical ? null : $alert->medical_due_at,
         ]);
 
         $this->record($alert, 'recepcion', 'Confirmó la recepción de la alerta.', $user);
@@ -87,7 +116,7 @@ class AlertWorkflow
     }
 
     /**
-     * RF-36: nueva toma de constantes durante la verificación. Recalcula NEWS2
+     * RF-41: nueva toma de constantes durante la verificación. Recalcula NEWS2
      * sobre la misma alerta, sin generar una alerta duplicada.
      *
      * @param  array<string, mixed>  $input
@@ -102,18 +131,30 @@ class AlertWorkflow
         $alert->update([
             'news2_total' => $total,
             'severity' => $total >= 7 ? 'alta' : ($total >= 1 ? 'media' : 'baja'),
+            'reassessed_at' => now(),
         ]);
 
         $this->record($alert, 'revaloracion', "Nueva toma de constantes. NEWS2 {$total}.", $user);
 
+        $medicalNotified = false;
+        if ($total >= 1 && $alert->status === ClinicalAlert::STATUS_IN_PROGRESS) {
+            $this->notifyDoctor(
+                $alert->refresh(),
+                "NEWS2 {$total} persiste tras la reevaluación; se notifica al médico automáticamente.",
+                $user,
+            );
+            $medicalNotified = true;
+        }
+
         return [
-            'alert' => $this->present($alert->refresh()),
+            'alert' => $this->present($alert->refresh(), $user),
             'reading' => $reading['reading'],
+            'medicalNotified' => $medicalNotified,
         ];
     }
 
     /**
-     * RF-37: nueva frecuencia de monitoreo cuando la alteración es aislada y de
+     * RF-42: nueva frecuencia de monitoreo cuando la alteración es aislada y de
      * baja severidad. Programa el control y cierra la alerta.
      *
      * @param  array<string, mixed>  $input
@@ -122,6 +163,14 @@ class AlertWorkflow
     public function scheduleMonitoring(ClinicalAlert $alert, array $input, User $user): array
     {
         $this->requireOpen($alert);
+        $this->requireReassessed($alert);
+
+        if ((int) $alert->news2_total >= 1) {
+            throw new ClinicalRuleException(
+                'El NEWS2 sigue alterado. Solicite atención médica o espere la notificación automática al médico.',
+            );
+        }
+
         $frequency = (int) $input['frequencyMinutes'];
         $nextDueAt = now()->addMinutes($frequency);
 
@@ -144,7 +193,7 @@ class AlertWorkflow
         $this->close($alert, $note ?? 'Alteración aislada con nuevo control programado.', $user);
 
         return [
-            'alert' => $this->present($alert->refresh()),
+            'alert' => $this->present($alert->refresh(), $user),
             'schedule' => [
                 'nextDueAt' => $schedule->next_due_at->toIso8601String(),
                 'frequencyMinutes' => $schedule->frequency_minutes,
@@ -153,31 +202,21 @@ class AlertWorkflow
     }
 
     /**
-     * RF-38 y RF-41: la enfermera confirma que el caso requiere atención médica
-     * y la plataforma notifica al médico de guardia con plazo de respuesta.
+     * RF-43 y RF-46: la enfermera confirma que el caso requiere atención médica
+     * (incluye nurse's worry sin exigir nueva toma previa).
      *
      * @param  array<string, mixed>  $input
      */
     public function requestMedicalAttention(ClinicalAlert $alert, array $input, User $user): ClinicalAlert
     {
         $this->requireOpen($alert);
-
-        $alert->update([
-            'status' => ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
-            'assigned_role' => 'medico_residente',
-            'assigned_user_id' => null,
-            'acknowledge_due_at' => null,
-            'medical_notified_at' => now(),
-            'medical_due_at' => now()->addMinutes($this->minutes('medical_response_minutes')),
-        ]);
-
-        $this->record($alert, 'solicitud_medica', $input['reason'], $user);
+        $this->notifyDoctor($alert, $input['reason'], $user);
 
         return $alert->refresh();
     }
 
     /**
-     * RF-44: evaluación e indicaciones médicas de urgencia.
+     * RF-49: evaluación e indicaciones médicas de urgencia.
      *
      * @param  array<string, mixed>  $input
      */
@@ -193,16 +232,20 @@ class AlertWorkflow
         );
 
         $alert->update([
-            'status' => ClinicalAlert::STATUS_DOCTOR_IN_PROGRESS,
             'assigned_user_id' => $user->id,
-            'medical_due_at' => null,
         ]);
+
+        $this->close(
+            $alert->refresh(),
+            'Atención médica registrada; continuidad del manejo en sala.',
+            $user,
+        );
 
         return $alert->refresh();
     }
 
     /**
-     * RF-45: solicitud de intervención del Equipo de Respuesta Rápida.
+     * RF-50: solicitud de intervención del Equipo de Respuesta Rápida.
      *
      * @param  array<string, mixed>  $input
      */
@@ -223,8 +266,8 @@ class AlertWorkflow
     }
 
     /**
-     * RF-46: evaluación del ERR y, cuando corresponde, orden digital de
-     * traslado a la Unidad de Cuidados Intensivos. Cierra el evento.
+     * RF-51: evaluación del ERR. Si requiere UCI, abre el ciclo de autorización
+     * (médico + enfermera) sin cerrar el evento; si no, cierra estabilizado.
      *
      * @param  array<string, mixed>  $input
      */
@@ -234,8 +277,25 @@ class AlertWorkflow
         $this->record($alert, 'evaluacion_err', $input['assessment'], $user);
 
         if ($input['transferToIcu'] ?? false) {
-            $this->record($alert, 'traslado_uci', 'Orden digital de traslado a cuidados intensivos.', $user);
-            $this->close($alert, 'Traslado a cuidados intensivos.', $user);
+            $encounter = $this->requireEncounter($alert->encounter_id);
+            $alert->update([
+                'status' => ClinicalAlert::STATUS_ICU_ORDERED,
+                'assigned_role' => null,
+                'assigned_user_id' => null,
+                'medical_due_at' => null,
+                'follow_up_due_at' => null,
+                'icu_ordered_at' => now(),
+                'icu_doctor_authorized_at' => null,
+                'icu_doctor_authorized_by' => null,
+                'icu_nurse_authorized_at' => null,
+                'icu_nurse_authorized_by' => null,
+                'icu_transferred_at' => null,
+                'icu_returned_at' => null,
+                'icu_previous_room' => $encounter->room,
+                'icu_previous_bed' => $encounter->bed,
+                'icu_previous_service' => $encounter->service,
+            ]);
+            $this->record($alert, 'orden_uci', 'Orden digital de traslado a cuidados intensivos.', $user);
         } else {
             $this->close($alert, 'Paciente estabilizado; continúa en sala general.', $user);
         }
@@ -243,16 +303,171 @@ class AlertWorkflow
         return $alert->refresh();
     }
 
+    /** Autorización de la orden UCI por médico o enfermera de piso. */
+    public function authorizeIcuTransfer(ClinicalAlert $alert, User $user): ClinicalAlert
+    {
+        $this->requireOpen($alert);
+
+        if ($alert->status !== ClinicalAlert::STATUS_ICU_ORDERED
+            && $alert->status !== ClinicalAlert::STATUS_ICU_AUTHORIZED) {
+            throw new ClinicalRuleException('No hay una orden de traslado a UCI pendiente de autorización.');
+        }
+
+        $isDoctor = in_array($user->role, self::MEDICAL_ROLES, true);
+        $isNurse = $user->role === 'enfermera_piso';
+
+        if (! $isDoctor && ! $isNurse) {
+            throw new ClinicalRuleException('Solo el médico o la enfermera de piso pueden autorizar el traslado a UCI.');
+        }
+
+        if ($isDoctor) {
+            if ($alert->icu_doctor_authorized_at !== null) {
+                throw new ClinicalRuleException('El médico ya autorizó esta orden de traslado.');
+            }
+            $alert->update([
+                'icu_doctor_authorized_at' => now(),
+                'icu_doctor_authorized_by' => $user->id,
+            ]);
+            $this->record($alert, 'autorizacion_uci_medico', 'Médico autorizó el traslado a cuidados intensivos.', $user);
+        } else {
+            if ($alert->icu_nurse_authorized_at !== null) {
+                throw new ClinicalRuleException('La enfermera ya autorizó esta orden de traslado.');
+            }
+            $alert->update([
+                'icu_nurse_authorized_at' => now(),
+                'icu_nurse_authorized_by' => $user->id,
+            ]);
+            $this->record($alert, 'autorizacion_uci_enfermera', 'Enfermera autorizó el traslado a cuidados intensivos.', $user);
+        }
+
+        $alert->refresh();
+        if ($alert->icuFullyAuthorized()) {
+            $alert->update([
+                'status' => ClinicalAlert::STATUS_ICU_AUTHORIZED,
+                'assigned_role' => 'enfermera_piso',
+            ]);
+            $this->record($alert, 'uci_autorizada', 'Orden de traslado a UCI autorizada por médico y enfermera.', $user);
+        }
+
+        return $alert->refresh();
+    }
+
     /**
-     * RF-40 y RF-43: escalamiento automático de las alertas sin respuesta
-     * dentro del tiempo establecido.
+     * Registro del traslado físico a UCI (actualiza ubicación del ingreso).
      *
-     * @return array{nurse: int, medical: int}
+     * @param  array<string, mixed>  $input
+     */
+    public function recordIcuTransfer(ClinicalAlert $alert, array $input, User $user): ClinicalAlert
+    {
+        $this->requireOpen($alert);
+
+        if ($alert->status !== ClinicalAlert::STATUS_ICU_AUTHORIZED || ! $alert->icuFullyAuthorized()) {
+            throw new ClinicalRuleException('El traslado a UCI requiere autorización del médico y de la enfermera.');
+        }
+
+        if (! in_array($user->role, ['enfermera_piso', 'enfermera_supervisora', 'camillero'], true)) {
+            throw new ClinicalRuleException('Solo enfermería o el camillero pueden registrar el traslado efectivo a UCI.');
+        }
+
+        $encounter = $this->requireEncounter($alert->encounter_id);
+        $encounter->update([
+            'service' => $input['service'] ?? 'UCI',
+            'room' => $input['room'] ?? 'UCI',
+            'bed' => $input['bed'] ?? null,
+        ]);
+
+        $alert->update([
+            'status' => ClinicalAlert::STATUS_IN_ICU,
+            'assigned_role' => 'enfermera_piso',
+            'icu_transferred_at' => now(),
+        ]);
+
+        $location = trim(($input['service'] ?? 'UCI').' '.($input['room'] ?? '').' '.($input['bed'] ?? ''));
+        $this->record($alert, 'traslado_uci_efectivo', "Paciente trasladado a {$location}.", $user);
+
+        return $alert->refresh();
+    }
+
+    /**
+     * Retorno del paciente a sala general tras estancia en UCI.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function recordIcuReturn(ClinicalAlert $alert, array $input, User $user): ClinicalAlert
+    {
+        $this->requireOpen($alert);
+
+        if ($alert->status !== ClinicalAlert::STATUS_IN_ICU) {
+            throw new ClinicalRuleException('El paciente no está registrado en UCI.');
+        }
+
+        if (! in_array($user->role, ['enfermera_piso', 'enfermera_supervisora'], true)) {
+            throw new ClinicalRuleException('Solo enfermería puede registrar el retorno a sala.');
+        }
+
+        $encounter = $this->requireEncounter($alert->encounter_id);
+        $encounter->update([
+            'service' => $input['service'],
+            'room' => $input['room'],
+            'bed' => $input['bed'] ?? null,
+        ]);
+
+        $alert->update([
+            'icu_returned_at' => now(),
+        ]);
+
+        $note = $input['note'] ?? 'Paciente regresa a sala general tras UCI.';
+        $this->record(
+            $alert,
+            'retorno_sala',
+            "Retorno a {$input['service']}, habitación {$input['room']}. {$note}",
+            $user,
+        );
+        $this->close($alert, $note, $user);
+
+        return $alert->refresh();
+    }
+
+    private function notifyDoctor(ClinicalAlert $alert, string $reason, User $user): void
+    {
+        if (in_array($alert->status, [
+            ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
+            ClinicalAlert::STATUS_DOCTOR_IN_PROGRESS,
+            ClinicalAlert::STATUS_RRT_REQUESTED,
+            ClinicalAlert::STATUS_RRT_ESCALATED,
+            ClinicalAlert::STATUS_ICU_ORDERED,
+            ClinicalAlert::STATUS_ICU_AUTHORIZED,
+            ClinicalAlert::STATUS_IN_ICU,
+        ], true)) {
+            throw new ClinicalRuleException('El médico ya fue notificado o el caso avanzó a otro nivel.');
+        }
+
+        $alert->update([
+            'status' => ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
+            'assigned_role' => 'medico_residente',
+            'assigned_user_id' => null,
+            'acknowledge_due_at' => null,
+            'follow_up_due_at' => null,
+            'medical_notified_at' => now(),
+            'medical_due_at' => now()->addMinutes($this->minutes('medical_response_minutes')),
+        ]);
+
+        $this->record($alert, 'solicitud_medica', $reason, $user);
+    }
+
+    /**
+     * RF-45, RF-48, RF-53 y cumplimiento RF-42/RF-32: escalamientos y apertura
+     * de alertas por controles/dosis vencidos.
+     *
+     * @return array{nurse: int, followUp: int, medical: int, controls: int, doses: int}
      */
     public function processOverdueAlerts(): array
     {
         $nurse = 0;
+        $followUp = 0;
         $medical = 0;
+
+        $compliance = app(ComplianceAlertService::class)->openDueTasks();
 
         $pendingNursing = ClinicalAlert::query()
             ->where('status', ClinicalAlert::STATUS_OPEN)
@@ -282,11 +497,29 @@ class AlertWorkflow
                 'status' => ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
                 'assigned_role' => 'medico_residente',
                 'acknowledge_due_at' => null,
+                'follow_up_due_at' => null,
                 'medical_notified_at' => now(),
                 'medical_due_at' => now()->addMinutes($this->minutes('medical_response_minutes')),
             ]);
             $this->registerEscalation($alert, 'medico_residente', 'La supervisora no atendió el escalamiento en el tiempo establecido.');
             $nurse++;
+        }
+
+        $pendingFollowUp = ClinicalAlert::query()
+            ->where('status', ClinicalAlert::STATUS_IN_PROGRESS)
+            ->whereNotNull('follow_up_due_at')
+            ->where('follow_up_due_at', '<=', now())
+            ->get();
+
+        foreach ($pendingFollowUp as $alert) {
+            if ($this->alreadyRecordedFollowUpOverdue($alert)) {
+                continue;
+            }
+
+            $reason = 'Tras confirmar la lectura no se completó la reevaluación y disposición en 15 minutos.';
+            $this->record($alert, 'seguimiento_vencido', $reason, null);
+            $this->registerEscalation($alert, 'enfermera_supervisora', $reason);
+            $followUp++;
         }
 
         $pendingMedical = ClinicalAlert::query()
@@ -308,52 +541,81 @@ class AlertWorkflow
             $medical++;
         }
 
-        return ['nurse' => $nurse, 'medical' => $medical];
+        return [
+            'nurse' => $nurse,
+            'followUp' => $followUp,
+            'medical' => $medical,
+            'controls' => $compliance['controls'],
+            'doses' => $compliance['doses'],
+        ];
     }
 
     /**
-     * Bandeja de alertas pendientes del perfil, base de la campana y de la
-     * pantalla de alertas.
+     * Bandeja de trabajo del perfil: alertas abiertas (en curso o por acusar).
+     * La sirena solo suena cuando `needsSiren` es verdadero.
      *
      * @return array<string, mixed>
      */
     public function inboxFor(User $user): array
     {
-        // Solo alertas que aún exigen confirmación de lectura (RF-39, RF-42, RF-94).
-        // Tras el acuse pasan a "en atención" y dejan de sonar / ocupar la campana.
-        $awaitingAck = [
-            ClinicalAlert::STATUS_OPEN,
-            ClinicalAlert::STATUS_SUPERVISOR,
-            ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
-            ClinicalAlert::STATUS_RRT_REQUESTED,
-            ClinicalAlert::STATUS_RRT_ESCALATED,
-        ];
-
         $alerts = ClinicalAlert::query()
-            ->whereIn('status', $awaitingAck)
+            ->where('status', '!=', ClinicalAlert::STATUS_CLOSED)
             ->where(function ($query) use ($user) {
                 $query->where('assigned_role', $user->role)
                     ->orWhere('assigned_user_id', $user->id);
+
+                // Guardia médica: residente y tratante comparten la bandeja.
+                if (in_array($user->role, self::MEDICAL_ROLES, true)) {
+                    $query->orWhere(function ($medical) {
+                        $medical->whereIn('assigned_role', self::MEDICAL_ROLES)
+                            ->orWhereIn('status', [
+                                ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
+                                ClinicalAlert::STATUS_DOCTOR_IN_PROGRESS,
+                                ClinicalAlert::STATUS_ICU_ORDERED,
+                                ClinicalAlert::STATUS_ICU_AUTHORIZED,
+                                ClinicalAlert::STATUS_IN_ICU,
+                            ]);
+                    });
+                }
+
+                if ($user->role === 'enfermera_piso') {
+                    $query->orWhereIn('status', [
+                        ClinicalAlert::STATUS_ICU_ORDERED,
+                        ClinicalAlert::STATUS_ICU_AUTHORIZED,
+                        ClinicalAlert::STATUS_IN_ICU,
+                    ]);
+                }
+
+                if (in_array($user->role, ['enfermera_supervisora', 'camillero'], true)) {
+                    $query->orWhereIn('status', [
+                        ClinicalAlert::STATUS_ICU_AUTHORIZED,
+                        ClinicalAlert::STATUS_IN_ICU,
+                    ]);
+                }
             })
             ->orderByRaw("CASE WHEN severity = 'alta' THEN 0 ELSE 1 END")
             ->orderByDesc('generated_at')
             ->limit(50)
             ->get()
-            ->map(fn (ClinicalAlert $alert) => $this->present($alert))
+            ->unique('id')
+            ->values()
+            ->map(fn (ClinicalAlert $alert) => $this->present($alert, $user))
             ->all();
+
+        $pendingSiren = count(array_filter($alerts, fn (array $alert) => ($alert['needsSiren'] ?? false) === true));
 
         return [
             'alerts' => $alerts,
-            'pending' => count($alerts),
+            'pending' => $pendingSiren,
         ];
     }
 
     /**
-     * RF-47: historial consolidado y trazable del evento.
+     * RF-52: historial consolidado y trazable del evento.
      *
      * @return array<string, mixed>
      */
-    public function timeline(ClinicalAlert $alert): array
+    public function timeline(ClinicalAlert $alert, ?User $viewer = null): array
     {
         $events = $alert->events()
             ->with('user')
@@ -381,14 +643,14 @@ class AlertWorkflow
             ->all();
 
         return [
-            'alert' => $this->present($alert),
+            'alert' => $this->present($alert, $viewer),
             'events' => $events,
             'escalations' => $escalations,
         ];
     }
 
     /** @return array<string, mixed> */
-    public function present(ClinicalAlert $alert): array
+    public function present(ClinicalAlert $alert, ?User $viewer = null): array
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $alert->encounter_id)->first();
 
@@ -405,9 +667,95 @@ class AlertWorkflow
             'assignedRole' => $alert->assigned_role,
             'generatedAt' => optional($alert->generated_at)?->toIso8601String(),
             'acknowledgeDueAt' => optional($alert->acknowledge_due_at)?->toIso8601String(),
+            'followUpDueAt' => optional($alert->follow_up_due_at)?->toIso8601String(),
+            'reassessedAt' => optional($alert->reassessed_at)?->toIso8601String(),
             'medicalDueAt' => optional($alert->medical_due_at)?->toIso8601String(),
             'closedAt' => optional($alert->closed_at)?->toIso8601String(),
+            'needsSiren' => $this->needsSiren($alert, $viewer),
+            'complianceKey' => $alert->compliance_key,
+            'icuTransfer' => [
+                'ordered' => $alert->icu_ordered_at !== null,
+                'orderedAt' => optional($alert->icu_ordered_at)?->toIso8601String(),
+                'doctorAuthorized' => $alert->icu_doctor_authorized_at !== null,
+                'doctorAuthorizedAt' => optional($alert->icu_doctor_authorized_at)?->toIso8601String(),
+                'nurseAuthorized' => $alert->icu_nurse_authorized_at !== null,
+                'nurseAuthorizedAt' => optional($alert->icu_nurse_authorized_at)?->toIso8601String(),
+                'fullyAuthorized' => $alert->icuFullyAuthorized(),
+                'transferredAt' => optional($alert->icu_transferred_at)?->toIso8601String(),
+                'returnedAt' => optional($alert->icu_returned_at)?->toIso8601String(),
+                'previousLocation' => array_filter([
+                    'service' => $alert->icu_previous_service,
+                    'room' => $alert->icu_previous_room,
+                    'bed' => $alert->icu_previous_bed,
+                ]) ?: null,
+            ],
         ];
+    }
+
+    private function needsSiren(ClinicalAlert $alert, ?User $viewer = null): bool
+    {
+        if ($alert->isClosed()) {
+            return false;
+        }
+
+        if ($this->awaitsAcknowledgement($alert)) {
+            return true;
+        }
+
+        if ($alert->status === ClinicalAlert::STATUS_IN_PROGRESS
+            && $alert->follow_up_due_at !== null
+            && $alert->follow_up_due_at->lte(now())) {
+            return true;
+        }
+
+        if ($alert->status === ClinicalAlert::STATUS_ICU_ORDERED) {
+            if (! $viewer) {
+                return ! $alert->icuFullyAuthorized();
+            }
+            if (in_array($viewer->role, self::MEDICAL_ROLES, true)) {
+                return $alert->icu_doctor_authorized_at === null;
+            }
+            if ($viewer->role === 'enfermera_piso') {
+                return $alert->icu_nurse_authorized_at === null;
+            }
+
+            return false;
+        }
+
+        if ($alert->status === ClinicalAlert::STATUS_ICU_AUTHORIZED) {
+            if (! $viewer) {
+                return true;
+            }
+
+            return in_array($viewer->role, ['enfermera_piso', 'enfermera_supervisora', 'camillero'], true);
+        }
+
+        return false;
+    }
+
+    private function awaitsAcknowledgement(ClinicalAlert $alert): bool
+    {
+        return in_array($alert->status, [
+            ClinicalAlert::STATUS_OPEN,
+            ClinicalAlert::STATUS_SUPERVISOR,
+            ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
+            ClinicalAlert::STATUS_RRT_REQUESTED,
+            ClinicalAlert::STATUS_RRT_ESCALATED,
+        ], true);
+    }
+
+    private function alreadyRecordedFollowUpOverdue(ClinicalAlert $alert): bool
+    {
+        $lastAckAt = $alert->acknowledgements()
+            ->orderByDesc('acknowledged_at')
+            ->value('acknowledged_at');
+
+        $query = $alert->events()->where('type', 'seguimiento_vencido');
+        if ($lastAckAt) {
+            $query->where('occurred_at', '>=', $lastAckAt);
+        }
+
+        return $query->exists();
     }
 
     private function location(?AdmissionEncounter $encounter): ?string
@@ -431,6 +779,7 @@ class AlertWorkflow
             'assigned_role' => $toRole,
             'assigned_user_id' => null,
             'acknowledge_due_at' => $ackDueAt,
+            'follow_up_due_at' => null,
         ]);
 
         $this->registerEscalation($alert, $toRole, $reason);
@@ -453,6 +802,7 @@ class AlertWorkflow
             'status' => ClinicalAlert::STATUS_CLOSED,
             'assigned_role' => null,
             'acknowledge_due_at' => null,
+            'follow_up_due_at' => null,
             'medical_due_at' => null,
             'closed_at' => now(),
             'closure_note' => $note,
@@ -470,8 +820,27 @@ class AlertWorkflow
     {
         $this->requireOpen($alert);
 
-        if ($alert->assigned_role !== null && $alert->assigned_role !== $user->role) {
-            throw new ClinicalRuleException('La alerta está asignada a otro perfil.');
+        if ($alert->assigned_role === null) {
+            return;
+        }
+
+        if ($alert->assigned_role === $user->role) {
+            return;
+        }
+
+        // Guardia médica: alerta asignada a residente también la atiende el tratante.
+        if (in_array($alert->assigned_role, self::MEDICAL_ROLES, true)
+            && in_array($user->role, self::MEDICAL_ROLES, true)) {
+            return;
+        }
+
+        throw new ClinicalRuleException('La alerta está asignada a otro perfil.');
+    }
+
+    private function requireReassessed(ClinicalAlert $alert): void
+    {
+        if ($alert->reassessed_at === null) {
+            throw new ClinicalRuleException('Registre una nueva toma de constantes antes de disponer la alerta.');
         }
     }
 

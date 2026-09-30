@@ -9,13 +9,13 @@ use App\Services\Staff\StaffRoster;
 
 /**
  * Apertura y bitácora de alertas. Se mantiene separado de AlertWorkflow para
- * que el monitoreo de constantes (RF-26) pueda abrir una alerta sin depender
+ * que el monitoreo de constantes (RF-30) pueda abrir una alerta sin depender
  * del flujo completo del proceso 3.
  */
 class AlertRecorder
 {
     /**
-     * RF-34: alerta generada por el monitoreo rutinario y dirigida a la
+     * RF-39: alerta generada por el monitoreo rutinario y dirigida a la
      * enfermera de piso responsable.
      */
     public function openFromMonitoring(string $encounterId, int $news2Total, ?User $user = null): ClinicalAlert

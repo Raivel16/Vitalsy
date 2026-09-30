@@ -17,7 +17,7 @@ class ClinicalAlertsController extends Controller
         return response()->json($this->alerts->inboxFor($request->user()));
     }
 
-    /** RF-35: deterioro observado de forma imprevista. */
+    /** RF-40: deterioro observado de forma imprevista. */
     public function storeObservation(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -33,18 +33,18 @@ class ClinicalAlertsController extends Controller
 
         $alert = $this->alerts->observe($data['encounterId'], $data, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)], 201);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())], 201);
     }
 
-    /** RF-39 y RF-42: confirmación de recepción. */
+    /** RF-44 y RF-47: confirmación de recepción. */
     public function acknowledge(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $alert = $this->alerts->acknowledge($alert, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)]);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
     }
 
-    /** RF-36: nueva toma de constantes durante la verificación. */
+    /** RF-41: nueva toma de constantes durante la verificación. */
     public function reassess(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -69,7 +69,7 @@ class ClinicalAlertsController extends Controller
         return response()->json($this->alerts->reassess($alert, $data, $request->user()));
     }
 
-    /** RF-37: nueva frecuencia de monitoreo. */
+    /** RF-42: nueva frecuencia de monitoreo. */
     public function scheduleMonitoring(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -84,7 +84,7 @@ class ClinicalAlertsController extends Controller
         return response()->json($this->alerts->scheduleMonitoring($alert, $data, $request->user()));
     }
 
-    /** RF-38 y RF-41: confirmación de necesidad de atención médica. */
+    /** RF-43 y RF-46: confirmación de necesidad de atención médica. */
     public function requestMedical(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -96,10 +96,10 @@ class ClinicalAlertsController extends Controller
 
         $alert = $this->alerts->requestMedicalAttention($alert, $data, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)]);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
     }
 
-    /** RF-44: evaluación e indicaciones médicas de urgencia. */
+    /** RF-49: evaluación e indicaciones médicas de urgencia. */
     public function storeMedicalAssessment(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -114,10 +114,10 @@ class ClinicalAlertsController extends Controller
 
         $alert = $this->alerts->recordMedicalAssessment($alert, $data, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)], 201);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())], 201);
     }
 
-    /** RF-45: solicitud de intervención del Equipo de Respuesta Rápida. */
+    /** RF-50: solicitud de intervención del Equipo de Respuesta Rápida. */
     public function requestRapidResponse(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -129,10 +129,10 @@ class ClinicalAlertsController extends Controller
 
         $alert = $this->alerts->requestRapidResponse($alert, $data, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)]);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
     }
 
-    /** RF-46: evaluación del ERR y orden de traslado a UCI. */
+    /** RF-51: evaluación del ERR y orden de traslado a UCI. */
     public function storeRapidResponseAssessment(Request $request, ClinicalAlert $alert): JsonResponse
     {
         $data = $request->validate([
@@ -146,12 +146,52 @@ class ClinicalAlertsController extends Controller
 
         $alert = $this->alerts->recordRapidResponseAssessment($alert, $data, $request->user());
 
-        return response()->json(['alert' => $this->alerts->present($alert)], 201);
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())], 201);
     }
 
-    /** RF-47: historial consolidado del evento. */
-    public function timeline(ClinicalAlert $alert): JsonResponse
+    /** Autorización de orden UCI (médico o enfermera). */
+    public function authorizeIcu(Request $request, ClinicalAlert $alert): JsonResponse
     {
-        return response()->json($this->alerts->timeline($alert));
+        $alert = $this->alerts->authorizeIcuTransfer($alert, $request->user());
+
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
+    }
+
+    /** Traslado físico a UCI. */
+    public function transferIcu(Request $request, ClinicalAlert $alert): JsonResponse
+    {
+        $data = $request->validate([
+            'service' => ['nullable', 'string', 'max:80'],
+            'room' => ['nullable', 'string', 'max:40'],
+            'bed' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $alert = $this->alerts->recordIcuTransfer($alert, $data, $request->user());
+
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
+    }
+
+    /** Retorno a sala general. */
+    public function returnFromIcu(Request $request, ClinicalAlert $alert): JsonResponse
+    {
+        $data = $request->validate([
+            'service' => ['required', 'string', 'max:80'],
+            'room' => ['required', 'string', 'max:40'],
+            'bed' => ['nullable', 'string', 'max:20'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ], [
+            'service.required' => 'Indique el servicio de retorno.',
+            'room.required' => 'Indique la habitación de retorno.',
+        ]);
+
+        $alert = $this->alerts->recordIcuReturn($alert, $data, $request->user());
+
+        return response()->json(['alert' => $this->alerts->present($alert, $request->user())]);
+    }
+
+    /** RF-52: historial consolidado del evento. */
+    public function timeline(Request $request, ClinicalAlert $alert): JsonResponse
+    {
+        return response()->json($this->alerts->timeline($alert, $request->user()));
     }
 }

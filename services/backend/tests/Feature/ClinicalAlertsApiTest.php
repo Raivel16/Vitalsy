@@ -81,6 +81,21 @@ class ClinicalAlertsApiTest extends TestCase
         ];
     }
 
+    /** Constantes normalizadas (NEWS2 0) para programar control. */
+    private function normalVitalsPayload(): array
+    {
+        return [
+            'respiratoryRate' => 16,
+            'oxygenSaturation' => 98,
+            'systolicBloodPressure' => 120,
+            'pulse' => 72,
+            'temperature' => 36.6,
+            'consciousness' => 'alert',
+            'supplementalOxygen' => false,
+            'spo2Scale' => 'scale1',
+        ];
+    }
+
     public function test_monitoring_alert_is_routed_to_the_floor_nurse_with_a_deadline(): void
     {
         Carbon::setTestNow('2026-09-26 08:00:00');
@@ -128,7 +143,7 @@ class ClinicalAlertsApiTest extends TestCase
             ->assertJsonPath('errors.note.0', 'Describa el deterioro observado.');
     }
 
-    public function test_inbox_lists_pending_alerts_for_the_role_and_hides_acknowledged_ones(): void
+    public function test_inbox_lists_open_alerts_for_the_role_and_hides_closed_ones(): void
     {
         Carbon::setTestNow('2026-09-26 08:00:00');
         $this->inpatientEncounter();
@@ -142,10 +157,11 @@ class ClinicalAlertsApiTest extends TestCase
             ->assertJsonPath('alerts.0.id', $alert->id)
             ->assertJsonPath('alerts.0.patientName', 'Paciente con Deterioro Demo')
             ->assertJsonPath('alerts.0.location', 'Habitación 507, lecho B')
+            ->assertJsonPath('alerts.0.needsSiren', true)
             ->assertJsonPath('pending', 1);
     }
 
-    public function test_nurse_acknowledges_the_alert_and_the_clock_stops(): void
+    public function test_nurse_acknowledges_the_alert_and_the_siren_stops_while_work_continues(): void
     {
         Carbon::setTestNow('2026-09-26 08:03:00');
         $this->inpatientEncounter();
@@ -154,7 +170,9 @@ class ClinicalAlertsApiTest extends TestCase
 
         $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")
             ->assertOk()
-            ->assertJsonPath('alert.status', 'en_atencion');
+            ->assertJsonPath('alert.status', 'en_atencion')
+            ->assertJsonPath('alert.needsSiren', false)
+            ->assertJsonPath('alert.followUpDueAt', '2026-09-26T08:18:00+00:00');
 
         $this->assertDatabaseHas('alert_acknowledgements', [
             'alert_id' => $alert->id,
@@ -162,17 +180,58 @@ class ClinicalAlertsApiTest extends TestCase
             'role' => 'enfermera_piso',
         ]);
         $this->assertSame('en_atencion', $alert->refresh()->status);
+        $this->assertSame('2026-09-26 08:18:00', $alert->follow_up_due_at->toDateTimeString());
 
-        // RF-94: tras confirmar la lectura la alerta deja de sonar / salir en la campana.
+        // RF-53: tras confirmar la lectura deja de sonar, pero sigue en la bandeja
+        // hasta reevaluar y disponer.
         $this->getJson('/api/v1/clinical-alerts/inbox')
             ->assertOk()
-            ->assertJsonCount(0, 'alerts')
+            ->assertJsonCount(1, 'alerts')
+            ->assertJsonPath('alerts.0.id', $alert->id)
+            ->assertJsonPath('alerts.0.needsSiren', false)
             ->assertJsonPath('pending', 0);
 
-        // Vencido el plazo, el escalamiento ya no debe dispararse.
-        Carbon::setTestNow('2026-09-26 08:30:00');
+        // El plazo de acuse inicial ya no escala.
+        Carbon::setTestNow('2026-09-26 08:10:00');
         $this->artisan('alerts:process-slas')->assertSuccessful();
         $this->assertSame('en_atencion', $alert->refresh()->status);
+    }
+
+    public function test_acknowledged_alert_without_follow_up_re_alerts_after_fifteen_minutes(): void
+    {
+        Carbon::setTestNow('2026-09-26 08:00:00');
+        $this->inpatientEncounter();
+        $alert = $this->openAlert(['acknowledge_due_at' => Carbon::parse('2026-09-26 08:05:00')]);
+        $this->asRole('enfermera_piso');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")->assertOk();
+
+        Carbon::setTestNow('2026-09-26 08:16:00');
+        $this->artisan('alerts:process-slas')->assertSuccessful();
+
+        $alert->refresh();
+        $this->assertSame('en_atencion', $alert->status);
+        $this->assertSame('enfermera_piso', $alert->assigned_role);
+        $this->assertDatabaseHas('alert_events', [
+            'alert_id' => $alert->id,
+            'type' => 'seguimiento_vencido',
+        ]);
+        $this->assertDatabaseHas('alert_escalations', [
+            'alert_id' => $alert->id,
+            'to_role' => 'enfermera_supervisora',
+        ]);
+
+        $this->getJson('/api/v1/clinical-alerts/inbox')
+            ->assertOk()
+            ->assertJsonPath('alerts.0.needsSiren', true)
+            ->assertJsonPath('pending', 1);
+
+        // Un nuevo acuse calla la sirena y reinicia el plazo de 15 minutos.
+        Carbon::setTestNow('2026-09-26 08:17:00');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")
+            ->assertOk()
+            ->assertJsonPath('alert.needsSiren', false)
+            ->assertJsonPath('alert.followUpDueAt', '2026-09-26T08:32:00+00:00');
     }
 
     public function test_unacknowledged_nurse_alert_escalates_to_the_supervisor(): void
@@ -201,21 +260,58 @@ class ClinicalAlertsApiTest extends TestCase
         $alert = $this->openAlert(['status' => 'en_atencion']);
         $this->asRole('enfermera_piso');
 
-        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/reassessment", $this->vitalsPayload())
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/reassessment", $this->normalVitalsPayload())
             ->assertOk()
-            ->assertJsonPath('alert.id', $alert->id);
+            ->assertJsonPath('alert.id', $alert->id)
+            ->assertJsonPath('alert.status', 'en_atencion')
+            ->assertJsonPath('medicalNotified', false);
 
         $this->assertSame(1, ClinicalAlert::query()->count());
         $this->assertSame(1, VitalSignReading::query()->where('encounter_id', 'ENC-ALERT-0001')->count());
-        $this->assertNotSame(4, $alert->refresh()->news2_total);
+        $this->assertSame(0, $alert->refresh()->news2_total);
         $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'revaloracion']);
+    }
+
+    public function test_reassessment_with_persistent_alteration_auto_notifies_the_doctor(): void
+    {
+        Carbon::setTestNow('2026-09-26 08:10:00');
+        $this->inpatientEncounter();
+        $alert = $this->openAlert(['status' => 'en_atencion']);
+        $this->asRole('enfermera_piso');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/reassessment", $this->vitalsPayload())
+            ->assertOk()
+            ->assertJsonPath('medicalNotified', true)
+            ->assertJsonPath('alert.status', 'medico_notificado')
+            ->assertJsonPath('alert.assignedRole', 'medico_residente');
+
+        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'solicitud_medica']);
+        $this->assertNotNull($alert->refresh()->medical_due_at);
+    }
+
+    public function test_nurse_can_request_medical_attention_without_reassessment_for_clinical_worry(): void
+    {
+        Carbon::setTestNow('2026-09-26 10:00:00');
+        $this->inpatientEncounter();
+        $alert = $this->openAlert(['status' => 'en_atencion', 'reassessed_at' => null]);
+        $this->asRole('enfermera_piso');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/medical-request", [
+            'reason' => 'Nurse worry: paciente sudoroso antes de la segunda toma.',
+        ])->assertOk()
+            ->assertJsonPath('alert.status', 'medico_notificado');
     }
 
     public function test_nurse_schedules_a_new_monitoring_frequency(): void
     {
         Carbon::setTestNow('2026-09-26 09:00:00');
         $this->inpatientEncounter();
-        $alert = $this->openAlert(['status' => 'en_atencion']);
+        $alert = $this->openAlert([
+            'status' => 'en_atencion',
+            'reassessed_at' => now(),
+            'news2_total' => 0,
+            'severity' => 'baja',
+        ]);
         $this->asRole('enfermera_piso');
 
         $this->postJson("/api/v1/clinical-alerts/{$alert->id}/monitoring-schedule", [
@@ -271,9 +367,17 @@ class ClinicalAlertsApiTest extends TestCase
         $this->postJson("/api/v1/clinical-alerts/{$alert->id}/medical-assessment", [
             'assessment' => 'Paciente con foco respiratorio, murmullo disminuido en base derecha.',
             'orders' => 'Oxígeno a 2 litros por cánula y radiografía de tórax urgente.',
-        ])->assertCreated();
+        ])->assertCreated()
+            ->assertJsonPath('alert.status', 'cerrada');
 
         $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'atencion_medica']);
+        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'cierre']);
+        $this->assertSame('cerrada', $alert->refresh()->status);
+
+        $this->getJson('/api/v1/clinical-alerts/inbox')
+            ->assertOk()
+            ->assertJsonPath('pending', 0)
+            ->assertJsonCount(0, 'alerts');
     }
 
     public function test_missing_medical_response_escalates_to_supervisor_and_rapid_response_team(): void
@@ -317,7 +421,7 @@ class ClinicalAlertsApiTest extends TestCase
         $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'solicitud_err']);
     }
 
-    public function test_rapid_response_team_records_assessment_and_icu_transfer_order(): void
+    public function test_rapid_response_team_orders_icu_without_closing_the_case(): void
     {
         Carbon::setTestNow('2026-09-26 11:00:00');
         $this->inpatientEncounter();
@@ -328,11 +432,12 @@ class ClinicalAlertsApiTest extends TestCase
             'assessment' => 'Insuficiencia respiratoria aguda con criterio de ventilación no invasiva.',
             'transferToIcu' => true,
         ])->assertCreated()
-            ->assertJsonPath('alert.status', 'cerrada');
+            ->assertJsonPath('alert.status', 'orden_uci')
+            ->assertJsonPath('alert.icuTransfer.ordered', true);
 
         $alert->refresh();
-        $this->assertSame('2026-09-26 11:00:00', $alert->closed_at->toDateTimeString());
-        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'traslado_uci']);
+        $this->assertNull($alert->closed_at);
+        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'orden_uci']);
     }
 
     public function test_rapid_response_team_can_keep_the_patient_on_the_ward(): void
@@ -347,7 +452,7 @@ class ClinicalAlertsApiTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('alert.status', 'cerrada');
 
-        $this->assertDatabaseMissing('alert_events', ['alert_id' => $alert->id, 'type' => 'traslado_uci']);
+        $this->assertDatabaseMissing('alert_events', ['alert_id' => $alert->id, 'type' => 'orden_uci']);
     }
 
     public function test_timeline_consolidates_the_whole_history_in_order(): void
@@ -358,6 +463,8 @@ class ClinicalAlertsApiTest extends TestCase
         $this->asRole('enfermera_piso');
 
         $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")->assertOk();
+        Carbon::setTestNow('2026-09-26 08:10:00');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/reassessment", $this->normalVitalsPayload())->assertOk();
         Carbon::setTestNow('2026-09-26 08:20:00');
         $this->postJson("/api/v1/clinical-alerts/{$alert->id}/medical-request", [
             'reason' => 'Persiste el deterioro pese a la reevaluación.',
@@ -366,8 +473,63 @@ class ClinicalAlertsApiTest extends TestCase
         $response = $this->getJson("/api/v1/clinical-alerts/{$alert->id}/timeline")->assertOk();
 
         $types = array_column($response->json('events'), 'type');
-        $this->assertSame(['recepcion', 'solicitud_medica'], $types);
+        $this->assertSame(['recepcion', 'revaloracion', 'solicitud_medica'], $types);
         $this->assertSame('Paciente con Deterioro Demo', $response->json('alert.patientName'));
+    }
+
+    public function test_icu_order_requires_doctor_and_nurse_authorization_before_transfer_and_return(): void
+    {
+        Carbon::setTestNow('2026-09-26 11:00:00');
+        $encounter = $this->inpatientEncounter();
+        $alert = $this->openAlert(['status' => 'err_solicitado', 'assigned_role' => 'equipo_respuesta_rapida']);
+        $this->asRole('equipo_respuesta_rapida');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/err-assessment", [
+            'assessment' => 'Insuficiencia respiratoria aguda con criterio de ventilación no invasiva.',
+            'transferToIcu' => true,
+        ])->assertCreated()
+            ->assertJsonPath('alert.status', 'orden_uci');
+
+        $alert->refresh();
+        $this->assertNull($alert->closed_at);
+        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'orden_uci']);
+
+        $this->asRole('medico_residente');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/icu-authorize")
+            ->assertOk()
+            ->assertJsonPath('alert.icuTransfer.doctorAuthorized', true)
+            ->assertJsonPath('alert.icuTransfer.fullyAuthorized', false);
+
+        $this->asRole('enfermera_piso');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/icu-authorize")
+            ->assertOk()
+            ->assertJsonPath('alert.status', 'uci_autorizada')
+            ->assertJsonPath('alert.icuTransfer.fullyAuthorized', true);
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/icu-transfer", [
+            'service' => 'UCI',
+            'room' => 'UCI-1',
+            'bed' => 'A',
+        ])->assertOk()
+            ->assertJsonPath('alert.status', 'en_uci');
+
+        $encounter->refresh();
+        $this->assertSame('UCI', $encounter->service);
+        $this->assertSame('UCI-1', $encounter->room);
+
+        Carbon::setTestNow('2026-09-26 18:00:00');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/icu-return", [
+            'service' => 'Medicina',
+            'room' => '507',
+            'bed' => 'B',
+            'note' => 'Paciente estabilizado; regresa a sala general.',
+        ])->assertOk()
+            ->assertJsonPath('alert.status', 'cerrada');
+
+        $encounter->refresh();
+        $this->assertSame('Medicina', $encounter->service);
+        $this->assertSame('507', $encounter->room);
+        $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'retorno_sala']);
     }
 
     public function test_alert_history_cannot_be_rewritten_once_recorded(): void
@@ -381,6 +543,30 @@ class ClinicalAlertsApiTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         $event->update(['type' => 'adulterado']);
+    }
+
+    public function test_treating_physician_sees_medical_alerts_assigned_to_the_resident_role(): void
+    {
+        Carbon::setTestNow('2026-09-26 10:00:00');
+        $this->inpatientEncounter();
+        $alert = $this->openAlert(['status' => 'en_atencion']);
+        $this->asRole('enfermera_piso');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/medical-request", [
+            'reason' => 'Nurse worry: deterioro antes de la segunda toma.',
+        ])->assertOk()
+            ->assertJsonPath('alert.assignedRole', 'medico_residente');
+
+        $this->asRole('medico_tratante');
+        $this->getJson('/api/v1/clinical-alerts/inbox')
+            ->assertOk()
+            ->assertJsonPath('alerts.0.id', $alert->id)
+            ->assertJsonPath('alerts.0.needsSiren', true)
+            ->assertJsonPath('pending', 1);
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")
+            ->assertOk()
+            ->assertJsonPath('alert.status', 'medico_en_atencion');
     }
 
     public function test_administrative_roles_cannot_reach_the_alert_flow(): void

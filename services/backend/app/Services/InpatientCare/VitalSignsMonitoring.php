@@ -133,7 +133,7 @@ class VitalSignsMonitoring
 
         if (! $activateAlerts) {
             // Revaloración dentro de una alerta abierta: no se duplica la
-            // alerta ni se reprograma el control rutinario (RF-36).
+            // alerta ni se reprograma el control rutinario (RF-41).
             return $this->readingPayload($reading, $news2, $filtered, false, null);
         }
 

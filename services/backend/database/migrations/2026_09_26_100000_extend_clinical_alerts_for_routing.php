@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('closure_note')->nullable()->after('closed_at');
         });
 
-        // RF-47: historial append-only de cada evento de la alerta.
+        // RF-52: historial append-only de cada evento de la alerta.
         Schema::create('alert_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('alert_id')->constrained('clinical_alerts')->cascadeOnDelete();

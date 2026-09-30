@@ -8,5 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// RF-40 y RF-43: el escalamiento depende de vencimientos por minuto.
+// RF-45 y RF-48: el escalamiento depende de vencimientos por minuto.
 Schedule::command('alerts:process-slas')->everyMinute()->withoutOverlapping();

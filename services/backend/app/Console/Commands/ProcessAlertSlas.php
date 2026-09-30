@@ -6,7 +6,7 @@ use App\Services\ClinicalAlerts\AlertWorkflow;
 use Illuminate\Console\Command;
 
 /**
- * RF-40 y RF-43: control del tiempo de respuesta y escalamiento automático de
+ * RF-45 y RF-48: control del tiempo de respuesta y escalamiento automático de
  * las alertas que no fueron confirmadas ni atendidas.
  */
 class ProcessAlertSlas extends Command
@@ -19,7 +19,13 @@ class ProcessAlertSlas extends Command
     {
         $result = $alerts->processOverdueAlerts();
 
-        $this->info("Escalamientos de enfermería: {$result['nurse']}. Escalamientos médicos: {$result['medical']}.");
+        $this->info(
+            "Escalamientos de enfermería: {$result['nurse']}. "
+            ."Seguimientos vencidos: {$result['followUp']}. "
+            ."Escalamientos médicos: {$result['medical']}. "
+            ."Controles vencidos: {$result['controls']}. "
+            ."Dosis e-MAR vencidas: {$result['doses']}."
+        );
 
         return self::SUCCESS;
     }
