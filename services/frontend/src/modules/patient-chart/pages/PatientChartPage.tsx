@@ -15,6 +15,7 @@ import {
   type DateRangeValue,
 } from "../../../shared/datetime/range";
 import { VitalSignsChartPanel } from "../../vital-monitoring/ui/VitalSignsChartPanel";
+import { eventLabel, STATUS_LABEL, type AlertStatus } from "../../clinical-alerts/domain/alert";
 
 type ChartPayload = {
   encounter: {
@@ -56,9 +57,20 @@ type ChartPayload = {
   nursingEvolutionNotes: { id: number; body: string; authoredAt: string | null; authorName: string | null }[];
   careActivities: { id: number; activityLabel: string; completedAt: string | null; completedByName: string | null }[];
   medicationAdministrations: { id: number; drugName: string | null; dose: string | null; status: string; scheduledAt: string | null; administeredAt: string | null }[];
+  clinicalAlerts?: {
+    id: number;
+    status: string;
+    severity: string;
+    news2Total: number | null;
+    message: string;
+    source: string;
+    generatedAt: string | null;
+    closedAt: string | null;
+    events: { id: number; type: string; detail: string | null; role: string | null; occurredAt: string | null }[];
+  }[];
 };
 
-type ChartTab = "admision" | "constantes" | "tratamiento" | "paraclinicos" | "evoluciones";
+type ChartTab = "admision" | "constantes" | "tratamiento" | "paraclinicos" | "evoluciones" | "alertas";
 
 const TABS: { id: ChartTab; label: string }[] = [
   { id: "admision", label: "Admisión" },
@@ -66,6 +78,7 @@ const TABS: { id: ChartTab; label: string }[] = [
   { id: "tratamiento", label: "Tratamiento" },
   { id: "paraclinicos", label: "Paraclínicos" },
   { id: "evoluciones", label: "Evoluciones" },
+  { id: "alertas", label: "Alertas" },
 ];
 
 function hasAdmissionContent(admission: ChartPayload["admission"]): boolean {
@@ -512,6 +525,48 @@ export function PatientChartPage() {
               ))
             )}
           </section>
+        </div>
+      ) : null}
+
+      {tab === "alertas" ? (
+        <div
+          className="chart-tab-panel"
+          role="tabpanel"
+          id={`${tabsId}-panel-alertas`}
+          aria-labelledby={`${tabsId}-alertas`}
+          aria-label="Alertas"
+        >
+          <h3>Alertas y respuesta clínica</h3>
+          {(data.clinicalAlerts ?? []).length === 0 ? (
+            <Feedback tone="info">Sin alertas clínicas en el rango seleccionado.</Feedback>
+          ) : (
+            (data.clinicalAlerts ?? []).map((item) => (
+              <section key={item.id} className="result-block" aria-label={`Alerta ${item.id}`}>
+                <p>
+                  <strong>{STATUS_LABEL[item.status as AlertStatus] ?? item.status}</strong>
+                  {item.news2Total !== null ? ` · NEWS2 ${item.news2Total}` : ""}
+                  {" · "}
+                  {formatDateTime(item.generatedAt)}
+                </p>
+                <p>{item.message}</p>
+                <p className="actions">
+                  <Link to={`/alertas/${item.id}`}>Abrir el evento</Link>
+                </p>
+                {item.events.length === 0 ? (
+                  <p className="hint">Sin movimientos registrados.</p>
+                ) : (
+                  <ol className="timeline">
+                    {item.events.map((event) => (
+                      <li key={event.id}>
+                        <p><strong>{eventLabel(event.type)}</strong> · {formatDateTime(event.occurredAt)}</p>
+                        {event.detail ? <p>{event.detail}</p> : null}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
+            ))
+          )}
         </div>
       ) : null}
     </Sheet>

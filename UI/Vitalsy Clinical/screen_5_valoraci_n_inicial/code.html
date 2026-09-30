@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"on-secondary-fixed":"#0f1d27","on-primary-container":"#a4e9fc","primary-fixed-dim":"#8cd1e3","inverse-primary":"#8cd1e3","surface-container-low":"#edf4fd","surface-variant":"#dce3eb","on-tertiary-fixed-variant":"#693c0d","on-surface-variant":"#3f484b","inverse-on-surface":"#ebf1fa","surface-container-lowest":"#ffffff","outline":"#6f797b","inverse-surface":"#2a3137","background":"#f6f9ff","on-error":"#ffffff","on-error-container":"#93000a","on-primary":"#ffffff","error":"#ba1a1a","on-primary-fixed-variant":"#004e5c","on-tertiary-container":"#ffd6b7","on-surface":"#151c22","surface-tint":"#186777","secondary":"#52606c","on-background":"#151c22","on-tertiary-fixed":"#2e1500","secondary-container":"#d3e1f0","surface-bright":"#f6f9ff","primary-fixed":"#aaedff","tertiary-container":"#895626","tertiary":"#6d3f10","on-secondary-container":"#566470","secondary-fixed":"#d6e4f3","error-container":"#ffdad6","on-tertiary":"#ffffff","surface-dim":"#d4dbe3","tertiary-fixed":"#ffdcc2","secondary-fixed-dim":"#bac8d6","surface-container-high":"#e2e9f1","surface-container-highest":"#dce3eb","tertiary-fixed-dim":"#fcb97f","surface":"#f6f9ff","primary-container":"#1e6b7b","surface-container":"#e8eff7","on-primary-fixed":"#001f26","on-secondary-fixed-variant":"#3b4854","on-secondary":"#ffffff","primary":"#005260","outline-variant":"#bfc8cb"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-sm":"0.5rem","space-lg":"1rem","space-md":"0.75rem","space-xs":"0.25rem","space-xl":"1.5rem","gutter":"1rem","margin":"1.5rem"},"fontFamily":{"headline-xl":["\"Source Sans 3\""],"label-sm":["\"Source Sans 3\""],"body-lg":["\"Source Sans 3\""],"label-lg":["\"Source Sans 3\""],"metric-display":["\"Source Sans 3\""],"headline-md":["\"Source Sans 3\""],"body-sm":["\"Source Sans 3\""],"headline-lg":["\"Source Sans 3\""],"body-md":["\"Source Sans 3\""],"label-md":["\"Source Sans 3\""],"headline-sm":["\"Source Sans 3\""]},"fontSize":{"headline-xl":["32px",{"lineHeight":"40px","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.3px","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.1px","fontWeight":"600"}],"metric-display":["28px",{"lineHeight":"32px","fontWeight":"700"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.2px","fontWeight":"600"}],"headline-sm":["16px",{"lineHeight":"24px","fontWeight":"600"}]}}}}</script></head><body class="bg-[#ECEEF1] text-on-surface font-body-md"><header class="fixed top-0 left-0 right-0 h-[68px] bg-surface-container-lowest border-b border-[#D1D6DC] z-50 px-6 flex items-center justify-between"><div class="flex flex-col justify-center select-none"><span class="font-headline-md text-headline-md tracking-tight leading-none text-[#1B2228]">Vitalsy</span><svg class="w-16 h-[6px] my-[3px]" fill="none" viewbox="0 0 64 6" xmlns="http://www.w3.org/2000/svg"><path d="M0 3H26L29 0.5L33 5.5L36 3H64" stroke="#1E6B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg><span class="font-label-md text-label-md text-[#4E5C68] leading-none">Gestión clínica hospitalaria</span></div><div class="flex items-center gap-5"><button aria-label="Notificaciones clínicas" class="relative w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error font-label-sm text-[10px] leading-none rounded-full flex items-center justify-center font-bold">2</span></button><div class="flex flex-col text-right"><span class="font-headline-sm text-headline-sm leading-tight text-[#1B2228]">María Quispe</span><span class="font-label-md text-label-md text-[#4E5C68] leading-none mt-0.5">Enfermera de piso</span></div><div class="h-7 w-[1px] bg-[#D1D6DC]"></div><button class="h-9 px-3 rounded-lg border border-[#D1D6DC] bg-surface-container-lowest hover:bg-surface-container text-[#4E5C68] hover:text-on-surface font-label-lg text-label-lg flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">logout</span><span>Cerrar sesión</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><aside class="fixed left-0 top-[68px] bottom-0 w-64 bg-surface-container-lowest border-r border-[#D1D6DC] z-40 overflow-y-auto px-3 py-4 flex flex-col gap-5"><nav class="flex flex-col gap-4" data-active-classes="bg-[#E6EFF1] text-[#1E6B7B] border-l-[3px] border-[#1E6B7B] font-semibold"><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Trabajo del turno</span><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="inicio-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Inicio</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="pacientes-enfermeria" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Pacientes</span></a></div><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Atención en piso</span><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="expediente-clinico" href="#"><span class="material-symbols-outlined text-[20px]">clinical_notes</span><span>Expediente clínico</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="laboratorio" href="#"><span class="material-symbols-outlined text-[20px]">chips</span><span>Laboratorio</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="imagenes-diagnosticas" href="#"><span class="material-symbols-outlined text-[20px]">radiology</span><span>Imágenes</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="constantes-vitales" href="#"><span class="material-symbols-outlined text-[20px]">vital_signs</span><span>Constantes</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="controles-clinicos" href="#"><span class="material-symbols-outlined text-[20px]">checklist</span><span>Controles</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="emar-medicacion" href="#"><span class="material-symbols-outlined text-[20px]">medication</span><span>e-MAR</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="plan-cuidados" href="#"><span class="material-symbols-outlined text-[20px]">healing</span><span>Cuidados</span></a></div><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Alertas clínicas</span><a class="h-[38px] px-2.5 rounded flex items-center justify-between text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="alertas-deterioro" href="#"><div class="flex items-center gap-2.5"><span class="material-symbols-outlined text-[20px]">warning</span><span>Alertas</span></div><span class="px-1.5 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm">2</span></a><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="registrar-deterioro" href="#"><span class="material-symbols-outlined text-[20px]">notification_important</span><span>Registrar deterioro</span></a></div><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Alta y egreso</span><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="gestion-egreso" href="#"><span class="material-symbols-outlined text-[20px]">output</span><span>Egreso</span></a></div><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Camas</span><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="limpieza-camas" href="#"><span class="material-symbols-outlined text-[20px]">cleaning_services</span><span>Limpieza</span></a></div><div class="flex flex-col gap-1"><span class="px-2 font-label-sm text-label-sm tracking-wider uppercase text-[#4E5C68]">Personal</span><a class="h-[38px] px-2.5 rounded flex items-center gap-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-body-md text-body-md" data-path="turnos-cobertura" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span>Turnos y cobertura</span></a></div></nav></aside><div class="pl-64"><main class="relative pt-[68px] min-h-screen bg-[#ECEEF1] p-margin"><div class="flex flex-col w-full gap-5">
+<!-- Case Context Bar -->
+<section class="w-full bg-surface-container-lowest rounded-xl shadow-sm p-4 flex flex-col gap-4">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary-container shrink-0">
+<span class="material-symbols-outlined text-[24px]">person</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">Ana María Quispe Rojas</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-primary-container font-label-sm text-label-sm font-semibold tracking-wide">
+              En valoración inicial
+            </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">DNI 45678901 · Cama 304-B (Medicina Interna)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface font-label-lg text-label-lg flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+<span>Ver ficha</span>
+</button>
+<button class="h-9 px-3 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg flex items-center gap-1.5 hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">clinical_notes</span>
+<span>Expediente clínico</span>
+</button>
+</div>
+</div>
+<!-- Admission Stepper (15 steps) -->
+<div class="w-full overflow-x-auto pb-1.5 pt-1">
+<ol class="flex items-center min-w-[860px] w-full justify-between relative">
+<div class="absolute left-3 right-3 top-3 h-[2px] bg-surface-container -z-0"></div>
+<!-- 1: Orden -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="1. Orden">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Orden</span>
+</li>
+<!-- 2: Filiación -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="2. Filiación">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Filiación</span>
+</li>
+<!-- 3: Cobertura -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="3. Cobertura">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Cobertura</span>
+</li>
+<!-- 4: Brazalete -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="4. Brazalete">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Brazalete</span>
+</li>
+<!-- 5: Expediente -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="5. Expediente">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Expediente</span>
+</li>
+<!-- 6: Consentimiento -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="6. Consentimiento">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Consentimiento</span>
+</li>
+<!-- 7: Traslado -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="7. Traslado">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Traslado</span>
+</li>
+<!-- 8: Identidad -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="8. Identidad">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Identidad</span>
+</li>
+<!-- 9: Recepción -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="9. Recepción">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[13px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant font-medium">Recepción</span>
+</li>
+<!-- 10: Valoración (ACTIVO) -->
+<li class="relative z-10 flex flex-col items-center group cursor-default" title="10. Valoración (Activo)">
+<span class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-[12px] font-bold shadow-md scale-110">
+            10
+          </span>
+<span class="mt-1 font-label-sm text-[11px] text-primary-container font-bold">Valoración</span>
+</li>
+<!-- 11: Constantes -->
+<li class="relative z-10 flex flex-col items-center opacity-60" title="11. Constantes">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[11px] font-semibold">
+            11
+          </span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant">Constantes</span>
+</li>
+<!-- 12: Medicación -->
+<li class="relative z-10 flex flex-col items-center opacity-60" title="12. Medicación">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[11px] font-semibold">
+            12
+          </span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant">Medicación</span>
+</li>
+<!-- 13: Dieta -->
+<li class="relative z-10 flex flex-col items-center opacity-60" title="13. Dieta">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[11px] font-semibold">
+            13
+          </span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant">Dieta</span>
+</li>
+<!-- 14: Cuidados -->
+<li class="relative z-10 flex flex-col items-center opacity-60" title="14. Cuidados">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[11px] font-semibold">
+            14
+          </span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant">Cuidados</span>
+</li>
+<!-- 15: Cierre -->
+<li class="relative z-10 flex flex-col items-center opacity-60" title="15. Cierre">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[11px] font-semibold">
+            15
+          </span>
+<span class="mt-1 font-label-sm text-[10px] text-on-surface-variant">Cierre</span>
+</li>
+</ol>
+</div>
+</section>
+<!-- Main Admission Form Container -->
+<div class="w-full flex justify-center pb-8">
+<div class="w-full max-w-[780px] bg-surface-container-lowest rounded-xl shadow-md p-8 flex flex-col gap-6">
+<!-- Card Header -->
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary-container font-semibold">
+          Enfermería de piso · Ingreso clínico
+        </span>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold">
+          Valoración inicial
+        </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          Registre la anamnesis de enfermería, antecedentes patológicos y alergias conocidas al momento de la admisión en sala.
+        </p>
+</div>
+<!-- Sync Banner (Vitalsy Life Baseline) -->
+<div class="rounded-xl bg-surface-container-low p-4 flex items-start gap-3.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-primary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">sync_saved_locally</span>
+</div>
+<div class="flex flex-col gap-0.5 text-on-surface">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-md font-semibold text-primary-container">Línea de base Vitalsy Life</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-primary-container font-label-sm text-[11px]">Sincronización segura</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Datos sincronizados desde la app domiciliaria (última medición: glucosa 118 mg/dL, PA 125/80 mmHg hace 14 hrs).
+          </p>
+</div>
+</div>
+<!-- Admission Form -->
+<form class="flex flex-col gap-6" id="admissionForm" onsubmit="event.preventDefault();">
+<!-- Field 1: Motivo de consulta -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface font-semibold" for="motivoConsulta">
+              1. Motivo de consulta y situación actual
+            </label>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Requerido</span>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-xl bg-surface-container-lowest p-3 font-body-md text-body-md text-on-surface shadow-inner focus:outline-none focus:bg-surface-container-low transition-colors resize-y placeholder:text-outline" id="motivoConsulta" placeholder="Describa el motivo de consulta e ingreso hospitalario..." rows="4">Paciente ingresa referida desde Emergencia por dolor epigástrico urente de 48 horas de evolución, asociado a náuseas y astenia. Refiere haber tolerado líquidos tibios en la última hora.</textarea>
+</div>
+</div>
+<!-- Field 2: Antecedentes médico-quirúrgicos -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface font-semibold" for="antecedentes">
+              2. Antecedentes médico-quirúrgicos y comorbilidades
+            </label>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Requerido</span>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-xl bg-surface-container-lowest p-3 font-body-md text-body-md text-on-surface shadow-inner focus:outline-none focus:bg-surface-container-low transition-colors resize-y placeholder:text-outline" id="antecedentes" placeholder="Detalle enfermedades crónicas, cirugías previas, hábitos..." rows="3">Hipertensión arterial diagnosticada hace 6 años en tratamiento regular. Colecistectomía laparoscópica en 2018 sin complicaciones. No refiere diabetes mellitus ni asma.</textarea>
+</div>
+</div>
+<!-- Field 3: Alergias e intolerancias -->
+<div class="flex flex-col gap-3 p-4 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-error">warning</span>
+<span>3. Alergias e intolerancias medicamentosas</span>
+</label>
+<span class="font-label-sm text-label-sm text-error font-semibold" id="allergiesCount">2 registradas</span>
+</div>
+<!-- Dynamic allergy chips container -->
+<div class="flex flex-wrap items-center gap-2 pt-1" id="allergiesContainer">
+<!-- Chip 1 -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md font-semibold transition-all hover:opacity-95">
+<span>Penicilina / Betalactámicos</span>
+<button class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-error-container hover:text-surface-container-lowest transition-colors" onclick="removeAllergy(this)" title="Eliminar alergia" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<!-- Chip 2 -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md font-semibold transition-all hover:opacity-95">
+<span>AINEs (Metamizol)</span>
+<button class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-error-container hover:text-surface-container-lowest transition-colors" onclick="removeAllergy(this)" title="Eliminar alergia" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+</div>
+<!-- Add allergy row -->
+<div class="flex items-center gap-2 mt-1">
+<div class="relative flex-1">
+<input class="w-full h-10 px-3 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-low transition-colors" id="newAllergyInput" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addAllergy(); }" placeholder="Escriba nueva alergia o fármaco..." type="text"/>
+</div>
+<button class="h-10 px-4 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center gap-1 transition-colors shrink-0" onclick="addAllergy()" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Agregar alergia</span>
+</button>
+</div>
+<!-- Negative confirmation Checkbox -->
+<div class="pt-2">
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded bg-surface-container-lowest text-primary-container focus:ring-0 focus:outline-none cursor-pointer" id="denyOtherAllergies" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">
+                Niega otras alergias medicamentosas o alimentarias conocidas.
+              </span>
+</label>
+</div>
+</div>
+<!-- Form Actions -->
+<div class="flex flex-wrap items-center justify-between gap-4 pt-3">
+<button class="h-11 px-5 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg flex items-center gap-2 transition-colors" onclick="showDraftNotification()" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Guardar borrador temporal</span>
+</button>
+<button class="h-11 px-7 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-semibold flex items-center gap-2 shadow-sm transition-colors" onclick="submitAdmissionForm()" type="submit">
+<span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+<span>Registrar valoración</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    function updateAllergyCount() {
+      const container = document.getElementById('allergiesContainer');
+      const countSpan = document.getElementById('allergiesCount');
+      if (container && countSpan) {
+        const count = container.children.length;
+        countSpan.textContent = count === 1 ? '1 registrada' : count + ' registradas';
+      }
+    }
+
+    function removeAllergy(button) {
+      const chip = button.closest('div');
+      if (chip) {
+        chip.style.transform = 'scale(0.8)';
+        chip.style.opacity = '0';
+        setTimeout(() => {
+          chip.remove();
+          updateAllergyCount();
+        }, 150);
+      }
+    }
+
+    function addAllergy() {
+      const input = document.getElementById('newAllergyInput');
+      const container = document.getElementById('allergiesContainer');
+      if (!input || !container) return;
+
+      const val = input.value.trim();
+      if (!val) return;
+
+      const chip = document.createElement('div');
+      chip.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md font-semibold transition-all hover:opacity-95';
+      chip.innerHTML = `
+        <span>\${val}</span>
+        <button type="button" onclick="removeAllergy(this)" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-error-container hover:text-surface-container-lowest transition-colors" title="Eliminar alergia">
+          <span class="material-symbols-outlined text-[14px]">close</span>
+        </button>
+      `;
+
+      container.appendChild(chip);
+      input.value = '';
+      updateAllergyCount();
+    }
+
+    function showDraftNotification() {
+      const originalText = "Guardar borrador temporal";
+      const btn = event.currentTarget;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check</span><span>Borrador guardado</span>`;
+      btn.classList.add('bg-surface-variant');
+      setTimeout(() => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">save</span><span>\${originalText}</span>`;
+        btn.classList.remove('bg-surface-variant');
+      }, 2000);
+    }
+
+    function submitAdmissionForm() {
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">refresh</span><span>Registrando...</span>`;
+      setTimeout(() => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">done_all</span><span>¡Valoración registrada!</span>`;
+        btn.classList.remove('bg-primary-container');
+        btn.classList.add('bg-surface-tint');
+      }, 900);
+    }
+  </script>
+</div></main></div></body></html>

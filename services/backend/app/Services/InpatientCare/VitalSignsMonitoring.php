@@ -3,12 +3,12 @@
 namespace App\Services\InpatientCare;
 
 use App\Models\AdmissionEncounter;
-use App\Models\ClinicalAlert;
 use App\Models\MonitoringSchedule;
 use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\Clinical\ButterworthFilter;
 use App\Services\Clinical\News2Calculator;
+use App\Services\ClinicalAlerts\AlertRecorder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class VitalSignsMonitoring
@@ -16,13 +16,14 @@ class VitalSignsMonitoring
     public function __construct(
         private readonly News2Calculator $news2,
         private readonly ButterworthFilter $filter,
+        private readonly AlertRecorder $alerts,
     ) {}
 
     /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
-    public function storeManual(string $encounterId, array $input, ?User $user = null): array
+    public function storeManual(string $encounterId, array $input, ?User $user = null, bool $activateAlerts = true): array
     {
         $this->requireEncounter($encounterId);
 
@@ -36,7 +37,7 @@ class VitalSignsMonitoring
             'supplemental_oxygen' => (bool) ($input['supplementalOxygen'] ?? false),
             'consciousness' => $input['consciousness'] ?? 'alert',
             'confusion_onset' => $input['confusionOnset'] ?? null,
-        ], $user, filtered: false);
+        ], $user, filtered: false, activateAlerts: $activateAlerts);
     }
 
     /**
@@ -67,7 +68,7 @@ class VitalSignsMonitoring
             'spo2_scale' => $payload['spo2Scale'] ?? 'scale1',
             'supplemental_oxygen' => (bool) ($payload['supplementalOxygen'] ?? false),
             'consciousness' => $payload['consciousness'] ?? 'alert',
-        ], $user, filtered: true);
+        ], $user, filtered: true, activateAlerts: true);
     }
 
     /**
@@ -99,7 +100,7 @@ class VitalSignsMonitoring
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
-    private function persistReading(string $encounterId, array $values, ?User $user, bool $filtered): array
+    private function persistReading(string $encounterId, array $values, ?User $user, bool $filtered, bool $activateAlerts): array
     {
         $news2 = $this->news2->calculate([
             'respiratoryRate' => $values['rr'],
@@ -130,30 +131,43 @@ class VitalSignsMonitoring
         $alertActivated = false;
         $nextControlAt = null;
 
+        if (! $activateAlerts) {
+            // Revaloración dentro de una alerta abierta: no se duplica la
+            // alerta ni se reprograma el control rutinario (RF-41).
+            return $this->readingPayload($reading, $news2, $filtered, false, null);
+        }
+
         if ($news2['total'] >= 1) {
-            ClinicalAlert::query()->create([
-                'encounter_id' => $encounterId,
-                'source' => 'news2',
-                'severity' => $news2['total'] >= 7 ? 'alta' : 'media',
-                'news2_total' => $news2['total'],
-                'message' => "NEWS2 {$news2['total']}: se activa el proceso de gestión de alertas.",
-                'status' => 'abierta',
-                'generated_at' => now(),
-            ]);
+            $this->alerts->openFromMonitoring($encounterId, (int) $news2['total'], $user);
             $alertActivated = true;
         } else {
-            $next = now()->addHours(12);
+            $hours = (int) config('vitalsy.alerts.routine_control_hours');
+            $next = now()->addHours($hours);
             MonitoringSchedule::query()->updateOrCreate(
                 ['encounter_id' => $encounterId],
                 [
                     'next_due_at' => $next,
-                    'frequency_minutes' => 720,
+                    'frequency_minutes' => $hours * 60,
                     'created_by' => $user?->id,
                 ],
             );
             $nextControlAt = $next->toIso8601String();
         }
 
+        return $this->readingPayload($reading, $news2, $filtered, $alertActivated, $nextControlAt);
+    }
+
+    /**
+     * @param  array<string, mixed>  $news2
+     * @return array<string, mixed>
+     */
+    private function readingPayload(
+        VitalSignReading $reading,
+        array $news2,
+        bool $filtered,
+        bool $alertActivated,
+        ?string $nextControlAt,
+    ): array {
         return [
             'filtered' => $filtered,
             'alertActivated' => $alertActivated,

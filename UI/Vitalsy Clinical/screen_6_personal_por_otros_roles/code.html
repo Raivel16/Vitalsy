@@ -1,0 +1,832 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"inverse-on-surface":"#ebf1fa","inverse-primary":"#8cd1e3","surface-dim":"#d4dbe3","tertiary-fixed-dim":"#fcb97f","surface-tint":"#186777","tertiary-fixed":"#ffdcc2","surface-container-high":"#e2e9f1","on-surface-variant":"#3f484b","primary-container":"#1e6b7b","outline":"#6f797b","error":"#ba1a1a","error-container":"#ffdad6","on-tertiary":"#ffffff","secondary-container":"#d3e1f0","surface-container-low":"#edf4fd","surface-container-lowest":"#ffffff","surface-container-highest":"#dce3eb","on-primary":"#ffffff","on-background":"#151c22","on-secondary-fixed-variant":"#3b4854","on-surface":"#151c22","on-secondary-container":"#566470","background":"#f6f9ff","secondary-fixed-dim":"#bac8d6","surface-container":"#e8eff7","secondary-fixed":"#d6e4f3","tertiary":"#6d3f10","outline-variant":"#bfc8cb","on-tertiary-fixed-variant":"#693c0d","on-tertiary-fixed":"#2e1500","primary":"#005260","primary-fixed-dim":"#8cd1e3","on-tertiary-container":"#ffd6b7","tertiary-container":"#895626","inverse-surface":"#2a3137","on-secondary-fixed":"#0f1d27","on-error":"#ffffff","secondary":"#52606c","on-primary-container":"#a4e9fc","surface":"#f6f9ff","primary-fixed":"#aaedff","on-secondary":"#ffffff","surface-bright":"#f6f9ff","surface-variant":"#dce3eb","on-primary-fixed-variant":"#004e5c","on-error-container":"#93000a","on-primary-fixed":"#001f26"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-xl":"1.5rem","gutter":"1rem","space-md":"0.75rem","space-sm":"0.5rem","margin":"1.5rem","space-xs":"0.25rem","space-lg":"1rem"},fontFamily:{"headline-lg":["\"Source Sans 3\""],"label-md":["\"Source Sans 3\""],"metric-display":["\"Source Sans 3\""],"headline-xl":["\"Source Sans 3\""],"headline-sm":["\"Source Sans 3\""],"body-lg":["\"Source Sans 3\""],"label-sm":["\"Source Sans 3\""],"headline-md":["\"Source Sans 3\""],"body-md":["\"Source Sans 3\""],"label-lg":["\"Source Sans 3\""],"body-sm":["\"Source Sans 3\""]},fontSize:{"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.2px",fontWeight:"600"}],"metric-display":["28px",{lineHeight:"32px",fontWeight:"700"}],"headline-xl":["32px",{lineHeight:"40px",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"24px",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",fontWeight:"400"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.3px",fontWeight:"600"}],"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"label-lg":["14px",{lineHeight:"20px",letterSpacing:"0.1px",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"16px",fontWeight:"400"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col"><div class="h-[68px] px-space-xl flex flex-col justify-center border-b border-surface-variant"><span class="font-headline-md text-headline-md text-on-surface leading-tight tracking-tight">Vitalsy</span><svg class="w-[110px] h-[7px] my-[2px] stroke-primary-container fill-none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 110 7"><path d="M0 3.5 h35 l4 -3 l4 6 l5 -6 l3 3 h59"></path></svg><span class="font-label-sm text-label-sm text-on-surface-variant font-normal leading-none">Gestión clínica hospitalaria</span></div><div class="flex-1 overflow-y-auto py-space-md"><nav class="flex flex-col gap-space-xs" data-active-classes="bg-surface-container text-primary-container border-l-[3px] border-primary-container font-headline-sm"><div class="px-space-lg pt-space-sm pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Trabajo del turno</div><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="inicio" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">dashboard</span>Inicio</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="pacientes" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">group</span>Pacientes</a><div class="px-space-lg pt-space-md pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Atención en piso</div><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="expediente-clinico" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">folder_shared</span>Expediente clínico</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="visita-medica" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">clinical_notes</span>Visita médica</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="laboratorio" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">science</span>Laboratorio</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="imagenes" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">radiology</span>Imágenes</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="evolucion-medica" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">edit_note</span>Evolución médica</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="cpoe" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">prescriptions</span>CPOE</a><div class="px-space-lg pt-space-md pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Alertas clínicas</div><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="alertas" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">crisis_alert</span>Alertas</a><div class="px-space-lg pt-space-md pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Camas y Recursos</div><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="censo-de-camas" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">bed</span>Censo de camas</a><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="limpieza" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">sanitizer</span>Limpieza</a><div class="px-space-lg pt-space-md pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Personal</div><a aria-current="page" class="flex items-center h-10 px-space-lg transition-colors bg-surface-container text-primary-container border-l-[3px] border-primary-container font-headline-sm" data-path="turnos-y-cobertura" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">badge</span>Turnos y cobertura</a><div class="px-space-lg pt-space-md pb-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Alta y egreso</div><a class="flex items-center h-10 px-space-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-md text-body-md" data-path="egreso" href="#"><span class="material-symbols-outlined mr-3 text-[20px]">output</span>Egreso</a></nav></div></aside><div class="pl-64 flex flex-col min-h-screen"><header class="fixed top-0 left-64 right-0 h-[68px] bg-surface-container-lowest border-b border-outline-variant z-40 px-space-xl flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Servicio de Medicina Interna</span><span class="font-label-sm text-label-sm text-on-surface-variant">Hospital Central • Ala Norte Piso 3</span></div></div><div class="flex items-center gap-space-lg"><button class="relative p-space-sm text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span></button><div class="h-8 w-px bg-outline-variant"></div><div class="flex flex-col text-right"><span class="font-headline-sm text-headline-sm text-on-surface leading-none">Dr. Carlos Mendoza</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-tight mt-0.5">Médico Tratante • Mat. 48192</span></div><button class="flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container hover:bg-surface-container-high text-primary-container rounded border border-outline-variant transition-colors font-label-md text-label-md font-semibold"><span class="material-symbols-outlined text-[18px]">logout</span>Cerrar sesión</button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-[68px] px-space-xl pb-space-xl bg-surface flex-1"><div class="flex flex-col w-full">
+<!-- Role Switching Top Bar Segment -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-sm mb-space-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-xs p-1 bg-surface-container rounded-lg overflow-x-auto w-full md:w-auto">
+<button class="role-tab active-tab flex items-center gap-space-xs px-space-md py-space-sm rounded font-label-md text-label-md transition-all bg-primary-container text-on-primary shadow-sm" id="tab-btn-6a" onclick="switchRoleFrame('6a')">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+<span class="">Frame 6A: Jefatura de Enfermería</span>
+<span class="ml-1 w-2 h-2 rounded-full bg-inverse-primary"></span>
+</button>
+<button class="role-tab flex items-center gap-space-xs px-space-md py-space-sm rounded font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="tab-btn-6b" onclick="switchRoleFrame('6b')">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+<span class="">Frame 6B: Enfermera de Piso (Handover)</span>
+</button>
+<button class="role-tab flex items-center gap-space-xs px-space-md py-space-sm rounded font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="tab-btn-6c" onclick="switchRoleFrame('6c')">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+<span class="">Frame 6C: Recursos Humanos (Cobertura)</span>
+</button>
+</div>
+<div class="flex items-center gap-space-md px-space-sm w-full md:w-auto justify-between md:justify-end">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">calendar_month</span>
+<span class="font-label-sm text-label-sm font-semibold uppercase tracking-wider">Período Activo: Abril 2025</span>
+</div>
+<div class="h-4 w-px bg-surface-variant hidden md:block"></div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">Servicio Medicina Interna</span>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- FRAME 6A: JEFATURA DE ENFERMERÍA (Activa por defecto)                      -->
+<!-- ========================================================================= -->
+<div class="flex flex-col gap-space-xl" id="frame-6a">
+<!-- Section Header & Quick Summary -->
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary-container font-label-sm text-label-sm uppercase tracking-wider">Gestión de Dotación</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Ciclo Operativo 30 Días</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Rol de turnos mensual y programación del servicio</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5 max-w-3xl">Planificación maestra mensual de guardias diurnas, nocturnas y días libres para el servicio de enfermería.</p>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container-low text-on-surface hover:bg-surface-container rounded-lg font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+          Exportar Matriz
+        </button>
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+          Publicar rol mensual oficial
+        </button>
+</div>
+</div>
+<!-- KPIs de Jefatura -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Dotación Planificada</span>
+<span class="material-symbols-outlined text-primary text-[20px]">groups</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">18</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">enfermeros/as</span>
+</div>
+<div class="mt-space-xs flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="text-primary font-semibold">100%</span> cobertura piso norte
+        </div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Horas Totales Programadas</span>
+<span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">2,880</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">hrs / mes</span>
+</div>
+<div class="mt-space-xs flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-semibold text-on-surface">160h</span> prom. colaborador
+        </div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Descanso Normativo</span>
+<span class="material-symbols-outlined text-primary text-[20px]">task_alt</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">98.4%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">cumplimiento</span>
+</div>
+<div class="mt-space-xs flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+          Ley N° 27669 / Jornada Hospitalaria
+        </div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Alertas de Reemplazo</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">notification_important</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-tertiary">2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">retenes requeridos</span>
+</div>
+<div class="mt-space-xs flex items-center gap-1 text-tertiary font-body-sm text-body-sm">
+          Requiere aprobación inmediata
+        </div>
+</div>
+</div>
+<!-- Main Calendar / Roster Matrix Container -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Matriz Operativa de Turnos (Días 1 al 15)</h2>
+<span class="hidden md:inline-block font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Semana 1 a 2</span>
+</div>
+<!-- Legend of Shifts -->
+<div class="flex items-center gap-space-sm flex-wrap text-on-surface">
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="w-5 h-5 rounded flex items-center justify-center font-bold text-on-primary bg-primary text-[10px]">D</span>
+<span class="text-on-surface-variant">Diurno (07:00-19:00)</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="w-5 h-5 rounded flex items-center justify-center font-bold text-on-secondary-container bg-secondary-container text-[10px]">N</span>
+<span class="text-on-surface-variant">Noche (19:00-07:00)</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="w-5 h-5 rounded flex items-center justify-center font-bold text-on-surface-variant bg-surface-container-highest text-[10px]">L</span>
+<span class="text-on-surface-variant">Libre</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="w-5 h-5 rounded flex items-center justify-center font-bold text-on-tertiary bg-tertiary-container text-[10px]">R</span>
+<span class="text-on-surface-variant">Retén Activo</span>
+</div>
+</div>
+</div>
+<!-- Roster Matrix Table -->
+<div class="overflow-x-auto w-full rounded-lg">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-space-sm px-space-md min-w-[210px] rounded-l-lg">Colaborador / Matrícula</th>
+<th class="py-space-sm px-1 text-center w-8">01</th>
+<th class="py-space-sm px-1 text-center w-8">02</th>
+<th class="py-space-sm px-1 text-center w-8">03</th>
+<th class="py-space-sm px-1 text-center w-8">04</th>
+<th class="py-space-sm px-1 text-center w-8">05</th>
+<th class="py-space-sm px-1 text-center w-8">06</th>
+<th class="py-space-sm px-1 text-center w-8">07</th>
+<th class="py-space-sm px-1 text-center w-8">08</th>
+<th class="py-space-sm px-1 text-center w-8">09</th>
+<th class="py-space-sm px-1 text-center w-8">10</th>
+<th class="py-space-sm px-1 text-center w-8">11</th>
+<th class="py-space-sm px-1 text-center w-8">12</th>
+<th class="py-space-sm px-1 text-center w-8">13</th>
+<th class="py-space-sm px-1 text-center w-8">14</th>
+<th class="py-space-sm px-1 text-center w-8">15</th>
+<th class="py-space-sm px-space-md text-right min-w-[100px]">Total Hrs</th>
+<th class="py-space-sm px-space-md text-center min-w-[130px] rounded-r-lg">Descanso Norm.</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low text-on-surface font-body-sm text-body-sm">
+<!-- Row 1: Lic. María Quispe -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-label-md text-label-md text-primary font-bold">MQ</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate">Lic. María Quispe</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CEP 34102 • Especialista UCI</span>
+</div>
+</div>
+</td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="py-space-sm px-space-md text-right font-headline-sm text-headline-sm text-on-surface">84 hrs</td>
+<td class="py-space-sm px-space-md text-center">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Conforme
+                </span>
+</td>
+</tr>
+<!-- Row 2: Lic. Jorge Huamán -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-label-md text-label-md text-primary font-bold">JH</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate">Lic. Jorge Huamán</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CEP 41289 • Asistencial General</span>
+</div>
+</div>
+</td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-tertiary bg-tertiary-container text-xs">R</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="py-space-sm px-space-md text-right font-headline-sm text-headline-sm text-on-surface">96 hrs</td>
+<td class="py-space-sm px-space-md text-center">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Conforme
+                </span>
+</td>
+</tr>
+<!-- Row 3: Lic. Patricia Salas -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-label-md text-label-md text-primary font-bold">PS</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate">Lic. Patricia Salas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CEP 39851 • Cuidados Intermedios</span>
+</div>
+</div>
+</td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-tertiary bg-tertiary-container text-xs">R</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="py-space-sm px-space-md text-right font-headline-sm text-headline-sm text-on-surface">84 hrs</td>
+<td class="py-space-sm px-space-md text-center">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Conforme
+                </span>
+</td>
+</tr>
+<!-- Row 4: Lic. Carmen Rivas -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-label-md text-label-md text-primary font-bold">CR</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate">Lic. Carmen Rivas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CEP 28410 • Medicación y Soporte</span>
+</div>
+</div>
+</td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="py-space-sm px-space-md text-right font-headline-sm text-headline-sm text-on-surface">84 hrs</td>
+<td class="py-space-sm px-space-md text-center">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Conforme
+                </span>
+</td>
+</tr>
+<!-- Row 5: Lic. Carlos Luna -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-space-sm px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-label-md text-label-md text-primary font-bold">CL</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate">Lic. Carlos Luna</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CEP 45201 • Asistencial / Procedimientos</span>
+</div>
+</div>
+</td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-primary bg-primary text-xs">D</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-secondary-container bg-secondary-container text-xs">N</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="p-1 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded font-semibold text-on-surface-variant bg-surface-container-highest text-xs">L</span></td>
+<td class="py-space-sm px-space-md text-right font-headline-sm text-headline-sm text-on-surface">84 hrs</td>
+<td class="py-space-sm px-space-md text-center">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Conforme
+                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Panel de Aprobación de Retenes y Balance de Turno -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Columna Izquierda: Retenes por cubrir -->
+<div class="lg:col-span-8 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary">emergency_home</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Panel de Aprobación de Retenes Clínicos</h3>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-semibold">2 Solicitudes Pendientes</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant -mt-2">Reasignaciones por descanso médico sobrevenido y cobertura crítica de piso de hospitalización.</p>
+<!-- Lista de Solicitudes de Retén -->
+<div class="flex flex-col gap-space-sm">
+<!-- Item 1 -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mt-1">
+<span class="material-symbols-outlined text-[22px]">medical_services</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Guardia Noche • Día 09 Abr</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-semibold">Descanso Médico</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Titular: Lic. Maritza Ponce (Incapacidad temporal 48h)</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold mt-1">Candidato asignado en retén: Lic. Jorge Huamán (CEP 41289)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs w-full sm:w-auto justify-end">
+<button class="px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                Aprobar asignación de retén
+              </button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mt-1">
+<span class="material-symbols-outlined text-[22px]">bed</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Guardia Diurna • Día 13 Abr</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">Refuerzo de Demanda</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Ingreso de 4 cirugías complejas programadas desde recuperación</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold mt-1">Candidato propuesto: Lic. Patricia Salas (CEP 39851)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs w-full sm:w-auto justify-end">
+<button class="px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                Aprobar asignación de retén
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Columna Derecha: Balance Semanal de Capacidad -->
+<div class="lg:col-span-4 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Balance Semanal de Capacidad</h3>
+<span class="material-symbols-outlined text-primary text-[20px]">bar_chart</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Distribución de horas efectivas vs. dotación teórica de seguridad clínica (1:4 enfermero-paciente).</p>
+<div class="flex flex-col gap-space-sm">
+<div>
+<div class="flex justify-between font-label-sm text-label-sm mb-1">
+<span class="text-on-surface">Guardias Diurnas (07:00 - 19:00)</span>
+<span class="font-semibold text-primary">100% Cubierto</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-label-sm text-label-sm mb-1">
+<span class="text-on-surface">Guardias Nocturnas (19:00 - 07:00)</span>
+<span class="font-semibold text-primary">94% Cubierto</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 94%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-label-sm text-label-sm mb-1">
+<span class="text-on-surface">Retenes en Disponibilidad</span>
+<span class="font-semibold text-tertiary">85% Activado</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-space-md pt-space-md bg-surface-container-low p-space-md rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">policy</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Conforme a Directiva Hospitalaria Nº 014-MINSA para ratio de internamiento.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- FRAME 6B: ENFERMERA DE PISO - HANDOVER PROTOCOLIZADO                       -->
+<!-- ========================================================================= -->
+<div class="flex flex-col gap-space-xl hidden" id="frame-6b">
+<!-- Header Frame 6B -->
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary-container font-label-sm text-label-sm uppercase tracking-wider">Continuidad de Cuidados</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Fin de Guardia Noche (07:00 hrs)</span>
+</div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Pase de turno asistencial (Handover protocolizado)</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5 max-w-3xl">Transferencia formal de responsabilidad clínica entre Lic. Saliente María Quispe y Lic. Entrante Jorge Huamán.</p>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container-low text-on-surface hover:bg-surface-container rounded-lg font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">history_edu</span>
+          Ver Historial de Handovers
+        </button>
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[18px]">draw</span>
+          Firmar recepción de turno
+        </button>
+</div>
+</div>
+<!-- Handover Packet Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Censo y NEWS2 -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Censo del Piso Norte</span>
+<span class="material-symbols-outlined text-primary">bedroom_parent</span>
+</div>
+<div class="my-space-sm flex items-baseline gap-space-sm">
+<span class="font-headline-xl text-headline-xl text-on-surface font-bold">12</span>
+<span class="font-body-md text-body-md text-on-surface-variant">pacientes ingresados</span>
+</div>
+<!-- NEWS2 Alert Tag -->
+<div class="p-space-sm rounded-lg bg-error-container text-on-error-container flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-error">crisis_alert</span>
+<span class="font-label-md text-label-md font-bold">1 con NEWS2 ≥ 7</span>
+</div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Cama 308-A</span>
+</div>
+</div>
+<!-- e-MAR Status -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">e-MAR (Registro de Medicación)</span>
+<span class="material-symbols-outlined text-primary">medication</span>
+</div>
+<div class="my-space-sm flex items-baseline justify-between">
+<div>
+<span class="font-headline-xl text-headline-xl text-on-surface font-bold">14</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">dosis administradas</span>
+</div>
+<div class="text-right">
+<span class="font-headline-xl text-headline-xl text-error font-bold">1</span>
+<span class="font-body-sm text-body-sm text-error block">dosis vencida/retrasada</span>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low text-on-surface-variant flex items-center justify-between font-label-sm text-label-sm">
+<span class="">Último paso e-MAR: 06:45 hrs</span>
+<span class="text-primary font-semibold">93.3% Efectividad</span>
+</div>
+</div>
+<!-- Procedimientos y Estudios Pendientes -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Pendientes Críticos Guardia</span>
+<span class="material-symbols-outlined text-tertiary">biotech</span>
+</div>
+<div class="my-space-sm flex items-baseline gap-space-sm">
+<span class="font-headline-xl text-headline-xl text-tertiary font-bold">3</span>
+<span class="font-body-md text-body-md text-on-surface-variant">estudios por recoger / validar</span>
+</div>
+<div class="p-space-sm rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-between font-label-sm text-label-sm">
+<span class="">1 TAC Torácico • 2 Hemocultivos</span>
+<span class="font-semibold">Urgente</span>
+</div>
+</div>
+</div>
+<!-- Novedades de la Guardia y Paciente Crítico -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Paciente en Alerta Roja SBAR -->
+<div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-3 h-3 rounded-full bg-error animate-pulse"></span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Detalle Clínico SBAR — Paciente de Riesgo</h3>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-error-container text-on-error-container font-bold">NEWS2: 8 Puntos</span>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Cama 308-A: Rosa Flores Morales (68 años)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">HC: #948210</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Dx: Sepsis de foco urinario en tratamiento con Meropenem • Fibrilación Auricular</span>
+</div>
+<!-- SBAR Grid Breakdown -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm font-body-sm text-body-sm">
+<div class="p-space-sm bg-surface-container rounded-lg">
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold block mb-1">Situación (S)</span>
+<span class="">A las 04:30 hrs presentó taquicardia sostenida (FC 128 lpm) y desaturación a 89% con aire ambiental. Se colocó cánula binasal a 3 L/min.</span>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg">
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold block mb-1">Antecedentes (B)</span>
+<span class="">Día 3 de internamiento. Vía venosa central subclavia derecha permeable sin signos de flebitis. Diuresis horaria registrada en 35 ml/h.</span>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg">
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold block mb-1">Evaluación (A)</span>
+<span class="">Score NEWS2 subió de 4 a 8 puntos. PA: 90/60 mmHg. Alerta de bacteriemia o sobrecarga. Dr. Mendoza fue notificado a las 05:15 hrs.</span>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg">
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold block mb-1">Recomendación (R)</span>
+<span class="">Tomar control gasométrico (AGA) a las 08:00 hrs, vigilar balance hídrico estricto y evaluar pase a UCI si persiste hipotensión.</span>
+</div>
+</div>
+<!-- Discrepancia e-MAR -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs text-error font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="">Dosis pendiente Cama 308-A: Ciprofloxacino 400mg EV retrasada por reposición de farmacia.</span>
+</div>
+<button class="font-label-sm text-label-sm text-primary font-semibold hover:underline">Reclamar a Farmacia</button>
+</div>
+</div>
+<!-- Checklist de Conformidad Mutua -->
+<div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between gap-space-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Conformidad Mutua del Turno</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Revisión a pie de cama y validación formal de insumos, narcóticos y pendientes asistenciales.</p>
+<div class="flex flex-col gap-space-sm">
+<label class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0" type="checkbox">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Pase de visita en cama con revisión de vías</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Comprobada la permeabilidad de 12 accesos venosos periféricos y 1 CVC.</span>
+</div>
+</label>
+<label class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0" type="checkbox">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Cuadre del botiquín de estupefacientes</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Conteo físico coincide: 6 ampollas Fentanilo, 4 Morfina 10mg en stock seguro.</span>
+</div>
+</label>
+<label class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0" type="checkbox">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Validación de pendientes diagnósticos</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Muestras de hemocultivo entregadas al laboratorio central con código de barras.</span>
+</div>
+</label>
+<label class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0" type="checkbox">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Cierre del cuaderno digital de novedades</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Firma digital de enfermera saliente Lic. María Quispe verificada.</span>
+</div>
+</label>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs pt-space-sm border-t border-surface-container-low">
+<div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm mb-1">
+<span class="">Saliente: <strong class="text-on-surface">M. Quispe</strong></span>
+<span class="">Entrante: <strong class="text-on-surface">J. Huamán</strong></span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="w-1/2 px-space-md py-space-sm bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg font-label-md text-label-md transition-colors text-center">
+              Consolidar handover clínico
+            </button>
+<button class="w-1/2 px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors text-center shadow-sm">
+              Firmar recepción de turno
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- FRAME 6C: RECURSOS HUMANOS - COBERTURA Y HORAS EXTRAORDINARIAS           -->
+<!-- ========================================================================= -->
+<div class="flex flex-col gap-space-xl hidden" id="frame-6c">
+<!-- Header Frame 6C -->
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-primary-container font-label-sm text-label-sm uppercase tracking-wider">Gestión del Talento y Compensaciones</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Corte Quincenal</span>
+</div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Autorización de cobertura y horas extraordinarias</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5 max-w-3xl">Auditoría hospitalaria de horas suplementarias reportadas con justificación clínica verificada por Jefatura.</p>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container-low text-on-surface hover:bg-surface-container rounded-lg font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+          Ver Planilla Consolidada
+        </button>
+<button class="flex items-center gap-space-xs px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[18px]">approval</span>
+          Autorizar cobertura extraordinaria y liquidación
+        </button>
+</div>
+</div>
+<!-- Métricas de Horas Extraordinarias -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Horas Reportadas</span>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">64.5</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">hrs en quincena</span>
+</div>
+<span class="font-body-sm text-body-sm text-primary font-semibold mt-1 block">+8% vs. mes anterior</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Casos Auditados</span>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">5</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">expedientes</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1 block">100% con sustento clínico</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Impacto Presupuestal Estimado</span>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-on-surface">S/ 3,420</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">PEN</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1 block">Partida 2.1 - Personal de Salud</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cumplimiento Legal LOP</span>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-metric-display text-metric-display text-primary">Óptimo</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1 block">Sin superación de topes legales</span>
+</div>
+</div>
+<!-- Lista de Tarjetas de Horas Suplementarias Reportadas -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Expedientes de Horas Extraordinarias por Validar</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Verifique la justificación clínica ingresada por supervisión médica antes del pase a nómina.</p>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-md py-space-sm bg-surface-container-low text-on-surface hover:bg-surface-container rounded-lg font-label-md text-label-md transition-colors">Seleccionar Todas</button>
+</div>
+</div>
+<div class="flex flex-col gap-space-md">
+<!-- Tarjeta 1: Lic. María Quispe -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center font-bold text-primary font-headline-sm">
+              MQ
+            </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Lic. María Quispe Quispe</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">• CEP 34102</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-semibold">4.0 Horas Extras</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+<strong>Fecha &amp; Horario:</strong> Guardia Noche 03 Abr (Prolongación de turno 07:00 a 11:00 hrs)
+              </span>
+<div class="mt-2 p-space-xs px-space-sm rounded bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">clinical_notes</span>
+<span class=""><strong>Justificación asistencial:</strong> Paciente crítico Cama 308-A en shock séptico. Acompañamiento intrahospitalario a tomografía y cateterismo de urgencia.</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-end sm:items-center gap-space-sm w-full lg:w-auto justify-end">
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface">S/ 215.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Sobretasa 100%</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/40 rounded-lg transition-colors" title="Observar o rechazar">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+<button class="px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">done</span>
+                Validar
+              </button>
+</div>
+</div>
+</div>
+<!-- Tarjeta 2: Lic. Jorge Huamán -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center font-bold text-primary font-headline-sm">
+              JH
+            </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Lic. Jorge Huamán Cárdenas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">• CEP 41289</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-semibold">12.0 Horas (Retén Activado)</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+<strong>Fecha &amp; Horario:</strong> Guardia Noche 09 Abr (19:00 a 07:00 hrs)
+              </span>
+<div class="mt-2 p-space-xs px-space-sm rounded bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">clinical_notes</span>
+<span class=""><strong>Justificación asistencial:</strong> Cobertura por descanso médico de Lic. Maritza Ponce. Convocatoria por plan de retén de jefatura.</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-end sm:items-center gap-space-sm w-full lg:w-auto justify-end">
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface">S/ 640.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Turno Nocturno Extra</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/40 rounded-lg transition-colors" title="Observar o rechazar">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+<button class="px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">done</span>
+                Validar
+              </button>
+</div>
+</div>
+</div>
+<!-- Tarjeta 3: Lic. Carlos Luna -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center font-bold text-primary font-headline-sm">
+              CL
+            </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Lic. Carlos Luna Vargas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">• CEP 45201</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-semibold">3.5 Horas Extras</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+<strong>Fecha &amp; Horario:</strong> Guardia Diurna 11 Abr (Prolongación 19:00 a 22:30 hrs)
+              </span>
+<div class="mt-2 p-space-xs px-space-sm rounded bg-surface-container text-on-surface font-body-sm text-body-sm flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">clinical_notes</span>
+<span class=""><strong>Justificación asistencial:</strong> Ingreso simultáneo de 3 politraumatizados derivados de shock trauma. Colocación de sondas y bombas de infusión continuas.</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-end sm:items-center gap-space-sm w-full lg:w-auto justify-end">
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface">S/ 188.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Sobretasa Mixta</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/40 rounded-lg transition-colors" title="Observar o rechazar">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+<button class="px-space-md py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">done</span>
+                Validar
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="flex items-center justify-between pt-space-md border-t border-surface-container-low mt-space-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Total por liquidar en esta remesa: <strong>S/ 1,043.00</strong> (3 colaboradores)</span>
+<button class="px-space-lg py-space-sm bg-primary-container text-on-primary hover:bg-primary rounded-lg font-label-md text-label-md font-semibold transition-colors flex items-center gap-space-xs shadow-sm">
+<span class="material-symbols-outlined text-[18px]">task</span>
+          Autorizar cobertura extraordinaria y liquidación
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function switchRoleFrame(target) {
+    const frames = ['6a', '6b', '6c'];
+    frames.forEach(frameId => {
+      const el = document.getElementById('frame-' + frameId);
+      const btn = document.getElementById('tab-btn-' + frameId);
+      if (frameId === target) {
+        el.classList.remove('hidden');
+        btn.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+      } else {
+        el.classList.add('hidden');
+        btn.classList.remove('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+      }
+    });
+  }
+</script></main></div>
+
+</body></html>

@@ -25,7 +25,7 @@ const encounter = {
   progress: [],
 };
 
-describe("integración de imágenes PACS (RF-18)", () => {
+describe("integración de imágenes PACS (RF-22)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_tratante");
   });

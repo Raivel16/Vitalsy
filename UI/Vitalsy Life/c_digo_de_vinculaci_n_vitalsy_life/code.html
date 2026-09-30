@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_stack" name="shell-type"/>
+<title>Código para el hospital - Vitalsy Life</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        background-color: #FAF9F6;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1C242B;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[#FAF9F6] text-[#1C242B] flex flex-col min-h-screen antialiased selection:bg-[#E6F4F3] selection:text-[#2B8A88]">
+<!-- Top App Bar / Chrome -->
+<header class="fixed top-0 inset-x-0 z-40 bg-[#FAF9F6]/90 backdrop-blur-md border-b border-[#E2E8F0]/60 pt-safe">
+<div class="h-14 px-4 flex items-center justify-between">
+<!-- Back Link -->
+<button class="inline-flex items-center gap-1 text-[#1C242B] hover:text-[#2B8A88] transition-colors py-1" onclick="history.back()">
+<span class="material-symbols-outlined text-[20px] text-[#2B8A88]">arrow_back_ios_new</span>
+<span class="text-sm font-medium">Privacidad</span>
+</button>
+<!-- Centered Wordmark Integral -->
+<div class="flex items-center gap-1.5">
+<span class="text-lg font-bold tracking-tight text-[#1C242B]">Vitalsy</span>
+<span class="bg-[#E6F4F3] text-[#2B8A88] text-[11px] font-semibold px-2 py-0.5 rounded-full leading-none">Life</span>
+</div>
+<!-- Sync Status Indicator -->
+<div class="flex items-center gap-1.5 bg-white border border-[#E2E8F0] px-2.5 py-1 rounded-full shadow-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-[#2B8A88] animate-pulse"></span>
+<span class="text-[11px] font-medium text-[#687787]">Sincronizado</span>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col pt-16 pb-28 px-4 max-w-md mx-auto w-full">
+<!-- Header Section -->
+<div class="mt-4 mb-4">
+<h1 class="text-2xl font-bold text-[#1C242B] tracking-tight leading-tight">
+        Código para el hospital
+      </h1>
+<p class="text-sm text-[#687787] mt-1 leading-relaxed">
+        Muéstralo en admisión solo si quieres compartir tu línea de base con Vitalsy Clinical.
+      </p>
+</div>
+<!-- Center QR Hero Card -->
+<section class="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-6 flex flex-col items-center mb-4">
+<!-- Validity Badge -->
+<div class="inline-flex items-center gap-1.5 bg-[#E6F4F3] text-[#2B8A88] text-xs font-semibold rounded-full px-3 py-1 mb-4">
+<span class="material-symbols-outlined text-[15px]">lock_clock</span>
+<span id="countdown-timer">Válido por 14:29 min</span>
+</div>
+<!-- Clean QR Code Graphic Placeholder -->
+<div class="w-[180px] h-[180px] rounded-xl bg-[#FAF9F6] p-3 border border-[#E2E8F0] flex items-center justify-center relative shadow-xs">
+<svg class="w-full h-full" fill="none" viewbox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+<!-- Outer Positioning Boxes -->
+<!-- Top Left -->
+<rect fill="#2B8A88" height="38" rx="8" width="38" x="10" y="10"></rect>
+<rect fill="#FAF9F6" height="22" rx="4" width="22" x="18" y="18"></rect>
+<rect fill="#2B8A88" height="10" rx="2" width="10" x="24" y="24"></rect>
+<!-- Top Right -->
+<rect fill="#2B8A88" height="38" rx="8" width="38" x="112" y="10"></rect>
+<rect fill="#FAF9F6" height="22" rx="4" width="22" x="120" y="18"></rect>
+<rect fill="#2B8A88" height="10" rx="2" width="10" x="126" y="24"></rect>
+<!-- Bottom Left -->
+<rect fill="#2B8A88" height="38" rx="8" width="38" x="10" y="112"></rect>
+<rect fill="#FAF9F6" height="22" rx="4" width="22" x="18" y="120"></rect>
+<rect fill="#2B8A88" height="10" rx="2" width="10" x="24" y="126"></rect>
+<!-- QR Data Dots & Pattern -->
+<circle cx="62" cy="18" fill="#1C242B" r="3.5"></circle>
+<circle cx="76" cy="18" fill="#2B8A88" r="3.5"></circle>
+<circle cx="90" cy="18" fill="#1C242B" r="3.5"></circle>
+<circle cx="62" cy="32" fill="#2B8A88" r="3.5"></circle>
+<circle cx="76" cy="32" fill="#1C242B" r="3.5"></circle>
+<circle cx="90" cy="32" fill="#2B8A88" r="3.5"></circle>
+<circle cx="62" cy="46" fill="#1C242B" r="3.5"></circle>
+<circle cx="76" cy="46" fill="#2B8A88" r="3.5"></circle>
+<circle cx="90" cy="46" fill="#1C242B" r="3.5"></circle>
+<circle cx="18" cy="62" fill="#1C242B" r="3.5"></circle>
+<circle cx="32" cy="62" fill="#2B8A88" r="3.5"></circle>
+<circle cx="46" cy="62" fill="#1C242B" r="3.5"></circle>
+<circle cx="62" cy="62" fill="#2B8A88" r="3.5"></circle>
+<circle cx="98" cy="62" fill="#1C242B" r="3.5"></circle>
+<circle cx="114" cy="62" fill="#2B8A88" r="3.5"></circle>
+<circle cx="128" cy="62" fill="#1C242B" r="3.5"></circle>
+<circle cx="142" cy="62" fill="#2B8A88" r="3.5"></circle>
+<circle cx="18" cy="76" fill="#2B8A88" r="3.5"></circle>
+<circle cx="32" cy="76" fill="#1C242B" r="3.5"></circle>
+<circle cx="46" cy="76" fill="#2B8A88" r="3.5"></circle>
+<circle cx="114" cy="76" fill="#1C242B" r="3.5"></circle>
+<circle cx="128" cy="76" fill="#2B8A88" r="3.5"></circle>
+<circle cx="142" cy="76" fill="#1C242B" r="3.5"></circle>
+<circle cx="18" cy="90" fill="#1C242B" r="3.5"></circle>
+<circle cx="32" cy="90" fill="#2B8A88" r="3.5"></circle>
+<circle cx="46" cy="90" fill="#1C242B" r="3.5"></circle>
+<circle cx="62" cy="90" fill="#1C242B" r="3.5"></circle>
+<circle cx="98" cy="90" fill="#2B8A88" r="3.5"></circle>
+<circle cx="114" cy="90" fill="#1C242B" r="3.5"></circle>
+<circle cx="128" cy="90" fill="#2B8A88" r="3.5"></circle>
+<circle cx="142" cy="90" fill="#1C242B" r="3.5"></circle>
+<!-- Stylized Center Heartbeat Badge -->
+<rect fill="#E6F4F3" height="28" rx="8" width="28" x="66" y="66"></rect>
+<path d="M72 80h3.2l2-5 3.2 10 3.2-7 1.9 2h2.5" stroke="#2B8A88" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Lower matrix rows -->
+<circle cx="62" cy="114" fill="#2B8A88" r="3.5"></circle>
+<circle cx="76" cy="114" fill="#1C242B" r="3.5"></circle>
+<circle cx="90" cy="114" fill="#2B8A88" r="3.5"></circle>
+<circle cx="114" cy="114" fill="#2B8A88" r="3.5"></circle>
+<circle cx="128" cy="114" fill="#1C242B" r="3.5"></circle>
+<circle cx="142" cy="114" fill="#2B8A88" r="3.5"></circle>
+<circle cx="62" cy="128" fill="#1C242B" r="3.5"></circle>
+<circle cx="76" cy="128" fill="#2B8A88" r="3.5"></circle>
+<circle cx="90" cy="128" fill="#1C242B" r="3.5"></circle>
+<circle cx="114" cy="128" fill="#1C242B" r="3.5"></circle>
+<circle cx="128" cy="128" fill="#2B8A88" r="3.5"></circle>
+<circle cx="142" cy="128" fill="#1C242B" r="3.5"></circle>
+<circle cx="62" cy="142" fill="#2B8A88" r="3.5"></circle>
+<circle cx="76" cy="142" fill="#1C242B" r="3.5"></circle>
+<circle cx="90" cy="142" fill="#2B8A88" r="3.5"></circle>
+<circle cx="114" cy="142" fill="#2B8A88" r="3.5"></circle>
+<circle cx="128" cy="142" fill="#1C242B" r="3.5"></circle>
+<circle cx="142" cy="142" fill="#2B8A88" r="3.5"></circle>
+</svg>
+</div>
+<!-- Code Display Block -->
+<span class="text-[11px] font-bold tracking-widest text-[#687787] mt-4 uppercase">
+        CÓDIGO ALFANUMÉRICO
+      </span>
+<div class="flex items-center justify-center gap-3 mt-1.5 w-full">
+<span class="text-xl font-mono font-bold text-[#1C242B] tracking-wider" id="link-code">
+          VL - LINK - 7K2M9
+        </span>
+<button class="bg-[#FAF9F6] border border-[#E2E8F0] text-xs font-medium px-3 py-1 rounded-full text-[#1C242B] hover:bg-slate-100 active:scale-95 transition flex items-center gap-1 shrink-0" id="copy-btn" onclick="copyLinkCode()">
+<span class="material-symbols-outlined text-[15px]" id="copy-icon">content_copy</span>
+<span id="copy-label">Copiar</span>
+</button>
+</div>
+<!-- Auto-expire Note -->
+<div class="flex items-start gap-1.5 mt-3 pt-3 border-t border-[#E2E8F0]/60 w-full text-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-[#687787] shrink-0 mt-0.5">shield</span>
+<p class="text-xs text-[#687787] leading-relaxed text-left">
+          Este código temporal de un solo uso expira automáticamente para proteger tu privacidad si no es escaneado.
+        </p>
+</div>
+</section>
+<!-- Action Buttons Row -->
+<div class="flex items-center gap-2.5 mb-4">
+<button class="bg-white border border-[#E2E8F0] text-[#1C242B] py-2.5 px-4 rounded-full text-xs font-semibold flex-1 flex items-center justify-center gap-1.5 shadow-sm active:bg-slate-50 transition-colors" onclick="shareLinkCode()">
+<span class="material-symbols-outlined text-[17px] text-[#1C242B]">share</span>
+<span>Compartir código</span>
+</button>
+<button class="bg-[#E6F4F3] text-[#2B8A88] py-2.5 px-4 rounded-full text-xs font-semibold flex-1 flex items-center justify-center gap-1.5 active:bg-[#d5eee8] transition-colors" id="refresh-btn" onclick="refreshCode()">
+<span class="material-symbols-outlined text-[17px] text-[#2B8A88]" id="refresh-icon">refresh</span>
+<span>Actualizar código</span>
+</button>
+</div>
+<!-- Soft Info / Transparency Card -->
+<section class="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-4 mb-4">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-6 h-6 rounded-full bg-[#E6F4F3] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-[#2B8A88]">verified_user</span>
+</div>
+<h2 class="text-sm font-semibold text-[#1C242B]">
+          Tú decides. El personal debe pedirte permiso.
+        </h2>
+</div>
+<p class="text-xs text-[#687787] leading-relaxed pl-8">
+        El personal de admisión debe solicitarte autorización verbal antes de escanear. Solo se transmitirán indicadores de estilo de vida consolidados (pulso en reposo, SpO2 y sueño habitual). Nunca notas personales ni contraseñas.
+      </p>
+</section>
+</main>
+<!-- Fixed Bottom Navigation Bar (5 tabs: Hoy, Tendencias, Plan, Privacidad [active], Perfil) -->
+<nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] z-50 pb-safe">
+<div class="max-w-md mx-auto h-16 flex items-center justify-around px-2">
+<!-- Hoy -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-[#687787] hover:text-[#1C242B] transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">calendar_today</span>
+<span class="text-[11px] font-medium mt-0.5">Hoy</span>
+</a>
+<!-- Tendencias -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-[#687787] hover:text-[#1C242B] transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">show_chart</span>
+<span class="text-[11px] font-medium mt-0.5">Tendencias</span>
+</a>
+<!-- Plan -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-[#687787] hover:text-[#1C242B] transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">assignment</span>
+<span class="text-[11px] font-medium mt-0.5">Plan</span>
+</a>
+<!-- Privacidad (ACTIVE) -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-[#2B8A88] relative" href="#">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="text-[11px] font-semibold mt-0.5">Privacidad</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#2B8A88] absolute -bottom-1"></span>
+</a>
+<!-- Perfil -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-[#687787] hover:text-[#1C242B] transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">person</span>
+<span class="text-[11px] font-medium mt-0.5">Perfil</span>
+</a>
+</div>
+</nav>
+<!-- Interactive Scripts -->
+<script>
+    let secondsLeft = 14 * 60 + 29;
+    const timerElem = document.getElementById('countdown-timer');
+
+    const timerInterval = setInterval(() => {
+      if (secondsLeft <= 0) {
+        clearInterval(timerInterval);
+        if (timerElem) timerElem.textContent = 'Código expirado';
+        return;
+      }
+      secondsLeft--;
+      const mins = Math.floor(secondsLeft / 60);
+      const secs = secondsLeft % 60;
+      if (timerElem) {
+        timerElem.textContent = `Válido por ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min`;
+      }
+    }, 1000);
+
+    function copyLinkCode() {
+      const code = document.getElementById('link-code').textContent.trim();
+      navigator.clipboard?.writeText(code);
+      const label = document.getElementById('copy-label');
+      const icon = document.getElementById('copy-icon');
+      if (label && icon) {
+        label.textContent = 'Copiado';
+        icon.textContent = 'check';
+        setTimeout(() => {
+          label.textContent = 'Copiar';
+          icon.textContent = 'content_copy';
+        }, 2000);
+      }
+    }
+
+    function refreshCode() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      setTimeout(() => {
+        if (icon) icon.classList.remove('animate-spin');
+        const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+        document.getElementById('link-code').textContent = `VL - LINK - ${randomSuffix}`;
+        secondsLeft = 15 * 60;
+      }, 500);
+    }
+
+    function shareLinkCode() {
+      const code = document.getElementById('link-code').textContent.trim();
+      if (navigator.share) {
+        navigator.share({
+          title: 'Vitalsy Life - Código de Admisión',
+          text: `Código de vinculación voluntaria: ${code}`,
+        }).catch(() => {});
+      } else {
+        copyLinkCode();
+      }
+    }
+  </script>
+</body></html>

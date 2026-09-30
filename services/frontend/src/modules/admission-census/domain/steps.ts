@@ -20,7 +20,8 @@ export const STEP_PATH: Record<string, string> = {
   indicaciones: "/medico/indicaciones",
 };
 
-export const ROLE_STEPS: Record<Role, string[]> = {
+/** Solo los perfiles que intervienen en el proceso 1 tienen pasos de ingreso. */
+export const ROLE_STEPS: Partial<Record<Role, string[]>> = {
   admision: ["orden", "filiacion", "cobertura", "brazalete", "expediente", "consentimiento"],
   camillero: ["traslado", "identidad"],
   enfermera_piso: ["recepcion", "valoracion", "constantes", "conciliacion", "escalas", "kardex"],
@@ -36,13 +37,13 @@ export function stepPath(step: string, encounterId: string): string {
 
 export function roleStepIndex(role: Role, step: string): number {
   const normalized = step === "derivacion" ? "cobertura" : step;
-  return ROLE_STEPS[role].indexOf(normalized);
+  return (ROLE_STEPS[role] ?? []).indexOf(normalized);
 }
 
 export function previousRoleStep(role: Role, viewingStep: string): string | null {
   const index = roleStepIndex(role, viewingStep);
   if (index <= 0) return null;
-  return ROLE_STEPS[role][index - 1] ?? null;
+  return ROLE_STEPS[role]?.[index - 1] ?? null;
 }
 
 export function nextContinuePath(encounter: Encounter, role: Role): string {

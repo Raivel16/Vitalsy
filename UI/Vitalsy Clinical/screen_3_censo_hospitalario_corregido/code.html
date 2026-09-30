@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<title>Censo Hospitalario - Vitalsy</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#ECEEF1',
+            surface: '#FFFFFF',
+            'surface-sunken': '#F4F6F8',
+            'text-main': '#1B2228',
+            'text-muted': '#4E5C68',
+            borderline: '#D1D6DC',
+            accent: '#1E6B7B',
+            'accent-hover': '#165360',
+            'accent-soft': '#E6EFF1',
+            'bed-disp-bg': '#EAF2ED',
+            'bed-disp-text': '#1C6B37',
+            'bed-disp-border': '#C5E3D0',
+            'bed-ocup-bg': '#E8EBEE',
+            'bed-ocup-text': '#4E5C68',
+            'bed-ocup-border': '#D1D6DC',
+            'bed-limp-bg': '#E7EEF5',
+            'bed-limp-text': '#2B6CB0',
+            'bed-limp-border': '#BDD7EE',
+            'bed-aisl-bg': '#EFEAF5',
+            'bed-aisl-text': '#6B3BA6',
+            'bed-aisl-border': '#D8CAEC',
+          },
+          fontFamily: {
+            sans: ['"Source Sans 3"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    *, *::before, *::after, body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span, a, label {
+      font-family: 'Source Sans 3', sans-serif !important;
+    }
+    * {
+      animation: none !important;
+      transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+      transition-duration: 150ms;
+    }
+  </style>
+</head>
+<body class="bg-canvas text-text-main antialiased min-h-screen">
+<!-- SIDEBAR (Exact 256px) -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-surface border-r border-borderline z-50 flex flex-col justify-between">
+<div>
+<!-- Brand header -->
+<div class="h-[68px] px-6 flex flex-col justify-center border-b border-borderline">
+<span class="text-[20px] font-semibold tracking-tight text-text-main leading-none">Vitalsy</span>
+<svg class="w-[110px] h-[7px] my-1 stroke-accent fill-none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewbox="0 0 110 7">
+<path d="M0 3.5 h35 l4 -3 l4 6 l5 -6 l3 3 h59"></path>
+</svg>
+<span class="text-[12px] text-text-muted leading-tight">Gestión clínica hospitalaria</span>
+</div>
+<!-- Navigation for Gestión de camas -->
+<nav class="py-4 flex flex-col gap-1">
+<div class="px-6 pt-2 pb-1.5 text-text-muted text-[11px] font-semibold uppercase tracking-wider">
+          Trabajo del turno
+        </div>
+<a class="flex items-center gap-3 px-6 h-10 text-[14px] text-text-muted hover:bg-surface-sunken hover:text-text-main transition-colors" href="#">
+<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<rect height="7" width="7" x="3" y="3"></rect>
+<rect height="7" width="7" x="14" y="3"></rect>
+<rect height="7" width="7" x="14" y="14"></rect>
+<rect height="7" width="7" x="3" y="14"></rect>
+</svg>
+<span>Inicio</span>
+</a>
+<div class="px-6 pt-5 pb-1.5 text-text-muted text-[11px] font-semibold uppercase tracking-wider">
+          Camas
+        </div>
+<a aria-current="page" class="flex items-center gap-3 px-6 h-10 text-[14px] bg-accent-soft text-accent font-semibold border-l-[3px] border-accent" href="#">
+<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"></path>
+<circle cx="9" cy="11" r="2"></circle>
+</svg>
+<span>Censo de camas</span>
+</a>
+</nav>
+</div>
+<!-- Quiet footer info -->
+<div class="p-4 border-t border-borderline text-[12px] text-text-muted">
+<div class="flex items-center justify-between">
+<span>Gestión de Camas</span>
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+</div>
+</div>
+</aside>
+<!-- MAIN WRAPPER -->
+<div class="pl-64 flex flex-col min-h-screen">
+<!-- TOP BAR (68px) -->
+<header class="fixed top-0 left-64 right-0 h-[68px] bg-surface border-b border-borderline z-40 px-8 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-[15px] font-semibold text-text-main">
+          Servicio de Gestión de Camas · Hospital Central
+        </span>
+</div>
+<div class="flex items-center gap-6">
+<button class="p-1.5 text-text-muted hover:text-text-main transition-colors flex items-center justify-center" title="Notificaciones" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+</svg>
+</button>
+<div class="h-6 w-px bg-borderline"></div>
+<div class="flex flex-col text-right">
+<span class="text-[14px] font-semibold text-text-main leading-tight">Ana Torres</span>
+<span class="text-[12px] text-text-muted leading-tight">Gestión de camas</span>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-surface-sunken text-text-muted hover:text-text-main rounded border border-borderline text-[13px] font-semibold transition-colors" type="button">
+<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+<polyline points="16 17 21 12 16 7"></polyline>
+<line x1="21" x2="9" y1="12" y2="12"></line>
+</svg>
+<span>Cerrar sesión</span>
+</button>
+</div>
+</header>
+<!-- CONTENT -->
+<main class="w-full pt-[68px] px-8 pb-12 flex-1">
+<div class="max-w-[1440px] mx-auto pt-6 flex flex-col gap-6">
+<!-- HEADER AREA -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<div class="text-[12px] font-semibold uppercase tracking-wider text-accent mb-1">
+              Gestión de camas
+            </div>
+<h1 class="text-[26px] font-bold text-text-main leading-tight">
+              Censo hospitalario
+            </h1>
+<p class="text-[14px] text-text-muted mt-1">
+              Disponibilidad de lechos por servicio, lista de espera y asignación.
+            </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-[12px] text-text-muted bg-surface px-3 py-1.5 rounded border border-borderline flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent inline-block"></span>
+<span>Sincronizado: hace 42s</span>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-[14px] font-semibold shadow-sm transition-colors" onclick="document.getElementById('form-solicitud-card').scrollIntoView({behavior: 'smooth'})" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="8" y2="16"></line>
+<line x1="8" x2="16" y1="12" y2="12"></line>
+</svg>
+<span>Nueva solicitud</span>
+</button>
+</div>
+</div>
+<!-- SUMMARY KPI STRIP -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<!-- Total -->
+<div class="bg-surface rounded-lg border border-borderline p-4 flex flex-col justify-between shadow-xs">
+<span class="text-[12px] font-semibold uppercase tracking-wider text-text-muted">Capacidad Total</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-[28px] font-bold text-text-main">120</span>
+<span class="text-[13px] text-text-muted">lechos</span>
+</div>
+<div class="w-full bg-canvas h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-text-muted h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Disponibles -->
+<div class="bg-surface rounded-lg border border-borderline p-4 flex flex-col justify-between shadow-xs">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-semibold uppercase tracking-wider text-bed-disp-text">Disponibles</span>
+<span class="text-[12px] font-semibold px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text">15%</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-[28px] font-bold text-bed-disp-text">18</span>
+<span class="text-[13px] text-text-muted">libres</span>
+</div>
+<div class="w-full bg-canvas h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-bed-disp-text h-full rounded-full" style="width: 15%"></div>
+</div>
+</div>
+<!-- Ocupadas -->
+<div class="bg-surface rounded-lg border border-borderline p-4 flex flex-col justify-between shadow-xs">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-semibold uppercase tracking-wider text-text-muted">Ocupadas</span>
+<span class="text-[12px] font-semibold px-2 py-0.5 rounded bg-surface-sunken text-text-muted">73.3%</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-[28px] font-bold text-text-main">88</span>
+<span class="text-[13px] text-text-muted">activas</span>
+</div>
+<div class="w-full bg-canvas h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-text-main h-full rounded-full" style="width: 73.3%"></div>
+</div>
+</div>
+<!-- Limpieza / Desinfección -->
+<div class="bg-surface rounded-lg border border-borderline p-4 flex flex-col justify-between shadow-xs">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-semibold uppercase tracking-wider text-bed-limp-text">Limpieza</span>
+<span class="text-[12px] font-semibold px-2 py-0.5 rounded bg-bed-limp-bg text-bed-limp-text">7.5%</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-[28px] font-bold text-bed-limp-text">9</span>
+<span class="text-[13px] text-text-muted">en proceso</span>
+</div>
+<div class="w-full bg-canvas h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-bed-limp-text h-full rounded-full" style="width: 7.5%"></div>
+</div>
+</div>
+<!-- Aislamiento -->
+<div class="bg-surface rounded-lg border border-borderline p-4 flex flex-col justify-between shadow-xs">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-semibold uppercase tracking-wider text-bed-aisl-text">Aislamiento</span>
+<span class="text-[12px] font-semibold px-2 py-0.5 rounded bg-bed-aisl-bg text-bed-aisl-text">4.2%</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-[28px] font-bold text-bed-aisl-text">5</span>
+<span class="text-[13px] text-text-muted">críticos</span>
+</div>
+<div class="w-full bg-canvas h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-bed-aisl-text h-full rounded-full" style="width: 4.2%"></div>
+</div>
+</div>
+</div>
+<!-- MAIN 2-COLUMN GRID (8 COLS WARDS + 4 COLS WAITING LIST & FORM) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+<!-- LEFT 8 COLS: WARDS BOARD -->
+<div class="xl:col-span-8 flex flex-col gap-6">
+<!-- FILTER CONTROLS & STATUS LEGEND -->
+<div class="bg-surface p-3.5 rounded-lg border border-borderline flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-1.5">
+<button class="px-3 py-1.5 rounded-md bg-accent text-white font-semibold text-[13px]" type="button">
+                  Todos los pabellones
+                </button>
+<button class="px-3 py-1.5 rounded-md bg-surface-sunken hover:bg-canvas text-text-muted text-[13px] font-medium transition-colors" type="button">
+                  Medicina Interna (Pabellón 1)
+                </button>
+<button class="px-3 py-1.5 rounded-md bg-surface-sunken hover:bg-canvas text-text-muted text-[13px] font-medium transition-colors" type="button">
+                  Cirugía General (Pabellón 2)
+                </button>
+</div>
+<!-- Status legend -->
+<div class="flex items-center gap-3 text-[12px]">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-bed-disp-bg border border-bed-disp-border inline-block"></span>
+<span class="text-text-muted">Disponible</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-bed-ocup-bg border border-bed-ocup-border inline-block"></span>
+<span class="text-text-muted">Ocupada</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-bed-limp-bg border border-bed-limp-border inline-block"></span>
+<span class="text-text-muted">Limpieza</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-bed-aisl-bg border border-bed-aisl-border inline-block"></span>
+<span class="text-text-muted">Aislamiento</span>
+</div>
+</div>
+</div>
+<!-- WARD 1: MEDICINA INTERNA (PABELLÓN 1) -->
+<section class="bg-surface rounded-lg border border-borderline shadow-xs overflow-hidden">
+<!-- Ward Header -->
+<div class="bg-surface-sunken px-5 py-4 border-b border-borderline flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-md bg-accent text-white flex items-center justify-center font-bold text-[14px]">
+                    MI
+                  </div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="text-[16px] font-bold text-text-main">Pabellón 1: Medicina Interna (Piso 3)</h2>
+<span class="text-[12px] px-2 py-0.5 rounded bg-surface border border-borderline text-text-muted font-medium">24 camas</span>
+</div>
+<p class="text-[12px] text-text-muted">Cuidados intermedios y hospitalización clínica general</p>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[12px]">
+<span class="px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border font-semibold">3 Disp</span>
+<span class="px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border font-semibold">18 Ocup</span>
+<span class="px-2 py-0.5 rounded bg-bed-limp-bg text-bed-limp-text border border-bed-limp-border font-semibold">2 Limp</span>
+<span class="px-2 py-0.5 rounded bg-bed-aisl-bg text-bed-aisl-text border border-bed-aisl-border font-semibold">1 Aisl</span>
+</div>
+</div>
+<!-- Rooms Grid -->
+<div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Room 301 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 301</span>
+</div>
+<span class="text-[12px] text-text-muted">Doble Estándar</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 301-A (Ocupada) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 301-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border">Ocupada</span>
+</div>
+<div class="text-[14px] font-bold text-text-main truncate">Carlos Ramírez</div>
+<div class="text-[12px] text-text-muted">HC: #94821 · 58a</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Dr. Mendoza</span>
+<span class="font-semibold text-accent">Día 4</span>
+</div>
+</div>
+<!-- Bed 301-B (Ocupada) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 301-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border">Ocupada</span>
+</div>
+<div class="text-[14px] font-bold text-text-main truncate">María Quispe</div>
+<div class="text-[12px] text-text-muted">HC: #38419 · 67a</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Dra. Valencia</span>
+<span class="font-semibold text-[#895626]">Alta hoy</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Room 302 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 302</span>
+</div>
+<span class="text-[12px] text-text-muted">Doble Estándar</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 302-A (Disponible) -->
+<div class="bg-surface rounded-md border border-bed-disp-border p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 302-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border">Disponible</span>
+</div>
+<div class="text-[12px] text-text-muted mt-2">Lecho limpio y desinfectado</div>
+<div class="text-[11px] font-semibold text-bed-disp-text mt-1">Listo para admisión</div>
+</div>
+<button class="w-full mt-2 py-1.5 px-2 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors" onclick="asignarDirecto('302-A')" type="button">
+                        Asignar lecho
+                      </button>
+</div>
+<!-- Bed 302-B (Limpieza) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 302-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-limp-bg text-bed-limp-text border border-bed-limp-border">Limpieza</span>
+</div>
+<div class="text-[13px] font-medium text-text-main mt-1">Desinfección en curso</div>
+<div class="text-[12px] text-text-muted mt-0.5">Terminal programada</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Tiempo est.:</span>
+<span class="font-semibold text-bed-limp-text">15 min restantes</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Room 303 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 303</span>
+</div>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-aisl-bg text-bed-aisl-text border border-bed-aisl-border">
+                      Presión Negativa
+                    </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 303-A (Aislamiento) -->
+<div class="bg-surface rounded-md border border-bed-aisl-border p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 303-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-aisl-bg text-bed-aisl-text border border-bed-aisl-border">Aislamiento</span>
+</div>
+<div class="text-[13px] font-semibold text-text-main mt-1">Tipo Respiratorio</div>
+<div class="mt-1 inline-block text-[11px] font-medium px-2 py-0.5 rounded bg-bed-aisl-bg text-bed-aisl-text">
+                          Gotas / Contacto
+                        </div>
+</div>
+<button class="w-full mt-2 py-1.5 px-2 bg-bed-aisl-text hover:opacity-90 text-white rounded text-[12px] font-semibold transition-opacity" onclick="asignarDirecto('303-A')" type="button">
+                        Asignar lecho
+                      </button>
+</div>
+<!-- Bed 303-B (Ocupada) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 303-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border">Ocupada</span>
+</div>
+<div class="text-[14px] font-bold text-text-main truncate">Elena Gómez</div>
+<div class="text-[12px] text-text-muted">HC: #51029 · 72a</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Aisl. Gotas / N95</span>
+<span class="font-semibold text-text-main">Estable</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Room 304 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 304</span>
+</div>
+<span class="text-[12px] text-bed-disp-text font-semibold">Totalmente Disponible</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 304-A (Disponible) -->
+<div class="bg-surface rounded-md border border-bed-disp-border p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 304-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border">Disponible</span>
+</div>
+<div class="text-[12px] text-text-muted mt-2">Cama convencional</div>
+<div class="text-[11px] font-semibold text-bed-disp-text mt-1">Armada con O₂ central</div>
+</div>
+<button class="w-full mt-2 py-1.5 px-2 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors" onclick="asignarDirecto('304-A')" type="button">
+                        Asignar lecho
+                      </button>
+</div>
+<!-- Bed 304-B (Disponible) -->
+<div class="bg-surface rounded-md border border-bed-disp-border p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 304-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border">Disponible</span>
+</div>
+<div class="text-[12px] text-text-muted mt-2">Cama convencional</div>
+<div class="text-[11px] font-semibold text-bed-disp-text mt-1">Armada con O₂ central</div>
+</div>
+<button class="w-full mt-2 py-1.5 px-2 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors" onclick="asignarDirecto('304-B')" type="button">
+                        Asignar lecho
+                      </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- WARD 2: CIRUGÍA GENERAL (PABELLÓN 2) -->
+<section class="bg-surface rounded-lg border border-borderline shadow-xs overflow-hidden">
+<!-- Ward Header -->
+<div class="bg-surface-sunken px-5 py-4 border-b border-borderline flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-md bg-text-muted text-white flex items-center justify-center font-bold text-[14px]">
+                    CG
+                  </div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="text-[16px] font-bold text-text-main">Pabellón 2: Cirugía General (Piso 4)</h2>
+<span class="text-[12px] px-2 py-0.5 rounded bg-surface border border-borderline text-text-muted font-medium">20 camas</span>
+</div>
+<p class="text-[12px] text-text-muted">Recuperación postquirúrgica y cuidados generales</p>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[12px]">
+<span class="px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border font-semibold">4 Disp</span>
+<span class="px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border font-semibold">14 Ocup</span>
+<span class="px-2 py-0.5 rounded bg-bed-limp-bg text-bed-limp-text border border-bed-limp-border font-semibold">2 Limp</span>
+</div>
+</div>
+<!-- Rooms Grid -->
+<div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Room 401 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 401</span>
+</div>
+<span class="text-[12px] text-text-muted">Postquirúrgico</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 401-A (Ocupada) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 401-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border">Ocupada</span>
+</div>
+<div class="text-[14px] font-bold text-text-main truncate">Jorge Valdivia</div>
+<div class="text-[12px] text-text-muted">HC: #19803 · 51a</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Colecistectomía</span>
+<span class="font-semibold text-accent">Evolución OK</span>
+</div>
+</div>
+<!-- Bed 401-B (Disponible) -->
+<div class="bg-surface rounded-md border border-bed-disp-border p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 401-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-disp-bg text-bed-disp-text border border-bed-disp-border">Disponible</span>
+</div>
+<div class="text-[12px] text-text-muted mt-2">Cama postquirúrgica</div>
+<div class="text-[11px] font-semibold text-bed-disp-text mt-1">Apta reasignación</div>
+</div>
+<button class="w-full mt-2 py-1.5 px-2 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors" onclick="asignarDirecto('401-B')" type="button">
+                        Asignar lecho
+                      </button>
+</div>
+</div>
+</div>
+<!-- Room 402 -->
+<div class="bg-surface-sunken rounded-lg border border-borderline p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-borderline">
+<div class="flex items-center gap-1.5">
+<svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M14 11h.01"></path>
+</svg>
+<span class="text-[14px] font-bold text-text-main">Habitación 402</span>
+</div>
+<span class="text-[12px] text-text-muted">Postquirúrgico</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Bed 402-A (Ocupada) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 402-A</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-ocup-bg text-bed-ocup-text border border-bed-ocup-border">Ocupada</span>
+</div>
+<div class="text-[14px] font-bold text-text-main truncate">Fernando Solís</div>
+<div class="text-[12px] text-text-muted">HC: #77412 · 63a</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Traumatología</span>
+<span class="font-semibold text-text-main">Post-QX D1</span>
+</div>
+</div>
+<!-- Bed 402-B (Limpieza) -->
+<div class="bg-surface rounded-md border border-borderline p-3 flex flex-col justify-between min-h-[148px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[13px] font-semibold text-text-main">Cama 402-B</span>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-bed-limp-bg text-bed-limp-text border border-bed-limp-border">Limpieza</span>
+</div>
+<div class="text-[13px] font-medium text-text-main mt-1">Limpieza terminal</div>
+<div class="text-[12px] text-text-muted mt-0.5">Post-egreso quirúrgico</div>
+</div>
+<div class="pt-2 border-t border-canvas flex items-center justify-between text-[11px] text-text-muted">
+<span>Tiempo est.:</span>
+<span class="font-semibold text-bed-limp-text">30 min restantes</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- RIGHT 4 COLS: LISTA DE ESPERA & NUEVA SOLICITUD -->
+<div class="xl:col-span-4 flex flex-col gap-6">
+<!-- CARD 1: LISTA DE ESPERA PRIORIZADA -->
+<div class="bg-surface rounded-lg border border-borderline p-5 shadow-xs">
+<div class="flex items-center justify-between pb-3 mb-4 border-b border-borderline">
+<div class="flex items-center gap-2">
+<svg class="w-5 h-5 text-accent flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<line x1="10" x2="21" y1="6" y2="6"></line>
+<line x1="10" x2="21" y1="12" y2="12"></line>
+<line x1="10" x2="21" y1="18" y2="18"></line>
+<path d="M4 6h1v4"></path>
+<path d="M4 10h2"></path>
+<path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
+</svg>
+<h3 class="text-[15px] font-bold text-text-main">Lista de espera priorizada</h3>
+</div>
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FFDAD6] text-[#93000A]">
+                  2 pendientes
+                </span>
+</div>
+<div class="flex flex-col gap-3.5">
+<!-- Patient 1 -->
+<div class="p-3.5 rounded-lg bg-surface-sunken border border-borderline flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FFDAD6] text-[#BA1A1A] border border-[#FFB4AB]">
+                      Prioridad 1: Alta
+                    </span>
+<span class="text-[11px] text-text-muted">Urgencias · Hace 14m</span>
+</div>
+<div>
+<div class="text-[15px] font-bold text-text-main">Juan Pérez</div>
+<div class="text-[12px] text-text-muted">45 años · Neumonía adquirida en comunidad</div>
+</div>
+<div class="px-2.5 py-1.5 rounded bg-bed-aisl-bg border border-bed-aisl-border text-bed-aisl-text text-[12px] flex items-center gap-2">
+<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 10c0-1.1.9-2 2-2h12a2 2 0 0 1 2 2v2c0 4-3.5 7-8 7s-8-3-8-7v-2z"></path>
+<path d="M4 10l-2 1"></path>
+<path d="M20 10l2 1"></path>
+<path d="M4 14l-2-1"></path>
+<path d="M20 14l2-1"></path>
+</svg>
+<span>Requiere: Aislamiento gotas + O₂ central</span>
+</div>
+<div class="pt-1 flex items-center justify-between">
+<span class="text-[12px] text-text-muted">Sugerida: <strong>Hab 303-A</strong></span>
+<button class="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors flex items-center gap-1" onclick="asignarPaciente('Juan Pérez', '303-A')" type="button">
+<span>Asignar lecho compatible</span>
+</button>
+</div>
+</div>
+<!-- Patient 2 -->
+<div class="p-3.5 rounded-lg bg-surface-sunken border border-borderline flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FFDCC2] text-[#6D3F10] border border-[#FCB97F]">
+                      Prioridad 2: Media
+                    </span>
+<span class="text-[11px] text-text-muted">Quirófano · Hace 35m</span>
+</div>
+<div>
+<div class="text-[15px] font-bold text-text-main">Lucía Ramos</div>
+<div class="text-[12px] text-text-muted">32 años · Post-apendicectomía laparoscópica</div>
+</div>
+<div class="px-2.5 py-1.5 rounded bg-surface border border-borderline text-text-muted text-[12px] flex items-center gap-2">
+<svg class="w-4 h-4 text-accent flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"></path>
+<circle cx="9" cy="11" r="2"></circle>
+</svg>
+<span>Requiere: Cama convencional</span>
+</div>
+<div class="pt-1 flex items-center justify-between">
+<span class="text-[12px] text-text-muted">Sugerida: <strong>Hab 302-A</strong></span>
+<button class="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-semibold transition-colors flex items-center gap-1" onclick="asignarPaciente('Lucía Ramos', '302-A')" type="button">
+<span>Asignar lecho compatible</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 2: NUEVA SOLICITUD DE CAMA -->
+<div class="bg-surface rounded-lg border border-borderline p-5 shadow-xs" id="form-solicitud-card">
+<div class="flex items-center gap-2 pb-3 mb-4 border-b border-borderline">
+<svg class="w-5 h-5 text-accent flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+<rect height="4" width="8" x="8" y="2"></rect>
+<line x1="12" x2="12" y1="11" y2="17"></line>
+<line x1="9" x2="15" y1="14" y2="14"></line>
+</svg>
+<h3 class="text-[15px] font-bold text-text-main">Nueva solicitud de cama</h3>
+</div>
+<form class="flex flex-col gap-4" onsubmit="handleReserva(event)">
+<!-- Origen -->
+<div>
+<label class="block text-[12px] font-semibold text-text-main mb-1.5">Origen del paciente</label>
+<div class="grid grid-cols-3 gap-2">
+<label class="flex items-center justify-center p-2 rounded border border-borderline bg-surface-sunken hover:bg-canvas cursor-pointer text-[12px] text-text-main font-medium">
+<input checked="" class="mr-1.5 text-accent focus:ring-accent" name="origen" type="radio" value="urgencias"/>
+<span>Urgencias</span>
+</label>
+<label class="flex items-center justify-center p-2 rounded border border-borderline bg-surface-sunken hover:bg-canvas cursor-pointer text-[12px] text-text-main font-medium">
+<input class="mr-1.5 text-accent focus:ring-accent" name="origen" type="radio" value="quirofano"/>
+<span>Quirófano</span>
+</label>
+<label class="flex items-center justify-center p-2 rounded border border-borderline bg-surface-sunken hover:bg-canvas cursor-pointer text-[12px] text-text-main font-medium">
+<input class="mr-1.5 text-accent focus:ring-accent" name="origen" type="radio" value="admisiones"/>
+<span>Admisión</span>
+</label>
+</div>
+</div>
+<!-- Nivel de prioridad -->
+<div>
+<label class="block text-[12px] font-semibold text-text-main mb-1.5">Nivel de prioridad</label>
+<div class="grid grid-cols-2 gap-2">
+<label class="flex items-center justify-center p-2 rounded border border-[#FFB4AB] bg-[#FFDAD6] cursor-pointer text-[12px] font-bold text-[#BA1A1A]">
+<input checked="" class="mr-1.5 text-[#BA1A1A] focus:ring-[#BA1A1A]" name="prioridad" type="radio" value="urgente"/>
+<span>Urgente</span>
+</label>
+<label class="flex items-center justify-center p-2 rounded border border-borderline bg-surface-sunken cursor-pointer text-[12px] font-medium text-text-main">
+<input class="mr-1.5 text-accent focus:ring-accent" name="prioridad" type="radio" value="rutina"/>
+<span>Rutina</span>
+</label>
+</div>
+</div>
+<!-- Campo de búsqueda Paciente -->
+<div>
+<label class="block text-[12px] font-semibold text-text-main mb-1" for="input-paciente">Paciente</label>
+<div class="relative">
+<input class="w-full h-9 pl-9 pr-3 rounded border border-borderline bg-surface text-[13px] text-text-main placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent" id="input-paciente" placeholder="Buscar por DNI o Nombre del paciente..." required="" type="text"/>
+<svg class="w-4 h-4 absolute left-2.5 top-2.5 text-text-muted pointer-events-none" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="11" cy="11" r="8"></circle>
+<line x1="21" x2="16.65" y1="21" y2="16.65"></line>
+</svg>
+</div>
+</div>
+<!-- Requerimientos de aislamiento -->
+<div>
+<label class="block text-[12px] font-semibold text-text-main mb-1" for="select-aislamiento">Requerimientos de aislamiento</label>
+<select class="w-full h-9 px-3 rounded border border-borderline bg-surface text-[13px] text-text-main focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent" id="select-aislamiento">
+<option value="ninguno">Ninguno (Cama Convencional)</option>
+<option value="gotas">Gotas (Mascarilla quirúrgica / flujo)</option>
+<option value="contacto">Contacto (Bata + guantes)</option>
+<option value="respiratorio">Respiratorio / Aerosoles (Presión Negativa)</option>
+</select>
+</div>
+<!-- Equipamiento requerido -->
+<div>
+<label class="block text-[12px] font-semibold text-text-main mb-1.5">Equipamiento requerido</label>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-2 text-[13px] text-text-main cursor-pointer">
+<input checked="" class="rounded text-accent focus:ring-accent border-borderline" type="checkbox"/>
+<span>Oxígeno central</span>
+</label>
+<label class="flex items-center gap-2 text-[13px] text-text-main cursor-pointer">
+<input class="rounded text-accent focus:ring-accent border-borderline" type="checkbox"/>
+<span>Monitor multiparámetro</span>
+</label>
+</div>
+</div>
+<!-- Primary Submit Button -->
+<button class="w-full mt-2 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-lg text-[14px] font-semibold shadow-xs transition-colors flex items-center justify-center gap-2" type="submit">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<span>Registrar solicitud</span>
+</button>
+</form>
+<!-- Feedback box -->
+<div class="hidden mt-3 p-2.5 rounded bg-accent-soft border border-borderline text-[12px] text-accent font-semibold flex items-center gap-2" id="toast-feedback">
+<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+<polyline points="22 4 12 14.01 9 11.01"></polyline>
+</svg>
+<span id="toast-text">Solicitud registrada con éxito.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    function triggerNotice(text) {
+      const box = document.getElementById('toast-feedback');
+      const label = document.getElementById('toast-text');
+      if (box && label) {
+        label.textContent = text;
+        box.classList.remove('hidden');
+        setTimeout(() => {
+          box.classList.add('hidden');
+        }, 4000);
+      }
+    }
+
+    function asignarDirecto(cama) {
+      triggerNotice('Lecho ' + cama + ' seleccionado para protocolo de admisión.');
+    }
+
+    function asignarPaciente(paciente, cama) {
+      triggerNotice('Paciente ' + paciente + ' asignado formalmente a Cama ' + cama + '.');
+    }
+
+    function handleReserva(e) {
+      e.preventDefault();
+      const input = document.getElementById('input-paciente');
+      const val = input.value || 'Paciente indicado';
+      triggerNotice('Solicitud registrada para ' + val + '. Buscando lecho compatible...');
+      input.value = '';
+    }
+  </script>
+</body></html>

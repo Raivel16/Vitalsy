@@ -1,6 +1,6 @@
 # Modelo de datos Vitalsy
 
-Esquema PostgreSQL/Laravel para RF-01–RF-91 (módulos 1–6 + acceso). Complementa —no reemplaza— `admission_encounters` (flujo de admisión ya en producción de desarrollo).
+Esquema PostgreSQL/Laravel para RF-01–RF-104 (módulos 1–6 + acceso). Complementa —no reemplaza— `admission_encounters` (flujo de admisión ya en producción de desarrollo).
 
 ## Convención de `encounter_id`
 
@@ -14,19 +14,19 @@ Estados y acciones (`status`, `action`, `protocol`) se modelan como `string`, no
 
 ---
 
-## Dominio: Identidad y acceso (RF-02, RF-86–91)
+## Dominio: Identidad y acceso (RF-02, RF-99–104)
 
 | Tabla | Rol | RF |
 |-------|-----|----|
-| `patients` | Identidad canónica (documento único por tipo+número) | RF-02, RF-86+ |
+| `patients` | Identidad canónica (documento único por tipo+número) | RF-02, RF-99+ |
 | `patient_contacts` | Familiar / contacto | RF-02, RF-03 |
 | `patient_allergies` | Alergias del paciente (`is_optional` para marcar registro opcional) | RF-11, RF-13 |
-| `users` (+ `is_active`, `deactivated_at`) | Cuentas y baja lógica | RF-86–91 |
-| `admission_encounters` *(existente)* | Caso de ingreso en curso / demo | RF-01–16, RF-83–85 |
+| `users` (+ `is_active`, `deactivated_at`) | Cuentas y baja lógica | RF-99–104 |
+| `admission_encounters` *(existente)* | Caso de ingreso en curso / demo | RF-01–20 |
 
 ---
 
-## Módulo 1 — Admisión y recepción (RF-01–16, RF-83–85)
+## Módulo 1 — Admisión y recepción (RF-01–20)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
@@ -34,7 +34,7 @@ Estados y acciones (`status`, `action`, `protocol`) se modelan como `string`, no
 | `informed_consents` | Consentimiento informado firmado | RF-06 |
 | `wristband_events` | Emisión/verificación de brazalete (`issued`\|`verified`) | RF-04, RF-08 |
 | `nursing_assessments` | Valoración inicial (motivo, historia, alergias JSON) | RF-11 |
-| `vital_sign_readings` | Constantes + NEWS2 opcional | RF-12, RF-22–25 |
+| `vital_sign_readings` | Constantes + NEWS2 opcional | RF-12, RF-26–29 |
 | `medication_reconciliations` | BPMH ingreso | RF-13 |
 | `risk_assessments` | Morse / Braden | RF-14 |
 
@@ -42,73 +42,74 @@ El Kardex y la ficha digital siguen apoyados en `admission_encounters.clinical_p
 
 ---
 
-## Módulo 2 — Atención y seguimiento (RF-17–33)
+## Módulo 2 — Atención y seguimiento (RF-21–38)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `lab_results` | Integración LIS | RF-17, RF-19 |
-| `imaging_reports` | Integración PACS | RF-18, RF-19 |
-| `medical_evolution_notes` | Evolución médica | RF-20 |
-| `prescriptions` / `prescription_items` | CPOE | RF-21, RF-16 |
-| `medication_administrations` | e-MAR (horario, firma, barcode) | RF-28–31 |
-| `nursing_evolution_notes` | Evolución de enfermería | RF-32 |
-| `care_activity_completions` | Cuidados básicos finalizados | RF-33 |
+| `lab_results` | Integración LIS | RF-21, RF-23 |
+| `imaging_reports` | Integración PACS | RF-22, RF-23 |
+| `medical_evolution_notes` | Evolución médica | RF-24 |
+| `prescriptions` / `prescription_items` | CPOE | RF-25, RF-16 |
+| `medication_administrations` | e-MAR (horario, firma, barcode) | RF-32–35 |
+| `nursing_evolution_notes` | Evolución de enfermería | RF-36 |
+| `care_activity_completions` | Cuidados básicos finalizados | RF-37 |
 
 ---
 
-## Módulo 3 — Alertas clínicas (RF-34–47)
+## Módulo 3 — Alertas clínicas (RF-39–53)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `clinical_alerts` | Alerta (sin soft deletes; historial inmutable) | RF-34–36, RF-47 |
-| `alert_acknowledgements` | Confirmación por rol | RF-39, RF-42 |
-| `alert_escalations` | Escalamiento a otro rol | RF-40, RF-41, RF-43 |
-| `monitoring_schedules` | Próximo control / frecuencia | RF-27, RF-37 |
+| `clinical_alerts` | Alerta con enrutamiento y plazos (`assigned_role`, `acknowledge_due_at`, `medical_due_at`, `closed_at`) | RF-39–52 |
+| `alert_acknowledgements` | Confirmación por rol | RF-44, RF-47 |
+| `alert_escalations` | Escalamiento a otro rol | RF-45, RF-46, RF-48 |
+| `alert_events` | Bitácora append-only del evento (RNF-07) | RF-49–52 |
+| `monitoring_schedules` | Próximo control / frecuencia | RF-31, RF-42 |
 
 ---
 
-## Módulo 4 — Alta y egreso (RF-48–61)
+## Módulo 4 — Alta y egreso (RF-54–67)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `discharge_orders` | Orden de alta | RF-48 |
-| `epicrisis_documents` | Epicrisis | RF-49 |
-| `ambulatory_prescriptions` | Recetas ambulatorias | RF-50 |
-| `social_assessments` | Valoración social | RF-51–52 |
-| `pharma_discharge_reconciliations` | Conciliación al alta | RF-53–54 |
-| `nursing_discharge_reports` | Informe de alta de enfermería | RF-55 |
-| `discharge_indication_receipts` | Recepción de indicaciones | RF-56 |
-| `account_verifications` | Estado de cuenta | RF-57 |
-| `exit_passes` | Pase de salida | RF-58–59 |
-| `patient_exits` | Salida efectiva | RF-60–61 |
+| `discharge_orders` | Orden de alta | RF-54 |
+| `epicrisis_documents` | Epicrisis | RF-55 |
+| `ambulatory_prescriptions` | Recetas ambulatorias | RF-56 |
+| `social_assessments` | Valoración social | RF-57–58 |
+| `pharma_discharge_reconciliations` | Conciliación al alta | RF-59–60 |
+| `nursing_discharge_reports` | Informe de alta de enfermería | RF-61 |
+| `discharge_indication_receipts` | Recepción de indicaciones | RF-62 |
+| `account_verifications` | Estado de cuenta | RF-63 |
+| `exit_passes` | Pase de salida | RF-64–65 |
+| `patient_exits` | Salida efectiva | RF-66–67 |
 
 ---
 
-## Módulo 5 — Camas (RF-62–72)
+## Módulo 5 — Camas (RF-68–77)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `wards` | Servicios / unidades | RF-63 |
-| `beds` | Lecho (`available`\|`occupied`\|`cleaning`\|`blocked`) | RF-63, RF-66–69 |
-| `bed_requests` | Solicitud priorizada | RF-62, RF-64 |
-| `bed_assignments` | Asignación / liberación | RF-07, RF-66 |
-| `cleaning_orders` | Limpieza (`standard`\|`deep`) | RF-68–69 |
-| `bed_readiness_checks` | Ropa / insumos listos | RF-70 |
-| `discharge_projections` | Alta proyectada | RF-65 |
+| `wards` | Servicios / unidades | RF-69 |
+| `beds` | Lecho (`available`\|`occupied`\|`cleaning`\|`blocked`) | RF-69, RF-72–73 |
+| `bed_requests` | Solicitud priorizada | RF-68, RF-70 |
+| `bed_assignments` | Asignación / liberación | RF-07, RF-73 |
+| `cleaning_orders` | Limpieza (`standard`\|`deep`) | RF-74–75 |
+| `bed_readiness_checks` | Ropa / insumos listos | RF-76 |
+| `discharge_projections` | Alta proyectada | RF-71 |
 
 ---
 
-## Módulo 6 — Personal (RF-73–82)
+## Módulo 6 — Personal (RF-78–88)
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `staff_shift_plans` | Plan mensual (`year_month` YYYY-MM) | RF-73–74 |
-| `staff_shifts` | Turnos individuales | RF-73–75 |
-| `daily_patient_assignments` | Asignación paciente–enfermera del día | RF-76 |
-| `handovers` | Entrega de turno | RF-77 |
-| `staff_absences` | Ausencias | RF-78–79 |
-| `coverage_requests` | Cobertura / retén | RF-80–81 |
-| `retainer_confirmations` | Confirmación de retén | RF-82 |
+| `staff_shift_plans` | Plan mensual (`year_month` YYYY-MM) | RF-78–80 |
+| `staff_shifts` | Turnos individuales | RF-78–80 |
+| `daily_patient_assignments` | Asignación paciente–enfermera del día | RF-80 |
+| `handovers` | Entrega de turno | RF-81–83 |
+| `staff_absences` | Ausencias | RF-84–85 |
+| `coverage_requests` | Cobertura / retén | RF-85–87 |
+| `retainer_confirmations` | Confirmación de retén | RF-88 |
 
 ---
 

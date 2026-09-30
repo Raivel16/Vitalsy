@@ -77,9 +77,9 @@ Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los paso
 | RF-07 | Orden de traslado | Continuar → traslado | Celador / Camillero | Cada `OT-…` muestra al paciente dueño de ese código. |
 | RF-08 | Verificar brazalete | Continuar → identidad | Celador / Camillero | Cada `BRZ-…` confirma solo a su paciente; el escaneo valida solo. |
 | RF-09–RF-16 | Recepción a indicaciones | Continuar según el paso | Enfermería / Médico | Registrar en cada pantalla avanza el ingreso. |
-| RF-83 | Censo | `/pacientes` | Todos | Lista pacientes y Continuar solo si es su turno. |
-| RF-85 | Continuar paso vigente | Censo / ficha | Todos | Abre la actividad con el paciente ya identificado. |
-| RF-92 | Buscar por brazalete | Censo → Escanear brazalete | Todos | Filtra el listado por el código leído. |
+| RF-17 | Censo | `/pacientes` | Todos | Lista pacientes y Continuar solo si es su turno. |
+| RF-19 | Continuar paso vigente | Censo / ficha | Todos | Abre la actividad con el paciente ya identificado. |
+| RF-20 | Buscar por brazalete | Censo → Escanear brazalete | Todos | Filtra el listado por el código leído. |
 
 ## API de intake (externa)
 

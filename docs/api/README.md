@@ -19,9 +19,9 @@ Colección Postman v2.1 importable en Yaak: [`yaak-modulo-2.postman_collection.j
 
 | RF | Peticiones |
 |---|---|
-| RF-17 | `POST/GET .../lab-results[/sync]` |
-| RF-18 | `POST/GET .../imaging-reports[/sync]` |
-| RF-19 | `GET .../clinical-visit` |
-| RF-20 | `GET/POST .../medical-evolution-notes` |
+| RF-21 | `POST/GET .../lab-results[/sync]` |
+| RF-22 | `POST/GET .../imaging-reports[/sync]` |
+| RF-23 | `GET .../clinical-visit` |
+| RF-24 | `GET/POST .../medical-evolution-notes` |
 
 `encounterId` debe existir en `admission_encounters` (p. ej. un ingreso demo o uno creado en pruebas).

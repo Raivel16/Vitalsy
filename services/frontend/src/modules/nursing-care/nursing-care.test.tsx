@@ -69,7 +69,7 @@ function stubCareApis() {
   );
 }
 
-describe("cuidados y evolución (RF-32–33)", () => {
+describe("cuidados y evolución (RF-36–37)", () => {
   afterEach(() => {
     sessionStorage.clear();
     vi.unstubAllGlobals();

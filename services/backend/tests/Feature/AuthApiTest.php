@@ -84,6 +84,26 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('message', 'Debe iniciar sesión para continuar.');
     }
 
+    public function test_support_role_signs_in_and_stays_out_of_clinical_routes(): void
+    {
+        User::factory()->create([
+            'name' => 'Gestión de camas',
+            'email' => 'gestion_camas@vitalsy.local',
+            'password' => 'Vitalsy.2026',
+            'role' => 'gestion_camas',
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'gestion_camas@vitalsy.local',
+            'password' => 'Vitalsy.2026',
+        ])->assertOk()
+            ->assertJsonPath('user.role', 'gestion_camas');
+
+        $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'No tiene permiso para esta acción.');
+    }
+
     public function test_guest_and_wrong_role_cannot_open_an_admission_order(): void
     {
         $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')

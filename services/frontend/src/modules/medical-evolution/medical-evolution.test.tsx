@@ -25,7 +25,7 @@ const encounter = {
   progress: [],
 };
 
-describe("nota de evolución médica (RF-20)", () => {
+describe("nota de evolución médica (RF-24)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_residente");
   });

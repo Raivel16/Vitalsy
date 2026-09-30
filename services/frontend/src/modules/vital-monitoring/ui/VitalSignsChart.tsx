@@ -5,7 +5,7 @@ type Props = {
   series: ChartPoint[];
 };
 
-/** Gráfica SVG de pulso y NEWS2 (RF-25). */
+/** Gráfica SVG de pulso y NEWS2 (RF-29). */
 export function VitalSignsChart({ series }: Props) {
   const chart = useMemo(() => {
     if (series.length === 0) return null;

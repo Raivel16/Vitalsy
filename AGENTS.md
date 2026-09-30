@@ -65,7 +65,7 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - **Reglas de campos:** DNI/documento y teléfonos solo dígitos (filtrar en `onChange`). Obligatorios por defecto; opcionales explícitos (alergias, observación de derivación, motivo de internamiento si no aplica).
 - **Base de trabajo local:** `origin/dev` puede estar atrasado; el flujo de admisión vive en ramas `feature/RF-*`. Preferir ramificar bugfix desde la rama feature que ya tenga el módulo 1, documentándolo en el plan.
 
-### 2026-09-20 — Esquema DB RF-01–RF-91 + censo
+### 2026-09-20 — Esquema DB RF-01–RF-104 + censo
 
 - Migraciones `2026_09_20_100*` + modelos Eloquent + `CatalogSeeder`; detalle en `docs/architecture/modelo-datos.md` y `docs/agent-context.md`.
 - `admission_encounters` intacto; `encounter_id` string indexado sin FK en tablas nuevas.
@@ -78,10 +78,10 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - CSS: `.field` gap 0.5rem; `.check .field-error` a ancho completo; `.result-block` con margen superior.
 - `Feedback` acepta `label` opcional (`aria-label`) para resultados de registro.
 
-### 2026-09-20 — RF-92 camillero y escáner de brazalete
+### 2026-09-20 — RF-20 camillero y escáner de brazalete
 
 - Rol interno `camillero`; UI/docs actor **Celador / Camillero**; cuenta `camillero@vitalsy.local`.
-- RF-08: escaneo en identidad valida solo. RF-92: escáner en censo; `q` incluye brazalete.
+- RF-08: escaneo en identidad valida solo. RF-20: escáner en censo; `q` incluye brazalete.
 - Escáner compartido: `shared/ui/BarcodeScanner.tsx`.
 
 ### 2026-09-21 — Módulo 2 roles clínicos
@@ -89,21 +89,21 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante`.
 - Catálogo en `docs/requirements/requerimientos.md`.
 
-### 2026-09-21 — RF-17 LIS
+### 2026-09-21 — RF-21 LIS
 
 - Stub FHIR + API `lab-results` + UI `/atencion/laboratorio`. Ver `docs/architecture/modulo-2-atencion.md`.
 
-### 2026-09-22 — UX Módulo 2 + RF-93
+### 2026-09-22 — UX Módulo 2 + RF-38
 
 - Stepper de admisión oculto en `/atencion/*` e ingresos cerrados.
 - Constantes M2 = campos NEWS2 de M1 + gráfica SVG; sin precargas.
 - CPOE: panel plan activo + enlace a e-MAR; e-MAR regenera dosis del plan activo.
-- RF-93: `Expediente clínico` (`/atencion/chart`) — lectura consolidada del ingreso.
+- RF-38: `Expediente clínico` (`/atencion/chart`) — lectura consolidada del ingreso.
 
 ### 2026-09-25 — Expediente tabs + cuidados compartidos
 
 - Expediente: pestañas Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
-- RF-32–33: `enfermera_piso` y `auxiliar_enfermeria` pueden notas y cuidados directos.
+- RF-36–37: `enfermera_piso` y `auxiliar_enfermeria` pueden notas y cuidados directos.
 
 ### 2026-09-25 — Censo genérico + indicaciones tratante
 
@@ -111,8 +111,24 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Morse: radios simples. Advance `indicaciones` también para `medico_tratante`.
 - Cuidados: tabs Notas/Actividades + `completedByName`; expediente con timeline por fecha y filtro `from`/`to`.
 - Admisión en chart: sin etiqueta «Proceso 1».
-- RF-20: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
+- RF-24: evolución médica para residente y tratante; `?next=` al elegir paciente; loader/acordeón/sidebar UX.
 - Pulido visual: sin cabeceras azul uniforme, menú fixed, fondo patrón sutil, CTA ficha centrado.
 - RF-16: tratante firma indicaciones; loader global único al abrir ingreso.
+
+### 2026-09-26 — Módulos 3–6 + RF-53
+
+- Roles nuevos: `enfermera_supervisora`, `equipo_respuesta_rapida`, `trabajo_social`, `altas_caja`, `gestion_camas`, `servicios_generales`, `jefatura_enfermeria`, `recursos_humanos`.
+- M3: bandeja `/alertas`, SLA `alerts:process-slas`, timeline inmutable.
+- RF-53: campana en header, toast propio y sirena Web Audio; para solo al confirmar lectura (`acknowledge`).
+- M4: `/egreso` con gates de secuencia; `PatientExited` libera cama.
+- M5: `/camas` censo + espera + limpieza; listener de egreso despacha desinfección.
+- M6: `/personal` rol, balanceo NEWS2, handover y retén; RF-39 usa `daily_patient_assignments`.
+
+### 2026-09-26 — Controles + recordatorios (RF-42/28)
+
+- Inbox médico compartido: `medico_notificado` / `medico_en_atencion` visibles para residente y tratante.
+- Bandeja `/atencion/controles` (módulo `vital-controls`): listar/completar y reprogramar `next_due_at`.
+- `ComplianceAlertService` en `alerts:process-slas`: control/dosis vencida → alerta + sirena; cierra al completar; escala a supervisora.
+- Config: `emar_grace_minutes`, `compliance_ack_minutes`; columna `compliance_key`.
 
 <!-- END AGENT ANNOTATIONS -->

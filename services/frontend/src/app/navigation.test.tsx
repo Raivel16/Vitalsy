@@ -29,3 +29,32 @@ describe("navegación módulo 2", () => {
     expect(screen.queryByRole("link", { name: /^cpoe$/i })).not.toBeInTheDocument();
   });
 });
+
+describe("acceso de los roles de apoyo", () => {
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("no ofrece el censo de admisión a un rol de apoyo de camas", () => {
+    sessionStorage.setItem("vitalsy-role", "gestion_camas");
+    renderApp("/");
+
+    expect(screen.getByRole("link", { name: /^inicio$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^pacientes$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /censo de camas/i })).toBeInTheDocument();
+  });
+
+  it("mantiene el censo para los roles clínicos que intervienen en alertas", () => {
+    sessionStorage.setItem("vitalsy-role", "enfermera_supervisora");
+    renderApp("/");
+
+    expect(screen.getByRole("link", { name: /^pacientes$/i })).toBeInTheDocument();
+  });
+
+  it("bloquea el censo por ruta directa a un rol sin acceso", () => {
+    sessionStorage.setItem("vitalsy-role", "servicios_generales");
+    renderApp("/pacientes");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/no está disponible para su perfil/i);
+  });
+});

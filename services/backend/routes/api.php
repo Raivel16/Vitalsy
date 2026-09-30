@@ -2,14 +2,19 @@
 
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BedManagementController;
+use App\Http\Controllers\Api\ClinicalAlertsController;
 use App\Http\Controllers\Api\ClinicalVisitController;
 use App\Http\Controllers\Api\CpoeController;
+use App\Http\Controllers\Api\DischargeController;
 use App\Http\Controllers\Api\EmarCareController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
+use App\Http\Controllers\Api\MonitoringControlsController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
+use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,7 +69,7 @@ Route::prefix('v1')->group(function () {
 
         // Módulo 2 — Atención y seguimiento
         Route::prefix('inpatient-care')->group(function () {
-            // RF-17: integración LIS (disparo operativo para roles clínicos; actor Sistema vía adaptador).
+            // RF-21: integración LIS (disparo operativo para roles clínicos; actor Sistema vía adaptador).
             Route::middleware('role:medico_residente,medico_tratante,enfermera_piso')->group(function () {
                 Route::post('encounters/{encounterId}/lab-results/sync', [LabResultsController::class, 'sync']);
                 Route::get('encounters/{encounterId}/lab-results', [LabResultsController::class, 'index']);
@@ -72,15 +77,15 @@ Route::prefix('v1')->group(function () {
                 Route::get('encounters/{encounterId}/imaging-reports', [ImagingReportsController::class, 'index']);
             });
 
-            // RF-19: visita consolidada — médicos.
-            // RF-20: nota de evolución — médico residente y médico tratante.
+            // RF-23: visita consolidada — médicos.
+            // RF-24: nota de evolución — médico residente y médico tratante.
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {
                 Route::get('encounters/{encounterId}/clinical-visit', [ClinicalVisitController::class, 'show']);
                 Route::get('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'index']);
                 Route::post('encounters/{encounterId}/medical-evolution-notes', [MedicalEvolutionNoteController::class, 'store']);
             });
 
-            // RF-21: CPOE — médico tratante; kardex CPOE consultable por clínica de piso/médicos.
+            // RF-25: CPOE — médico tratante; kardex CPOE consultable por clínica de piso/médicos.
             Route::middleware('role:medico_tratante')->group(function () {
                 Route::post('encounters/{encounterId}/prescriptions', [CpoeController::class, 'store']);
                 Route::post('encounters/{encounterId}/prescriptions/active/items', [CpoeController::class, 'storeItem']);
@@ -93,7 +98,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('encounters/{encounterId}/kardex', [CpoeController::class, 'kardex']);
             });
 
-            // RF-22–27: monitoreo fisiológico, NEWS2, gráfica, alertas y programación.
+            Route::middleware('role:enfermera_piso,auxiliar_enfermeria,enfermera_supervisora')->group(function () {
+                Route::get('monitoring-controls', [MonitoringControlsController::class, 'index']);
+                Route::post('encounters/{encounterId}/monitoring-controls/complete', [MonitoringControlsController::class, 'complete']);
+            });
+
+            // RF-26–27: monitoreo fisiológico, NEWS2, gráfica, alertas y programación.
             Route::middleware('role:enfermera_piso,auxiliar_enfermeria')->group(function () {
                 Route::post('encounters/{encounterId}/vital-signs', [VitalSignsMonitoringController::class, 'store']);
                 Route::post('encounters/{encounterId}/vital-signs/telemetry', [VitalSignsMonitoringController::class, 'telemetry']);
@@ -104,7 +114,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('encounters/{encounterId}/clinical-chart', [PatientClinicalChartController::class, 'show']);
             });
 
-            // RF-28–31: e-MAR; RF-32 evolución enfermería; RF-33 cuidados.
+            // RF-32–35: e-MAR; RF-36 evolución enfermería; RF-37 cuidados.
             Route::middleware('role:enfermera_piso')->group(function () {
                 Route::get('encounters/{encounterId}/emar', [EmarCareController::class, 'emar']);
                 Route::post('encounters/{encounterId}/emar/{doseId}/administer', [EmarCareController::class, 'administer']);
@@ -115,6 +125,151 @@ Route::prefix('v1')->group(function () {
                 Route::post('encounters/{encounterId}/nursing-evolution-notes', [EmarCareController::class, 'storeNursingNote']);
                 Route::get('encounters/{encounterId}/care-activities', [EmarCareController::class, 'listCareActivities']);
                 Route::post('encounters/{encounterId}/care-activities', [EmarCareController::class, 'storeCareActivity']);
+            });
+        });
+
+        // Módulo 3 — Gestión de alertas y respuesta ante alteraciones (RF-39–47)
+        Route::prefix('clinical-alerts')->group(function () {
+            $alertRoles = 'enfermera_piso,auxiliar_enfermeria,enfermera_supervisora,medico_residente,medico_tratante,equipo_respuesta_rapida';
+
+            Route::middleware("role:{$alertRoles}")->group(function () {
+                Route::get('inbox', [ClinicalAlertsController::class, 'inbox']);
+                Route::get('{alert}/timeline', [ClinicalAlertsController::class, 'timeline']);
+                Route::post('{alert}/acknowledge', [ClinicalAlertsController::class, 'acknowledge']);
+            });
+
+            // RF-40: el auxiliar registra el deterioro observado; la enfermera también.
+            Route::middleware('role:auxiliar_enfermeria,enfermera_piso,enfermera_supervisora')->group(function () {
+                Route::post('observations', [ClinicalAlertsController::class, 'storeObservation']);
+            });
+
+            // RF-41–43: verificación, programación y confirmación de atención médica.
+            Route::middleware('role:enfermera_piso,enfermera_supervisora')->group(function () {
+                Route::post('{alert}/reassessment', [ClinicalAlertsController::class, 'reassess']);
+                Route::post('{alert}/monitoring-schedule', [ClinicalAlertsController::class, 'scheduleMonitoring']);
+                Route::post('{alert}/medical-request', [ClinicalAlertsController::class, 'requestMedical']);
+            });
+
+            // RF-49–50: atención médica de urgencia y solicitud del ERR.
+            Route::middleware('role:medico_residente,medico_tratante')->group(function () {
+                Route::post('{alert}/medical-assessment', [ClinicalAlertsController::class, 'storeMedicalAssessment']);
+                Route::post('{alert}/rapid-response-request', [ClinicalAlertsController::class, 'requestRapidResponse']);
+            });
+
+            // RF-51: evaluación del ERR y orden de traslado a UCI.
+            Route::middleware('role:equipo_respuesta_rapida')->group(function () {
+                Route::post('{alert}/err-assessment', [ClinicalAlertsController::class, 'storeRapidResponseAssessment']);
+            });
+
+            // Ciclo UCI: autorización médica/enfermería, traslado efectivo y retorno.
+            Route::middleware('role:medico_residente,medico_tratante,enfermera_piso')->group(function () {
+                Route::post('{alert}/icu-authorize', [ClinicalAlertsController::class, 'authorizeIcu']);
+            });
+            Route::middleware('role:enfermera_piso,enfermera_supervisora,camillero')->group(function () {
+                Route::post('{alert}/icu-transfer', [ClinicalAlertsController::class, 'transferIcu']);
+            });
+            Route::middleware('role:enfermera_piso,enfermera_supervisora')->group(function () {
+                Route::post('{alert}/icu-return', [ClinicalAlertsController::class, 'returnFromIcu']);
+            });
+        });
+
+        // Módulo 4 — Alta y egreso hospitalario (RF-54–61)
+        Route::prefix('discharge')->group(function () {
+            $dischargeRoles = 'medico_residente,medico_tratante,trabajo_social,enfermera_piso,altas_caja,camillero';
+
+            Route::middleware("role:{$dischargeRoles}")->group(function () {
+                Route::get('board', [DischargeController::class, 'board']);
+                Route::get('encounters/{encounterId}', [DischargeController::class, 'show']);
+            });
+
+            Route::middleware('role:medico_residente,medico_tratante')->group(function () {
+                Route::post('encounters/{encounterId}/order', [DischargeController::class, 'storeOrder']);
+                Route::post('encounters/{encounterId}/epicrisis', [DischargeController::class, 'storeEpicrisis']);
+                Route::post('encounters/{encounterId}/prescriptions', [DischargeController::class, 'storePrescriptions']);
+            });
+
+            Route::middleware('role:trabajo_social')->group(function () {
+                Route::post('encounters/{encounterId}/social-assessment', [DischargeController::class, 'storeSocialAssessment']);
+            });
+
+            Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('encounters/{encounterId}/reconciliation-context', [DischargeController::class, 'reconciliationContext']);
+                Route::post('encounters/{encounterId}/reconciliation', [DischargeController::class, 'storeReconciliation']);
+                Route::post('encounters/{encounterId}/nursing-report', [DischargeController::class, 'storeNursingReport']);
+                Route::post('encounters/{encounterId}/indication-receipt', [DischargeController::class, 'storeIndicationReceipt']);
+                Route::post('encounters/{encounterId}/exit', [DischargeController::class, 'confirmExit']);
+            });
+
+            Route::middleware('role:altas_caja')->group(function () {
+                Route::post('encounters/{encounterId}/account', [DischargeController::class, 'verifyAccount']);
+                Route::post('encounters/{encounterId}/exit-pass', [DischargeController::class, 'issueExitPass']);
+            });
+
+            Route::middleware('role:camillero')->group(function () {
+                Route::get('authorized-exits', [DischargeController::class, 'authorizedExits']);
+            });
+        });
+
+        // Módulo 5 — Gestión y asignación de camas (RF-68–71)
+        Route::prefix('beds')->group(function () {
+            Route::middleware('role:gestion_camas,enfermera_supervisora')->group(function () {
+                Route::get('census', [BedManagementController::class, 'census']);
+                Route::get('requests', [BedManagementController::class, 'requests']);
+                Route::get('requests/{requestId}/suggestions', [BedManagementController::class, 'suggestions']);
+            });
+
+            Route::middleware('role:gestion_camas')->group(function () {
+                Route::post('requests', [BedManagementController::class, 'storeRequest']);
+                Route::post('requests/{requestId}/assign', [BedManagementController::class, 'assign']);
+            });
+
+            Route::middleware('role:enfermera_supervisora')->group(function () {
+                Route::post('projections', [BedManagementController::class, 'storeProjection']);
+                Route::post('{bedId}/release', [BedManagementController::class, 'release']);
+            });
+
+            Route::middleware('role:servicios_generales,enfermera_supervisora,auxiliar_enfermeria')->group(function () {
+                Route::get('cleaning-orders', [BedManagementController::class, 'cleaningOrders']);
+            });
+
+            Route::middleware('role:servicios_generales')->group(function () {
+                Route::post('cleaning-orders/{orderId}/complete', [BedManagementController::class, 'completeCleaning']);
+            });
+
+            Route::middleware('role:auxiliar_enfermeria')->group(function () {
+                Route::post('{bedId}/equip', [BedManagementController::class, 'equip']);
+            });
+        });
+
+        // Módulo 6 — Gestión del personal asistencial (RF-78–82)
+        Route::prefix('staff')->group(function () {
+            Route::middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos')->group(function () {
+                Route::get('shift-plans/{yearMonth}', [StaffRosterController::class, 'showPlan']);
+            });
+
+            Route::middleware('role:jefatura_enfermeria')->group(function () {
+                Route::post('shift-plans', [StaffRosterController::class, 'publishPlan']);
+                Route::post('coverage-requests/{id}/approve', [StaffRosterController::class, 'approveCoverage']);
+            });
+
+            Route::middleware('role:enfermera_supervisora')->group(function () {
+                Route::post('assignments/suggest', [StaffRosterController::class, 'suggest']);
+                Route::post('assignments/approve', [StaffRosterController::class, 'approve']);
+                Route::post('absences', [StaffRosterController::class, 'storeAbsence']);
+                Route::post('coverage-requests/{id}/confirm', [StaffRosterController::class, 'confirmRetainer']);
+            });
+
+            Route::middleware('role:enfermera_supervisora,jefatura_enfermeria,recursos_humanos')->group(function () {
+                Route::get('coverage-requests', [StaffRosterController::class, 'coverageRequests']);
+            });
+
+            Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('handover', [StaffRosterController::class, 'handoverPreview']);
+                Route::post('handover', [StaffRosterController::class, 'signHandover']);
+            });
+
+            Route::middleware('role:recursos_humanos')->group(function () {
+                Route::post('coverage-requests/{id}/authorize', [StaffRosterController::class, 'authorizeCoverage']);
             });
         });
     });

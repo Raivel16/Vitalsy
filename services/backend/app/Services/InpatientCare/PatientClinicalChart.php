@@ -3,7 +3,9 @@
 namespace App\Services\InpatientCare;
 
 use App\Models\AdmissionEncounter;
+use App\Models\AlertEvent;
 use App\Models\CareActivityCompletion;
+use App\Models\ClinicalAlert;
 use App\Models\ImagingReport;
 use App\Models\LabResult;
 use App\Models\MedicalEvolutionNote;
@@ -18,7 +20,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class PatientClinicalChart
 {
     /**
-     * Expediente clínico de lectura del ingreso (RF-93).
+     * Expediente clínico de lectura del ingreso (RF-38).
      *
      * @return array<string, mixed>
      */
@@ -143,6 +145,32 @@ class PatientClinicalChart
             ])
             ->all();
 
+        $clinicalAlerts = ClinicalAlert::query()
+            ->with(['events' => fn ($q) => $q->orderBy('occurred_at')->orderBy('id')])
+            ->where('encounter_id', $encounterId)
+            ->tap(fn (Builder $q) => $this->applyDateRange($q, 'generated_at', $from, $to))
+            ->orderByDesc('generated_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (ClinicalAlert $alert) => [
+                'id' => $alert->id,
+                'status' => $alert->status,
+                'severity' => $alert->severity,
+                'news2Total' => $alert->news2_total,
+                'message' => $alert->message,
+                'source' => $alert->source,
+                'generatedAt' => optional($alert->generated_at)?->toIso8601String(),
+                'closedAt' => optional($alert->closed_at)?->toIso8601String(),
+                'events' => $alert->events->map(fn (AlertEvent $event) => [
+                    'id' => $event->id,
+                    'type' => $event->type,
+                    'detail' => $event->detail,
+                    'role' => $event->role,
+                    'occurredAt' => optional($event->occurred_at)?->toIso8601String(),
+                ])->all(),
+            ])
+            ->all();
+
         $payload = is_array($encounter->clinical_payload) ? $encounter->clinical_payload : [];
         $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
         $vitalsBasal = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : null;
@@ -204,6 +232,7 @@ class PatientClinicalChart
             'nursingEvolutionNotes' => $nursingNotes,
             'careActivities' => $careActivities,
             'medicationAdministrations' => $emar,
+            'clinicalAlerts' => $clinicalAlerts,
             'filters' => [
                 'from' => $from?->toDateString(),
                 'to' => $to?->toDateString(),

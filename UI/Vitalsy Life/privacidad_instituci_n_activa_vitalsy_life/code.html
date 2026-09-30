@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_tab" name="shell-type"/>
+<title>Privacidad - Vitalsy Life</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        background-color: #FAF9F6;
+      }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+      .bottom-safe {
+        bottom: env(safe-area-inset-bottom, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-[#FAF9F6] text-[#1C242B] flex flex-col min-h-full">
+<!-- Chrome Top Bar -->
+<header class="fixed top-0 w-full z-50 pt-safe bg-[#FAF9F6]/90 backdrop-blur-md border-b border-[#E2E8F0]">
+<div class="h-14 px-5 flex items-center justify-between">
+<!-- Left: Wordmark Integral -->
+<div class="flex items-center gap-1.5">
+<span class="text-xl font-bold tracking-tight text-[#1C242B]">Vitalsy</span>
+<span class="bg-[#E6F4F3] text-[#2B8A88] text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center justify-center">Life</span>
+</div>
+<!-- Right: Sync Status & Avatar -->
+<div class="flex items-center gap-2.5">
+<div class="h-7 px-2.5 rounded-full bg-white border border-[#E2E8F0] flex items-center gap-1.5 shadow-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-[#2B8A88] animate-pulse"></span>
+<span class="text-xs font-medium text-[#687787]">Sincronizado</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-[#E6F4F3] border border-[#d2ece9] flex items-center justify-center text-[#2B8A88]">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col w-full pt-16 pb-28 px-5 bg-[#FAF9F6]">
+<div class="flex flex-col w-full pt-4 pb-2">
+<!-- Header Section -->
+<div class="flex flex-col gap-1.5 mb-5">
+<h1 class="text-2xl font-bold text-[#1C242B] tracking-tight">
+          Privacidad y soberanía de datos
+        </h1>
+<p class="text-sm text-[#687787] leading-relaxed">
+          Tú controlas qué se comparte con instituciones de salud. Puedes revocar el acceso en cualquier segundo.
+        </p>
+</div>
+<!-- 1) Summary Card '1 Institución Activa' -->
+<div class="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-4 flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-[#E6F4F3] flex items-center justify-center shrink-0 text-[#2B8A88]">
+<span class="material-symbols-outlined text-[22px]">shield</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<span class="text-xs font-semibold text-[#1C242B]">1 Institución Activa</span>
+<span class="bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-full px-2.5 py-0.5 inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              Conexión médica activa
+            </span>
+</div>
+<p class="text-xs text-[#687787] leading-relaxed">
+            Sincronización segura de línea de base activa para tu proceso de admisión.
+          </p>
+</div>
+</div>
+<!-- 2) Active Institution Card -->
+<div class="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-4">
+<!-- Header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-[#FAF9F6] border border-[#E2E8F0] flex items-center justify-center shrink-0 text-[#2B8A88]">
+<span class="material-symbols-outlined text-[20px]">local_hospital</span>
+</div>
+<div class="min-w-0">
+<h2 class="text-base font-semibold text-[#1C242B] truncate">
+                Clínica San Camilo
+              </h2>
+<p class="text-xs text-[#687787] truncate">
+                Admisión Hospitalaria · Autorizado el 24 oct, 08:30 h
+              </p>
+</div>
+</div>
+<span class="bg-[#E6F4F3] text-[#2B8A88] text-xs font-medium px-2.5 py-0.5 rounded-full shrink-0">
+            Acceso activo
+          </span>
+</div>
+<!-- Transmission detail -->
+<p class="text-xs text-[#1C242B] bg-[#FAF9F6] border border-[#E2E8F0] p-2.5 rounded-xl my-3 leading-relaxed">
+          Línea de base preventiva para soporte en triaje e internación.
+        </p>
+<!-- Inset / Action row -->
+<div class="flex items-center justify-between pt-1 border-t border-[#F1F5F9]">
+<button class="text-xs text-[#2B8A88] font-medium underline-offset-2 hover:underline flex items-center gap-1 py-1" type="button">
+<span class="material-symbols-outlined text-[15px]">history</span>
+<span>Ver auditoría</span>
+</button>
+<button class="text-xs text-[#DC2626] font-medium hover:opacity-80 flex items-center gap-1 py-1" id="btn-show-revoke" type="button">
+<span class="material-symbols-outlined text-[15px]">link_off</span>
+<span>Revocar acceso</span>
+</button>
+</div>
+</div>
+<!-- 3) Confirm Revoke Inset Dialog (Alert Card) -->
+<div class="p-4 rounded-2xl bg-red-50/70 border border-red-200/80 shadow-sm mb-4" id="revoke-dialog-inset">
+<div class="flex items-center gap-1.5 mb-1 text-[#DC2626]">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<h3 class="font-semibold text-sm text-[#1C242B]">
+            ¿Revocar acceso a Clínica San Camilo?
+          </h3>
+</div>
+<p class="text-xs text-[#687787] leading-relaxed mb-3">
+          La clínica dejará de recibir inmediatamente tu historial Life. Tus métricas locales seguirán intactas en tu teléfono.
+        </p>
+<div class="flex flex-col gap-1.5">
+<button class="bg-[#DC2626] hover:bg-red-700 active:scale-[0.99] text-white w-full py-2.5 rounded-full text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5" id="btn-confirm-revoke" type="button">
+<span class="material-symbols-outlined text-[16px]">lock_reset</span>
+<span>Confirmar revocación de acceso</span>
+</button>
+<button class="text-xs text-[#687787] text-center w-full py-2 block font-medium hover:text-[#1C242B] transition-colors" id="btn-cancel-revoke" type="button">
+            Mantener conexión
+          </button>
+</div>
+</div>
+<!-- Transmission Preferences Settings -->
+<div class="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-4">
+<span class="text-[11px] font-semibold text-[#687787] uppercase tracking-wider block mb-3">
+          Preferencias de transmisión
+        </span>
+<div class="flex items-center justify-between py-1.5">
+<div class="flex flex-col pr-4">
+<span class="text-xs font-semibold text-[#1C242B]">Sincronización con sensores</span>
+<span class="text-xs text-[#687787]">Envía variabilidad cardíaca en segundo plano</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" id="toggle-sensors" type="checkbox"/>
+<div class="w-11 h-6 bg-[#E2E8F0] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2B8A88]"></div>
+</label>
+</div>
+<div class="h-px bg-[#F1F5F9] my-2"></div>
+<div class="flex items-center justify-between py-1.5">
+<div class="flex flex-col pr-4">
+<span class="text-xs font-semibold text-[#1C242B]">Compartir en admisiones futuras</span>
+<span class="text-xs text-[#687787]">Preautorizar automáticamente con tu DNI</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input class="sr-only peer" id="toggle-admissions" type="checkbox"/>
+<div class="w-11 h-6 bg-[#E2E8F0] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2B8A88]"></div>
+</label>
+</div>
+</div>
+<!-- 4) Footer Action Button -->
+<button class="bg-white border border-[#E2E8F0] text-[#1C242B] w-full py-3 rounded-full text-xs font-semibold shadow-sm flex items-center justify-center gap-2 hover:bg-[#FAF9F6] active:scale-[0.99] transition-all mb-4" type="button">
+<span class="material-symbols-outlined text-[18px] text-[#2B8A88]">add_circle</span>
+<span>+ Vincular otra institución</span>
+</button>
+<!-- Footnote -->
+<p class="text-xs text-center text-[#687787] py-2 px-2 leading-relaxed">
+        Auditoría criptográfica: Cada lectura compartida queda registrada en el registro inmutable de tu dispositivo.
+      </p>
+</div>
+</main>
+<!-- Fixed Bottom Tab Bar: Exactly 5 tabs -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] shadow-sm">
+<div class="flex justify-around items-center h-16 px-3">
+<!-- Hoy -->
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-[#687787] hover:text-[#1C242B] transition-colors" data-path="hoy" href="#">
+<div class="w-10 h-7 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">sunny</span>
+</div>
+<span class="text-[11px] font-medium leading-none">Hoy</span>
+</a>
+<!-- Tendencias -->
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-[#687787] hover:text-[#1C242B] transition-colors" data-path="tendencias" href="#">
+<div class="w-10 h-7 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">monitoring</span>
+</div>
+<span class="text-[11px] font-medium leading-none">Tendencias</span>
+</a>
+<!-- Plan -->
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-[#687787] hover:text-[#1C242B] transition-colors" data-path="plan" href="#">
+<div class="w-10 h-7 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+<span class="text-[11px] font-medium leading-none">Plan</span>
+</a>
+<!-- Privacidad (ACTIVE) -->
+<a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-[#2B8A88]" data-path="privacidad" href="#">
+<div class="w-10 h-7 rounded-full bg-[#E6F4F3] flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px] font-medium">security</span>
+</div>
+<span class="text-[11px] font-semibold leading-none">Privacidad</span>
+</a>
+<!-- Perfil -->
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-[#687787] hover:text-[#1C242B] transition-colors" data-path="perfil" href="#">
+<div class="w-10 h-7 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<span class="text-[11px] font-medium leading-none">Perfil</span>
+</a>
+</div>
+</nav>
+<script>
+    (function() {
+      const dialogInset = document.getElementById('revoke-dialog-inset');
+      const showBtn = document.getElementById('btn-show-revoke');
+      const cancelBtn = document.getElementById('btn-cancel-revoke');
+      const confirmBtn = document.getElementById('btn-confirm-revoke');
+
+      if (showBtn && dialogInset) {
+        showBtn.addEventListener('click', () => {
+          dialogInset.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          dialogInset.classList.add('ring-2', 'ring-red-400');
+          setTimeout(() => dialogInset.classList.remove('ring-2', 'ring-red-400'), 400);
+        });
+      }
+
+      if (cancelBtn && dialogInset) {
+        cancelBtn.addEventListener('click', () => {
+          dialogInset.style.opacity = '0.4';
+          setTimeout(() => {
+            dialogInset.style.opacity = '1';
+          }, 250);
+        });
+      }
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>Revocando acceso...</span>';
+          setTimeout(() => {
+            confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span><span>Acceso revocado</span>';
+            confirmBtn.disabled = true;
+            confirmBtn.classList.replace('bg-[#DC2626]', 'bg-[#687787]');
+          }, 700);
+        });
+      }
+    })();
+  </script>
+</body></html>

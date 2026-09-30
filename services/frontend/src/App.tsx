@@ -3,7 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -25,19 +25,30 @@ import { MedicalEvolutionPage } from "./modules/medical-evolution/pages/MedicalE
 import { CpoePage } from "./modules/cpoe/pages/CpoePage";
 import { VitalMonitoringPage } from "./modules/vital-monitoring/pages/VitalMonitoringPage";
 import { EmarPage } from "./modules/e-mar/pages/EmarPage";
+import { VitalControlsPage } from "./modules/vital-controls/pages/VitalControlsPage";
 import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEvolutionCarePage";
 import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
+import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
+import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage";
+import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
+import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage";
+import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
+import { BedCensusPage } from "./modules/bed-management/pages/BedCensusPage";
+import { CleaningOrdersPage } from "./modules/bed-management/pages/CleaningOrdersPage";
+import { StaffBoardPage } from "./modules/staff-roster/pages/StaffBoardPage";
+import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
+import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { Button } from "./shared/ui/Button";
 import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
-function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {
+function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: string; children: ReactNode }) {
   const { user } = useAuth();
   if (user && roles.includes(user.role)) return children;
   return (
     <p className="banner banner-warning" role="alert">
-      Esta vista no está disponible para su perfil. Se requiere {roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
+      Esta vista no está disponible para su perfil. Se requiere {requirement ?? roles.map((item) => ROLE_LABEL[item]).join(" o ")}.
     </p>
   );
 }
@@ -81,6 +92,7 @@ function Shell() {
           </div>
         </div>
         <div className="session-box">
+          <AlertNotifications enabled={isAlertRole(role)} />
           <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
           <Button variant="quiet" type="button" onClick={() => void logout()}>
             <IconLogout size={18} stroke={1.75} aria-hidden />
@@ -107,9 +119,23 @@ function Shell() {
           <CaseBar>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/pacientes" element={<CensusPage />} />
+              <Route
+                path="/pacientes"
+                element={
+                  <Guard roles={PATIENT_WORKLIST} requirement="un perfil que atienda pacientes en curso">
+                    <CensusPage />
+                  </Guard>
+                }
+              />
               <Route path="/pacientes/nuevo" element={<Guard roles={["admision"]}><PatientRegistrationPage /></Guard>} />
-              <Route path="/pacientes/:encounterId" element={<EncounterFilePage />} />
+              <Route
+                path="/pacientes/:encounterId"
+                element={
+                  <Guard roles={PATIENT_WORKLIST} requirement="un perfil que atienda pacientes en curso">
+                    <EncounterFilePage />
+                  </Guard>
+                }
+              />
               <Route path="/admision/orden" element={<Guard roles={["admision"]}><AdmissionOrderPage /></Guard>} />
               <Route path="/admision/filiacion" element={<Guard roles={["admision"]}><FiliationPage /></Guard>} />
               <Route path="/admision/cobertura" element={<Guard roles={["admision"]}><CoveragePage /></Guard>} />
@@ -192,12 +218,56 @@ function Shell() {
                 }
               />
               <Route
+                path="/atencion/controles"
+                element={
+                  <Guard roles={["enfermera_piso", "auxiliar_enfermeria", "enfermera_supervisora"]}>
+                    <VitalControlsPage />
+                  </Guard>
+                }
+              />
+              <Route
                 path="/atencion/cuidados"
                 element={
                   <Guard roles={["enfermera_piso", "auxiliar_enfermeria"]}>
                     <NursingEvolutionCarePage />
                   </Guard>
                 }
+              />
+              <Route
+                path="/alertas"
+                element={<Guard roles={ALERT_ROLES} requirement="un perfil del proceso de alertas"><AlertInboxPage /></Guard>}
+              />
+              <Route
+                path="/alertas/deterioro"
+                element={
+                  <Guard roles={["auxiliar_enfermeria", "enfermera_piso", "enfermera_supervisora"]}>
+                    <DeteriorationPage />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/alertas/:alertId"
+                element={<Guard roles={ALERT_ROLES} requirement="un perfil del proceso de alertas"><AlertDetailPage /></Guard>}
+              />
+              <Route
+                path="/egreso"
+                element={<Guard roles={DISCHARGE_ROLES} requirement="un perfil del proceso de alta"><DischargeBoardPage /></Guard>}
+              />
+              <Route
+                path="/egreso/:encounterId"
+                element={<Guard roles={DISCHARGE_ROLES} requirement="un perfil del proceso de alta"><DischargeCasePage /></Guard>}
+              />
+              <Route
+                path="/camas"
+                element={<Guard roles={BED_ROLES} requirement="gestión de camas o supervisión"><BedCensusPage /></Guard>}
+              />
+              <Route
+                path="/camas/limpieza"
+                element={<Guard roles={CLEANING_ROLES} requirement="limpieza, auxiliar o supervisión"><CleaningOrdersPage /></Guard>}
+              />
+              <Route
+                path="/personal"
+                element={<Guard roles={STAFF_ROLES} requirement="un perfil de gestión del personal"><StaffBoardPage /></Guard>}
               />
             </Routes>
           </CaseBar>
@@ -217,7 +287,9 @@ function Gate() {
 export default function App() {
   return (
     <AuthProvider>
-      <Gate />
+      <ToastProvider>
+        <Gate />
+      </ToastProvider>
     </AuthProvider>
   );
 }

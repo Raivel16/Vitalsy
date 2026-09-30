@@ -4,7 +4,7 @@ namespace App\Services\Clinical;
 
 /**
  * Filtro Butterworth de 4º orden, fase cero (filtfilt) para atenuar ruido
- * en series fisiológicas (RF-23 / RNF-02).
+ * en series fisiológicas (RF-27 / RNF-02).
  *
  * Se implementa como cascada de dos secciones SOS de 2º orden + filtfilt.
  */

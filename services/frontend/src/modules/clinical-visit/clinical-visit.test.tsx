@@ -24,7 +24,7 @@ const encounter = {
   progress: [],
 };
 
-describe("visita médica consolidada (RF-19)", () => {
+describe("visita médica consolidada (RF-23)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_tratante");
   });

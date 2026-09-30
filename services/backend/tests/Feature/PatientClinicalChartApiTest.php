@@ -90,7 +90,8 @@ class PatientClinicalChartApiTest extends TestCase
             ->assertJsonPath('admission.assessment.chiefComplaint', 'Disnea de dos días')
             ->assertJsonPath('vitalSigns.0.news2', 0)
             ->assertJsonPath('labResults.0.summary', 'Hemograma normal')
-            ->assertJsonPath('medicalEvolutionNotes.0.body', 'Evolución favorable.');
+            ->assertJsonPath('medicalEvolutionNotes.0.body', 'Evolución favorable.')
+            ->assertJsonPath('clinicalAlerts', []);
     }
 
     public function test_admission_role_cannot_read_clinical_chart(): void

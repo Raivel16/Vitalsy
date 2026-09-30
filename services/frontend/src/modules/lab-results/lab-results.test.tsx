@@ -25,7 +25,7 @@ const encounter = {
   progress: [],
 };
 
-describe("integración de laboratorio LIS (RF-17)", () => {
+describe("integración de laboratorio LIS (RF-21)", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_residente");
   });
