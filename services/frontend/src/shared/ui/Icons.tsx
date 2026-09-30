@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useId } from "react";
 
 type IconProps = { title?: string };
 
@@ -12,22 +11,18 @@ function Svg({ children, title }: IconProps & { children: ReactNode }) {
   );
 }
 
+/** Wordmark clínico: línea vital bajo la palabra Vitalsy. */
 export function SealIcon() {
-  const gradientId = useId();
-
   return (
-    <svg className="icon brand-mark" viewBox="0 0 32 32" role="img" aria-label="Vitalsy">
-      <defs>
-        <linearGradient id={gradientId} x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#14B8C6" />
-          <stop offset="1" stopColor="#0E4C92" />
-        </linearGradient>
-      </defs>
-      <path fill={`url(#${gradientId})`} d="M12 4h8v6h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6v6H12v-6H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h6V4Z" />
-      <path d="M6 16h5l2-3 2.2 6 2-3H26" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="24.5" cy="7.5" r="4.2" fill="#E23B4A" />
-      <path d="M24.5 5.4v2.5" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="24.5" cy="9.4" r=".7" fill="#fff" />
+    <svg className="brand-pulse" viewBox="0 0 128 18" aria-hidden="true">
+      <path
+        d="M1 9h36l7-7 10 14 7-7h66"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
