@@ -101,6 +101,15 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Escalas Morse: radios simples (sin pastillas).
 - RF-16: `advance` de `indicaciones` acepta `medico_tratante` además de residente.
 
+## Pendiente posterior al rediseño de pantallas (no entra en RNF-16)
+
+Registrado para una iteración aparte. No se implementa junto con el ajuste visual de las pantallas actuales.
+
+- **RF-101 a RF-104.** Mockups `screen_1_usuarios_listado`, `screen_2_registrar_usuario` y `screen_3_editar_desactivar_usuario`. La administración de cuentas está en la rama `feature/RF-101-administracion-usuarios`, fuera de `dev`.
+- **Vitalsy Life.** App móvil y mockups de `UI/Vitalsy Life/`. Producto distinto; ver `UI/Vitalsy Life/plan-implementacion.md`.
+- **RF-06.** Bloque Life en el consentimiento de admisión: el mock está listo; no completar la lógica si el backend no la cubre.
+- **RF-61 y RF-96.** QR de vinculación al alta: el mock está en la ficha de egreso; no inventar el código si el backend no lo entrega.
+
 ## 2026-09-29 — Pizarra clínica (RNF-16)
 
 - Tokens en `clinical.css`: canvas `#ECEEF1`, texto `#1B2228`, acento `#1E6B7B`. Tipografía Source Sans 3.
