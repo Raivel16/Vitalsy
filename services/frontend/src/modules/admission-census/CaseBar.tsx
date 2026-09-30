@@ -79,11 +79,31 @@ export function CaseBar({ children }: { children: ReactNode }) {
     <EncounterContext.Provider value={value}>
       {ingreso && error ? <Feedback tone="error">{error}</Feedback> : null}
       {ingreso && encounter ? (
-        <section className="case-bar" aria-label="Ingreso en curso">
-          <p>
-            <strong>{encounter.patientName}</strong>
-            <span>{encounter.statusLabel}</span>
-          </p>
+        <section className="case-bar case-bar-clinical" aria-label="Ingreso en curso">
+          <div className="case-bar-main">
+            <div className="case-bar-avatar" aria-hidden>
+              {encounter.patientName
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase() ?? "")
+                .join("")}
+            </div>
+            <div className="case-bar-identity">
+              <p className="case-bar-name">
+                <strong>{encounter.patientName}</strong>
+                <span className="case-bar-doc">{encounter.documentType} {encounter.documentNumber}</span>
+              </p>
+              <p className="case-bar-meta">
+                {encounter.location.room || encounter.location.bed
+                  ? `Habitación ${encounter.location.room ?? "—"} · Lecho ${encounter.location.bed ?? "—"}${encounter.location.service ? ` (${encounter.location.service})` : ""}`
+                  : "Sin ubicación"}
+              </p>
+            </div>
+            <span className={`case-bar-status${encounter.currentStep === "cerrado" ? " is-hosp" : ""}`}>
+              {encounter.statusLabel}
+            </span>
+          </div>
           {!hideAdmissionStepper && encounter.progress ? (
             <AdmissionStepper
               steps={encounter.progress}
@@ -92,15 +112,15 @@ export function CaseBar({ children }: { children: ReactNode }) {
               currentStep={encounter.currentStep}
             />
           ) : null}
-          <div className="actions">
-            <Link to={`/pacientes/${encounter.encounterId}`}>Ver ficha</Link>
+          <div className="actions case-bar-actions">
+            <Link className="case-bar-link" to={`/pacientes/${encounter.encounterId}`}>Ver ficha</Link>
             {isClinicalRole(user?.role ?? "admision") ? (
-              <Link to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}>
+              <Link className="case-bar-link" to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}>
                 Expediente clínico
               </Link>
             ) : null}
             {encounter.currentStep === "cerrado" && user && isClinicalRole(user.role) ? (
-              <Link to={primaryAttentionPath(user.role, encounter.encounterId)}>Atención en piso</Link>
+              <Link className="case-bar-link" to={primaryAttentionPath(user.role, encounter.encounterId)}>Atención en piso</Link>
             ) : null}
             {encounter.nextRole && user && !canActOnEncounter(user.role, encounter) && encounter.currentStep !== "derivacion" ? (
               <span>Este paso corresponde a {ROLE_LABEL[encounter.nextRole]}.</span>

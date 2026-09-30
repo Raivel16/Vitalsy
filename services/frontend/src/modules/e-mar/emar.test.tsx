@@ -69,7 +69,7 @@ describe("e-MAR (RF-32–35)", () => {
 
     renderApp("/atencion/emar?ingreso=ENC-HOSP-0001");
     expect(await screen.findByRole("heading", { name: /e-mar del turno/i })).toBeInTheDocument();
-    await user.click(await screen.findByRole("button", { name: /^administrar$/i }));
+    await user.click(await screen.findByRole("button", { name: /verificar y administrar|administrar/i }));
     expect(screen.getByText(/código esperado del medicamento/i)).toHaveTextContent(/DRUG-PARACETAMOL-1G/i);
     expect(screen.getByRole("button", { name: /escanear brazalete/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /escanear medicamento/i })).toBeInTheDocument();
