@@ -73,30 +73,36 @@ export function PatientRegistrationPage() {
       </p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
-          <TextField id="reg-order" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} error={errors.orderNumber} required />
-          <TextField id="reg-name" label="Nombre del paciente" value={patientName} onChange={(event) => setPatientName(event.target.value)} error={errors.patientName} required />
+          <TextField id="reg-order" label="Número de orden" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} error={errors.orderNumber} hint="Correlativo interno del sistema de triaje." required />
           <TextField
             id="reg-document"
-            label="Número de documento"
+            label="Documento de identidad"
             inputMode="numeric"
             value={documentNumber}
             onChange={(event) => setDocumentNumber(digitsOnly(event.target.value, 12))}
             error={errors.documentNumber}
-            hint="Solo números."
+            hint="Solo dígitos."
             required
           />
+          <TextField id="reg-name" label="Nombre del paciente" value={patientName} onChange={(event) => setPatientName(event.target.value)} error={errors.patientName} hint="Registre según documento nacional oficial." required />
           <TextField id="reg-origin" label="Servicio de origen" value={originService} onChange={(event) => setOriginService(event.target.value)} error={errors.originService} required />
-          <TextField id="reg-payer" label="Pagador" value={coveragePayer} onChange={(event) => setCoveragePayer(event.target.value)} error={errors.coveragePayer} required />
+          <TextField id="reg-payer" label="Pagador asegurador" value={coveragePayer} onChange={(event) => setCoveragePayer(event.target.value)} error={errors.coveragePayer} required />
           <SelectField id="reg-coverage" label="Estado de cobertura" value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value)} required>
             <option value="aprobada">Aprobada</option>
-            <option value="pendiente">Pendiente</option>
+            <option value="pendiente">Pendiente de verificación</option>
             <option value="rechazada">Rechazada</option>
           </SelectField>
           <TextField id="reg-plan" label="Plan de cobertura" value={coveragePlan} onChange={(event) => setCoveragePlan(event.target.value)} error={errors.coveragePlan} required />
-          <TextField id="reg-reason" label="Motivo de internamiento (opcional)" value={reason} onChange={(event) => setReason(event.target.value)} hint="Puede dejarse vacío si no aplica." />
+          <TextField id="reg-reason" label="Motivo de ingreso" value={reason} onChange={(event) => setReason(event.target.value)} hint="Opcional · Síntesis de guardia." />
         </div>
+        <Feedback tone="info">
+          Flujo de camas posterior. Al formalizar el registro se generará la solicitud de asignación inmediata para el servicio de destino.
+        </Feedback>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
-        <Button type="submit" pending={pending}>Registrar e iniciar</Button>
+        <div className="form-actions-bar">
+          <Button type="button" variant="quiet" onClick={() => void navigate("/pacientes")}>Cancelar</Button>
+          <Button type="submit" pending={pending}>Registrar e iniciar</Button>
+        </div>
       </form>
       <p><Link to="/pacientes">Volver al censo</Link></p>
     </Sheet>

@@ -1352,6 +1352,27 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
 .bed-cleaning { background: #e7eef5; }
 .bed-isolation { background: #efeaf5; }
 
+.form-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.form-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
 .work-queue {
   list-style: none;
   display: grid;

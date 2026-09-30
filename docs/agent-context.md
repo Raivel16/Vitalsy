@@ -116,5 +116,9 @@ Registrado para una iteración aparte. No se implementa junto con el ajuste visu
 - Wordmark: «Vitalsy» con la línea vital debajo. Top bar 68px, sidebar 256px, ítem activo con fondo `#E6EFF1` y barra de 3px.
 - NEWS2 usa `--news-low|mid|high`, aparte de los banners de éxito, aviso y error.
 - No cambia rutas, roles, textos ni APIs.
-- Piezas reutilizables en `shared/ui/clinical.tsx`: `MetricRow`, `StatusMark`, `BedTile`, `Panel`.
-- Pantallas densas (inicio, censo, ficha, camas, limpieza, egreso, personal) usan esas piezas; el resto hereda cabecera, tablas y sheets de `clinical.css`.
+- Piezas reutilizables en `shared/ui/clinical.tsx`: `MetricRow`, `StatusMark`, `BedTile`, `Panel`, `StatTile`, `QueueRow`, `StatusPill`, `ProgressTrack`.
+- Rediseño fiel a mocks (`code.html`/`screen.png`), sin datos inventados:
+  - Inicio: tiles + action bar + cola desde APIs reales.
+  - Pacientes/ficha: pastillas, prioridad, entregables en grilla.
+  - Egreso/alertas/camas: filtros, cards, KPIs; mismos handlers.
+- Formularios M1/M2 restantes: Sheet/`form-grid`; pulido fino pendiente.
