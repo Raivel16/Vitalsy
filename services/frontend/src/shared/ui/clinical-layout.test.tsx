@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { BedTile, MetricRow, StatusMark, bedTone } from "./clinical";
+import { BedTile, MetricRow, Panel, StatusMark, bedTone } from "./clinical";
 
-describe("piezas de layout clÃ­nico", () => {
-  it("muestra una mÃ©trica con su valor", () => {
+describe("piezas de layout clínico", () => {
+  it("muestra una métrica con su valor", () => {
     render(<MetricRow items={[{ label: "Disponibles", value: 4 }]} />);
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(screen.getByText("Disponibles")).toBeInTheDocument();
@@ -14,7 +14,7 @@ describe("piezas de layout clÃ­nico", () => {
     expect(mark).toHaveClass("status-mark", "status-occupied");
   });
 
-  it("dibuja el lecho con habitaciÃ³n, cÃ³digo y aislamiento", () => {
+  it("dibuja el lecho con habitación, código y aislamiento", () => {
     render(<BedTile room="301" code="A" status="occupied" isolation />);
     expect(screen.getByText("301-A")).toBeInTheDocument();
     expect(screen.getByText("Aislamiento")).toBeInTheDocument();
@@ -24,5 +24,11 @@ describe("piezas de layout clÃ­nico", () => {
     expect(bedTone("available")).toBe("available");
     expect(bedTone("cleaning")).toBe("cleaning");
     expect(bedTone("otro")).toBe("neutral");
+  });
+
+  it("agrupa contenido clínico en un panel con título", () => {
+    render(<Panel title="Cola de trabajo">Pendientes del turno</Panel>);
+    expect(screen.getByRole("heading", { name: /cola de trabajo/i })).toBeInTheDocument();
+    expect(screen.getByText("Pendientes del turno")).toBeInTheDocument();
   });
 });
