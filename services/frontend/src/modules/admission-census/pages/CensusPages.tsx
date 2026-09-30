@@ -8,10 +8,9 @@ import { isClinicalRole, primaryAttentionPath } from "../../../app/navigation";
 import { errorText } from "../../../app/userMessage";
 import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
-import { Panel } from "../../../shared/ui/clinical";
+import { Panel, StatusPill, type ClinicalTone } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { safeNextPath } from "../../../shared/navigation/returnTo";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
@@ -26,6 +25,18 @@ type CensusMeta = {
 };
 
 const EMPTY_META: CensusMeta = { total: 0, page: 1, perPage: 10, lastPage: 1 };
+
+function statusTone(statusLabel: string, currentStep: string): ClinicalTone {
+  if (currentStep === "cerrado" || /hospitalizado/i.test(statusLabel)) return "success";
+  if (/contingencia|reubic/i.test(statusLabel) || currentStep === "reubicacion") return "warning";
+  return "warning";
+}
+
+function deliverableRatio(encounter: Encounter): { done: number; total: number; label: string } {
+  const done = encounter.deliverables.filter((item) => item.done).length;
+  const total = encounter.deliverables.length;
+  return { done, total, label: `${done}/${total}` };
+}
 
 export function CensusPage() {
   const { user } = useAuth();
@@ -130,11 +141,12 @@ export function CensusPage() {
       ) : null}
       {encounters && meta.total > 0 ? (
         <>
-          <div className="table-wrap">
-            <table>
-              <caption>
-                Pacientes ({from}–{to} de {meta.total})
-              </caption>
+          <div className="table-wrap census-table">
+            <div className="census-table-bar">
+              <span>Pacientes ({from}–{to} de {meta.total})</span>
+              <span>Ordenado por prioridad de turno</span>
+            </div>
+            <table aria-label={`Pacientes (${from}–${to} de ${meta.total})`}>
               <thead>
                 <tr>
                   <th>Paciente</th>
@@ -148,21 +160,29 @@ export function CensusPage() {
                 {encounters.map((item) => {
                   const own = canActOnEncounter(role, item);
                   const canAttend = isClinicalRole(role) && item.currentStep === "cerrado";
+                  const ratio = deliverableRatio(item);
                   return (
                     <tr key={item.encounterId}>
                       <td>
-                        <Link to={`/pacientes/${item.encounterId}`}>{item.patientName}</Link>
-                        <span className="hint">{item.documentType} {item.documentNumber}</span>
+                        <Link className="census-patient-name" to={`/pacientes/${item.encounterId}`}>{item.patientName}</Link>
+                        <span className="census-patient-meta">
+                          <span>{item.documentType} {item.documentNumber}</span>
+                          <StatusPill tone={statusTone(item.statusLabel, item.currentStep)}>{item.statusLabel}</StatusPill>
+                        </span>
                       </td>
                       <td>
-                        {item.statusLabel}
-                        <span className="hint">{item.currentStepLabel}</span>
+                        <strong className="census-step">{item.currentStepLabel}</strong>
                       </td>
                       <td>{locationText(item)}</td>
-                      <td>{deliverableCount(item)}</td>
+                      <td>
+                        <StatusPill tone={ratio.done === ratio.total && ratio.total > 0 ? "info" : "neutral"}>
+                          {ratio.label}
+                        </StatusPill>
+                        <span className="sr-only">{deliverableCount(item)}</span>
+                      </td>
                       <td className="col-action">
                         {own ? (
-                          <ButtonLink to={stepPath(item.currentStep, item.encounterId)}>
+                          <ButtonLink to={stepPath(item.currentStep, item.encounterId)} variant="quiet">
                             Continuar
                           </ButtonLink>
                         ) : canAttend ? (
@@ -243,10 +263,32 @@ export function EncounterFilePage() {
 
   const own = canActOnEncounter(role, encounter);
   const canAttend = isClinicalRole(role) && encounter.currentStep === "cerrado";
+  const ratio = deliverableRatio(encounter);
+  const ready = ratio.total > 0 && ratio.done === ratio.total;
 
   return (
-    <Sheet kicker="Ficha del ingreso" title={encounter.patientName}>
-      <p className="lead">{encounter.statusLabel}.</p>
+    <Sheet kicker="Ficha del ingreso" title={encounter.patientName} wide>
+      <div className="file-head">
+        <p className="lead file-status">
+          <StatusPill tone={statusTone(encounter.statusLabel, encounter.currentStep)}>{encounter.statusLabel}</StatusPill>
+        </p>
+        {own ? (
+          <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
+            {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
+          </ButtonLink>
+        ) : canAttend ? (
+          <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
+            Abrir atención en piso
+          </ButtonLink>
+        ) : null}
+      </div>
+      {!own && !canAttend ? (
+        <Feedback tone="info">
+          {encounter.nextRole
+            ? `Este paso corresponde a ${ROLE_LABEL[encounter.nextRole]}.`
+            : encounter.statusLabel}
+        </Feedback>
+      ) : null}
       {encounter.progress ? (
         <AdmissionStepper
           steps={encounter.progress}
@@ -255,35 +297,33 @@ export function EncounterFilePage() {
           currentStep={encounter.currentStep}
         />
       ) : null}
-      {own ? (
-        <FormActions align="center">
-          <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
-            {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
-          </ButtonLink>
-        </FormActions>
-      ) : canAttend ? (
-        <FormActions align="center">
-          <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
-            Abrir atención en piso
-          </ButtonLink>
-        </FormActions>
-      ) : (
-        <Feedback tone="info">
-          {encounter.nextRole
-            ? `Este paso corresponde a ${ROLE_LABEL[encounter.nextRole]}.`
-            : encounter.statusLabel}
-        </Feedback>
-      )}
-      <Panel title="Resumen del ingreso">
-        <dl className="facts">
+      <Panel title="Datos administrativos y clínicos del ingreso">
+        <dl className="facts facts-rows">
           <div><dt>Documento</dt><dd>{encounter.documentType} {encounter.documentNumber}</dd></div>
           <div><dt>Orden</dt><dd>{encounter.orderNumber}</dd></div>
           <div><dt>Origen</dt><dd>{encounter.originService}</dd></div>
-          <div><dt>Cobertura</dt><dd>{encounter.coverage.payer} · {encounter.coverage.status}</dd></div>
+          <div>
+            <dt>Cobertura</dt>
+            <dd>
+              {encounter.coverage.payer}
+              {" · "}
+              <span className={encounter.coverage.status === "aprobada" ? "text-success" : undefined}>
+                {encounter.coverage.status}
+              </span>
+            </dd>
+          </div>
           <div><dt>Ubicación</dt><dd>{locationText(encounter)}</dd></div>
           <div><dt>Expediente</dt><dd>{encounter.recordId ?? "Aún no aperturado"}</dd></div>
           <div><dt>Brazalete</dt><dd>{encounter.wristbandCode ?? "Aún no emitido"}</dd></div>
-          <div><dt>Avance</dt><dd>{deliverableCount(encounter)}</dd></div>
+          <div>
+            <dt>Avance</dt>
+            <dd>
+              <StatusPill tone={ready ? "success" : "neutral"}>
+                {ratio.label} {ready ? "completado" : "en curso"}
+              </StatusPill>
+              <span className="sr-only">{deliverableCount(encounter)}</span>
+            </dd>
+          </div>
         </dl>
       </Panel>
       {encounter.coverageReferral ? (
@@ -306,8 +346,11 @@ export function EncounterFilePage() {
       ) : encounter.coverage.status !== "aprobada" ? (
         <Feedback tone="info">Aún no hay una derivación registrada para este ingreso.</Feedback>
       ) : null}
-      <Panel title="Entregables del ingreso">
-        <ul className="deliverables">
+      <Panel
+        title="Entregables del ingreso"
+        aside={`${ratio.done} de ${ratio.total} listos`}
+      >
+        <ul className="deliverables deliverables-grid">
           {encounter.deliverables.map((item) => (
             <li key={item.id} className={item.done ? "done" : undefined}>
               {item.done ? <IconCircleCheck size={20} stroke={1.75} aria-hidden /> : <IconClock size={20} stroke={1.75} aria-hidden />}
