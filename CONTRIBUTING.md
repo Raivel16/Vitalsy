@@ -28,7 +28,7 @@ Este proyecto exige metodología TDD en frontend y backend.
    - `feature/RF-XX-brief-description`
    - `bugfix/RF-XX-brief-description`
    - `hotfix/RF-XX-brief-description`
-10. El identificador del requerimiento (por ejemplo `RF-42`, `RF-81`, `RNF-05`) debe incluirse en el nombre de la rama para identificar exactamente qué cambio se está implementando.
+10. El identificador del requerimiento (por ejemplo `RF-47`, `RF-87`, `RNF-05`) debe incluirse en el nombre de la rama para identificar exactamente qué cambio se está implementando.
 
 ## Flujo recomendado
 

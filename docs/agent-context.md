@@ -15,7 +15,7 @@ Cambios clave:
 
 Al retomar: leer este archivo + sección final de anotaciones en `AGENTS.md`.
 
-## 2026-09-20 — Censo: ancho, búsqueda y paginación + esquema RF-01–RF-91
+## 2026-09-20 — Censo: ancho, búsqueda y paginación + esquema RF-01–RF-104
 
 ### Parte A (UI/API censo)
 - Formularios más anchos en viewports grandes (`clinical.css` media queries; censo usa `Sheet wide`).
@@ -31,13 +31,13 @@ Al retomar: leer este archivo + sección final de anotaciones en `AGENTS.md`.
 
 Para aplicar esquema en entorno local (cuando el usuario lo autorice): `php artisan migrate` (evitar `migrate:fresh` si hay datos a conservar).
 
-## 2026-09-20 — RF-92 camillero + escáner de brazalete
+## 2026-09-20 — RF-20 camillero + escáner de brazalete
 
-Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-spacing`).
+Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-spacing`; requisito renumerado a RF-20).
 
 - Rol técnico `celador` → `camillero`; cuenta demo `camillero@vitalsy.local`. Etiqueta UI y docs de actor: **Celador / Camillero**.
 - RF-08: al escanear en verificación de identidad se valida y avanza sin segundo clic.
-- RF-92: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
+- RF-20: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
 - `BarcodeScanner` movido a `shared/ui/BarcodeScanner.tsx`.
 
 ## 2026-09-21 — Módulo 2: roles clínicos separados
@@ -47,12 +47,12 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante` (sin claves genéricas `enfermeria`/`medico`). Catálogo en `requerimientos.md`.
 - UX Módulo 2 orientativa: censo + chart (Opción A), no stepper de admisión.
 
-## 2026-09-21 — RF-17 integración LIS
+## 2026-09-21 — RF-21 integración LIS
 
 - `LisClient`/`StubLisClient`, `LabResultsIntegrator`, API `inpatient-care/.../lab-results`, UI `/atencion/laboratorio`.
 - Guía: `docs/architecture/modulo-2-atencion.md`.
 
-## 2026-09-21 — Módulo 2 RF-17–33 completo (rama feature)
+## 2026-09-21 — Módulo 2 RF-21–33 completo (rama feature)
 
 - Commits atómicos por RF/subproceso en `feature/RF-17-modulo-2-atencion-seguimiento`.
 - UX: chart + acciones (`/atencion/*`), no stepper de admisión.
@@ -71,11 +71,11 @@ Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualiz
 - Expediente: incluye `careActivities`; historiales agrupados por día con filtro (Hoy/7/30/Todo/rango); API `from`/`to`.
 - Título de admisión sin «Proceso 1».
 
-## 2026-09-25 — UX chart/censo + RF-20 ambos médicos
+## 2026-09-25 — UX chart/censo + RF-24 ambos médicos
 
 - Gráfica evolutiva respeta el filtro de fechas; loader centrado; menú lateral a altura completa.
 - Censo: sin paginación si hay 1 página; botón Acción a ancho de celda; `?next=` restaura la pantalla pedida.
-- RF-20: evolución médica para `medico_residente` y `medico_tratante`.
+- RF-24: evolución médica para `medico_residente` y `medico_tratante`.
 
 ## 2026-09-25 — Pulido visual (menos azul uniforme)
 

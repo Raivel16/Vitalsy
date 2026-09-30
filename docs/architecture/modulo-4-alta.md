@@ -16,18 +16,18 @@ Implementa el Proceso 4. La orden de alta abre en paralelo la valoración social
 
 | RF | Estado | Interfaz / API |
 |---|---|---|
-| RF-48 | Hecho | `POST .../discharge/encounters/{id}/order` |
-| RF-49 | Hecho | `POST .../epicrisis` |
-| RF-50 | Hecho | `POST .../prescriptions` |
-| RF-51 | Hecho | El tablero de `trabajo_social` lista altas nuevas |
-| RF-52 | Hecho | `POST .../social-assessment` |
-| RF-53 | Hecho | `GET .../reconciliation-context` |
-| RF-54 | Hecho | `POST .../reconciliation` |
-| RF-55 | Hecho | `POST .../nursing-report` incorpora el informe social |
-| RF-56 | Hecho | `POST .../indication-receipt` (asistido por enfermería) |
-| RF-57 | Hecho | `POST .../account` |
-| RF-58–59 | Hecho | `POST .../exit-pass` · `GET .../authorized-exits` |
-| RF-60–61 | Hecho | `POST .../exit` dispara `PatientExited` y marca el ingreso `egresado` |
+| RF-54 | Hecho | `POST .../discharge/encounters/{id}/order` |
+| RF-55 | Hecho | `POST .../epicrisis` |
+| RF-56 | Hecho | `POST .../prescriptions` |
+| RF-57 | Hecho | El tablero de `trabajo_social` lista altas nuevas |
+| RF-58 | Hecho | `POST .../social-assessment` |
+| RF-59 | Hecho | `GET .../reconciliation-context` |
+| RF-60 | Hecho | `POST .../reconciliation` |
+| RF-61 | Hecho | `POST .../nursing-report` incorpora el informe social |
+| RF-62 | Hecho | `POST .../indication-receipt` (asistido por enfermería) |
+| RF-63 | Hecho | `POST .../account` |
+| RF-64–65 | Hecho | `POST .../exit-pass` · `GET .../authorized-exits` |
+| RF-66–67 | Hecho | `POST .../exit` dispara `PatientExited` y marca el ingreso `egresado` |
 
 ## Rutas UI
 
