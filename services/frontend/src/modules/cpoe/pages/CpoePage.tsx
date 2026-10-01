@@ -5,6 +5,7 @@ import { errorText } from "../../../app/userMessage";
 import { useEncounter } from "../../admission-census/EncounterContext";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
+import { Panel } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
@@ -159,7 +160,11 @@ export function CpoePage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para gestionar la prescripción CPOE." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Prescripción electrónica (CPOE)">
+        <EmptyEncounter message="Abra un paciente hospitalizado para gestionar la prescripción CPOE." />
+      </Sheet>
+    );
   }
 
   const hasActive = Boolean(active && active.items.length > 0);
@@ -174,13 +179,12 @@ export function CpoePage() {
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
       {fieldError ? <Feedback tone="error">{fieldError}</Feedback> : null}
 
-      <section className="result-block" aria-label="Prescripción activa">
-        <h3>Prescripción activa</h3>
+      <Panel title="Prescripción activa" aside={hasActive ? `Firmado vigente: ${formatDateTime(active!.signedAt)}` : undefined}>
         {!hasActive ? (
           <Feedback tone="info">No hay plan CPOE activo. Cree la primera prescripción abajo.</Feedback>
         ) : (
           <>
-            <p className="hint">Firmada: {formatDateTime(active!.signedAt)}. La enfermera administra desde e-MAR del turno.</p>
+            <p className="hint">La enfermera administra desde e-MAR del turno.</p>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -190,7 +194,7 @@ export function CpoePage() {
                     <th>Vía</th>
                     <th>Frecuencia</th>
                     <th>Código barras</th>
-                    <th />
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,7 +234,7 @@ export function CpoePage() {
               </table>
             </div>
             <form className="stack result-block" onSubmit={onAddItem} noValidate aria-label="Agregar medicamento">
-              <h3>Agregar medicamento</h3>
+              <h3>Agregar medicamento al plan activo</h3>
               <p className="hint">Añada un medicamento individual al plan activo.</p>
               <div className="form-grid">
                 <TextField id="add-drug" label="Medicamento" value={addForm.drugName} onChange={(e) => setAddForm({ ...addForm, drugName: e.target.value })} required />
@@ -244,11 +248,11 @@ export function CpoePage() {
             </form>
           </>
         )}
-      </section>
+      </Panel>
 
       {!hasActive ? (
+        <Panel title="Nueva prescripción">
         <form className="stack" onSubmit={onCreatePlan} noValidate aria-label="Nueva prescripción">
-          <h3>Nueva prescripción</h3>
           {newLines.map((item, index) => (
             <div className="form-grid" key={index}>
               <TextField id={`drug-${index}`} label="Medicamento" value={item.drugName} onChange={(e) => updateNewLine(index, { drugName: e.target.value })} required />
@@ -262,10 +266,10 @@ export function CpoePage() {
             <Button type="submit" disabled={saving}>{saving ? "Registrando…" : "Registrar CPOE"}</Button>
           </FormActions>
         </form>
+        </Panel>
       ) : null}
 
-      <section className="result-block" aria-label="Kardex electrónico">
-        <h3>Kardex electrónico</h3>
+      <Panel title="Kardex electrónico">
         {kardexMeds.length === 0 ? (
           <Feedback tone="info">Sin medicamentos CPOE activos.</Feedback>
         ) : (
@@ -282,7 +286,7 @@ export function CpoePage() {
             </table>
           </div>
         )}
-      </section>
+      </Panel>
     </Sheet>
   );
 }

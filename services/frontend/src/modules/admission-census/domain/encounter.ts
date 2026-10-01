@@ -33,6 +33,10 @@ export type Encounter = {
   originService: string;
   coverage: { payer: string; status: string; plan: string };
   coverageReferral?: CoverageReferral | null;
+  clinical?: {
+    filiation?: { fullName?: string; documentNumber?: string; birthDate?: string; confirmed?: boolean } | null;
+    consent?: { signerName?: string; relationship?: string | null } | null;
+  };
   location: { room: string | null; bed: string | null; service: string | null };
   wristbandCode: string | null;
   recordId: string | null;

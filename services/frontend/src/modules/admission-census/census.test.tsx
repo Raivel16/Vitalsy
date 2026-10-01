@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -6,8 +6,8 @@ import type { Encounter } from "./domain/encounter";
 
 vi.mock("../../shared/ui/BarcodeScanner", () => ({
   BarcodeScanner: ({ onScan }: { onScan: (code: string) => void }) => (
-    <button type="button" onClick={() => onScan("BRZ-0001-ANA")}>
-      Simular escaneo
+    <button type="button" className="button button-quiet" onClick={() => onScan("BRZ-0001-ANA")}>
+      Escanear brazalete
     </button>
   ),
 }));
@@ -78,7 +78,11 @@ describe("censo de ingresos", () => {
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/buscar paciente/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /simular escaneo|escanear brazalete/i })).toBeInTheDocument();
+    const buscar = screen.getByRole("button", { name: /^buscar$/i });
+    expect(buscar).toHaveClass("button");
+    expect(buscar).not.toHaveClass("button-quiet");
+    expect(document.querySelector(".census-toolbar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /escanear brazalete/i })).toHaveClass("button-quiet");
     expect(screen.getByText(/2 de 3 entregables listos/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^continuar$/i })).toHaveAttribute("href", "/admision/cobertura?ingreso=ENC-0002");
     expect(screen.getByText(/en curso con celador \/ camillero/i)).toBeInTheDocument();
@@ -163,7 +167,7 @@ describe("censo de ingresos", () => {
     renderApp("/pacientes");
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /simular escaneo/i }));
+    await user.click(screen.getByRole("button", { name: /escanear brazalete/i }));
     await waitFor(() => {
       const searchCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("q=BRZ-0001-ANA"));
       expect(searchCall).toBeTruthy();
@@ -175,11 +179,24 @@ describe("censo de ingresos", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: ana })));
     renderApp("/pacientes/ENC-0001", { role: "camillero" });
 
-    expect(await screen.findByRole("heading", { name: /Ana María Quispe Rojas/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /paciente:\s*Ana María Quispe Rojas/i })).toBeInTheDocument();
+    expect(document.querySelector(".clinic-file")).toBeTruthy();
     expect(screen.getByText("Ficha digital de admisión").closest("li")).toHaveTextContent("Listo");
     expect(screen.getByText("Expediente clínico electrónico").closest("li")).toHaveTextContent("Pendiente");
     expect(screen.getByRole("link", { name: /consultar orden de traslado/i })).toHaveAttribute("href", "/traslado/orden?ingreso=ENC-0001");
     expect(screen.queryByText(/subproceso/i)).not.toBeInTheDocument();
+  });
+
+  it("indica el siguiente paso solo en la ficha, no en la barra del ingreso", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: ana })));
+    renderApp("/pacientes/ENC-0001");
+
+    expect(await screen.findByRole("heading", { name: /paciente:\s*Ana María Quispe Rojas/i })).toBeInTheDocument();
+    expect(screen.getByText(/el siguiente paso corresponde a celador \/ camillero/i)).toBeInTheDocument();
+    const bar = document.querySelector(".case-bar");
+    expect(bar).toBeTruthy();
+    expect(within(bar as HTMLElement).queryByText(/corresponde a/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/este paso corresponde/i)).not.toBeInTheDocument();
   });
 
   it("muestra en la ficha el estado de una derivación de cobertura registrada", async () => {
@@ -261,5 +278,56 @@ describe("censo de ingresos", () => {
     const buttons = await screen.findAllByRole("link", { name: /^continuar$/i });
     expect(buttons.some((item) => item.getAttribute("href") === "/admision/cobertura?ingreso=ENC-0003")).toBe(true);
     expect(buttons.some((item) => item.getAttribute("href") === "/admision/cobertura?ingreso=ENC-0002")).toBe(true);
+  });
+
+  it("permite aprobar la cobertura de Carmen cuando el ingreso está en derivación", async () => {
+    const user = userEvent.setup();
+    const waiting: Encounter = {
+      ...luis,
+      encounterId: "ENC-0003",
+      patientName: "Carmen Yolanda Vega",
+      currentStep: "derivacion",
+      currentStepLabel: "Esperar regularización de cobertura",
+      nextRole: null,
+      statusLabel: "En trámite de cobertura",
+      coverage: { payer: "Particular", status: "rechazada", plan: "Sin cobertura vigente" },
+    };
+    const approved = {
+      ...waiting,
+      currentStep: "brazalete",
+      currentStepLabel: "Emitir brazalete",
+      nextRole: "admision",
+      statusLabel: "Brazalete por emitir",
+      coverage: { payer: "Particular", status: "aprobada", plan: "Sin cobertura vigente" },
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(200, { encounter: waiting }))
+      .mockResolvedValueOnce(jsonResponse(200, { encounter: approved }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/admision/cobertura?ingreso=ENC-0003");
+
+    const register = await screen.findByRole("button", { name: /registrar cobertura/i });
+    expect(register).toBeEnabled();
+    await user.selectOptions(screen.getByLabelText(/estado de cobertura/i), "aprobada");
+    await user.click(register);
+    await waitFor(() => {
+      const advanceCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/advance"));
+      expect(advanceCall?.[1]).toEqual(expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ step: "derivacion", coverageStatus: "aprobada" }),
+      }));
+    });
+    expect(await screen.findByText(/cobertura registrada/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
+  });
+
+  it("muestra iconos en los campos de registrar ingreso", async () => {
+    renderApp("/pacientes/nuevo", { role: "admision" });
+    expect(await screen.findByRole("heading", { name: /registrar ingreso/i })).toBeInTheDocument();
+    expect(document.querySelector("#reg-order")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-document")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-name")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-origin")?.closest(".field-control")?.querySelector(".field-icon")).toBeFalsy();
+    expect(document.querySelector("#reg-payer")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
   });
 });

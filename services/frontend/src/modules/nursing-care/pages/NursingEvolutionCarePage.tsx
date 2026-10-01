@@ -133,7 +133,11 @@ export function NursingEvolutionCarePage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para documentar cuidados." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Cuidados y evolución de enfermería">
+        <EmptyEncounter message="Abra un paciente hospitalizado para documentar cuidados." />
+      </Sheet>
+    );
   }
 
   const filteredNotes = notes.filter((note) => isWithinDateRange(note.authoredAt, range));

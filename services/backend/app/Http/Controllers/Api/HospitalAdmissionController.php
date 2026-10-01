@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdmissionEncounter;
+use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
 use App\Services\Clinical\BradenScale;
 use App\Services\Clinical\MorseFallScale;
 use App\Services\Clinical\News2Calculator;
+use App\Services\InpatientCare\CpoeService;
+use App\Services\InpatientCare\VitalSignsMonitoring;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -19,6 +23,8 @@ class HospitalAdmissionController extends Controller
         private readonly News2Calculator $news2,
         private readonly MorseFallScale $morse,
         private readonly BradenScale $braden,
+        private readonly VitalSignsMonitoring $monitoring,
+        private readonly CpoeService $cpoe,
     ) {}
 
     public function showAdmissionOrder(string $orderNumber): JsonResponse
@@ -36,6 +42,7 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate([
             'fullName' => ['required', 'string'],
             'documentNumber' => ['required', 'string'],
+            'birthDate' => ['nullable', 'date'],
             'confirmed' => ['accepted'],
             'encounterId' => ['nullable', 'string'],
         ]);
@@ -44,6 +51,7 @@ class HospitalAdmissionController extends Controller
             $this->board->putClinical($data['encounterId'], 'filiation', [
                 'fullName' => $data['fullName'],
                 'documentNumber' => $data['documentNumber'],
+                'birthDate' => $data['birthDate'] ?? null,
                 'confirmed' => true,
             ]);
         }
@@ -220,12 +228,20 @@ class HospitalAdmissionController extends Controller
             'respiratoryRate' => ['required', 'numeric'],
             'oxygenSaturation' => ['required', 'numeric'],
             'systolicBloodPressure' => ['required', 'numeric'],
+            'diastolicBloodPressure' => ['required', 'numeric'],
             'pulse' => ['required', 'numeric'],
             'temperature' => ['required', 'numeric'],
             'spo2Scale' => ['nullable', 'in:scale1,scale2'],
             'supplementalOxygen' => ['nullable', 'boolean'],
             'consciousness' => ['nullable', 'in:alert,confusion,voice,pain,unresponsive'],
             'confusionOnset' => ['nullable', 'in:new,chronic'],
+        ], [
+            'respiratoryRate.required' => 'La frecuencia respiratoria es obligatoria.',
+            'oxygenSaturation.required' => 'La saturación es obligatoria.',
+            'systolicBloodPressure.required' => 'La presión sistólica es obligatoria.',
+            'diastolicBloodPressure.required' => 'La presión diastólica es obligatoria.',
+            'pulse.required' => 'El pulso es obligatorio.',
+            'temperature.required' => 'La temperatura es obligatoria.',
         ]);
 
         if ($message = $this->implausible($data)) {
@@ -233,23 +249,48 @@ class HospitalAdmissionController extends Controller
         }
 
         $news2 = $this->news2->calculate($data);
+        $alertActivated = false;
+        $nextControlAt = null;
         if (! empty($data['encounterId'])) {
+            $summary = sprintf(
+                'FR %s, SpO2 %s %%, PA %s/%s, pulso %s, %s °C',
+                $data['respiratoryRate'],
+                $data['oxygenSaturation'],
+                $data['systolicBloodPressure'],
+                $data['diastolicBloodPressure'],
+                $data['pulse'],
+                $data['temperature'],
+            );
+            // El ingreso debe existir antes de persistir la lectura (storeManual).
             $this->board->putClinical($data['encounterId'], 'vitals', [
                 'input' => $data,
                 'news2' => $news2,
-                'summary' => sprintf(
-                    'FR %s, SpO2 %s %%, PA %s, pulso %s, %s °C',
-                    $data['respiratoryRate'],
-                    $data['oxygenSaturation'],
-                    $data['systolicBloodPressure'],
-                    $data['pulse'],
-                    $data['temperature'],
-                ),
+                'summary' => $summary,
+                'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
+            ]);
+
+            $actor = $request->user();
+            $stored = $this->monitoring->storeManual(
+                $data['encounterId'],
+                $data,
+                $actor instanceof User ? $actor : null,
+            );
+            $news2 = $stored['reading']['news2'];
+            $alertActivated = (bool) $stored['alertActivated'];
+            $nextControlAt = $stored['nextControlAt'];
+            $this->board->putClinical($data['encounterId'], 'vitals', [
+                'input' => $data,
+                'news2' => $news2,
+                'summary' => $summary,
                 'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
             ]);
         }
 
-        return response()->json(['news2' => $news2], 201);
+        return response()->json([
+            'news2' => $news2,
+            'alertActivated' => $alertActivated,
+            'nextControlAt' => $nextControlAt,
+        ], 201);
     }
 
     public function storeReconciliation(Request $request): JsonResponse
@@ -257,8 +298,10 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate([
             'encounterId' => ['nullable', 'string'],
             'allergies' => ['nullable', 'string'],
-            'medications' => ['required', 'array'],
+            'medications' => ['present', 'array'],
             'medications.*.name' => ['required', 'string'],
+            'noHomeMedications' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $alerts = [];
@@ -268,13 +311,19 @@ class HospitalAdmissionController extends Controller
             }
         }
 
+        $noneDeclared = (bool) ($data['noHomeMedications'] ?? false);
         $status = $alerts === [] ? 'validada' : 'con_observaciones';
+        $statusLabel = $status === 'validada'
+            ? ($noneDeclared && $data['medications'] === [] ? 'Validada: sin medicación habitual' : 'Validada')
+            : 'Con observaciones';
         $reconciliation = [
             'status' => $status,
-            'statusLabel' => $status === 'validada' ? 'Validada' : 'Con observaciones',
+            'statusLabel' => $statusLabel,
             'alerts' => $alerts,
             'allergies' => $data['allergies'] ?? null,
             'medications' => $data['medications'],
+            'noHomeMedications' => $noneDeclared,
+            'notes' => $data['notes'] ?? null,
         ];
 
         if (! empty($data['encounterId'])) {
@@ -329,20 +378,83 @@ class HospitalAdmissionController extends Controller
         ]));
     }
 
+    public function saveMedicalOrders(Request $request, string $encounterId): JsonResponse
+    {
+        $data = $request->validate([
+            'items' => ['present', 'array'],
+            'items.*.title' => ['nullable', 'string'],
+            'items.*.detail' => ['nullable', 'string'],
+            'items.*.category' => ['nullable', 'string'],
+        ]);
+
+        return $this->guard(fn () => response()->json([
+            'orders' => $this->board->saveMedicalOrders($encounterId, $data['items']),
+        ]));
+    }
+
     public function signMedicalOrders(Request $request, string $encounterId): JsonResponse
     {
         $data = $request->validate([
             'physicianName' => ['required', 'string'],
             'credential' => ['required', 'string'],
             'confirmed' => ['accepted'],
+            'items' => ['nullable', 'array'],
+            'items.*.title' => ['nullable', 'string'],
+            'items.*.detail' => ['nullable', 'string'],
+            'items.*.category' => ['nullable', 'string'],
         ]);
 
-        return $this->guard(fn () => response()->json([
-            'signature' => $this->board->signMedicalOrders($encounterId, [
+        return $this->guard(function () use ($data, $encounterId, $request) {
+            $signature = $this->board->signMedicalOrders($encounterId, [
                 'physicianName' => $data['physicianName'],
                 'credential' => $data['credential'],
-            ]),
-        ], 201));
+                'items' => $data['items'] ?? null,
+            ]);
+            $this->openBasalPlanFromBpmh($encounterId, $request->user());
+
+            return response()->json(['signature' => $signature], 201);
+        });
+    }
+
+    /**
+     * La firma de indicaciones (RF-16) convierte el BPMH en el plan CPOE basal.
+     * Los ítems libres de la hoja no se tratan como fármacos.
+     */
+    private function openBasalPlanFromBpmh(string $encounterId, mixed $actor): void
+    {
+        if (! $actor instanceof User) {
+            return;
+        }
+
+        $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
+        $reconciliation = $encounter?->clinical_payload['reconciliation'] ?? null;
+        if (! is_array($reconciliation) || ! empty($reconciliation['noHomeMedications'])) {
+            return;
+        }
+
+        $items = [];
+        foreach ($reconciliation['medications'] ?? [] as $medication) {
+            if (! is_array($medication)) {
+                continue;
+            }
+            $name = trim((string) ($medication['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $route = trim((string) ($medication['route'] ?? ''));
+            $items[] = [
+                'drugName' => $name,
+                'dose' => trim((string) ($medication['dose'] ?? '')),
+                'route' => $route !== '' ? $route : 'oral',
+                'frequency' => trim((string) ($medication['frequency'] ?? '')),
+            ];
+        }
+
+        if ($items === []) {
+            return;
+        }
+
+        $this->cpoe->prescribe($encounterId, $actor, $items);
     }
 
     /**
@@ -354,6 +466,7 @@ class HospitalAdmissionController extends Controller
             'respiratoryRate' => [4, 60, 'La frecuencia respiratoria no es posible.'],
             'oxygenSaturation' => [50, 100, 'La saturación no es posible.'],
             'systolicBloodPressure' => [40, 280, 'La presión sistólica no es posible.'],
+            'diastolicBloodPressure' => [30, 160, 'La presión diastólica no es posible.'],
             'pulse' => [20, 250, 'El pulso no es posible.'],
             'temperature' => [30, 43, 'La temperatura no es posible.'],
         ];

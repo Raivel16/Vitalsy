@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IconAlertTriangle, IconCheck, IconHeartbeat, IconNotes, IconPill } from "@tabler/icons-react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -6,7 +7,7 @@ import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { FormActions } from "../../../shared/ui/FormActions";
+import { StatusPill } from "../../../shared/ui/clinical";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
@@ -22,6 +23,12 @@ type Kardex = {
   fallRisk: string;
   pressureRisk: string;
 };
+
+function news2Parts(label: string) {
+  const match = label.match(/^(\d+)\s*puntos/i);
+  const total = match ? Number(match[1]) : 0;
+  return { total, text: label, pct: Math.min(100, Math.round((total / 20) * 100)) };
+}
 
 export function KardexPage() {
   const encounter = useEncounter();
@@ -62,7 +69,7 @@ export function KardexPage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
+      <Sheet kicker="Enfermería de piso · Hoja de administración y tratamiento" title="Kardex electrónico de ingreso" wide framed clinic="board">
         <EmptyEncounter message="Abra un paciente desde el censo para revisar el Kardex." />
       </Sheet>
     );
@@ -90,32 +97,90 @@ export function KardexPage() {
   if (loading) return <LoadingState label="Cargando Kardex…" />;
   if (error && !kardex) return <Feedback tone="error">{error}</Feedback>;
 
+  const news = kardex ? news2Parts(kardex.news2) : null;
+
   return (
-    <Sheet kicker="Enfermería" title="Kardex electrónico de ingreso">
+    <Sheet kicker="Enfermería de piso · Hoja de administración y tratamiento" title="Kardex electrónico de ingreso" wide framed clinic="board">
       <p className="lead">
-        Revise el resumen clínico de ingreso de {activeEncounter.patientName} antes de confirmar el Kardex.
+        Compruebe y valide el plan terapéutico consolidado de {activeEncounter.patientName} desde la conciliación farmacéutica y las valoraciones de ingreso.
       </p>
       {kardex ? (
-        <div className="kardex-summary">
-          <h3>{kardex.patientName}</h3>
-          <dl className="facts">
-            <div><dt>Valoración</dt><dd>{kardex.assessment}</dd></div>
-            <div><dt>Alergias</dt><dd>{kardex.allergies.join(", ") || "Ninguna registrada"}</dd></div>
-            <div><dt>Medicamentos</dt><dd>{kardex.medications.join(", ")}</dd></div>
-            <div><dt>Constantes</dt><dd>{kardex.vitals}</dd></div>
-            <div><dt>NEWS2</dt><dd>{kardex.news2}</dd></div>
-            <div><dt>Caídas</dt><dd>{kardex.fallRisk}</dd></div>
-            <div><dt>Úlceras por presión</dt><dd>{kardex.pressureRisk}</dd></div>
-          </dl>
+        <div className="kardex-board">
+          <section className="kardex-card">
+            <header className="kardex-card-head">
+              <h3><IconAlertTriangle size={18} aria-hidden /> 1. Alergias e intolerancias verificadas</h3>
+              <span>Revisión clínica</span>
+            </header>
+            <p className="hint">Alerta farmacológica. No administrar los siguientes activos o derivados:</p>
+            {kardex.allergies.length > 0 ? (
+              <ul className="allergy-chips">
+                {kardex.allergies.map((item) => (
+                  <li key={item}><span>{item}</span></li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty">Ninguna registrada</p>
+            )}
+            <p className="kardex-foot">
+              Brazalete {activeEncounter.wristbandCode ?? "pendiente"}
+              <StatusPill tone="info">Verificado</StatusPill>
+            </p>
+          </section>
+          <section className="kardex-card kardex-card-news">
+            <header className="kardex-card-head">
+              <h3><IconHeartbeat size={18} aria-hidden /> 2. NEWS2</h3>
+              <span>Basal al ingreso</span>
+            </header>
+            <p className="kardex-news-total">{news?.total ?? "—"}</p>
+            <p>{kardex.news2}</p>
+            <div className="kardex-bar" aria-hidden>
+              <span style={{ width: `${news?.pct ?? 0}%` }} />
+            </div>
+          </section>
+          <section className="kardex-card kardex-card-wide">
+            <header className="kardex-card-head">
+              <h3><IconPill size={18} aria-hidden /> 3. Plan de medicación activa</h3>
+              <span>{kardex.medications.length} fármacos</span>
+            </header>
+            {kardex.medications.length > 0 ? (
+              <ul className="kardex-meds">
+                {kardex.medications.map((item) => (
+                  <li key={item}>
+                    <strong>{item}</strong>
+                    <StatusPill tone="success">Activo en hospitalización</StatusPill>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty">Ninguno registrado</p>
+            )}
+          </section>
+          <section className="kardex-card">
+            <header className="kardex-card-head">
+              <h3><IconNotes size={18} aria-hidden /> 4. Valoración y constantes</h3>
+            </header>
+            <p><strong>Valoración.</strong> {kardex.assessment}</p>
+            <p><strong>Constantes.</strong> {kardex.vitals}</p>
+          </section>
+          <section className="kardex-card">
+            <header className="kardex-card-head">
+              <h3>5. Escalas de riesgo</h3>
+            </header>
+            <dl className="facts facts-rows">
+              <div><dt>Caídas</dt><dd>{kardex.fallRisk}</dd></div>
+              <div><dt>Úlceras por presión</dt><dd>{kardex.pressureRisk}</dd></div>
+            </dl>
+          </section>
         </div>
       ) : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <FormActions align="center">
+      <div className="form-actions-bar">
+        <p className="hint">Validación legal y apertura de e-MAR. Al confirmar, el plan queda sellado con la credencial de {user?.name ?? "enfermería de piso"}.</p>
         <Button type="button" onClick={() => void confirmKardex()} disabled={pending || advanced}>
-          Confirmar revisión del Kardex
+          <IconCheck size={18} /> Confirmar revisión del Kardex
         </Button>
-      </FormActions>
+      </div>
       <StepNav role={role} encounter={activeEncounter} viewingStep="kardex" canContinue={advanced} />
     </Sheet>
   );

@@ -57,12 +57,55 @@ describe("conciliación farmacéutica de ingreso", () => {
     await user.selectOptions(screen.getByLabelText(/vía/i), "oral");
     await user.click(screen.getByRole("button", { name: /agregar medicamento/i }));
 
-    expect(screen.getByRole("cell", { name: "500 mg" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: /oral/i })).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /amoxicilina/i })).toHaveTextContent(/500 mg · oral/i);
+    expect(screen.getByRole("listitem", { name: /amoxicilina/i })).toHaveTextContent(/cada 8 horas/i);
     expect(screen.getByRole("alert")).toHaveTextContent(/posible alergia/i);
     expect(screen.getByRole("status", { name: /estado de conciliación/i })).toHaveTextContent(/con observaciones/i);
 
     await user.click(screen.getByRole("button", { name: /registrar conciliación/i }));
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/con observaciones/i);
+  });
+
+  it("permite registrar y avanzar si el paciente no toma medicación habitual", async () => {
+    const user = userEvent.setup();
+    const encounter = {
+      encounterId: "ENC-0001",
+      orderNumber: "OI-1",
+      transferOrderNumber: null,
+      patientName: "Ana",
+      documentType: "DNI",
+      documentNumber: "1",
+      originService: "E",
+      coverage: { payer: "SIS", status: "aprobada", plan: "SIS" },
+      location: { room: null, bed: null, service: null },
+      wristbandCode: null,
+      recordId: null,
+      subprocess: "1.3",
+      subprocessLabel: "x",
+      currentStep: "conciliacion",
+      currentStepLabel: "Conciliación",
+      nextRole: "enfermera_piso",
+      statusLabel: "Conciliación",
+      deliverables: [],
+      progress: [],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
+        .mockResolvedValueOnce(jsonResponse(201, {
+          reconciliation: { status: "validada", statusLabel: "Validada: sin medicación habitual" },
+        }))
+        .mockResolvedValueOnce(jsonResponse(200, {
+          encounter: { ...encounter, currentStep: "escalas", nextRole: "enfermera_piso" },
+        })),
+    );
+    renderApp("/enfermeria/conciliacion?ingreso=ENC-0001");
+
+    await user.click(await screen.findByLabelText(/sin antecedentes farmacológicos/i));
+    expect(screen.getByRole("status", { name: /estado de conciliación/i })).toHaveTextContent(/validada/i);
+    await user.click(screen.getByRole("button", { name: /registrar conciliación/i }));
+    expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/validada/i);
+    expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
   });
 });

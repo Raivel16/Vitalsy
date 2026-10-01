@@ -23,6 +23,21 @@ class BedManagement
         'baja' => 1,
     ];
 
+    public function available(): array
+    {
+        $beds = Bed::query()
+            ->with('ward')
+            ->where('status', 'available')
+            ->orderBy('room')
+            ->orderBy('bed_code')
+            ->get();
+
+        return [
+            'count' => $beds->count(),
+            'beds' => $beds->map(fn (Bed $bed) => $this->presentBed($bed))->values()->all(),
+        ];
+    }
+
     public function census(): array
     {
         $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) {

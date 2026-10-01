@@ -31,6 +31,7 @@ class VitalSignsMonitoring
             'rr' => (int) round((float) $input['respiratoryRate']),
             'spo2' => (int) round((float) $input['oxygenSaturation']),
             'sbp' => (int) round((float) $input['systolicBloodPressure']),
+            'dbp' => isset($input['diastolicBloodPressure']) ? (int) round((float) $input['diastolicBloodPressure']) : null,
             'pulse' => (int) round((float) $input['pulse']),
             'temperature' => round((float) $input['temperature'], 1),
             'spo2_scale' => $input['spo2Scale'] ?? 'scale1',
@@ -56,6 +57,10 @@ class VitalSignsMonitoring
         $spo2 = $this->filter->zeroPhaseFourthOrder(array_map(fn ($s) => (float) ($s['oxygenSaturation'] ?? 0), $samples));
         $rr = $this->filter->zeroPhaseFourthOrder(array_map(fn ($s) => (float) ($s['respiratoryRate'] ?? 0), $samples));
         $sbp = $this->filter->zeroPhaseFourthOrder(array_map(fn ($s) => (float) ($s['systolicBloodPressure'] ?? 0), $samples));
+        $hasDbp = collect($samples)->contains(fn ($s) => isset($s['diastolicBloodPressure']));
+        $dbp = $hasDbp
+            ? $this->filter->zeroPhaseFourthOrder(array_map(fn ($s) => (float) ($s['diastolicBloodPressure'] ?? 0), $samples))
+            : null;
         $temp = $this->filter->zeroPhaseFourthOrder(array_map(fn ($s) => (float) ($s['temperature'] ?? 0), $samples));
         $last = count($pulse) - 1;
 
@@ -63,6 +68,7 @@ class VitalSignsMonitoring
             'rr' => (int) round($rr[$last]),
             'spo2' => (int) round($spo2[$last]),
             'sbp' => (int) round($sbp[$last]),
+            'dbp' => $dbp === null ? null : (int) round($dbp[$last]),
             'pulse' => (int) round($pulse[$last]),
             'temperature' => round($temp[$last], 1),
             'spo2_scale' => $payload['spo2Scale'] ?? 'scale1',
@@ -87,6 +93,7 @@ class VitalSignsMonitoring
                 'respiratoryRate' => $row->rr,
                 'oxygenSaturation' => $row->spo2,
                 'systolicBloodPressure' => $row->sbp,
+                'diastolicBloodPressure' => $row->dbp,
                 'pulse' => $row->pulse,
                 'temperature' => $row->temperature,
                 'news2' => $row->news2_total,
@@ -119,6 +126,7 @@ class VitalSignsMonitoring
             'rr' => $values['rr'],
             'spo2' => $values['spo2'],
             'sbp' => $values['sbp'],
+            'dbp' => $values['dbp'] ?? null,
             'pulse' => $values['pulse'],
             'temperature' => $values['temperature'],
             'spo2_scale' => $values['spo2_scale'],
@@ -177,6 +185,7 @@ class VitalSignsMonitoring
                 'respiratoryRate' => $reading->rr,
                 'oxygenSaturation' => $reading->spo2,
                 'systolicBloodPressure' => $reading->sbp,
+                'diastolicBloodPressure' => $reading->dbp,
                 'pulse' => $reading->pulse,
                 'temperature' => (float) $reading->temperature,
                 'news2' => $news2,

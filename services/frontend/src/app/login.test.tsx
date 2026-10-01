@@ -14,6 +14,7 @@ describe("inicio de sesión", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/", { role: null });
 
+    expect(document.querySelector("main.login-screen")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /entrar/i }));
 
     expect(screen.getByLabelText(/correo/i)).toHaveAttribute("aria-invalid", "true");

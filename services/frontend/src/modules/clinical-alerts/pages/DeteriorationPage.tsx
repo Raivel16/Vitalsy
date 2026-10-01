@@ -49,7 +49,11 @@ export function DeteriorationPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para registrar un deterioro." />;
+    return (
+      <Sheet kicker="Alertas clínicas" title="Registrar deterioro observado">
+        <EmptyEncounter message="Abra un paciente hospitalizado para registrar un deterioro." />
+      </Sheet>
+    );
   }
 
   return (

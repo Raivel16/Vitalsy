@@ -4,6 +4,7 @@ import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { useAuth } from "../../../app/AuthProvider";
 import { Button } from "../../../shared/ui/Button";
+import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
 import { CheckField, TextAreaField, TextField, SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
@@ -30,6 +31,7 @@ const emptyVitals = {
   respiratoryRate: "",
   oxygenSaturation: "",
   systolicBloodPressure: "",
+  diastolicBloodPressure: "",
   pulse: "",
   temperature: "",
 };
@@ -141,6 +143,7 @@ export function AlertDetailPage() {
         respiratoryRate: Number(vitals.respiratoryRate),
         oxygenSaturation: Number(vitals.oxygenSaturation),
         systolicBloodPressure: Number(vitals.systolicBloodPressure),
+        diastolicBloodPressure: Number(vitals.diastolicBloodPressure),
         pulse: Number(vitals.pulse),
         temperature: Number(vitals.temperature.replace(",", ".")),
         consciousness,
@@ -418,7 +421,16 @@ export function AlertDetailPage() {
                 <div className="form-grid">
                   <TextField id="alert-rr" label="Frecuencia respiratoria" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleVitalsErrors.respiratoryRate} hint="respiraciones/min" />
                   <TextField id="alert-spo2" label="Saturación" inputMode="numeric" value={vitals.oxygenSaturation} onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })} error={visibleVitalsErrors.oxygenSaturation} hint="%" />
-                  <TextField id="alert-sbp" label="Presión sistólica" inputMode="numeric" value={vitals.systolicBloodPressure} onChange={(e) => setVitals({ ...vitals, systolicBloodPressure: e.target.value })} error={visibleVitalsErrors.systolicBloodPressure} hint="mmHg" />
+                  <BloodPressureField
+                    systolicId="alert-sbp"
+                    diastolicId="alert-dbp"
+                    systolic={vitals.systolicBloodPressure}
+                    diastolic={vitals.diastolicBloodPressure}
+                    onSystolic={(value) => setVitals({ ...vitals, systolicBloodPressure: value })}
+                    onDiastolic={(value) => setVitals({ ...vitals, diastolicBloodPressure: value })}
+                    systolicError={visibleVitalsErrors.systolicBloodPressure}
+                    diastolicError={visibleVitalsErrors.diastolicBloodPressure}
+                  />
                   <TextField id="alert-pulse" label="Pulso" inputMode="numeric" value={vitals.pulse} onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })} error={visibleVitalsErrors.pulse} hint="latidos/min" />
                   <TextField id="alert-temp" label="Temperatura" inputMode="decimal" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} error={visibleVitalsErrors.temperature} hint="°C" />
                 </div>

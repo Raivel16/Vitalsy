@@ -12,6 +12,7 @@ import {
 import { validateVitalSigns } from "../../nursing-assessment/domain/vitalSigns";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
+import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
 import { TextField, SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
@@ -23,6 +24,7 @@ const emptyFields = {
   respiratoryRate: "",
   oxygenSaturation: "",
   systolicBloodPressure: "",
+  diastolicBloodPressure: "",
   pulse: "",
   temperature: "",
 };
@@ -94,6 +96,7 @@ export function VitalMonitoringPage() {
           respiratoryRate: Number(fields.respiratoryRate),
           oxygenSaturation: Number(fields.oxygenSaturation),
           systolicBloodPressure: Number(fields.systolicBloodPressure),
+          diastolicBloodPressure: Number(fields.diastolicBloodPressure),
           pulse: Number(fields.pulse),
           temperature: Number(fields.temperature.replace(",", ".")),
           consciousness,
@@ -123,7 +126,11 @@ export function VitalMonitoringPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para registrar constantes." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Monitoreo de constantes">
+        <EmptyEncounter message="Abra un paciente hospitalizado para registrar constantes." />
+      </Sheet>
+    );
   }
 
   const visibleErrors = submitted ? liveErrors : {};
@@ -142,7 +149,14 @@ export function VitalMonitoringPage() {
         <div className="form-grid">
           <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(e) => update("respiratoryRate", e.target.value)} error={visibleErrors.respiratoryRate} hint="respiraciones/min" />
           <TextField id="spo2" label="Saturación" inputMode="numeric" value={fields.oxygenSaturation} onChange={(e) => update("oxygenSaturation", e.target.value)} error={visibleErrors.oxygenSaturation} hint="%" />
-          <TextField id="sbp" label="Presión sistólica" inputMode="numeric" value={fields.systolicBloodPressure} onChange={(e) => update("systolicBloodPressure", e.target.value)} error={visibleErrors.systolicBloodPressure} hint="mmHg" />
+          <BloodPressureField
+            systolic={fields.systolicBloodPressure}
+            diastolic={fields.diastolicBloodPressure}
+            onSystolic={(value) => update("systolicBloodPressure", value)}
+            onDiastolic={(value) => update("diastolicBloodPressure", value)}
+            systolicError={visibleErrors.systolicBloodPressure}
+            diastolicError={visibleErrors.diastolicBloodPressure}
+          />
           <TextField id="pulse" label="Pulso" inputMode="numeric" value={fields.pulse} onChange={(e) => update("pulse", e.target.value)} error={visibleErrors.pulse} hint="latidos/min" />
           <TextField id="temperature" label="Temperatura" inputMode="decimal" value={fields.temperature} onChange={(e) => update("temperature", e.target.value)} error={visibleErrors.temperature} hint="°C" />
         </div>

@@ -11,6 +11,16 @@ export function errorText(caught: unknown, fallback: string): string {
   return userMessage(caught instanceof Error ? caught.message : undefined, fallback);
 }
 
+export function apiErrorMessage(
+  data: { message?: string; errors?: Record<string, string[] | string> },
+  fallback: string,
+): string {
+  const listed = data.errors
+    ? Object.values(data.errors).flatMap((item) => (Array.isArray(item) ? item : [item]))
+    : [];
+  return userMessage(data.message || listed[0], fallback);
+}
+
 function isTechnical(message: string): boolean {
   if (TECHNICAL.test(message)) return true;
   if (/^The .+ field /i.test(message)) return true;

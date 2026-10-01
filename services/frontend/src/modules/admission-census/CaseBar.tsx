@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router";
+import { Link, useLocation, useParams, useSearchParams } from "react-router";
+import { IconNotes, IconClipboardList, IconStethoscope } from "@tabler/icons-react";
 import { api } from "../../app/api";
-import { ROLE_LABEL } from "../../app/roles";
 import { useAuth } from "../../app/AuthProvider";
 import { isClinicalRole, primaryAttentionPath } from "../../app/navigation";
 import { errorText } from "../../app/userMessage";
@@ -9,7 +9,6 @@ import { Feedback } from "../../shared/ui/Sheet";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { EncounterContext, type CoverageStatus } from "./EncounterContext";
 import type { Encounter } from "./domain/encounter";
-import { canActOnEncounter } from "./domain/steps";
 import { AdmissionStepper } from "./ui/AdmissionStepper";
 
 function asCoverage(status: string | null | undefined): CoverageStatus | null {
@@ -21,7 +20,15 @@ export function CaseBar({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const [params] = useSearchParams();
-  const ingreso = params.get("ingreso");
+  const { encounterId: routeEncounterId } = useParams();
+  const pathId = location.pathname.match(/^\/pacientes\/([^/]+)$/)?.[1];
+  const fileId = routeEncounterId && routeEncounterId !== "nuevo"
+    ? routeEncounterId
+    : pathId && pathId !== "nuevo"
+      ? pathId
+      : null;
+  const fromFile = fileId;
+  const ingreso = params.get("ingreso") ?? fromFile;
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [coverageStatus, setCoverageStatus] = useState<CoverageStatus | null>(null);
   const [error, setError] = useState("");
@@ -79,34 +86,63 @@ export function CaseBar({ children }: { children: ReactNode }) {
     <EncounterContext.Provider value={value}>
       {ingreso && error ? <Feedback tone="error">{error}</Feedback> : null}
       {ingreso && encounter ? (
-        <section className="case-bar" aria-label="Ingreso en curso">
-          <p>
-            <strong>{encounter.patientName}</strong>
-            <span>{encounter.statusLabel}</span>
-          </p>
-          {!hideAdmissionStepper && encounter.progress ? (
-            <AdmissionStepper
-              steps={encounter.progress}
-              role={user?.role}
-              encounterId={encounter.encounterId}
-              currentStep={encounter.currentStep}
-            />
-          ) : null}
-          <div className="actions">
-            <Link to={`/pacientes/${encounter.encounterId}`}>Ver ficha</Link>
-            {isClinicalRole(user?.role ?? "admision") ? (
-              <Link to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}>
-                Expediente clínico
-              </Link>
+        <section className="case-bar case-bar-clinical" aria-label="Ingreso en curso">
+            <div className="case-bar-top">
+              <div className="case-bar-main">
+                <div className="case-bar-avatar" aria-hidden>
+                  {encounter.patientName
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase() ?? "")
+                    .join("")}
+                </div>
+                <div className="case-bar-identity">
+                  <p className="case-bar-name">
+                    <strong>{encounter.patientName}</strong>
+                    <span className={`case-bar-status${encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel) ? " is-hosp" : ""}`}>
+                      {encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel)
+                        ? encounter.statusLabel
+                        : "En trámite"}
+                    </span>
+                  </p>
+                  <p className="case-bar-meta">
+                    {[
+                      encounter.orderNumber,
+                      encounter.originService,
+                      encounter.location.room ? `Habitación ${encounter.location.room}` : null,
+                      encounter.location.bed ? `Cama ${encounter.location.bed}` : null,
+                    ].filter(Boolean).join(" · ") || "Sin ubicación"}
+                  </p>
+                </div>
+              </div>
+              <div className="actions case-bar-actions">
+                <Link className="button button-quiet case-bar-btn" to={`/pacientes/${encounter.encounterId}`}>
+                  <IconNotes size={16} /> <span>Ver ficha</span>
+                </Link>
+                {isClinicalRole(user?.role ?? "admision") ? (
+                  <Link className="button button-quiet case-bar-btn" to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}>
+                    <IconClipboardList size={16} /> <span>Expediente clínico</span>
+                  </Link>
+                ) : null}
+                {encounter.currentStep === "cerrado" && user && isClinicalRole(user.role) && !location.pathname.startsWith("/atencion") ? (
+                  <Link className="button button-quiet case-bar-btn" to={primaryAttentionPath(user.role, encounter.encounterId)}>
+                    <IconStethoscope size={16} /> <span>Atención en piso</span>
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+            {!hideAdmissionStepper && encounter.progress ? (
+              <div className="case-bar-steps">
+                <AdmissionStepper
+                  steps={encounter.progress}
+                  role={user?.role}
+                  encounterId={encounter.encounterId}
+                  currentStep={encounter.currentStep}
+                />
+              </div>
             ) : null}
-            {encounter.currentStep === "cerrado" && user && isClinicalRole(user.role) ? (
-              <Link to={primaryAttentionPath(user.role, encounter.encounterId)}>Atención en piso</Link>
-            ) : null}
-            {encounter.nextRole && user && !canActOnEncounter(user.role, encounter) && encounter.currentStep !== "derivacion" ? (
-              <span>Este paso corresponde a {ROLE_LABEL[encounter.nextRole]}.</span>
-            ) : null}
-          </div>
-        </section>
+          </section>
       ) : null}
       {children}
     </EncounterContext.Provider>

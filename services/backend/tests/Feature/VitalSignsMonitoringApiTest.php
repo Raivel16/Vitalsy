@@ -56,6 +56,7 @@ class VitalSignsMonitoringApiTest extends TestCase
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
             'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80,
             'pulse' => 72,
             'temperature' => 36.8,
             'consciousness' => 'alert',
@@ -64,10 +65,16 @@ class VitalSignsMonitoringApiTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('reading.news2.total', 0)
+            ->assertJsonPath('reading.diastolicBloodPressure', 80)
             ->assertJsonPath('alertActivated', false)
             ->assertJsonPath('nextControlAt', '2026-09-21T22:00:00+00:00');
 
         $this->assertDatabaseCount('vital_sign_readings', 1);
+        $this->assertDatabaseHas('vital_sign_readings', [
+            'encounter_id' => 'ENC-HOSP-0001',
+            'sbp' => 120,
+            'dbp' => 80,
+        ]);
         $this->assertDatabaseCount('clinical_alerts', 0);
         $this->assertDatabaseHas('monitoring_schedules', [
             'encounter_id' => 'ENC-HOSP-0001',
@@ -85,6 +92,7 @@ class VitalSignsMonitoringApiTest extends TestCase
             'respiratoryRate' => 25,
             'oxygenSaturation' => 98,
             'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80,
             'pulse' => 72,
             'temperature' => 36.8,
             'consciousness' => 'alert',

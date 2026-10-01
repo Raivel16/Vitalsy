@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { IconCamera } from "@tabler/icons-react";
 import { Button } from "./Button";
 import { Feedback } from "./Sheet";
 
@@ -7,6 +8,7 @@ type Props = {
   onScan: (code: string) => void;
   /** Etiqueta del botón (p. ej. brazalete o medicamento). */
   label?: string;
+  variant?: "primary" | "quiet";
 };
 
 const BARCODE_FORMATS = [
@@ -17,7 +19,7 @@ const BARCODE_FORMATS = [
   Html5QrcodeSupportedFormats.EAN_8,
 ];
 
-export function BarcodeScanner({ onScan, label = "Escanear brazalete" }: Props) {
+export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant = "quiet" }: Props) {
   const reactId = useId().replace(/:/g, "");
   const elementId = `scanner-${reactId}`;
   const [open, setOpen] = useState(false);
@@ -59,10 +61,11 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete" }: Props) 
       }
     }
 
+    const narrow = window.matchMedia("(max-width: 860px)").matches;
     scanner
       .start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 280, height: 140 } },
+        { fps: 10, qrbox: narrow ? { width: 220, height: 110 } : { width: 280, height: 140 } },
         (decoded) => {
           if (!active || handledRef.current) return;
           const code = decoded.trim();
@@ -89,11 +92,12 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete" }: Props) 
   return (
     <div className="scanner-box">
       {!open ? (
-        <Button variant="quiet" type="button" onClick={() => setOpen(true)}>
+        <Button variant={variant} type="button" onClick={() => setOpen(true)}>
+          <IconCamera size={18} stroke={1.75} aria-hidden />
           {label}
         </Button>
       ) : (
-        <Button variant="quiet" type="button" onClick={() => setOpen(false)}>
+        <Button variant={variant} type="button" onClick={() => setOpen(false)}>
           Cerrar escáner
         </Button>
       )}

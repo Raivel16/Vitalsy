@@ -89,6 +89,7 @@ describe("valoración inicial de enfermería", () => {
     await user.type(screen.getByLabelText(/frecuencia respiratoria/i), "16");
     await user.type(screen.getByLabelText(/saturación/i), "98");
     await user.type(screen.getByLabelText(/presión sistólica/i), "120");
+    await user.type(screen.getByLabelText(/presión diastólica/i), "80");
     await user.type(screen.getByLabelText(/pulso/i), "72");
     await user.type(screen.getByLabelText(/temperatura/i), "36.8");
 
@@ -98,5 +99,79 @@ describe("valoración inicial de enfermería", () => {
     await user.clear(screen.getByLabelText(/frecuencia respiratoria/i));
     await user.type(screen.getByLabelText(/frecuencia respiratoria/i), "25");
     expect(screen.getByRole("alert")).toHaveTextContent(/revisión urgente/i);
+  });
+
+  it("avisa cuando las constantes activan una alerta clínica", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        if (String(input).includes("/vital-signs") && init?.method === "POST") {
+          return jsonResponse(201, {
+            news2: { total: 3, visualLabel: "Riesgo bajo-medio" },
+            alertActivated: true,
+            nextControlAt: null,
+          });
+        }
+        return jsonResponse(200, { encounter: { ...nursing, currentStep: "kardex" } });
+      }),
+    );
+    renderApp("/enfermeria/constantes?ingreso=ENC-0001");
+    await user.type(await screen.findByLabelText(/frecuencia respiratoria/i), "25");
+    await user.type(screen.getByLabelText(/saturación/i), "98");
+    await user.type(screen.getByLabelText(/presión sistólica/i), "120");
+    await user.type(screen.getByLabelText(/presión diastólica/i), "80");
+    await user.type(screen.getByLabelText(/pulso/i), "72");
+    await user.type(screen.getByLabelText(/temperatura/i), "36.8");
+    await user.click(screen.getByRole("button", { name: /registrar constantes/i }));
+    expect(await screen.findByRole("status", { name: /alerta clínica/i })).toHaveTextContent(/bandeja de alertas/i);
+  });
+
+  it("muestra las unidades junto a cada constante", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: { ...nursing, currentStep: "constantes" } })));
+    renderApp("/enfermeria/constantes?ingreso=ENC-0001");
+    await screen.findByLabelText(/frecuencia respiratoria/i);
+    expect(screen.getByText("rpm")).toBeInTheDocument();
+    expect(screen.getByText("%")).toBeInTheDocument();
+    expect(screen.getByText("mmHg")).toBeInTheDocument();
+    expect(screen.getByText("lpm")).toBeInTheDocument();
+    expect(screen.getByText("°C")).toBeInTheDocument();
+  });
+
+  it("separa los chips de alergia del campo de alta", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: nursing })));
+    renderApp("/enfermeria/valoracion?ingreso=ENC-0001");
+    await screen.findByText(/anamnesis/i);
+    await user.type(screen.getByLabelText(/alergia/i), "Penicilina");
+    await user.click(screen.getByRole("button", { name: /agregar alergia/i }));
+    const chips = screen.getByRole("list", { name: /alergias registradas/i });
+    expect(chips).toHaveClass("allergy-chips");
+    expect(chips.closest(".nursing-allergy-stack")).toBeTruthy();
+    expect(chips.closest(".nursing-allergy-stack")?.querySelector(".nursing-inline-add")).toBeTruthy();
+  });
+
+  it("muestra el 422 de diastólica en español", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        if (String(input).includes("/vital-signs") && init?.method === "POST") {
+          return jsonResponse(422, {
+            errors: { diastolicBloodPressure: ["La presión diastólica es obligatoria."] },
+          });
+        }
+        return jsonResponse(200, { encounter: { ...nursing, currentStep: "constantes" } });
+      }),
+    );
+    renderApp("/enfermeria/constantes?ingreso=ENC-0001");
+    await user.type(await screen.findByLabelText(/frecuencia respiratoria/i), "16");
+    await user.type(screen.getByLabelText(/saturación/i), "98");
+    await user.type(screen.getByLabelText(/presión sistólica/i), "120");
+    await user.type(screen.getByLabelText(/presión diastólica/i), "80");
+    await user.type(screen.getByLabelText(/pulso/i), "72");
+    await user.type(screen.getByLabelText(/temperatura/i), "36.8");
+    await user.click(screen.getByRole("button", { name: /registrar constantes/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/presión diastólica es obligatoria/i);
   });
 });

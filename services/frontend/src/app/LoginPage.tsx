@@ -50,10 +50,10 @@ export function LoginPage() {
     <main className="login-screen" id="contenido">
       <form className="login-card stack" onSubmit={onSubmit} noValidate>
         <div className="brand">
-          <SealIcon />
-          <div>
+          <div className="brand-lockup">
             <h1>Vitalsy</h1>
-            <p>Gestión de atención en hospitalización</p>
+            <SealIcon />
+            <p>Gestión clínica hospitalaria</p>
           </div>
         </div>
         <h2>Iniciar sesión</h2>

@@ -76,6 +76,8 @@ class SchemaCoverageTest extends TestCase
         $this->assertTrue(Schema::hasColumn('discharge_orders', 'status'));
         $this->assertTrue(Schema::hasColumn('staff_shifts', 'starts_at'));
         $this->assertTrue(Schema::hasColumn('vital_sign_readings', 'rr'));
+        $this->assertTrue(Schema::hasColumn('vital_sign_readings', 'sbp'));
+        $this->assertTrue(Schema::hasColumn('vital_sign_readings', 'dbp'));
         $this->assertTrue(Schema::hasColumn('patient_allergies', 'is_optional'));
     }
 }

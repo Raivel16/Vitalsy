@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {
                 Route::get('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'showMedicalOrders']);
+                Route::put('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'saveMedicalOrders']);
                 Route::post('medical-orders/{encounterId}/sign', [HospitalAdmissionController::class, 'signMedicalOrders']);
             });
         });
@@ -212,6 +213,10 @@ Route::prefix('v1')->group(function () {
 
         // Módulo 5 — Gestión y asignación de camas (RF-68–71)
         Route::prefix('beds')->group(function () {
+            Route::middleware('role:enfermera_piso,gestion_camas,enfermera_supervisora')->group(function () {
+                Route::get('available', [BedManagementController::class, 'available']);
+            });
+
             Route::middleware('role:gestion_camas,enfermera_supervisora')->group(function () {
                 Route::get('census', [BedManagementController::class, 'census']);
                 Route::get('requests', [BedManagementController::class, 'requests']);

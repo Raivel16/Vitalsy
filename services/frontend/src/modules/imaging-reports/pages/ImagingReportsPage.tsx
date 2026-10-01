@@ -67,7 +67,11 @@ export function ImagingReportsPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar imágenes." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Informes de imágenes">
+        <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar imágenes." />
+      </Sheet>
+    );
   }
 
   return (

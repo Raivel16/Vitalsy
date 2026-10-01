@@ -85,9 +85,9 @@ function Shell() {
       <a className="skip" href="#contenido">Saltar al contenido</a>
       <header className="topbar">
         <div className="brand">
-          <SealIcon />
-          <div>
+          <div className="brand-lockup">
             <h1>Vitalsy</h1>
+            <SealIcon />
             <p>Gestión clínica hospitalaria</p>
           </div>
         </div>

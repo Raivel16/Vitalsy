@@ -47,7 +47,7 @@ describe("gestión de camas (RF-68 a RF-77)", () => {
     renderApp("/camas", { role: "gestion_camas" });
 
     expect(await screen.findByRole("heading", { name: /censo hospitalario/i })).toBeInTheDocument();
-    expect(screen.getByText(/medicina interna a/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/medicina interna a/i).length).toBeGreaterThan(0);
     await user.type(screen.getByLabelText(/paciente/i), "Paciente de urgencias");
     await user.click(screen.getByRole("button", { name: /registrar solicitud/i }));
     expect(await screen.findByText(/solicitud de cama registrada/i)).toBeInTheDocument();
