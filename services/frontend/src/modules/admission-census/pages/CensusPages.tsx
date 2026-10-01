@@ -95,7 +95,7 @@ export function CensusPage() {
   const to = Math.min(meta.page * meta.perPage, meta.total);
 
   return (
-    <Sheet kicker="Listado" title="Pacientes" wide>
+    <Sheet kicker="Listado" title="Pacientes" wide clinic="board">
       <p className="lead">
         Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente, o Atención si el ingreso ya está cerrado.
       </p>
@@ -122,7 +122,7 @@ export function CensusPage() {
                   hint="Escriba el criterio y pulse Buscar. También puede escanear el brazalete."
                 />
                 <div className="census-toolbar-actions">
-                  <Button type="button" variant="quiet" onClick={applySearch} disabled={loading}>
+                  <Button type="button" variant="primary" onClick={applySearch} disabled={loading}>
                     Buscar
                   </Button>
                   <BarcodeScanner onScan={onWristbandScan} />
@@ -253,7 +253,7 @@ export function EncounterFilePage() {
 
   if (error) {
     return (
-      <Sheet kicker="Ingreso" title="Ficha del ingreso">
+      <Sheet kicker="Ingreso" title="Ficha del ingreso" clinic="file">
         <Feedback tone="error">{error}</Feedback>
       </Sheet>
     );
@@ -271,6 +271,7 @@ export function EncounterFilePage() {
       title={`Paciente: ${encounter.patientName}`}
       wide
       framed
+      clinic="file"
       aside={
         own ? (
           <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>

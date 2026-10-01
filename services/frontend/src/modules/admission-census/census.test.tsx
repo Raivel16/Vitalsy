@@ -6,8 +6,8 @@ import type { Encounter } from "./domain/encounter";
 
 vi.mock("../../shared/ui/BarcodeScanner", () => ({
   BarcodeScanner: ({ onScan }: { onScan: (code: string) => void }) => (
-    <button type="button" onClick={() => onScan("BRZ-0001-ANA")}>
-      Simular escaneo
+    <button type="button" className="button button-quiet" onClick={() => onScan("BRZ-0001-ANA")}>
+      Escanear brazalete
     </button>
   ),
 }));
@@ -78,7 +78,11 @@ describe("censo de ingresos", () => {
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/buscar paciente/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /simular escaneo|escanear brazalete/i })).toBeInTheDocument();
+    const buscar = screen.getByRole("button", { name: /^buscar$/i });
+    expect(buscar).toHaveClass("button");
+    expect(buscar).not.toHaveClass("button-quiet");
+    expect(document.querySelector(".census-toolbar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /escanear brazalete/i })).toHaveClass("button-quiet");
     expect(screen.getByText(/2 de 3 entregables listos/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^continuar$/i })).toHaveAttribute("href", "/admision/cobertura?ingreso=ENC-0002");
     expect(screen.getByText(/en curso con celador \/ camillero/i)).toBeInTheDocument();
@@ -163,7 +167,7 @@ describe("censo de ingresos", () => {
     renderApp("/pacientes");
 
     expect(await screen.findByRole("link", { name: /Luis Ernesto Paredes/i })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /simular escaneo/i }));
+    await user.click(screen.getByRole("button", { name: /escanear brazalete/i }));
     await waitFor(() => {
       const searchCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("q=BRZ-0001-ANA"));
       expect(searchCall).toBeTruthy();
@@ -176,6 +180,7 @@ describe("censo de ingresos", () => {
     renderApp("/pacientes/ENC-0001", { role: "camillero" });
 
     expect(await screen.findByRole("heading", { name: /paciente:\s*Ana María Quispe Rojas/i })).toBeInTheDocument();
+    expect(document.querySelector(".clinic-file")).toBeTruthy();
     expect(screen.getByText("Ficha digital de admisión").closest("li")).toHaveTextContent("Listo");
     expect(screen.getByText("Expediente clínico electrónico").closest("li")).toHaveTextContent("Pendiente");
     expect(screen.getByRole("link", { name: /consultar orden de traslado/i })).toHaveAttribute("href", "/traslado/orden?ingreso=ENC-0001");
@@ -314,5 +319,15 @@ describe("censo de ingresos", () => {
     });
     expect(await screen.findByText(/cobertura registrada/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
+  });
+
+  it("muestra iconos en los campos de registrar ingreso", async () => {
+    renderApp("/pacientes/nuevo", { role: "admision" });
+    expect(await screen.findByRole("heading", { name: /registrar ingreso/i })).toBeInTheDocument();
+    expect(document.querySelector("#reg-order")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-document")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-name")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
+    expect(document.querySelector("#reg-origin")?.closest(".field-control")?.querySelector(".field-icon")).toBeFalsy();
+    expect(document.querySelector("#reg-payer")?.closest(".field-control")?.querySelector(".field-icon")).toBeTruthy();
   });
 });
