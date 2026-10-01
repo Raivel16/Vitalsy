@@ -5,21 +5,65 @@ export function Sheet({
   title,
   children,
   wide = false,
+  framed = false,
+  aside,
+  clinic,
 }: {
   kicker: string;
   title: string;
   children: ReactNode;
   wide?: boolean;
+  framed?: boolean;
+  aside?: ReactNode;
+  clinic?: "form" | "board";
 }) {
-  return (
-    <article className={wide ? "sheet sheet-wide" : "sheet"}>
-      <header className="page-head">
-        <div>
-          <p className="kicker">{kicker}</p>
-          <h2>{title}</h2>
+  const head = (
+    <header className="page-head">
+      <div>
+        {kicker ? <p className="kicker">{kicker}</p> : null}
+        {title ? <h2>{title}</h2> : null}
+      </div>
+      {aside}
+    </header>
+  );
+
+  const clinicClass = clinic === "board" ? "clinic-sheet clinic-board" : clinic === "form" ? "clinic-sheet clinic-form" : "";
+
+  if (clinic === "board") {
+    return (
+      <article className={["sheet", "sheet-wide", clinicClass].filter(Boolean).join(" ")}>
+        {head}
+        {children}
+      </article>
+    );
+  }
+
+  if (wide && framed) {
+    return (
+      <article className={["sheet", "sheet-wide", clinicClass].filter(Boolean).join(" ")}>
+        <div className="sheet-surface">
+          {head}
+          {children}
         </div>
-      </header>
-      {children}
+      </article>
+    );
+  }
+
+  if (wide) {
+    return (
+      <article className={["sheet", "sheet-wide", clinicClass].filter(Boolean).join(" ")}>
+        {head}
+        {children}
+      </article>
+    );
+  }
+
+  return (
+    <article className={["sheet", clinicClass].filter(Boolean).join(" ")}>
+      <div className="sheet-surface">
+        {head}
+        {children}
+      </div>
     </article>
   );
 }

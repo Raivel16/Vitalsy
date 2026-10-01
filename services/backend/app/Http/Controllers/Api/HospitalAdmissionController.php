@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\VitalSignReading;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
 use App\Services\Clinical\BradenScale;
@@ -36,6 +37,7 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate([
             'fullName' => ['required', 'string'],
             'documentNumber' => ['required', 'string'],
+            'birthDate' => ['nullable', 'date'],
             'confirmed' => ['accepted'],
             'encounterId' => ['nullable', 'string'],
         ]);
@@ -44,6 +46,7 @@ class HospitalAdmissionController extends Controller
             $this->board->putClinical($data['encounterId'], 'filiation', [
                 'fullName' => $data['fullName'],
                 'documentNumber' => $data['documentNumber'],
+                'birthDate' => $data['birthDate'] ?? null,
                 'confirmed' => true,
             ]);
         }
@@ -220,6 +223,7 @@ class HospitalAdmissionController extends Controller
             'respiratoryRate' => ['required', 'numeric'],
             'oxygenSaturation' => ['required', 'numeric'],
             'systolicBloodPressure' => ['required', 'numeric'],
+            'diastolicBloodPressure' => ['required', 'numeric'],
             'pulse' => ['required', 'numeric'],
             'temperature' => ['required', 'numeric'],
             'spo2Scale' => ['nullable', 'in:scale1,scale2'],
@@ -238,14 +242,30 @@ class HospitalAdmissionController extends Controller
                 'input' => $data,
                 'news2' => $news2,
                 'summary' => sprintf(
-                    'FR %s, SpO2 %s %%, PA %s, pulso %s, %s °C',
+                    'FR %s, SpO2 %s %%, PA %s/%s, pulso %s, %s °C',
                     $data['respiratoryRate'],
                     $data['oxygenSaturation'],
                     $data['systolicBloodPressure'],
+                    $data['diastolicBloodPressure'],
                     $data['pulse'],
                     $data['temperature'],
                 ),
                 'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
+            ]);
+
+            VitalSignReading::query()->create([
+                'encounter_id' => $data['encounterId'],
+                'rr' => (int) round((float) $data['respiratoryRate']),
+                'spo2' => (int) round((float) $data['oxygenSaturation']),
+                'sbp' => (int) round((float) $data['systolicBloodPressure']),
+                'dbp' => (int) round((float) $data['diastolicBloodPressure']),
+                'pulse' => (int) round((float) $data['pulse']),
+                'temperature' => round((float) $data['temperature'], 1),
+                'spo2_scale' => $data['spo2Scale'] ?? 'scale1',
+                'supplemental_oxygen' => (bool) ($data['supplementalOxygen'] ?? false),
+                'consciousness' => $data['consciousness'] ?? 'alert',
+                'news2_total' => $news2['total'] ?? 0,
+                'recorded_at' => now(),
             ]);
         }
 
@@ -257,8 +277,10 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate([
             'encounterId' => ['nullable', 'string'],
             'allergies' => ['nullable', 'string'],
-            'medications' => ['required', 'array'],
+            'medications' => ['present', 'array'],
             'medications.*.name' => ['required', 'string'],
+            'noHomeMedications' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $alerts = [];
@@ -268,13 +290,19 @@ class HospitalAdmissionController extends Controller
             }
         }
 
+        $noneDeclared = (bool) ($data['noHomeMedications'] ?? false);
         $status = $alerts === [] ? 'validada' : 'con_observaciones';
+        $statusLabel = $status === 'validada'
+            ? ($noneDeclared && $data['medications'] === [] ? 'Validada: sin medicación habitual' : 'Validada')
+            : 'Con observaciones';
         $reconciliation = [
             'status' => $status,
-            'statusLabel' => $status === 'validada' ? 'Validada' : 'Con observaciones',
+            'statusLabel' => $statusLabel,
             'alerts' => $alerts,
             'allergies' => $data['allergies'] ?? null,
             'medications' => $data['medications'],
+            'noHomeMedications' => $noneDeclared,
+            'notes' => $data['notes'] ?? null,
         ];
 
         if (! empty($data['encounterId'])) {
@@ -354,6 +382,7 @@ class HospitalAdmissionController extends Controller
             'respiratoryRate' => [4, 60, 'La frecuencia respiratoria no es posible.'],
             'oxygenSaturation' => [50, 100, 'La saturación no es posible.'],
             'systolicBloodPressure' => [40, 280, 'La presión sistólica no es posible.'],
+            'diastolicBloodPressure' => [30, 160, 'La presión diastólica no es posible.'],
             'pulse' => [20, 250, 'El pulso no es posible.'],
             'temperature' => [30, 43, 'La temperatura no es posible.'],
         ];

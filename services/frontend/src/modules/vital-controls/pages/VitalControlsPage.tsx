@@ -10,6 +10,7 @@ import {
 } from "../../nursing-assessment/domain/news2";
 import { validateVitalSigns } from "../../nursing-assessment/domain/vitalSigns";
 import { Button } from "../../../shared/ui/Button";
+import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
 import { TextField, SelectField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
@@ -29,6 +30,7 @@ const emptyFields = {
   respiratoryRate: "",
   oxygenSaturation: "",
   systolicBloodPressure: "",
+  diastolicBloodPressure: "",
   pulse: "",
   temperature: "",
 };
@@ -107,6 +109,7 @@ export function VitalControlsPage() {
             respiratoryRate: Number(fields.respiratoryRate),
             oxygenSaturation: Number(fields.oxygenSaturation),
             systolicBloodPressure: Number(fields.systolicBloodPressure),
+            diastolicBloodPressure: Number(fields.diastolicBloodPressure),
             pulse: Number(fields.pulse),
             temperature: Number(fields.temperature.replace(",", ".")),
             consciousness,
@@ -214,14 +217,15 @@ export function VitalControlsPage() {
               error={visibleErrors.oxygenSaturation}
               hint="%"
             />
-            <TextField
-              id="ctrl-sbp"
-              label="Presión sistólica"
-              inputMode="numeric"
-              value={fields.systolicBloodPressure}
-              onChange={(e) => update("systolicBloodPressure", e.target.value)}
-              error={visibleErrors.systolicBloodPressure}
-              hint="mmHg"
+            <BloodPressureField
+              systolicId="ctrl-sbp"
+              diastolicId="ctrl-dbp"
+              systolic={fields.systolicBloodPressure}
+              diastolic={fields.diastolicBloodPressure}
+              onSystolic={(value) => update("systolicBloodPressure", value)}
+              onDiastolic={(value) => update("diastolicBloodPressure", value)}
+              systolicError={visibleErrors.systolicBloodPressure}
+              diastolicError={visibleErrors.diastolicBloodPressure}
             />
             <TextField
               id="ctrl-pulse"

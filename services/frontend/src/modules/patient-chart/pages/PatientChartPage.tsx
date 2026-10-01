@@ -132,7 +132,11 @@ export function PatientChartPage() {
   }, [ingreso, range.from, range.to, range.preset]);
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para consultar su expediente clínico." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Expediente clínico">
+        <EmptyEncounter message="Abra un paciente hospitalizado para consultar su expediente clínico." />
+      </Sheet>
+    );
   }
 
   if (error) {
@@ -162,6 +166,7 @@ export function PatientChartPage() {
       <p className="lead">
         Historial de {patient.patientName} desde el ingreso hospitalario. Solo lectura.
       </p>
+      <div className="sheet-surface">
       <dl className="facts">
         <div><dt>Documento</dt><dd>{patient.documentType} {patient.documentNumber}</dd></div>
         <div><dt>Expediente</dt><dd>{patient.recordId ?? "—"}</dd></div>
@@ -569,6 +574,7 @@ export function PatientChartPage() {
           )}
         </div>
       ) : null}
+      </div>
     </Sheet>
   );
 }

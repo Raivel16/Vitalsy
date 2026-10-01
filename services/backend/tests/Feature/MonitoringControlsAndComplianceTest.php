@@ -70,6 +70,7 @@ class MonitoringControlsAndComplianceTest extends TestCase
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
             'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80,
             'pulse' => 72,
             'temperature' => 36.6,
             'consciousness' => 'alert',

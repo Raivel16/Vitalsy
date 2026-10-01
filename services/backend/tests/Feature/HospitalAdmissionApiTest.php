@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
 use App\Models\User;
+use App\Models\VitalSignReading;
 use App\Services\Admission\AdmissionBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -43,8 +44,15 @@ class HospitalAdmissionApiTest extends TestCase
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [
             'fullName' => 'Ana María Quispe Rojas',
             'documentNumber' => '45678912',
+            'birthDate' => '1978-04-12',
             'confirmed' => true,
+            'encounterId' => 'ENC-0001',
         ])->assertOk()->assertJsonMissingPath('simulated')->assertJsonPath('validated', true);
+
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')
+            ->assertOk()
+            ->assertJsonPath('encounter.clinical.filiation.birthDate', '1978-04-12')
+            ->assertJsonPath('encounter.clinical.filiation.fullName', 'Ana María Quispe Rojas');
     }
 
     public function test_coverage_referral_wristband_record_and_consent_are_created(): void
@@ -181,6 +189,7 @@ class HospitalAdmissionApiTest extends TestCase
         ])->assertStatus(422);
 
         $this->postJson('/api/v1/hospital-admission/vital-signs', [
+            'encounterId' => 'ENC-0001',
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
             'spo2Scale' => 'scale1',
@@ -189,10 +198,30 @@ class HospitalAdmissionApiTest extends TestCase
             'pulse' => 72,
             'consciousness' => 'alert',
             'temperature' => 36.8,
+        ])->assertStatus(422);
+
+        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+            'encounterId' => 'ENC-0001',
+            'respiratoryRate' => 16,
+            'oxygenSaturation' => 98,
+            'spo2Scale' => 'scale1',
+            'supplementalOxygen' => false,
+            'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80,
+            'pulse' => 72,
+            'consciousness' => 'alert',
+            'temperature' => 36.8,
         ])->assertCreated()
             ->assertJsonMissingPath('simulated')
             ->assertJsonPath('news2.total', 0)
             ->assertJsonPath('news2.visualLabel', 'Riesgo bajo');
+
+        $this->assertDatabaseHas('vital_sign_readings', [
+            'encounter_id' => 'ENC-0001',
+            'sbp' => 120,
+            'dbp' => 80,
+        ]);
+        $this->assertSame(1, VitalSignReading::query()->where('encounter_id', 'ENC-0001')->count());
     }
 
     public function test_reconciliation_risk_kardex_and_signature(): void
@@ -209,6 +238,15 @@ class HospitalAdmissionApiTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('reconciliation.status', 'con_observaciones')
             ->assertJsonPath('reconciliation.statusLabel', 'Con observaciones');
+
+        $this->postJson('/api/v1/hospital-admission/medication-reconciliations', [
+            'encounterId' => 'ENC-0001',
+            'allergies' => null,
+            'medications' => [],
+            'noHomeMedications' => true,
+        ])->assertCreated()
+            ->assertJsonPath('reconciliation.status', 'validada')
+            ->assertJsonPath('reconciliation.statusLabel', 'Validada: sin medicación habitual');
 
         $this->postJson('/api/v1/hospital-admission/risk-scales', [
             'morse' => [

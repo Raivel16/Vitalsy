@@ -61,6 +61,7 @@ describe("Controles de constantes (RF-42)", () => {
     await user.type(screen.getByLabelText(/frecuencia respiratoria/i), "16");
     await user.type(screen.getByLabelText(/^saturación/i), "98");
     await user.type(screen.getByLabelText(/presión sistólica/i), "120");
+    await user.type(screen.getByLabelText(/presión diastólica/i), "80");
     await user.type(screen.getByLabelText(/^pulso/i), "72");
     await user.type(screen.getByLabelText(/temperatura/i), "36.6");
     await user.click(screen.getByRole("button", { name: /confirmar control/i }));

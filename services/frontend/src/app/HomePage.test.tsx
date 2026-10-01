@@ -63,7 +63,7 @@ describe("Inicio dashboard de turno", () => {
 
     renderApp("/");
 
-    expect(screen.getByRole("heading", { name: /seguimiento en piso/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^inicio$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ver pacientes en curso/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /cola de trabajo/i })).toBeInTheDocument();
 

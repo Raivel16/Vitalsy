@@ -1,5 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { IconUserCheck } from "@tabler/icons-react";
 import { api } from "../../../app/api";
+import { readDraft, writeDraft } from "../domain/admissionDraft";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -20,8 +22,20 @@ export function FiliationPage() {
   const [documentNumber, setDocumentNumber] = useState("");
   useEffect(() => {
     if (!encounter) return;
-    setFullName(encounter.patientName);
-    setDocumentNumber(digitsOnly(encounter.documentNumber));
+    const saved = encounter.clinical?.filiation ?? readDraft<{
+      fullName?: string;
+      documentNumber?: string;
+      birthDate?: string;
+      confirmed?: boolean;
+    }>(encounter.encounterId, "filiation");
+    setFullName(saved?.fullName || encounter.patientName);
+    setDocumentNumber(digitsOnly(saved?.documentNumber || encounter.documentNumber));
+    setBirthDate(saved?.birthDate ?? "");
+    setConfirmed(Boolean(saved?.confirmed));
+    if (saved?.confirmed) {
+      setAdvanced(true);
+      setSuccess("Filiación validada.");
+    }
   }, [encounter]);
   const [birthDate, setBirthDate] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -68,6 +82,9 @@ export function FiliationPage() {
           confirmed,
         }),
       });
+      writeDraft(activeEncounter.encounterId, "filiation", {
+        fullName, documentNumber, birthDate, confirmed,
+      });
       setSuccess("Filiación validada.");
       if (activeEncounter.currentStep === "filiacion") {
         const updated = await advanceEncounter(activeEncounter.encounterId, "filiacion");
@@ -82,11 +99,25 @@ export function FiliationPage() {
   }
 
   return (
-    <Sheet kicker="Admisión" title="Datos filiatorios">
-      <p className="lead">Contraste los datos de {activeEncounter.patientName} antes de continuar.</p>
+    <Sheet kicker="Admisión hospitalaria" title="Datos filiatorios">
+      <p className="lead">Verifique y valide la identidad del paciente con su documento oficial presentado en ventanilla.</p>
+      <div className="admit-callout">
+        <strong>Cotejo dactiloscópico y visual</strong>
+        <p>Asegúrese de constatar fecha de caducidad física y correspondencia del holograma de seguridad del DNI o carnet de extranjería.</p>
+      </div>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
-          <TextField id="full-name" label="Nombre completo" value={fullName} onChange={(event) => setFullName(event.target.value)} error={errors.fullName} autoComplete="name" required />
+          <TextField
+            id="full-name"
+            label="Nombre completo del paciente"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            error={errors.fullName}
+            hint="Conforme a partida registral o historial unificado."
+            autoComplete="name"
+            wide
+            required
+          />
           <TextField
             id="document-number"
             label="Número de documento"
@@ -94,7 +125,7 @@ export function FiliationPage() {
             value={documentNumber}
             onChange={(event) => setDocumentNumber(digitsOnly(event.target.value, 12))}
             error={errors.documentNumber}
-            hint="Solo números (DNI u otro documento numérico)."
+            hint="Solo dígitos (sin puntos ni guiones)."
             required
           />
           <TextField
@@ -107,10 +138,21 @@ export function FiliationPage() {
             required
           />
         </div>
-        <CheckField id="filiation-confirmed" label="Los datos coinciden con la orden de internamiento" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} error={errors.confirmed} />
+        <CheckField
+          id="filiation-confirmed"
+          className="admit-check"
+          label="Confirmo que los datos coinciden con el documento presentado"
+          description="Declaro bajo responsabilidad de admisión que el documento físico o digital fue validado."
+          checked={confirmed}
+          onChange={(event) => setConfirmed(event.target.checked)}
+          error={errors.confirmed}
+        />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {success ? <Feedback tone="success">{success}</Feedback> : null}
-        <Button type="submit" pending={pending}>Validar filiación</Button>
+        <div className="form-actions-bar">
+          <span />
+          <Button type="submit" pending={pending} disabled={pending || advanced}><IconUserCheck size={16} /> Validar filiación</Button>
+        </div>
       </form>
       <StepNav role={role} encounter={activeEncounter} viewingStep="filiacion" canContinue={advanced} />
     </Sheet>

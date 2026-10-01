@@ -154,7 +154,7 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="panel">
+    <section className="panel" aria-label={title}>
       <header className="panel-head">
         <h3>{title}</h3>
         {aside ? <div className="panel-aside">{aside}</div> : null}

@@ -2,6 +2,7 @@ export type VitalSignFields = {
   respiratoryRate: string;
   oxygenSaturation: string;
   systolicBloodPressure: string;
+  diastolicBloodPressure: string;
   pulse: string;
   temperature: string;
 };
@@ -12,6 +13,7 @@ const LIMITS: Record<keyof VitalSignFields, { min: number; max: number; label: s
   respiratoryRate: { min: 4, max: 60, label: "La frecuencia respiratoria" },
   oxygenSaturation: { min: 50, max: 100, label: "La saturación" },
   systolicBloodPressure: { min: 40, max: 280, label: "La presión sistólica" },
+  diastolicBloodPressure: { min: 30, max: 160, label: "La presión diastólica" },
   pulse: { min: 20, max: 250, label: "El pulso" },
   temperature: { min: 30, max: 43, label: "La temperatura" },
 };

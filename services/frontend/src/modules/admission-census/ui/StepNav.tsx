@@ -27,11 +27,11 @@ export function StepNav({
       : "Continuar al siguiente paso");
 
   return (
-    <div className="actions step-nav">
+    <div className="form-actions-bar step-nav">
       {back ? (
-        <Link to={stepPath(back, encounter.encounterId)}>Regresar al paso anterior</Link>
+        <Link className="button button-quiet" to={stepPath(back, encounter.encounterId)}>Regresar al paso anterior</Link>
       ) : (
-        <Link to={`/pacientes/${encounter.encounterId}`}>Volver a la ficha</Link>
+        <Link className="button button-quiet" to={`/pacientes/${encounter.encounterId}`}>Volver a la ficha</Link>
       )}
       {canContinue ? <ButtonLink to={nextPath}>{label}</ButtonLink> : null}
     </div>

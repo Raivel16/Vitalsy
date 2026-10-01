@@ -71,7 +71,11 @@ export function MedicalEvolutionPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para registrar la evolución." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Evolución médica">
+        <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para registrar la evolución." />
+      </Sheet>
+    );
   }
 
   return (

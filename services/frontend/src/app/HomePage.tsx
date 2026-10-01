@@ -53,7 +53,7 @@ type QueueItem = {
 
 function area(role: Role): { kicker: string; title: string } {
   if (isClinicalRole(role)) {
-    return { kicker: "Atención hospitalaria", title: "Atención y seguimiento en piso" };
+    return { kicker: "Atención hospitalaria", title: "Inicio" };
   }
   if (role === "admision" || role === "camillero") {
     return { kicker: "Ingreso hospitalario", title: "Admisión y recepción del paciente" };

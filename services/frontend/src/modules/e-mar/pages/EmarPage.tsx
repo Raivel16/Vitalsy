@@ -123,31 +123,53 @@ export function EmarPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado para consultar el e-MAR." />;
+    return (
+      <Sheet kicker="Atención en piso · Administración de medicamentos (e-MAR)" title="e-MAR del turno">
+        <EmptyEncounter message="Abra un paciente hospitalizado para consultar el e-MAR." />
+      </Sheet>
+    );
   }
 
   return (
-    <Sheet kicker="Atención en piso · Administración de medicamentos (e-MAR)" title="e-MAR del turno" wide>
-      <div className="emar-head">
-        <p className="lead">
-          Dosis del turno
-          {encounter ? ` para ${encounter.patientName}` : ""}
-          {shiftLabel ? (
-            <>
-              {" · "}
-              <strong>Turno {shiftLabel}</strong>
-            </>
-          ) : null}
-          . Verifique los cinco correctos antes de firmar.
-        </p>
+    <Sheet
+      kicker="Atención en piso · Administración de medicamentos (e-MAR)"
+      title="e-MAR del turno"
+      wide
+      aside={(
         <aside className="emar-clock" aria-label="Hora de estación">
           <span className="emar-clock-label">Hora actual de estación</span>
           <strong>{nowLabel} hrs</strong>
         </aside>
-      </div>
+      )}
+    >
+      <p className="lead">
+        Dosis del turno
+        {encounter ? ` para ${encounter.patientName}` : ""}
+        {shiftLabel ? (
+          <>
+            {" · "}
+            <strong>Turno {shiftLabel}</strong>
+          </>
+        ) : null}
+        . Verifique los cinco correctos antes de firmar.
+      </p>
 
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success" label="Resultado de administración">{notice}</Feedback> : null}
+      {error ? (
+        <aside className="state-card state-danger" role="alert">
+          <div>
+            <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
+            <p>{error}</p>
+          </div>
+        </aside>
+      ) : null}
+      {notice ? (
+        <aside className="state-card state-success" role="status" aria-label="Resultado de administración">
+          <div>
+            <p className="state-card-title">Dosis administrada y firmada digitalmente <span className="status-pill pill-success">Sincronizado</span></p>
+            <p>{notice}</p>
+          </div>
+        </aside>
+      ) : null}
 
       {!hasActivePrescription ? (
         <Feedback tone="info">
@@ -307,7 +329,7 @@ export function EmarPage() {
 
           <label className="check">
             <input type="checkbox" checked={sign} onChange={(e) => setSign(e.target.checked)} />
-            Firmar digitalmente la dosis / Confirmo la administración en cabecera
+            Confirmo la administración según indicación médica y validación del e-MAR.
           </label>
 
           <div className="form-actions-bar">

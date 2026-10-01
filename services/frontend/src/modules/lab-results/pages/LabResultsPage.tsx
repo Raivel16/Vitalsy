@@ -66,7 +66,11 @@ export function LabResultsPage() {
   }
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar laboratorio." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Resultados de laboratorio">
+        <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar laboratorio." />
+      </Sheet>
+    );
   }
 
   return (

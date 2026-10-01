@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { IconShieldCheck } from "@tabler/icons-react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -6,7 +7,6 @@ import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
-import { FormActions } from "../../../shared/ui/FormActions";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { StatusStamp } from "../../../shared/ui/StatusStamp";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -37,6 +37,8 @@ export function CoveragePage() {
     else if (encounter?.coverage.status === "aprobada" || encounter?.coverage.status === "pendiente" || encounter?.coverage.status === "rechazada") {
       setStatus(encounter.coverage.status);
     }
+    const coverageOpen = encounter?.currentStep === "cobertura" || encounter?.currentStep === "derivacion";
+    setAdvanced(Boolean(encounter && !coverageOpen));
   }, [coverageStatus, encounter]);
 
   function changeStatus(next: CoverageStatus) {
@@ -85,24 +87,51 @@ export function CoveragePage() {
   return (
     <Sheet kicker="Admisión" title="Cobertura sanitaria">
       <p className="lead">
-        Revise la cobertura de {encounter.patientName}. Al registrar, el ingreso avanza según el estado elegido.
+        Valide la cobertura del financiador de salud para asegurar la continuidad de prestaciones hospitalarias.
       </p>
       <div className="stack">
+        <TextField id="coverage-payer" label="Pagador asegurador" value={encounter.coverage.payer} readOnly />
+        <TextField id="coverage-plan" label="Plan de cobertura" value={encounter.coverage.plan} readOnly />
         <SelectField id="coverage-scenario" label="Estado de cobertura" value={status} onChange={(event) => changeStatus(event.target.value as CoverageStatus)}>
           <option value="aprobada">Aprobada</option>
           <option value="pendiente">Pendiente</option>
           <option value="rechazada">Rechazada</option>
         </SelectField>
         <StatusStamp status={status} />
-        <p>{COPY[status]}</p>
+        {status !== "aprobada" ? (
+          <div className="admit-banner">
+            <div>
+              <strong>Validación requerida</strong>
+              <p>{COPY[status]}</p>
+            </div>
+            <Link className="button button-quiet" to={referralTo}>Derivar trámite</Link>
+          </div>
+        ) : (
+          <div className="admit-target">
+            <span>{COPY[status]}</span>
+            <span className="admit-target-pill">Aprobada</span>
+          </div>
+        )}
+        <dl className="admit-tiles">
+          <div className="admit-tile">
+            <dt>Vigencia del seguro</dt>
+            <dd>{status === "aprobada" ? "Vigente" : status === "pendiente" ? "Pendiente de verificación" : "Sin vigencia"}</dd>
+            <p className="hint">{encounter.coverage.plan}</p>
+          </div>
+          <div className="admit-tile">
+            <dt>Tope de cobertura</dt>
+            <dd>{encounter.coverage.plan}</dd>
+            <p className="hint">{encounter.coverage.payer}</p>
+          </div>
+        </dl>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-        <FormActions>
-          <Button type="button" onClick={() => void registerCoverage()} pending={pending}>
-            Registrar cobertura
+        <div className="form-actions-bar">
+          <span />
+          <Button type="button" onClick={() => void registerCoverage()} pending={pending} disabled={pending || advanced}>
+            <IconShieldCheck size={16} /> Registrar cobertura
           </Button>
-          {status !== "aprobada" ? <Link to={referralTo}>Derivar trámite</Link> : null}
-        </FormActions>
+        </div>
         <StepNav role={role} encounter={encounter} viewingStep="cobertura" canContinue={advanced} />
       </div>
     </Sheet>
@@ -169,7 +198,6 @@ export function ReferralPage() {
           ? `Registre el trámite de cobertura de ${encounter.patientName} y el aviso al familiar.`
           : "Registre el trámite pendiente y el aviso al familiar o cuidador."}
       </p>
-      <p><Link to={coverageTo}>Volver a cobertura</Link></p>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <SelectField id="destination" label="Destino del trámite" value={destination} onChange={(event) => setDestination(event.target.value)}>
           <option value="caja">Caja</option>
@@ -190,7 +218,10 @@ export function ReferralPage() {
         <TextAreaField id="referral-note" label="Observación (opcional)" value={note} onChange={(event) => setNote(event.target.value)} hint="Puede dejarse vacío." />
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {result ? <Feedback tone="success">{result}</Feedback> : null}
-        <Button type="submit" pending={pending}>Registrar derivación</Button>
+        <div className="form-actions-bar">
+          <Link to={coverageTo}>Volver a cobertura</Link>
+          <Button type="submit" pending={pending}>Registrar derivación</Button>
+        </div>
       </form>
     </Sheet>
   );

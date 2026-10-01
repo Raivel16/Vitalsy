@@ -5,6 +5,10 @@ type Shared = {
   label: string;
   error?: string;
   hint?: string;
+  wide?: boolean;
+  compact?: boolean;
+  hideLabel?: boolean;
+  labelAside?: ReactNode;
 };
 
 function describedBy(id: string, error?: string, hint?: string) {
@@ -20,30 +24,43 @@ function FieldMeta({ id, error, hint }: { id: string; error?: string; hint?: str
   );
 }
 
-export function TextField({ id, label, error, hint, ...props }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+function FieldLabel({ id, label, labelAside, hideLabel }: { id: string; label: string; labelAside?: ReactNode; hideLabel?: boolean }) {
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
+    <label htmlFor={id} className={hideLabel ? "sr-only" : undefined}>
+      <span>{label}</span>
+      {labelAside ? <span className="field-aside">{labelAside}</span> : null}
+    </label>
+  );
+}
+
+function fieldClass(wide?: boolean, compact?: boolean) {
+  return [wide ? "field form-span-2" : "field", compact ? "field-compact" : ""].filter(Boolean).join(" ");
+}
+
+export function TextField({ id, label, error, hint, wide, compact, hideLabel, labelAside, ...props }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div className={fieldClass(wide, compact)}>
+      <FieldLabel id={id} label={label} labelAside={labelAside} hideLabel={hideLabel} />
       <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props} />
       <FieldMeta id={id} error={error} hint={hint} />
     </div>
   );
 }
 
-export function TextAreaField({ id, label, error, hint, ...props }: Shared & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextAreaField({ id, label, error, hint, wide, compact, hideLabel, labelAside, ...props }: Shared & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
+    <div className={fieldClass(wide, compact)}>
+      <FieldLabel id={id} label={label} labelAside={labelAside} hideLabel={hideLabel} />
       <textarea id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props} />
       <FieldMeta id={id} error={error} hint={hint} />
     </div>
   );
 }
 
-export function SelectField({ id, label, error, hint, children, ...props }: Shared & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+export function SelectField({ id, label, error, hint, wide, compact, hideLabel, labelAside, children, ...props }: Shared & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
+    <div className={fieldClass(wide, compact)}>
+      <FieldLabel id={id} label={label} labelAside={labelAside} hideLabel={hideLabel} />
       <select id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props}>
         {children}
       </select>
@@ -52,11 +69,24 @@ export function SelectField({ id, label, error, hint, children, ...props }: Shar
   );
 }
 
-export function CheckField({ id, label, error, ...props }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+export function CheckField({
+  id,
+  label,
+  error,
+  description,
+  className,
+  wide: _wide,
+  labelAside: _labelAside,
+  hint: _hint,
+  ...props
+}: Shared & InputHTMLAttributes<HTMLInputElement> & { description?: string }) {
   return (
-    <div className="check">
+    <div className={["check", className].filter(Boolean).join(" ")}>
       <input id={id} type="checkbox" aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} {...props} />
-      <label htmlFor={id}>{label}</label>
+      <div className="check-copy">
+        <label htmlFor={id}>{label}</label>
+        {description ? <p className="hint">{description}</p> : null}
+      </div>
       {error ? <p id={`${id}-error`} className="field-error">{error}</p> : null}
     </div>
   );

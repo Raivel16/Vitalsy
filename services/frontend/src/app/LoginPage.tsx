@@ -53,7 +53,7 @@ export function LoginPage() {
           <div className="brand-lockup">
             <h1>Vitalsy</h1>
             <SealIcon />
-            <p>Gestión de atención en hospitalización</p>
+            <p>Gestión clínica hospitalaria</p>
           </div>
         </div>
         <h2>Iniciar sesión</h2>

@@ -15,7 +15,6 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { safeNextPath } from "../../../shared/navigation/returnTo";
 import { deliverableCount, locationText, type Encounter } from "../domain/encounter";
 import { canActOnEncounter, stepPath } from "../domain/steps";
-import { AdmissionStepper } from "../ui/AdmissionStepper";
 
 type CensusMeta = {
   total: number;
@@ -101,34 +100,35 @@ export function CensusPage() {
         Su turno muestra los casos que esperan a {ROLE_LABEL[role]}. Abra Continuar para trabajar solo ese paciente, o Atención si el ingreso ya está cerrado.
       </p>
       {role === "admision" ? (
-        <p><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
+        <p className="home-actions"><ButtonLink to="/pacientes/nuevo" variant="quiet">Registrar ingreso</ButtonLink></p>
       ) : null}
-      <div className="census-toolbar">
-        <div className="census-toolbar-row">
-          <TextField
-            id="census-search"
-            label="Buscar paciente"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                applySearch();
-              }
-            }}
-            placeholder="Nombre, DNI, orden o brazalete"
-            hint="Escriba el criterio y pulse Buscar. También puede escanear el brazalete."
-          />
-          <div className="census-toolbar-actions">
-            <Button type="button" variant="quiet" onClick={applySearch} disabled={loading}>
-              Buscar
-            </Button>
-            <BarcodeScanner onScan={onWristbandScan} />
-          </div>
-        </div>
-      </div>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {loading && !encounters ? <LoadingState label="Cargando pacientes…" /> : null}
+      <div className="sheet-surface census-sheet">
+            <div className="census-toolbar">
+              <div className="census-toolbar-row">
+                <TextField
+                  id="census-search"
+                  label="Buscar paciente"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applySearch();
+                    }
+                  }}
+                  placeholder="Nombre, DNI, orden o brazalete"
+                  hint="Escriba el criterio y pulse Buscar. También puede escanear el brazalete."
+                />
+                <div className="census-toolbar-actions">
+                  <Button type="button" variant="quiet" onClick={applySearch} disabled={loading}>
+                    Buscar
+                  </Button>
+                  <BarcodeScanner onScan={onWristbandScan} />
+                </div>
+              </div>
+            </div>
       {encounters && mine.length === 0 && meta.total > 0 ? (
         <Feedback tone="info">No hay pacientes esperando su turno en esta página. Use la búsqueda o cambie de página.</Feedback>
       ) : null}
@@ -141,7 +141,6 @@ export function CensusPage() {
       ) : null}
       {encounters && meta.total > 0 ? (
         <>
-          <div className="table-wrap census-table">
             <div className="census-table-bar">
               <span>Pacientes ({from}–{to} de {meta.total})</span>
               <span>Ordenado por prioridad de turno</span>
@@ -198,7 +197,6 @@ export function CensusPage() {
                 })}
               </tbody>
             </table>
-          </div>
           <nav className="pagination" aria-label="Paginación del censo">
             <p role="status">
               Página {meta.page} de {meta.lastPage}
@@ -226,6 +224,7 @@ export function CensusPage() {
           </nav>
         </>
       ) : null}
+      </div>
     </Sheet>
   );
 }
@@ -267,12 +266,13 @@ export function EncounterFilePage() {
   const ready = ratio.total > 0 && ratio.done === ratio.total;
 
   return (
-    <Sheet kicker="Ficha del ingreso" title={encounter.patientName} wide>
-      <div className="file-head">
-        <p className="lead file-status">
-          <StatusPill tone={statusTone(encounter.statusLabel, encounter.currentStep)}>{encounter.statusLabel}</StatusPill>
-        </p>
-        {own ? (
+    <Sheet
+      kicker="Ficha del ingreso"
+      title={`Paciente: ${encounter.patientName}`}
+      wide
+      framed
+      aside={
+        own ? (
           <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
             {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
           </ButtonLink>
@@ -280,25 +280,21 @@ export function EncounterFilePage() {
           <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
             Abrir atención en piso
           </ButtonLink>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
+      <p className="lead file-status">
+        <StatusPill tone={statusTone(encounter.statusLabel, encounter.currentStep)}>{encounter.statusLabel}</StatusPill>
+      </p>
       {!own && !canAttend ? (
         <Feedback tone="info">
           {encounter.nextRole
-            ? `Este paso corresponde a ${ROLE_LABEL[encounter.nextRole]}.`
+            ? `El siguiente paso corresponde a ${ROLE_LABEL[encounter.nextRole]}.`
             : encounter.statusLabel}
         </Feedback>
       ) : null}
-      {encounter.progress ? (
-        <AdmissionStepper
-          steps={encounter.progress}
-          role={role}
-          encounterId={encounter.encounterId}
-          currentStep={encounter.currentStep}
-        />
-      ) : null}
       <Panel title="Datos administrativos y clínicos del ingreso">
-        <dl className="facts facts-rows">
+        <dl className="facts facts-rows facts-file">
           <div><dt>Documento</dt><dd>{encounter.documentType} {encounter.documentNumber}</dd></div>
           <div><dt>Orden</dt><dd>{encounter.orderNumber}</dd></div>
           <div><dt>Origen</dt><dd>{encounter.originService}</dd></div>

@@ -45,7 +45,11 @@ export function ClinicalVisitPage() {
   }, [ingreso]);
 
   if (!ingreso) {
-    return <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para la visita médica." />;
+    return (
+      <Sheet kicker="Atención en piso" title="Visita médica">
+        <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para la visita médica." />
+      </Sheet>
+    );
   }
 
   return (

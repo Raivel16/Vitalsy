@@ -34,7 +34,7 @@ Estados y acciones (`status`, `action`, `protocol`) se modelan como `string`, no
 | `informed_consents` | Consentimiento informado firmado | RF-06 |
 | `wristband_events` | Emisión/verificación de brazalete (`issued`\|`verified`) | RF-04, RF-08 |
 | `nursing_assessments` | Valoración inicial (motivo, historia, alergias JSON) | RF-11 |
-| `vital_sign_readings` | Constantes + NEWS2 opcional | RF-12, RF-26–29 |
+| `vital_sign_readings` | Constantes (`sbp` + `dbp`) + NEWS2 opcional | RF-12, RF-26–29 |
 | `medication_reconciliations` | BPMH ingreso | RF-13 |
 | `risk_assessments` | Morse / Braden | RF-14 |
 

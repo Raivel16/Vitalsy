@@ -11,6 +11,7 @@ class VitalSignReading extends Model
         'rr',
         'spo2',
         'sbp',
+        'dbp',
         'pulse',
         'temperature',
         'spo2_scale',

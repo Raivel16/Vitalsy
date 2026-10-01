@@ -46,10 +46,10 @@ export function Barcode({ value, id = "wristband-barcode" }: { value: string; id
         format: "CODE128",
         displayValue: true,
         fontSize: 14,
-        height: 64,
-        margin: 8,
+        height: 40,
+        margin: 6,
         background: "#ffffff",
-        lineColor: "#0E4C92",
+        lineColor: "#1E6B7B",
       });
     } catch {
       setMode("fallback");

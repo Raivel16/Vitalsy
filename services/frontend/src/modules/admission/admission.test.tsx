@@ -217,5 +217,50 @@ describe("admisión administrativa", () => {
     await user.click(screen.getByLabelText(/acepto el consentimiento informado/i));
     await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
     expect(await screen.findByText(/consentimiento firmado/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /registrar consentimiento/i })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: /vitalsy life/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/el paciente es usuario de la app vitalsy life/i)).toBeInTheDocument();
   });
+
+  it("al volver a un paso ya registrado restaura los datos y no permite reenviar", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounter: {
+        ...anaEncounter,
+        currentStep: "cobertura",
+        clinical: {
+          filiation: {
+            fullName: "Ana María Quispe Rojas",
+            documentNumber: "45678912",
+            birthDate: "1978-04-12",
+            confirmed: true,
+          },
+        },
+      },
+    })));
+    renderApp("/admision/filiacion?ingreso=ENC-0001");
+
+    expect(await screen.findByDisplayValue("1978-04-12")).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirmo que los datos coinciden/i)).toBeChecked();
+    expect(screen.getByRole("button", { name: /validar filiación/i })).toBeDisabled();
+  });
+
+  it("muestra vigencia y tope de cobertura con los datos del ingreso", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      encounter: { ...anaEncounter, currentStep: "cobertura" },
+    })));
+    renderApp("/admision/cobertura?ingreso=ENC-0001");
+
+    expect(await screen.findByText(/vigencia del seguro/i)).toBeInTheDocument();
+    expect(screen.getByText(/tope de cobertura/i)).toBeInTheDocument();
+    expect(screen.getByText(/^vigente$/i)).toBeInTheDocument();
+  });
+
+  it("muestra Ver ficha como botón con icono", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: anaEncounter })));
+    renderApp("/admision/orden?ingreso=ENC-0001");
+
+    const ficha = await screen.findByRole("link", { name: /ver ficha/i });
+    expect(ficha).toHaveClass("button");
+  });
+
 });

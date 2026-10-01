@@ -54,29 +54,39 @@ describe("traslado y recepción en piso", () => {
 
   it("consulta el traslado del paciente y confirma el paso sin enlaces sueltos", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(jsonResponse(200, { encounter: ana }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        transfer: {
-          orderNumber: "OT-2026-0001",
-          patientName: "Ana María Quispe Rojas",
-          room: "312",
-          bed: "B",
-          service: "Medicina interna",
-        },
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        encounter: { ...ana, currentStep: "identidad", currentStepLabel: "Verificar identidad", nextRole: "camillero" },
-      }));
+    const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/transfer-orders/")) {
+        return jsonResponse(200, {
+          transfer: {
+            orderNumber: "OT-2026-0001",
+            patientName: "Ana María Quispe Rojas",
+            room: "312",
+            bed: "B",
+            service: "Medicina interna",
+          },
+        });
+      }
+      if (url.includes("/advance") || (init?.method && init.method !== "GET" && url.includes("/encounters/"))) {
+        return jsonResponse(200, {
+          encounter: { ...ana, currentStep: "identidad", currentStepLabel: "Verificar identidad", nextRole: "camillero" },
+        });
+      }
+      return jsonResponse(200, { encounter: ana });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     renderApp("/traslado/orden?ingreso=ENC-0001");
     expect(await screen.findByDisplayValue("OT-2026-0001")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /consultar traslado/i }));
-    expect(await screen.findByText(/habitación 312/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/habitaci.n 312/i)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ubicación asignada en destino/i)).toBeInTheDocument();
+    expect(screen.getByText(/indicación obligatoria de camillero/i)).toBeInTheDocument();
+    expect(screen.getByText(/ruta interna/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /verificar identidad/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /confirmar traslado/i }));
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/advance"))).toBe(true);
+    expect(screen.getByRole("button", { name: /confirmar traslado/i })).toBeDisabled();
   });
 
   it("rechaza un brazalete que no coincide con el paciente", async () => {
@@ -108,12 +118,17 @@ describe("traslado y recepción en piso", () => {
 
     renderApp("/traslado/identidad?ingreso=ENC-0001");
     await screen.findByDisplayValue("BRZ-0001-ANA");
+    expect(screen.getByRole("heading", { name: /lector óptico listo/i })).toBeInTheDocument();
+    expect(screen.getByText(/protocolo de seguridad del paciente/i)).toBeInTheDocument();
+    expect(screen.getByText(/^origen$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^destino$/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /simular escaneo/i }));
     expect(await screen.findByText(/identidad confirmada/i)).toBeInTheDocument();
     await waitFor(() => {
       expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/wristbands/verify"))).toBe(true);
       expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/advance"))).toBe(true);
     });
+    expect(screen.getByRole("button", { name: /verificar brazalete/i })).toBeDisabled();
   });
 
   it("permite a enfermería confirmar recepción del paciente en curso", async () => {

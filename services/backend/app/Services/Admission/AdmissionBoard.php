@@ -724,6 +724,10 @@ class AdmissionBoard
             'currentStepLabel' => $waiting ? 'Esperar regularización de cobertura' : $step['label'],
             'nextRole' => $waiting || $encounter->current_step === 'cerrado' ? null : $step['role'],
             'statusLabel' => $waiting ? 'En trámite de cobertura' : $step['status'],
+            'clinical' => [
+                'filiation' => is_array($payload['filiation'] ?? null) ? $payload['filiation'] : null,
+                'consent' => is_array($payload['consent'] ?? null) ? $payload['consent'] : null,
+            ],
             'coverageReferral' => $referral ? [
                 'destination' => $referral['destination'],
                 'destinationLabel' => ($referral['destination'] ?? '') === 'caja' ? 'Caja' : 'Trabajo social',

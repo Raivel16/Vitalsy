@@ -29,12 +29,20 @@ const RULES = [
   },
 ];
 
-export function reviewReconciliation(allergies: string, medications: HomeMedication[]): ReconciliationState {
+export function reviewReconciliation(
+  allergies: string,
+  medications: HomeMedication[],
+  noneDeclared = false,
+): ReconciliationState {
   const alerts = medications.flatMap((medication) =>
     RULES.filter((rule) => rule.allergy.test(allergies) && rule.drug.test(medication.name)).map((rule) =>
       rule.message(medication.name),
     ),
   );
+
+  if (noneDeclared && medications.length === 0) {
+    return { status: "validada", label: "Validada: sin medicación habitual", alerts };
+  }
 
   if (medications.length === 0) {
     return { status: "pendiente", label: "Pendiente", alerts };
