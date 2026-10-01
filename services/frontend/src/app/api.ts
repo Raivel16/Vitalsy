@@ -1,4 +1,4 @@
-import { userMessage } from "./userMessage";
+import { apiErrorMessage } from "./userMessage";
 import type { SessionUser } from "./roles";
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
@@ -38,9 +38,12 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) return undefined as T;
 
-  const data = (await response.json().catch(() => ({}))) as { message?: string };
+  const data = (await response.json().catch(() => ({}))) as {
+    message?: string;
+    errors?: Record<string, string[] | string>;
+  };
   if (!response.ok) {
-    throw new Error(userMessage(data.message, fallbackFor(response.status)));
+    throw new Error(apiErrorMessage(data, fallbackFor(response.status)));
   }
   return data as T;
 }

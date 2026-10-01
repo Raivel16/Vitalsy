@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { userMessage } from "./userMessage";
+import { apiErrorMessage, userMessage } from "./userMessage";
 
 describe("userMessage", () => {
   it("conserva un mensaje en español pensado para el usuario", () => {
@@ -17,5 +17,11 @@ describe("userMessage", () => {
       "No se pudo completar la operación.",
     );
     expect(userMessage("", "No se pudo completar la operación.")).toBe("No se pudo completar la operación.");
+  });
+
+  it("usa el primer error de validación de Laravel cuando no hay message", () => {
+    expect(apiErrorMessage({
+      errors: { diastolicBloodPressure: ["La presión diastólica es obligatoria."] },
+    }, "Revise los datos e intente de nuevo.")).toBe("La presión diastólica es obligatoria.");
   });
 });
