@@ -65,7 +65,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .skip:focus { top: 1rem; }
 
-.ward { min-height: 100vh; background: var(--paper); }
+.ward {
+  min-height: 100vh;
+  background-color: var(--paper);
+  background-image: radial-gradient(rgb(30 107 123 / 8%) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
 
 .topbar {
   position: sticky;
@@ -108,9 +113,30 @@ input, select, textarea { min-height: 44px; }
 .session-box .button { gap: 0.4rem; }
 .session-box p { margin: 0; font-weight: 700; font-size: 14px; text-align: right; }
 .session-box span { display: block; color: var(--muted); font-size: 12px; font-weight: 600; }
-.login-screen { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; background: var(--paper); }
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background-color: #d6e8f2;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 16%), rgb(16 22 25 / 16%)),
+    url("/login-background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+@media (min-width: 900px) {
+  .login-screen {
+    place-items: center start;
+    padding-left: 20vw;
+  }
+}
 .login-card { width: min(440px, 100%); }
 .login-card h1 { font-size: 22px; }
+.login-card .brand h1 { font-size: 32px; }
+.login-card .brand-pulse { width: 10rem; height: 1.1rem; }
+.login-card .brand p { font-size: 14px; }
 .login-card h2 { font-size: 28px; margin: 0.35rem 0 0.35rem; }
 .brand-mark { width: 7.25rem; height: 0.8rem; flex: none; }
 .icon { width: 22px; height: 22px; }
@@ -206,10 +232,14 @@ nav a[aria-current="page"] { background: var(--accent-soft); color: var(--navy);
   padding-right: 0;
 }
 .login-card {
-  background: var(--sheet);
-  border: 1px solid var(--line);
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 16px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 16px 40px rgba(20, 48, 64, 0.16);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   padding: 2.15rem 1.85rem 2rem;
 }
 .sheet .stack,
@@ -308,6 +338,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--navy); outl
 .hint, .field-error { margin: 0; font-size: 13px; }
 .hint { color: var(--muted); }
 .field-error { color: var(--danger); }
+.field-control { position: relative; }
+.field-control input,
+.field-control select { padding-right: 2.4rem; }
+.field-control select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: none;
+}
+.field-icon {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: #52606c;
+  pointer-events: none;
+}
+.field.has-error .field-icon { color: #ba1a1a; }
 .password-input {
   position: relative;
   display: flex;
@@ -1049,15 +1097,15 @@ td.col-action .button {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 1.25rem;
-  padding: 0.4rem 0.85rem 0.35rem;
-  border: 1px solid var(--line);
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem 0.85rem;
+  border: 0;
   border-radius: 12px;
-  background: var(--sheet);
-  box-shadow: var(--shadow);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(21, 28, 34, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.75rem;
 }
 .case-bar-top {
   display: flex;
@@ -1220,8 +1268,8 @@ td .hint {
 }
 .stepper-done .stepper-label { background: var(--accent-soft); color: var(--navy); }
 .stepper-done .stepper-num { background: #fff; color: var(--navy); }
-.stepper-current .stepper-label { background: var(--navy); color: #fff; }
-.stepper-current .stepper-num { background: #fff; color: var(--navy); }
+.stepper-current .stepper-label { background: #1e6b7b; color: #fff; }
+.stepper-current .stepper-num { background: #fff; color: #1e6b7b; }
 .stepper-clickable { cursor: pointer; }
 a.stepper-label {
   text-decoration: none;
@@ -1716,11 +1764,16 @@ a.stepper-label:hover {
 .census-toolbar .field { min-width: 0; }
 .census-toolbar-actions {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.55rem;
-  /* Alinea el botón con el input (debajo de la etiqueta del campo) */
+  /* Alinea los botones con el input (debajo de la etiqueta del campo) */
   padding-top: 1.75rem;
+}
+.census-toolbar input {
+  background: #fff;
+  box-shadow: none;
 }
 .census-toolbar .scanner-box {
   margin: 0;
@@ -2423,6 +2476,17 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem 1.1rem;
 }
+.vitals-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.nursing-allergy-stack {
+  display: grid;
+  gap: 1rem;
+}
+.nursing-reception {
+  display: grid;
+  gap: 1.25rem;
+}
 .news-banner {
   display: flex;
   flex-wrap: wrap;
@@ -2487,7 +2551,7 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   .layout {
     padding-left: 0;
   }
-  .form-grid, .facts, .facts-file, .admit-tiles, .transfer-facts, .transfer-snapshot, .scan-panel-form, .nursing-tiles, .vitals-grid, .kardex-board, .nursing-meta, .nursing-inline-add, .braden-grid, .bpmh-table tr { grid-template-columns: 1fr; }
+  .form-grid, .facts, .facts-file, .admit-tiles, .transfer-facts, .transfer-snapshot, .scan-panel-form, .nursing-tiles, .vitals-grid, .vitals-grid-2, .kardex-board, .nursing-meta, .nursing-inline-add, .braden-grid, .bpmh-table tr { grid-template-columns: 1fr; }
   .scale-row { flex-direction: column; align-items: flex-start; }
   .scale-row .scale-options { flex-wrap: wrap; justify-content: flex-start; }
   .layout > nav {
@@ -2522,7 +2586,23 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   .case-bar-actions { flex-wrap: wrap; }
   .case-bar-actions { margin-left: 0; }
   .case-bar-btn { min-height: 36px; }
+  .scanner-view { width: 100%; max-width: 100%; }
   .scan-panel { padding: 1.1rem 0.85rem; }
+  .scan-panel-form,
+  .census-toolbar-row { grid-template-columns: 1fr; }
+  .census-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 0;
+  }
+  .census-toolbar .scanner-box,
+  .census-toolbar-actions .button,
+  .scan-panel-form .button,
+  .census-toolbar .scanner-box .button {
+    width: 100%;
+    min-height: 44px;
+    height: auto;
+  }
   .scan-panel-form .button,
   .transfer-lookup-actions .button,
   .transfer-panel .button,
@@ -2694,11 +2774,53 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
 }
 
 /* Tokens y formas del mock UI/Vitalsy Clinical */
+.sheet.clinic-form:not(.clinic-board) {
+  max-width: min(780px, 100%);
+}
 .sheet.sheet-wide.clinic-form {
   max-width: min(780px, 100%);
 }
 .sheet.sheet-wide.clinic-board {
   max-width: min(980px, 100%);
+}
+.sheet.sheet-wide.clinic-file {
+  max-width: min(1280px, 100%);
+}
+.clinic-file .sheet-surface {
+  border: 0;
+  box-shadow: 0 1px 3px rgba(21, 28, 34, 0.06);
+  padding: 2rem 2.25rem;
+  border-radius: 12px;
+}
+.clinic-file .panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+.clinic-file .panel-head {
+  border-color: #d1d6dc;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+}
+.clinic-file .facts-file > div,
+.clinic-file .facts-rows > div {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #eceef1;
+}
+.clinic-file .deliverables li {
+  padding: 0.75rem;
+  background: #f4f6f8;
+  border: 1px solid #d1d6dc;
+  border-radius: 8px;
+}
+.clinic-file .deliverables .done {
+  background: #eaf2ed;
+  border-color: #c0d8c8;
 }
 .clinic-form .sheet-surface {
   border: 0;
@@ -2850,8 +2972,21 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(21, 28, 34, 0.06);
 }
+.clinic-sheet .unit-control input:not([type="checkbox"]):not([type="radio"]),
+.clinic-sheet .bp-control input:not([type="checkbox"]):not([type="radio"]) {
+  background: transparent;
+  box-shadow: none;
+}
 .clinic-sheet .nursing-tiles > div,
-.clinic-sheet .reloc-assigned {
+.clinic-sheet .reloc-assigned,
+.clinic-sheet .admit-tiles > div,
+.clinic-sheet .facts:not(.facts-file):not(.facts-rows) > div,
+.clinic-sheet .transfer-facts > div,
+.clinic-sheet .transfer-dest,
+.clinic-sheet .transfer-route,
+.clinic-sheet .transfer-panel,
+.clinic-sheet .scan-panel,
+.clinic-sheet .order-card {
   background: #edf4fd;
   border: 0;
   box-shadow: none;
@@ -3001,7 +3136,8 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   font-weight: 700;
   padding: 0 0.15rem;
 }
-.bp-unit {
+.bp-unit,
+.unit-chip {
   align-self: stretch;
   display: flex;
   align-items: center;
@@ -3010,6 +3146,165 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   color: #52606c;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.unit-control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(21, 28, 34, 0.06);
+  overflow: hidden;
+}
+.unit-control input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 0.75rem;
+}
+.unit-control input:focus {
+  background: #edf4fd;
+  outline: 0;
+  box-shadow: none;
+}
+.order-cards {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+.order-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #edf4fd;
+}
+.order-card-num {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dce3eb;
+  color: #1e6b7b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.order-card p { margin: 0.25rem 0 0; color: #52606c; }
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+.order-card-head span {
+  color: #52606c;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.orders-nursing-review {
+  margin: 1rem 0 1.25rem;
+}
+.orders-nursing-review h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+.orders-nursing-review ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+.orders-nursing-review p { margin: 0.35rem 0 0; }
+.orders-snapshot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 0;
+}
+.orders-snapshot > div {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #edf4fd;
+  display: grid;
+  gap: 0.35rem;
+}
+.orders-snapshot span {
+  color: #52606c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.orders-snapshot.orders-allergies,
+.orders-snapshot > .orders-allergies {
+  background: #ffdad6;
+  color: #93000a;
+}
+.orders-list header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.orders-list h3 { margin: 0; font-size: 1.05rem; }
+.order-edit {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #edf4fd;
+}
+.orders-sign {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: #edf4fd;
+}
+.orders-sign-head h3 { margin: 0 0 0.85rem; font-size: 1.05rem; }
+.orders-sign-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.orders-sign-grid > div {
+  padding: 0.85rem;
+  border-radius: 8px;
+  background: #ffffff;
+}
+.orders-sign-grid span {
+  display: block;
+  color: #52606c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+@media (max-width: 800px) {
+  .orders-snapshot,
+  .orders-sign-grid { grid-template-columns: 1fr; }
+}
+.clinic-board .census-sheet {
+  background: #ffffff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(21, 28, 34, 0.06);
 }
 
 .bpmh-cards {
