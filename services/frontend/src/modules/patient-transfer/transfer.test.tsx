@@ -119,6 +119,8 @@ describe("traslado y recepción en piso", () => {
     renderApp("/traslado/identidad?ingreso=ENC-0001");
     await screen.findByDisplayValue("BRZ-0001-ANA");
     expect(screen.getByRole("heading", { name: /lector óptico listo/i })).toBeInTheDocument();
+    expect(document.querySelector(".scan-panel.identity-verify")).toBeInTheDocument();
+    expect(document.querySelector(".scan-panel-form")).toBeInTheDocument();
     expect(screen.getByText(/protocolo de seguridad del paciente/i)).toBeInTheDocument();
     expect(screen.getByText(/^origen$/i)).toBeInTheDocument();
     expect(screen.getByText(/^destino$/i)).toBeInTheDocument();
@@ -152,6 +154,7 @@ describe("traslado y recepción en piso", () => {
 
     renderApp("/piso/recepcion?ingreso=ENC-0001");
     await user.click(await screen.findByRole("button", { name: /confirmar recepción/i }));
+    expect(document.querySelector(".nursing-reception")).toBeTruthy();
     expect(await screen.findByRole("status")).toHaveTextContent(/ingresado/i);
   });
 
@@ -164,20 +167,34 @@ describe("traslado y recepción en piso", () => {
       currentStepLabel: "Confirmar recepción en piso",
       nextRole: "enfermera_piso",
     };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn()
-        .mockResolvedValueOnce(jsonResponse(200, { encounter: nursing }))
-        .mockResolvedValueOnce(jsonResponse(201, {
-          relocation: { status: "notificada", room: "314", bed: "A" },
-        })),
-    );
+    const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/beds/available")) {
+        return jsonResponse(200, {
+          count: 1,
+          beds: [{ id: 12, ward: "Medicina interna", room: "314", bedCode: "A", status: "available" }],
+        });
+      }
+      if (url.includes("/relocations") && init?.method === "POST") {
+        return jsonResponse(201, { relocation: { status: "notificada", room: "314", bed: "A" } });
+      }
+      return jsonResponse(200, { encounter: nursing });
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     renderApp("/piso/reubicacion?ingreso=ENC-0001");
-    await user.type(await screen.findByLabelText(/motivo de la discrepancia/i), "El lecho B está ocupado");
-    await user.type(screen.getByLabelText(/habitación solicitada/i), "314");
-    await user.type(screen.getByLabelText(/lecho solicitado/i), "A");
+    await user.selectOptions(await screen.findByLabelText(/motivo de la discrepancia/i), "Cama asignada ocupada");
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /habitación 314 · lecho a/i })).toBeInTheDocument();
+    });
+    await user.selectOptions(screen.getByLabelText(/lecho disponible/i), "314|A");
     await user.click(screen.getByRole("button", { name: /notificar reubicación/i }));
     expect(await screen.findByRole("status")).toHaveTextContent(/reubicación notificada/i);
+    const relocate = fetchMock.mock.calls.find((call) => String(call[0]).includes("/relocations"));
+    expect(JSON.parse(String(relocate?.[1]?.body))).toMatchObject({
+      requestedRoom: "314",
+      requestedBed: "A",
+      reason: "Cama asignada ocupada",
+    });
   });
 });

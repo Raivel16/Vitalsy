@@ -11,6 +11,11 @@ class BedManagementController extends Controller
 {
     public function __construct(private readonly BedManagement $beds) {}
 
+    public function available(): JsonResponse
+    {
+        return response()->json($this->beds->available());
+    }
+
     public function census(): JsonResponse
     {
         return response()->json($this->beds->census());

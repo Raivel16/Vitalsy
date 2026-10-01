@@ -152,6 +152,27 @@ class BedManagementApiTest extends TestCase
             ->assertJsonPath('projection.encounterId', 'ENC-CAMA-0003');
     }
 
+    public function test_floor_nurse_lists_available_beds(): void
+    {
+        $this->asRole('enfermera_piso');
+
+        $payload = $this->getJson('/api/v1/beds/available')
+            ->assertOk()
+            ->assertJsonStructure(['count', 'beds' => [['id', 'room', 'bedCode', 'status']]])
+            ->json();
+
+        $this->assertGreaterThan(0, $payload['count']);
+        foreach ($payload['beds'] as $bed) {
+            $this->assertSame('available', $bed['status']);
+        }
+    }
+
+    public function test_admission_cannot_list_available_beds(): void
+    {
+        $this->asRole('admision');
+        $this->getJson('/api/v1/beds/available')->assertForbidden();
+    }
+
     public function test_unrelated_role_cannot_see_census(): void
     {
         $this->asRole('admision');

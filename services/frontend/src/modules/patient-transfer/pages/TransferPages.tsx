@@ -17,7 +17,7 @@ import { errorText } from "../../../app/userMessage";
 import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
-import { TextAreaField, TextField } from "../../../shared/ui/Field";
+import { SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { StatusPill } from "../../../shared/ui/clinical";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -37,9 +37,33 @@ type TransferOrder = {
   transfer: { orderNumber: string; patientName: string; room: string; bed: string; service: string };
 };
 
+type AvailableBed = {
+  id: number;
+  ward: string | null;
+  room: string;
+  bedCode: string;
+  status: string;
+};
+
+const RELOCATION_REASONS = [
+  "Cama asignada ocupada",
+  "Requerimiento de aislamiento por clínica / condición infecciosa",
+  "Solicitud de enfermería por vigilancia estrecha",
+  "Mantenimiento de lecho / Desinfección terminal",
+];
+
+function availableBedLabel(bed: AvailableBed) {
+  const service = bed.ward?.trim() || "Servicio";
+  return `Habitación ${bed.room} · Lecho ${bed.bedCode} (${service})`;
+}
+
+function bedKey(bed: AvailableBed) {
+  return `${bed.room}|${bed.bedCode}`;
+}
+
 function NeedPatient({ title }: { title: string }) {
   return (
-    <Sheet kicker="Celador / Camillero" title={title}>
+    <Sheet kicker="Celador / Camillero" title={title} clinic="form">
       <EmptyEncounter message="Abra un paciente desde el censo para trabajar este paso con su código propio." />
     </Sheet>
   );
@@ -111,7 +135,7 @@ export function TransferOrderPage() {
   const service = transfer?.service ?? activeEncounter.location.service;
 
   return (
-    <Sheet kicker="Celador / Camillero · Traslado interno" title="Orden de traslado a piso">
+    <Sheet kicker="Celador / Camillero · Traslado interno" title="Orden de traslado a piso" clinic="form">
       <p className="lead">
         Valide el destino asignado y confirme el inicio del traslado de {activeEncounter.patientName} desde {activeEncounter.originService} hacia la cama de hospitalización.
       </p>
@@ -262,7 +286,7 @@ export function WristbandVerifyPage() {
   }
 
   return (
-    <Sheet kicker="Celador / Camillero · Seguridad del paciente" title="Verificación de identidad">
+    <Sheet kicker="Celador / Camillero · Seguridad del paciente" title="Verificación de identidad" clinic="form">
       <p className="lead">
         Escanee el código de barras o QR del brazalete físico de {activeEncounter.patientName} a pie de camilla antes de autorizar el desplazamiento.
       </p>
@@ -361,6 +385,7 @@ export function FloorReceptionPage() {
       <p className="lead">
         Formalice el arribo de {activeEncounter.patientName} al servicio hospitalario y confirme la ocupación del lecho asignado.
       </p>
+      <div className="nursing-reception">
       <section className="nursing-block" aria-label="Ubicación y parámetros de internación">
         <header className="nursing-block-head">
           <h3>Ubicación y parámetros de internación</h3>
@@ -426,6 +451,7 @@ export function FloorReceptionPage() {
           Paciente {status} en el lecho asignado.
         </Feedback>
       ) : null}
+      </div>
       <StepNav role={role} encounter={activeEncounter} viewingStep="recepcion" canContinue={advanced} />
     </Sheet>
   );
@@ -435,12 +461,30 @@ export function RelocationPage() {
   const encounter = useEncounter();
   const { user } = useAuth();
   const [reason, setReason] = useState("");
-  const [room, setRoom] = useState("");
-  const [bed, setBed] = useState("");
+  const [selected, setSelected] = useState("");
+  const [beds, setBeds] = useState<AvailableBed[]>([]);
+  const [bedsError, setBedsError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (!encounter) return undefined;
+    let active = true;
+    api<{ count: number; beds: AvailableBed[] }>("/api/v1/beds/available")
+      .then((data) => {
+        if (!active) return;
+        setBeds((data.beds ?? []).filter((bed) => bed.status === "available"));
+        setBedsError("");
+      })
+      .catch((caught: unknown) => {
+        if (active) setBedsError(errorText(caught, "No se pudieron cargar los lechos disponibles."));
+      });
+    return () => {
+      active = false;
+    };
+  }, [encounter]);
 
   if (!encounter) {
     return (
@@ -456,15 +500,15 @@ export function RelocationPage() {
     activeEncounter.location.bed ? `Lecho ${activeEncounter.location.bed}` : null,
     activeEncounter.location.service,
   ].filter(Boolean).join(" · ") || "Sin ubicación asignada";
+  const chosen = beds.find((bed) => bedKey(bed) === selected);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!reason.trim()) next.reason = "El motivo de la discrepancia es obligatorio.";
-    if (!room.trim()) next.room = "La habitación solicitada es obligatoria.";
-    if (!bed.trim()) next.bed = "El lecho solicitado es obligatorio.";
+    if (!chosen) next.bed = "Elija un lecho disponible del censo.";
     setErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0 || !chosen) return;
 
     setPending(true);
     try {
@@ -473,11 +517,11 @@ export function RelocationPage() {
         body: JSON.stringify({
           encounterId: activeEncounter.encounterId,
           reason,
-          requestedRoom: room,
-          requestedBed: bed,
+          requestedRoom: chosen.room,
+          requestedBed: chosen.bedCode,
         }),
       });
-      setNotice(`Reubicación notificada a la central. Habitación ${room}, lecho ${bed}.`);
+      setNotice(`Reubicación notificada a la central. Habitación ${chosen.room}, lecho ${chosen.bedCode}.`);
       setError("");
     } catch (caught) {
       setError(errorText(caught, "No se pudo registrar la reubicación."));
@@ -508,20 +552,33 @@ export function RelocationPage() {
         </div>
       </section>
       <form className="stack nursing-form" onSubmit={onSubmit} noValidate>
-        <TextAreaField
+        <SelectField
           id="relocation-reason"
           label="Motivo de la discrepancia"
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           error={errors.reason}
-          rows={4}
-          labelAside={`${reason.length}/300`}
-        />
-        <div className="form-grid">
-          <TextField id="requested-room" label="Habitación solicitada" value={room} onChange={(event) => setRoom(event.target.value)} error={errors.room} />
-          <TextField id="requested-bed" label="Lecho solicitado" value={bed} onChange={(event) => setBed(event.target.value)} error={errors.bed} />
-        </div>
+        >
+          <option value="">Seleccione el motivo</option>
+          {RELOCATION_REASONS.map((item) => (
+            <option key={item} value={item}>{item}</option>
+          ))}
+        </SelectField>
+        <SelectField
+          id="requested-bed"
+          label="Lecho disponible"
+          value={selected}
+          onChange={(event) => setSelected(event.target.value)}
+          error={errors.bed}
+          labelAside={beds.length > 0 ? `${beds.length} en censo` : undefined}
+        >
+          <option value="">{beds.length === 0 ? "No hay lechos disponibles en el censo" : "Seleccione un lecho disponible"}</option>
+          {beds.map((bed) => (
+            <option key={bed.id} value={bedKey(bed)}>{availableBedLabel(bed)}</option>
+          ))}
+        </SelectField>
         <p className="hint">Registrado por {user?.name ?? "Enfermería de piso"}.</p>
+        {bedsError ? <Feedback tone="error">{bedsError}</Feedback> : null}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
         <div className="form-actions-bar">

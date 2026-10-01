@@ -212,6 +212,10 @@ Route::prefix('v1')->group(function () {
 
         // Módulo 5 — Gestión y asignación de camas (RF-68–71)
         Route::prefix('beds')->group(function () {
+            Route::middleware('role:enfermera_piso,gestion_camas,enfermera_supervisora')->group(function () {
+                Route::get('available', [BedManagementController::class, 'available']);
+            });
+
             Route::middleware('role:gestion_camas,enfermera_supervisora')->group(function () {
                 Route::get('census', [BedManagementController::class, 'census']);
                 Route::get('requests', [BedManagementController::class, 'requests']);
