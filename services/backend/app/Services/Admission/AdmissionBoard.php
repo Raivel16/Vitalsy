@@ -623,6 +623,7 @@ class AdmissionBoard
         foreach ($items as $item) {
             if (is_string($item)) {
                 $normalized[] = ['title' => trim($item), 'detail' => '', 'category' => ''];
+
                 continue;
             }
             if (! is_array($item)) {
