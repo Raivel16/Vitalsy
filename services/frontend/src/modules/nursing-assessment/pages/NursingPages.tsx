@@ -5,7 +5,7 @@ import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
-import { CheckField, SelectField, TextAreaField, TextField } from "../../../shared/ui/Field";
+import { CheckField, SelectField, TextAreaField, TextField, UnitField } from "../../../shared/ui/Field";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { advanceEncounter } from "../../admission-census/domain/advance";
@@ -153,44 +153,46 @@ export function NursingAssessmentPage() {
             </h3>
             <span>{allergies.length} registradas</span>
           </header>
-          {allergies.length > 0 ? (
-            <ul className="allergy-chips" aria-label="Alergias registradas">
-              {allergies.map((item) => (
-                <li key={item}>
-                  <span>{item}</span>
-                  <button
-                    type="button"
-                    className="allergy-chip-remove"
-                    aria-label={`Quitar alergia ${item}`}
-                    onClick={() => setAllergies((current) => current.filter((entry) => entry !== item))}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty">Sin alergias registradas en esta valoración.</p>
-          )}
-          <div className="nursing-inline-add">
-            <TextField
-              id="allergy"
-              label="Alergia (opcional)"
-              hideLabel
-              compact
-              value={allergy}
-              onChange={(event) => setAllergy(event.target.value)}
-              placeholder="Escriba nueva alergia o fármaco"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addAllergy();
-                }
-              }}
-            />
-            <Button variant="quiet" type="button" onClick={addAllergy}>
-              <IconPlus size={16} /> Agregar alergia
-            </Button>
+          <div className="nursing-allergy-stack">
+            {allergies.length > 0 ? (
+              <ul className="allergy-chips" aria-label="Alergias registradas">
+                {allergies.map((item) => (
+                  <li key={item}>
+                    <span>{item}</span>
+                    <button
+                      type="button"
+                      className="allergy-chip-remove"
+                      aria-label={`Quitar alergia ${item}`}
+                      onClick={() => setAllergies((current) => current.filter((entry) => entry !== item))}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty">Sin alergias registradas en esta valoración.</p>
+            )}
+            <div className="nursing-inline-add">
+              <TextField
+                id="allergy"
+                label="Alergia (opcional)"
+                hideLabel
+                compact
+                value={allergy}
+                onChange={(event) => setAllergy(event.target.value)}
+                placeholder="Escriba nueva alergia o fármaco"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addAllergy();
+                  }
+                }}
+              />
+              <Button variant="quiet" type="button" onClick={addAllergy}>
+                <IconPlus size={16} /> Agregar alergia
+              </Button>
+            </div>
           </div>
           <CheckField
             id="no-other-known"
@@ -233,6 +235,7 @@ export function VitalSignsPage() {
   const [confusionOnset, setConfusionOnset] = useState<"new" | "chronic">("new");
   const [submitted, setSubmitted] = useState(false);
   const [saved, setSaved] = useState("");
+  const [alertNotice, setAlertNotice] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -273,8 +276,9 @@ export function VitalSignsPage() {
     setSubmitted(true);
     if (!ready || !news2) return;
     setPending(true);
+    setAlertNotice("");
     try {
-      await api("/api/v1/hospital-admission/vital-signs", {
+      const savedVitals = await api<{ alertActivated?: boolean }>("/api/v1/hospital-admission/vital-signs", {
         method: "POST",
         body: JSON.stringify({
           encounterId: activeEncounter.encounterId,
@@ -287,6 +291,11 @@ export function VitalSignsPage() {
         }),
       });
       setSaved("Constantes registradas.");
+      setAlertNotice(
+        savedVitals.alertActivated
+          ? "Se activó una alerta clínica. Revísela en la campana o en la bandeja de alertas."
+          : "",
+      );
       setError("");
       if (activeEncounter.currentStep === "constantes") {
         const next = await advanceEncounter(activeEncounter.encounterId, "constantes");
@@ -310,8 +319,8 @@ export function VitalSignsPage() {
       </p>
       <form className="stack nursing-form" onSubmit={onSubmit} noValidate>
         <div className="vitals-grid">
-          <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(event) => update("respiratoryRate", event.target.value)} error={visibleErrors.respiratoryRate} labelAside="rpm" compact />
-          <TextField id="spo2" label="Saturación" inputMode="numeric" value={fields.oxygenSaturation} onChange={(event) => update("oxygenSaturation", event.target.value)} error={visibleErrors.oxygenSaturation} labelAside="%" compact />
+          <UnitField id="rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={fields.respiratoryRate} onChange={(event) => update("respiratoryRate", event.target.value)} error={visibleErrors.respiratoryRate} />
+          <UnitField id="spo2" label="Saturación" unit="%" abbr="SpO2" inputMode="numeric" value={fields.oxygenSaturation} onChange={(event) => update("oxygenSaturation", event.target.value)} error={visibleErrors.oxygenSaturation} />
           <BloodPressureField
             systolic={fields.systolicBloodPressure}
             diastolic={fields.diastolicBloodPressure}
@@ -320,8 +329,10 @@ export function VitalSignsPage() {
             systolicError={visibleErrors.systolicBloodPressure}
             diastolicError={visibleErrors.diastolicBloodPressure}
           />
-          <TextField id="pulse" label="Pulso" inputMode="numeric" value={fields.pulse} onChange={(event) => update("pulse", event.target.value)} error={visibleErrors.pulse} labelAside="lpm" compact />
-          <TextField id="temperature" label="Temperatura" inputMode="decimal" value={fields.temperature} onChange={(event) => update("temperature", event.target.value)} error={visibleErrors.temperature} labelAside="°C" compact />
+        </div>
+        <div className="vitals-grid vitals-grid-2">
+          <UnitField id="pulse" label="Pulso" unit="lpm" abbr="FC" inputMode="numeric" value={fields.pulse} onChange={(event) => update("pulse", event.target.value)} error={visibleErrors.pulse} />
+          <UnitField id="temperature" label="Temperatura" unit="°C" abbr="Temp" inputMode="decimal" value={fields.temperature} onChange={(event) => update("temperature", event.target.value)} error={visibleErrors.temperature} />
         </div>
         <div className="vitals-grid">
           <SelectField id="spo2-scale" label="Escala de SpO2" value={spo2Scale} onChange={(event) => setSpo2Scale(event.target.value as Spo2Scale)} hint="Escala 2 solo si un clínico indicó objetivo 88-92 %.">
@@ -357,6 +368,7 @@ export function VitalSignsPage() {
           </div>
         ) : null}
         {error ? <Feedback tone="error">{error}</Feedback> : null}
+        {alertNotice ? <Feedback tone="info" label="Alerta clínica">{alertNotice}</Feedback> : null}
         {saved ? <Feedback tone="success">{saved}</Feedback> : null}
         <div className="form-actions-bar">
           <Button type="submit" pending={pending} disabled={pending || advanced}>

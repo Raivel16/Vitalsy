@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {
                 Route::get('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'showMedicalOrders']);
+                Route::put('medical-orders/{encounterId}', [HospitalAdmissionController::class, 'saveMedicalOrders']);
                 Route::post('medical-orders/{encounterId}/sign', [HospitalAdmissionController::class, 'signMedicalOrders']);
             });
         });

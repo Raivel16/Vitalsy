@@ -42,7 +42,11 @@ type ChartPayload = {
       morse?: { levelLabel?: string; total?: number };
       braden?: { levelLabel?: string; total?: number };
     } | null;
-    medicalOrders?: { statusLabel?: string; items?: string[]; signature?: { physicianName?: string } } | null;
+    medicalOrders?: {
+      statusLabel?: string;
+      items?: Array<string | { title?: string; detail?: string; category?: string }>;
+      signature?: { physicianName?: string };
+    } | null;
     consent?: { signerName?: string } | null;
     kardexMedications?: string[];
   };
@@ -102,6 +106,17 @@ function cleanRiskLabel(value?: string | null): string {
     .replace(/\s+de caída:(?=\s+de caída:)/gi, "")
     .replace(/\s+de úlcera por presión:(?=\s+de úlcera)/gi, "")
     .trim();
+}
+
+type OrderItem = string | { title?: string; detail?: string; category?: string };
+
+function presentOrderItem(item: OrderItem): { key: string; text: string } {
+  if (typeof item === "string") {
+    return { key: item, text: item };
+  }
+  const title = item.title?.trim() || "Indicación";
+  const extra = [item.category, item.detail].filter((part) => part?.trim()).join(" · ");
+  return { key: title, text: extra ? `${title} — ${extra}` : title };
 }
 
 export function PatientChartPage() {
@@ -260,7 +275,10 @@ export function PatientChartPage() {
                 <div>
                   <p><strong>Indicaciones médicas:</strong> {admission.medicalOrders.statusLabel ?? "—"}</p>
                   <ul>
-                    {(admission.medicalOrders.items ?? []).map((item) => <li key={item}>{item}</li>)}
+                    {(admission.medicalOrders.items ?? []).map((item, index) => {
+                      const row = presentOrderItem(item);
+                      return <li key={`${row.key}-${index}`}>{row.text}</li>;
+                    })}
                   </ul>
                   {admission.medicalOrders.signature?.physicianName ? (
                     <p className="hint">Firmado por {admission.medicalOrders.signature.physicianName}</p>

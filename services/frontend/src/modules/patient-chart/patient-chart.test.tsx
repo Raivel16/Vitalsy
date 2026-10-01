@@ -60,7 +60,11 @@ describe("expediente clínico (RF-38)", () => {
             admission: {
               assessment: { chiefComplaint: "Disnea", allergies: ["Penicilina"], history: "HTA" },
               vitalsBasal: { summary: "FR 16, SpO2 98 %", news2Label: "0 puntos, riesgo bajo" },
-              medicalOrders: { statusLabel: "Firmado", items: ["Reposo relativo"], signature: { physicianName: "Dr. Guardia" } },
+              medicalOrders: {
+                statusLabel: "Firmado",
+                items: [{ title: "Reposo relativo", detail: "Cabecera a 30 grados", category: "Cuidados" }],
+                signature: { physicianName: "Dr. Guardia" },
+              },
             },
             activePrescription: {
               signedAt: "2026-09-21T10:00:00+00:00",
@@ -102,6 +106,8 @@ describe("expediente clínico (RF-38)", () => {
     expect(screen.queryByText(/proceso 1/i)).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /^admisión$/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tabpanel", { name: /^admisión$/i })).toHaveTextContent(/disnea/i);
+    expect(screen.getByRole("tabpanel", { name: /^admisión$/i })).toHaveTextContent(/reposo relativo/i);
+    expect(screen.getByRole("tabpanel", { name: /^admisión$/i })).toHaveTextContent(/cabecera a 30 grados/i);
 
     await user.click(screen.getByRole("tab", { name: /^constantes$/i }));
     expect(await screen.findByRole("img", { name: /gráfica evolutiva de pulso/i })).toBeInTheDocument();

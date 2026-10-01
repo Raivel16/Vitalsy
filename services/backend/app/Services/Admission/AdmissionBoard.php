@@ -510,12 +510,71 @@ class AdmissionBoard
         $encounter = $this->locate($encounterId);
         $payload = $encounter->clinical_payload ?? [];
         $orders = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
+        $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : [];
+        $vitals = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : [];
+        $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : [];
+        $risks = is_array($payload['risks'] ?? null) ? $payload['risks'] : [];
+
+        $medications = [];
+        foreach ($reconciliation['medications'] ?? [] as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $medications[] = [
+                'name' => trim((string) ($item['name'] ?? '')),
+                'dose' => trim((string) ($item['dose'] ?? '')),
+                'route' => trim((string) ($item['route'] ?? '')),
+                'frequency' => trim((string) ($item['frequency'] ?? '')),
+            ];
+        }
 
         return [
             'status' => $orders['status'] ?? 'pendiente',
             'statusLabel' => $orders['statusLabel'] ?? 'Pendiente de firma',
-            'items' => $orders['items'] ?? ['Reposo relativo', 'Oxígeno si SpO2 menor de 92 %'],
+            'items' => $this->normalizeOrderItems($orders['items'] ?? []),
+            'chiefComplaint' => $assessment['chiefComplaint'] ?? null,
+            'allergies' => array_values(array_filter($assessment['allergies'] ?? [], fn ($item) => is_string($item) && trim($item) !== '')),
+            'history' => is_string($assessment['history'] ?? null) ? $assessment['history'] : null,
+            'vitals' => [
+                'summary' => is_string($vitals['summary'] ?? null) ? $vitals['summary'] : null,
+                'news2Label' => is_string($vitals['news2Label'] ?? null) ? $vitals['news2Label'] : null,
+            ],
+            'reconciliation' => [
+                'medications' => $medications,
+                'noHomeMedications' => (bool) ($reconciliation['noHomeMedications'] ?? false),
+                'notes' => is_string($reconciliation['notes'] ?? null) ? $reconciliation['notes'] : null,
+                'alerts' => array_values(array_filter($reconciliation['alerts'] ?? [], fn ($alert) => is_string($alert) && trim($alert) !== '')),
+            ],
+            'risks' => [
+                'fallRisk' => is_string($risks['fallRisk'] ?? null) ? $risks['fallRisk'] : null,
+                'pressureRisk' => is_string($risks['pressureRisk'] ?? null) ? $risks['pressureRisk'] : null,
+            ],
         ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $items
+     * @return array<string, mixed>
+     */
+    public function saveMedicalOrders(string $encounterId, array $items): array
+    {
+        $this->ensureDemo();
+        $encounter = $this->locate($encounterId);
+        $payload = $encounter->clinical_payload ?? [];
+        $existing = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
+        if (($existing['status'] ?? '') === 'firmado') {
+            throw new AdmissionBoardException('Las indicaciones ya fueron firmadas.', 422);
+        }
+
+        $payload['medicalOrders'] = [
+            'status' => $existing['status'] ?? 'pendiente',
+            'statusLabel' => $existing['statusLabel'] ?? 'Pendiente de firma',
+            'items' => $this->normalizeOrderItems($items),
+        ];
+        $encounter->clinical_payload = $payload;
+        $encounter->save();
+
+        return $this->medicalOrders($encounterId);
     }
 
     /**
@@ -527,11 +586,22 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
         $payload = $encounter->clinical_payload ?? [];
+        $existing = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
+        $rawItems = $signature['items'] ?? null;
+        $items = $this->normalizeOrderItems(is_array($rawItems) ? $rawItems : ($existing['items'] ?? []));
+        $filled = array_values(array_filter($items, fn (array $item) => trim($item['title']) !== ''));
+        if ($filled === []) {
+            throw new AdmissionBoardException('Debe registrar al menos una indicación.', 422);
+        }
+
         $payload['medicalOrders'] = [
             'status' => 'firmado',
             'statusLabel' => 'Firmado',
-            'items' => $payload['medicalOrders']['items'] ?? ['Reposo relativo', 'Oxígeno si SpO2 menor de 92 %'],
-            'signature' => $signature,
+            'items' => $filled,
+            'signature' => [
+                'physicianName' => $signature['physicianName'],
+                'credential' => $signature['credential'],
+            ],
         ];
         $encounter->clinical_payload = $payload;
         $encounter->save();
@@ -541,6 +611,31 @@ class AdmissionBoard
             'physicianName' => $signature['physicianName'],
             'credential' => $signature['credential'],
         ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $items
+     * @return list<array{title: string, detail: string, category: string}>
+     */
+    private function normalizeOrderItems(array $items): array
+    {
+        $normalized = [];
+        foreach ($items as $item) {
+            if (is_string($item)) {
+                $normalized[] = ['title' => trim($item), 'detail' => '', 'category' => ''];
+                continue;
+            }
+            if (! is_array($item)) {
+                continue;
+            }
+            $normalized[] = [
+                'title' => trim((string) ($item['title'] ?? '')),
+                'detail' => trim((string) ($item['detail'] ?? '')),
+                'category' => trim((string) ($item['category'] ?? '')),
+            ];
+        }
+
+        return $normalized;
     }
 
     private function locate(string $encounterId): AdmissionEncounter

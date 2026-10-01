@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -25,6 +25,29 @@ const encounter = {
   progress: [],
 };
 
+const emptyOrders = {
+  status: "pendiente",
+  statusLabel: "Pendiente de firma",
+  items: [],
+  chiefComplaint: "Disnea de dos días",
+  allergies: ["Penicilina"],
+  history: "HTA controlada",
+  vitals: {
+    summary: "FR 22, SpO2 94 %",
+    news2Label: "5 puntos, riesgo medio",
+  },
+  reconciliation: {
+    medications: [{ name: "Losartán", dose: "50 mg", route: "oral", frequency: "cada 24 horas" }],
+    noHomeMedications: false,
+    notes: "Toma matutina",
+    alerts: ["Revisar presión arterial."],
+  },
+  risks: {
+    fallRisk: "Riesgo alto de caídas, 45 puntos",
+    pressureRisk: "Riesgo leve de úlceras, 18 puntos",
+  },
+};
+
 describe("indicaciones médicas basales", () => {
   beforeEach(() => {
     sessionStorage.setItem("vitalsy-role", "medico_residente");
@@ -35,40 +58,65 @@ describe("indicaciones médicas basales", () => {
     vi.unstubAllGlobals();
   });
 
-  it("muestra el documento pendiente y exige la confirmación para firmar", async () => {
+  it("permite registrar ítems y exige la confirmación para firmar", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn()
-        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
-        .mockResolvedValueOnce(jsonResponse(200, {
-          orders: {
-            status: "pendiente",
-            statusLabel: "Pendiente de firma",
-            items: ["Reposo relativo", "Oxígeno si SpO2 menor de 92 %"],
-          },
-        }))
-        .mockResolvedValueOnce(jsonResponse(201, {
-          signature: { status: "firmado", physicianName: "Dr. Mateo Salas" },
-        }))
-        .mockResolvedValueOnce(jsonResponse(200, {
+    const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/medical-orders/") && init?.method === "PUT") {
+        const body = JSON.parse(String(init.body));
+        return jsonResponse(200, { orders: { ...emptyOrders, items: body.items } });
+      }
+      if (url.includes("/sign") && init?.method === "POST") {
+        return jsonResponse(201, { signature: { status: "firmado", physicianName: "Dr. Mateo Salas" } });
+      }
+      if (url.includes("/advance")) {
+        return jsonResponse(200, {
           encounter: { ...encounter, currentStep: "cerrado", nextRole: null, statusLabel: "Ingreso cerrado" },
-        })),
-    );
+        });
+      }
+      if (url.includes("/medical-orders/")) {
+        return jsonResponse(200, { orders: emptyOrders });
+      }
+      return jsonResponse(200, { encounter });
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     renderApp("/medico/indicaciones?ingreso=ENC-0001");
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/pendiente de firma/i);
-    expect(screen.getByText(/reposo relativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/no hay prescripciones/i)).toBeInTheDocument();
+    expect(screen.queryByText(/omeprazol/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cie-10/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Disnea de dos días")).toBeInTheDocument();
+    expect(screen.getByText("Penicilina")).toBeInTheDocument();
+    expect(screen.getByLabelText(/revisión de enfermería/i)).toHaveTextContent(/5 puntos, riesgo medio/i);
+    expect(screen.getByLabelText(/revisión de enfermería/i)).toHaveTextContent(/losartán/i);
+    expect(screen.getByText(/hta controlada/i)).toBeInTheDocument();
+    expect(screen.getByText(/riesgo alto de caídas/i)).toBeInTheDocument();
 
+    expect(screen.getByRole("button", { name: /firmar indicaciones/i })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: /editar prescripciones/i }));
+    await user.type(screen.getByLabelText(/indicación 1/i), "Reposo relativo");
+    await user.type(screen.getByLabelText(/^detalle$/i), "Cabecera a 30 grados");
+    await user.click(screen.getByRole("button", { name: /^listo$/i }));
+    expect(await screen.findByText("Reposo relativo")).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(/nombre del médico/i));
+    await user.click(screen.getByLabelText(/confirmo y firmo las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
     expect(screen.getByLabelText(/nombre del médico/i)).toHaveAttribute("aria-invalid", "true");
 
     await user.type(screen.getByLabelText(/nombre del médico/i), "Dr. Mateo Salas");
     await user.type(screen.getByLabelText(/colegiatura/i), "CMP 12345");
-    await user.click(screen.getByLabelText(/confirmo la firma de las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
 
-    expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);
+    await waitFor(() => {
+      expect(screen.getByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);
+    });
+    const signCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/sign"));
+    expect(JSON.parse(String(signCall?.[1]?.body)).items[0]).toMatchObject({
+      title: "Reposo relativo",
+      detail: "Cabecera a 30 grados",
+    });
   });
 
   it("permite al médico tratante abrir y firmar indicaciones", async () => {
@@ -76,28 +124,31 @@ describe("indicaciones médicas basales", () => {
     sessionStorage.setItem("vitalsy-role", "medico_tratante");
     vi.stubGlobal(
       "fetch",
-      vi.fn()
-        .mockResolvedValueOnce(jsonResponse(200, { encounter }))
-        .mockResolvedValueOnce(jsonResponse(200, {
-          orders: {
-            status: "pendiente",
-            statusLabel: "Pendiente de firma",
-            items: ["Reposo relativo"],
-          },
-        }))
-        .mockResolvedValueOnce(jsonResponse(201, {
-          signature: { status: "firmado", physicianName: "Dra. Tratante" },
-        }))
-        .mockResolvedValueOnce(jsonResponse(200, {
-          encounter: { ...encounter, currentStep: "cerrado", nextRole: null, statusLabel: "Ingreso cerrado" },
-        })),
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/sign") && init?.method === "POST") {
+          return jsonResponse(201, { signature: { status: "firmado", physicianName: "Dra. Tratante" } });
+        }
+        if (url.includes("/advance")) {
+          return jsonResponse(200, {
+            encounter: { ...encounter, currentStep: "cerrado", nextRole: null, statusLabel: "Ingreso cerrado" },
+          });
+        }
+        if (url.includes("/medical-orders/") && !url.includes("/sign")) {
+          return jsonResponse(200, {
+            orders: { ...emptyOrders, items: [{ title: "Reposo relativo", detail: "", category: "" }] },
+          });
+        }
+        return jsonResponse(200, { encounter });
+      }),
     );
 
     renderApp("/medico/indicaciones?ingreso=ENC-0001");
     expect(await screen.findByRole("heading", { name: /indicaciones médicas basales/i })).toBeInTheDocument();
+    await user.clear(screen.getByLabelText(/nombre del médico/i));
     await user.type(screen.getByLabelText(/nombre del médico/i), "Dra. Tratante");
     await user.type(screen.getByLabelText(/colegiatura/i), "CMP 99887");
-    await user.click(screen.getByLabelText(/confirmo la firma de las indicaciones/i));
+    await user.click(screen.getByLabelText(/confirmo y firmo las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);
   });

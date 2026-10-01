@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\Admission\AdmissionBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class HospitalAdmissionApiTest extends TestCase
@@ -200,7 +201,7 @@ class HospitalAdmissionApiTest extends TestCase
             'temperature' => 36.8,
         ])->assertStatus(422);
 
-        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+        $stored = $this->postJson('/api/v1/hospital-admission/vital-signs', [
             'encounterId' => 'ENC-0001',
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
@@ -211,10 +212,13 @@ class HospitalAdmissionApiTest extends TestCase
             'pulse' => 72,
             'consciousness' => 'alert',
             'temperature' => 36.8,
-        ])->assertCreated()
+        ]);
+        $stored->assertCreated()
             ->assertJsonMissingPath('simulated')
             ->assertJsonPath('news2.total', 0)
-            ->assertJsonPath('news2.visualLabel', 'Riesgo bajo');
+            ->assertJsonPath('news2.visualLabel', 'Riesgo bajo')
+            ->assertJsonPath('alertActivated', false);
+        $this->assertNotNull($stored->json('nextControlAt'));
 
         $this->assertDatabaseHas('vital_sign_readings', [
             'encounter_id' => 'ENC-0001',
@@ -222,6 +226,44 @@ class HospitalAdmissionApiTest extends TestCase
             'dbp' => 80,
         ]);
         $this->assertSame(1, VitalSignReading::query()->where('encounter_id', 'ENC-0001')->count());
+        $this->assertDatabaseMissing('clinical_alerts', [
+            'encounter_id' => 'ENC-0001',
+            'source' => 'news2',
+        ]);
+        $this->assertDatabaseHas('monitoring_schedules', [
+            'encounter_id' => 'ENC-0001',
+            'frequency_minutes' => 720,
+        ]);
+    }
+
+    public function test_admission_vitals_with_news2_open_a_clinical_alert(): void
+    {
+        $this->seedEncounter('ENC-ALERT', 'OI-2026-ALERT');
+        $this->asRole('enfermera_piso');
+
+        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+            'encounterId' => 'ENC-ALERT',
+            'respiratoryRate' => 25,
+            'oxygenSaturation' => 98,
+            'spo2Scale' => 'scale1',
+            'supplementalOxygen' => false,
+            'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80,
+            'pulse' => 72,
+            'consciousness' => 'alert',
+            'temperature' => 36.8,
+        ])->assertCreated()
+            ->assertJsonPath('alertActivated', true)
+            ->assertJsonPath('nextControlAt', null);
+
+        $this->assertDatabaseHas('clinical_alerts', [
+            'encounter_id' => 'ENC-ALERT',
+            'source' => 'news2',
+        ]);
+        $this->assertDatabaseMissing('monitoring_schedules', [
+            'encounter_id' => 'ENC-ALERT',
+        ]);
+        $this->assertSame(1, VitalSignReading::query()->where('encounter_id', 'ENC-ALERT')->count());
     }
 
     public function test_reconciliation_risk_kardex_and_signature(): void
@@ -284,10 +326,20 @@ class HospitalAdmissionApiTest extends TestCase
             'confirmed' => false,
         ])->assertStatus(422);
 
+        $this->putJson('/api/v1/hospital-admission/medical-orders/ENC-0001', [
+            'items' => [
+                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('orders.items.0.title', 'Reposo relativo');
+
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-0001/sign', [
             'physicianName' => 'Dr. Mateo Salas',
             'credential' => 'CMP 12345',
             'confirmed' => true,
+            'items' => [
+                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+            ],
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
     }
 
@@ -349,6 +401,136 @@ class HospitalAdmissionApiTest extends TestCase
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY')
             ->assertOk()
             ->assertJsonPath('orders.statusLabel', 'Pendiente de firma')
-            ->assertJsonFragment(['Reposo relativo']);
+            ->assertJsonPath('orders.items', []);
+
+        $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY/sign', [
+            'physicianName' => 'Dr. Mateo Salas',
+            'credential' => 'CMP 12345',
+            'confirmed' => true,
+            'items' => [],
+        ])->assertStatus(422);
+
+        $this->asRole('admision');
+        $this->putJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY', [
+            'items' => [['title' => 'Reposo relativo']],
+        ])->assertForbidden();
+    }
+
+    public function test_signing_orders_creates_basal_emar_plan_from_bpmh(): void
+    {
+        Carbon::setTestNow('2026-09-21 14:30:00');
+        $this->seedEncounter('ENC-BPMH', 'OI-2026-BPMH', [
+            'assessment' => [
+                'chiefComplaint' => 'Disnea de dos días',
+                'allergies' => ['Penicilina'],
+                'history' => 'HTA controlada',
+            ],
+            'vitals' => [
+                'summary' => 'FR 22, SpO2 94 %, PA 150/90, pulso 98, 37.4 °C',
+                'news2Label' => '5 puntos, riesgo medio',
+            ],
+            'risks' => [
+                'fallRisk' => 'Riesgo alto de caídas, 45 puntos',
+                'pressureRisk' => 'Riesgo leve de úlceras por presión, 18 puntos',
+            ],
+            'reconciliation' => [
+                'noHomeMedications' => false,
+                'medications' => [[
+                    'name' => 'Losartán',
+                    'dose' => '50 mg',
+                    'frequency' => 'cada 8 horas',
+                ]],
+                'alerts' => ['Revisar presión arterial.'],
+                'notes' => 'Toma matutina',
+            ],
+        ]);
+
+        $this->asRole('medico_residente');
+        $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-BPMH')
+            ->assertOk()
+            ->assertJsonPath('orders.chiefComplaint', 'Disnea de dos días')
+            ->assertJsonPath('orders.history', 'HTA controlada')
+            ->assertJsonPath('orders.vitals.news2Label', '5 puntos, riesgo medio')
+            ->assertJsonPath('orders.risks.fallRisk', 'Riesgo alto de caídas, 45 puntos')
+            ->assertJsonPath('orders.reconciliation.medications.0.name', 'Losartán')
+            ->assertJsonPath('orders.reconciliation.notes', 'Toma matutina')
+            ->assertJsonPath('orders.reconciliation.alerts.0', 'Revisar presión arterial.');
+
+        $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-BPMH/sign', [
+            'physicianName' => 'Dr. Mateo Salas',
+            'credential' => 'CMP 12345',
+            'confirmed' => true,
+            'items' => [
+                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+            ],
+        ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
+
+        $this->assertDatabaseHas('prescriptions', [
+            'encounter_id' => 'ENC-BPMH',
+            'status' => 'activo',
+        ]);
+        $this->assertDatabaseHas('prescription_items', [
+            'drug_name' => 'Losartán',
+            'dose' => '50 mg',
+            'route' => 'oral',
+            'frequency' => 'cada 8 horas',
+        ]);
+        $this->assertDatabaseMissing('prescription_items', [
+            'drug_name' => 'Reposo relativo',
+        ]);
+
+        $this->asRole('enfermera_piso');
+        $this->getJson('/api/v1/inpatient-care/encounters/ENC-BPMH/emar')
+            ->assertOk()
+            ->assertJsonPath('hasActivePrescription', true)
+            ->assertJsonFragment(['drugName' => 'Losartán', 'status' => 'pendiente']);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_signing_without_home_medications_does_not_create_a_plan(): void
+    {
+        $this->seedEncounter('ENC-NOMED', 'OI-2026-NOMED', [
+            'reconciliation' => [
+                'noHomeMedications' => true,
+                'medications' => [],
+            ],
+        ]);
+
+        $this->asRole('medico_tratante');
+        $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-NOMED/sign', [
+            'physicianName' => 'Dra. Tratante Demo',
+            'credential' => 'CMP 55443',
+            'confirmed' => true,
+            'items' => [
+                ['title' => 'Dieta blanda', 'detail' => '', 'category' => 'Dieta'],
+            ],
+        ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
+
+        $this->assertDatabaseMissing('prescriptions', [
+            'encounter_id' => 'ENC-NOMED',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $clinical
+     */
+    private function seedEncounter(string $encounterId, string $orderNumber, array $clinical = []): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => $encounterId,
+            'order_number' => $orderNumber,
+            'source' => 'manual',
+            'patient_name' => 'Paciente de prueba',
+            'document_type' => 'DNI',
+            'document_number' => '99887766',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'SIS',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => $clinical,
+        ]);
     }
 }
