@@ -79,8 +79,8 @@ Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los paso
 | RF-07 | Orden de traslado | Continuar → traslado | Celador / Camillero | Cada `OT-…` muestra al paciente dueño de ese código. |
 | RF-08 | Verificar brazalete | Continuar → identidad | Celador / Camillero | Cada `BRZ-…` confirma solo a su paciente; el escaneo valida solo. |
 | RF-09 | Recepción en piso | Continuar → recepción | Enfermera de piso | Confirma llegada al lecho asignado. |
-| RF-10 | Reubicación | Recepción → reubicación | Enfermera de piso | Motivo, habitación y lecho solicitados; notifica a la central. |
-| RF-11–RF-16 | Valoración a indicaciones | Continuar según el paso | Enfermería / Médico | Registrar en cada pantalla avanza el ingreso. En constantes, la PA se guarda como sistólica/diastólica (NEWS2 usa solo la sistólica). En conciliación, «sin medicación habitual» también avanza. |
+| RF-10 | Reubicación | Recepción → reubicación | Enfermera de piso | Elige un lecho disponible del censo M5 (`GET /beds/available`) y un motivo; notifica a la central, no asigna la cama. |
+| RF-11–RF-16 | Valoración a indicaciones | Continuar según el paso | Enfermería / Médico | Registrar en cada pantalla avanza el ingreso. En constantes, la PA se guarda como sistólica/diastólica (NEWS2 usa solo la sistólica). Un NEWS2 de 1 o más abre alerta (`clinical_alerts`, `source=news2`); NEWS2 0 no abre alerta y programa el control a 12 h. En conciliación, «sin medicación habitual» también avanza. En indicaciones, el médico ve la valoración, NEWS2, BPMH y escalas, redacta ítems libres (`PUT /medical-orders/{id}`) y firma. Esa firma crea el plan basal CPOE desde el BPMH (vía `oral` si falta) para que el e-MAR liste dosis; «sin medicación habitual» no crea plan. Los ítems libres no se convierten en fármacos. |
 | RF-17 | Censo | `/pacientes` | Todos | Lista pacientes y Continuar solo si es su turno. |
 | RF-19 | Continuar paso vigente | Censo / ficha | Todos | Abre la actividad con el paciente ya identificado. |
 | RF-20 | Buscar por brazalete | Censo → Escanear brazalete | Todos | Filtra el listado por el código leído. |
@@ -104,3 +104,5 @@ Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los paso
 ```
 
 Respuesta `201` con el `encounter` creado en el paso de orden.
+
+`GET /api/v1/beds/available` (autenticado, rol `enfermera_piso`, `gestion_camas` o `enfermera_supervisora`): lista solo lechos `status=available` del censo M5 para que la reubicación (RF-10) notifique un destino real. No asigna la cama.
