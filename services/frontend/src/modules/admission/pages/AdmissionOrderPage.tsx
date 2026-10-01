@@ -109,7 +109,7 @@ export function AdmissionOrderPage() {
   }
 
   return (
-    <Sheet kicker="Admisión hospitalaria" title="Orden de internamiento">
+    <Sheet kicker="Admisión hospitalaria" title="Orden de internamiento" clinic="form">
       <p className="lead">
         {encounter
           ? `Consulte la orden de internamiento de ${encounter.patientName}.`

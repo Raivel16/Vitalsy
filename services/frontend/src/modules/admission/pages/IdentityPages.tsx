@@ -32,7 +32,7 @@ export function WristbandPage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Admisión" title="Brazalete de identificación">
+      <Sheet kicker="Admisión" title="Brazalete de identificación" clinic="form">
         <EmptyEncounter message="Abra un paciente desde el censo para emitir su brazalete." />
       </Sheet>
     );
@@ -67,7 +67,7 @@ export function WristbandPage() {
   }
 
   return (
-    <Sheet kicker="Admisión" title="Brazalete de identificación">
+    <Sheet kicker="Admisión" title="Brazalete de identificación" clinic="form">
       <p className="lead">Genere y verifique el identificador físico del paciente antes de la entrega o colocación en cama.</p>
       {notice ? (
         <div className="admit-callout">
@@ -123,7 +123,7 @@ export function RecordPage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Admisión" title="Expediente clínico de ingreso">
+      <Sheet kicker="Admisión" title="Expediente clínico de ingreso" clinic="form">
         <EmptyEncounter message="Abra un paciente desde el censo para aperturar su expediente." />
       </Sheet>
     );
@@ -154,7 +154,7 @@ export function RecordPage() {
   }
 
   return (
-    <Sheet kicker="Admisión hospitalaria" title="Expediente clínico de ingreso">
+    <Sheet kicker="Admisión hospitalaria" title="Expediente clínico de ingreso" clinic="form">
       <p className="lead">Formalice la apertura del registro institucional del paciente antes del traslado a sala de hospitalización.</p>
       <div className="admit-panel">
         <div className="admit-panel-head">
@@ -232,7 +232,7 @@ export function ConsentPage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Admisión" title="Consentimiento informado">
+      <Sheet kicker="Admisión" title="Consentimiento informado" clinic="form">
         <EmptyEncounter message="Abra un paciente desde el censo para registrar el consentimiento." />
       </Sheet>
     );
@@ -275,7 +275,7 @@ export function ConsentPage() {
   }
 
   return (
-    <Sheet kicker="Admisión hospitalaria" title="Consentimiento informado">
+    <Sheet kicker="Admisión hospitalaria" title="Consentimiento informado" clinic="form">
       <p className="lead">
         Registre la declaración de aceptación del ingreso hospitalario y procedimientos médicos reglamentarios por parte del paciente o apoderado legal.
       </p>

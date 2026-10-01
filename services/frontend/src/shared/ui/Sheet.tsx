@@ -15,7 +15,7 @@ export function Sheet({
   wide?: boolean;
   framed?: boolean;
   aside?: ReactNode;
-  clinic?: "form" | "board";
+  clinic?: "form" | "board" | "file";
 }) {
   const head = (
     <header className="page-head">
@@ -27,7 +27,24 @@ export function Sheet({
     </header>
   );
 
-  const clinicClass = clinic === "board" ? "clinic-sheet clinic-board" : clinic === "form" ? "clinic-sheet clinic-form" : "";
+  const clinicClass = clinic === "board"
+    ? "clinic-sheet clinic-board"
+    : clinic === "file"
+      ? "clinic-sheet clinic-file"
+      : clinic === "form"
+        ? "clinic-sheet clinic-form"
+        : "";
+
+  if (clinic === "file") {
+    return (
+      <article className={["sheet", "sheet-wide", clinicClass].filter(Boolean).join(" ")}>
+        <div className="sheet-surface">
+          {head}
+          {children}
+        </div>
+      </article>
+    );
+  }
 
   if (clinic === "board") {
     return (

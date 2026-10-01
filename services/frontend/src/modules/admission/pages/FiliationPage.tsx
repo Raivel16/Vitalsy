@@ -47,7 +47,7 @@ export function FiliationPage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Admisión" title="Datos filiatorios">
+      <Sheet kicker="Admisión" title="Datos filiatorios" clinic="form">
         <EmptyEncounter message="Abra un paciente desde el censo para validar su filiación." />
       </Sheet>
     );
@@ -99,7 +99,7 @@ export function FiliationPage() {
   }
 
   return (
-    <Sheet kicker="Admisión hospitalaria" title="Datos filiatorios">
+    <Sheet kicker="Admisión hospitalaria" title="Datos filiatorios" clinic="form">
       <p className="lead">Verifique y valide la identidad del paciente con su documento oficial presentado en ventanilla.</p>
       <div className="admit-callout">
         <strong>Cotejo dactiloscópico y visual</strong>

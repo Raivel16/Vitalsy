@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { IconUserCheck, IconEraser, IconX } from "@tabler/icons-react";
+import { IconAlertCircle, IconBuildingBank, IconEraser, IconHash, IconHourglass, IconId, IconIdBadge2, IconShield, IconUserCheck, IconX } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -102,6 +102,7 @@ export function PatientRegistrationPage() {
     <Sheet
       kicker="Admisión"
       title="Registrar ingreso"
+      clinic="form"
       aside={<span className="sheet-badge">Protocolo Adm-01</span>}
     >
       <p className="lead">
@@ -118,6 +119,7 @@ export function PatientRegistrationPage() {
             hint="Correlativo interno del sistema de triaje."
             labelAside="Autoasignable"
             placeholder="Ej. OI-2026-0104"
+            icon={<IconHash size={18} />}
             required
           />
           <TextField
@@ -130,6 +132,7 @@ export function PatientRegistrationPage() {
             hint="Solo dígitos."
             labelAside="(Solo dígitos)"
             placeholder="DNI / Carnet extranjería"
+            icon={errors.documentNumber ? <IconAlertCircle size={18} /> : <IconId size={18} />}
             required
           />
           <TextField
@@ -140,6 +143,7 @@ export function PatientRegistrationPage() {
             error={errors.patientName}
             hint="Registre según documento nacional oficial."
             placeholder="Apellidos y nombres completos"
+            icon={<IconIdBadge2 size={18} />}
             wide
             required
           />
@@ -161,13 +165,14 @@ export function PatientRegistrationPage() {
             value={coveragePayer}
             onChange={(event) => setCoveragePayer(event.target.value)}
             error={errors.coveragePayer}
+            icon={<IconBuildingBank size={18} />}
             required
           >
             {PAYERS.map((payer) => (
               <option key={payer} value={payer}>{payer}</option>
             ))}
           </SelectField>
-          <SelectField id="reg-coverage" label="Estado de cobertura" value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value)} required>
+          <SelectField id="reg-coverage" label="Estado de cobertura" value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value)} icon={<IconHourglass size={18} />} required>
             <option value="aprobada">Aprobada</option>
             <option value="pendiente">Pendiente de verificación</option>
             <option value="rechazada">Rechazada</option>
@@ -179,6 +184,7 @@ export function PatientRegistrationPage() {
             onChange={(event) => setCoveragePlan(event.target.value)}
             error={errors.coveragePlan}
             hint="Plan esencial de aseguramiento en salud."
+            icon={<IconShield size={18} />}
             required
           />
           <TextAreaField

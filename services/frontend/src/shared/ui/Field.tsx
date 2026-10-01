@@ -9,6 +9,7 @@ type Shared = {
   compact?: boolean;
   hideLabel?: boolean;
   labelAside?: ReactNode;
+  icon?: ReactNode;
 };
 
 function describedBy(id: string, error?: string, hint?: string) {
@@ -37,11 +38,35 @@ function fieldClass(wide?: boolean, compact?: boolean) {
   return [wide ? "field form-span-2" : "field", compact ? "field-compact" : ""].filter(Boolean).join(" ");
 }
 
-export function TextField({ id, label, error, hint, wide, compact, hideLabel, labelAside, ...props }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+export function UnitField({
+  id,
+  label,
+  unit,
+  abbr,
+  error,
+  compact = true,
+  ...props
+}: Shared & InputHTMLAttributes<HTMLInputElement> & { unit: string; abbr?: string }) {
   return (
-    <div className={fieldClass(wide, compact)}>
+    <div className={fieldClass(false, compact)}>
+      <FieldLabel id={id} label={label} labelAside={abbr} />
+      <div className="unit-control">
+        <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error)} {...props} />
+        <span className="unit-chip">{unit}</span>
+      </div>
+      {error ? <p id={`${id}-error`} className="field-error">{error}</p> : null}
+    </div>
+  );
+}
+
+export function TextField({ id, label, error, hint, wide, compact, hideLabel, labelAside, icon, ...props }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div className={[fieldClass(wide, compact), error ? "has-error" : ""].filter(Boolean).join(" ")}>
       <FieldLabel id={id} label={label} labelAside={labelAside} hideLabel={hideLabel} />
-      <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props} />
+      <div className={icon ? "field-control" : undefined}>
+        <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props} />
+        {icon ? <span className="field-icon" aria-hidden>{icon}</span> : null}
+      </div>
       <FieldMeta id={id} error={error} hint={hint} />
     </div>
   );
@@ -57,13 +82,16 @@ export function TextAreaField({ id, label, error, hint, wide, compact, hideLabel
   );
 }
 
-export function SelectField({ id, label, error, hint, wide, compact, hideLabel, labelAside, children, ...props }: Shared & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+export function SelectField({ id, label, error, hint, wide, compact, hideLabel, labelAside, icon, children, ...props }: Shared & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   return (
-    <div className={fieldClass(wide, compact)}>
+    <div className={[fieldClass(wide, compact), error ? "has-error" : ""].filter(Boolean).join(" ")}>
       <FieldLabel id={id} label={label} labelAside={labelAside} hideLabel={hideLabel} />
-      <select id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props}>
-        {children}
-      </select>
+      <div className={icon ? "field-control" : undefined}>
+        <select id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error, hint)} {...props}>
+          {children}
+        </select>
+        {icon ? <span className="field-icon" aria-hidden>{icon}</span> : null}
+      </div>
       <FieldMeta id={id} error={error} hint={hint} />
     </div>
   );

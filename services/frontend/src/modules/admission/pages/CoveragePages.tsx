@@ -78,14 +78,14 @@ export function CoveragePage() {
 
   if (!encounter) {
     return (
-      <Sheet kicker="Admisión" title="Cobertura sanitaria">
+      <Sheet kicker="Admisión" title="Cobertura sanitaria" clinic="form">
         <EmptyEncounter message="Abra un paciente desde el censo para validar su cobertura." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Admisión" title="Cobertura sanitaria">
+    <Sheet kicker="Admisión" title="Cobertura sanitaria" clinic="form">
       <p className="lead">
         Valide la cobertura del financiador de salud para asegurar la continuidad de prestaciones hospitalarias.
       </p>
@@ -192,7 +192,7 @@ export function ReferralPage() {
   }
 
   return (
-    <Sheet kicker="Admisión" title="Derivación de cobertura">
+    <Sheet kicker="Admisión" title="Derivación de cobertura" clinic="form">
       <p className="lead">
         {encounter
           ? `Registre el trámite de cobertura de ${encounter.patientName} y el aviso al familiar.`
