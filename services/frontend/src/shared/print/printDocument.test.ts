@@ -1,7 +1,7 @@
 import { printClinicalDocument } from "./printDocument";
 
 describe("printClinicalDocument", () => {
-  it("crea un iframe de impresión con el título del documento", () => {
+  it("crea un iframe de impresiÃ³n con el tÃ­tulo del documento", () => {
     printClinicalDocument("Orden de internamiento", "<p>OI-2026-0001</p>");
     expect(document.querySelector("iframe[data-print-document='Orden de internamiento']")).toBeTruthy();
   });

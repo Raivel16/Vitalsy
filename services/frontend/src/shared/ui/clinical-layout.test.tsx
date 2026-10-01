@@ -12,27 +12,27 @@ import {
   bedTone,
 } from "./clinical";
 
-describe("piezas de layout clínico", () => {
-  it("muestra una métrica con su valor", () => {
+describe("piezas de layout clÃ­nico", () => {
+  it("muestra una mÃ©trica con su valor", () => {
     render(<MetricRow items={[{ label: "Disponibles", value: 4 }]} />);
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(screen.getByText("Disponibles")).toBeInTheDocument();
   });
 
-  it("dibuja un tile de métrica con etiqueta y valor", () => {
+  it("dibuja un tile de mÃ©trica con etiqueta y valor", () => {
     render(<StatTile label="Alertas abiertas" value={2} hint="activas" tone="danger" />);
     expect(screen.getByText("Alertas abiertas")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("activas")).toBeInTheDocument();
   });
 
-  it("renderiza una fila de cola con chip y acción", () => {
+  it("renderiza una fila de cola con chip y acciÃ³n", () => {
     render(
       <MemoryRouter>
         <ul>
           <QueueRow
-            name="Ana María Quispe"
-            meta="Habitación 312-B · Medicina Interna"
+            name="Ana MarÃ­a Quispe"
+            meta="HabitaciÃ³n 312-B Â· Medicina Interna"
             tone="success"
             chip="NEWS2 0"
             action={{ to: "/atencion/emar", label: "Continuar e-MAR" }}
@@ -40,7 +40,7 @@ describe("piezas de layout clínico", () => {
         </ul>
       </MemoryRouter>,
     );
-    expect(screen.getByText("Ana María Quispe")).toBeInTheDocument();
+    expect(screen.getByText("Ana MarÃ­a Quispe")).toBeInTheDocument();
     expect(screen.getByText(/312-B/)).toBeInTheDocument();
     expect(screen.getByText("NEWS2 0")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /continuar e-mar/i })).toHaveAttribute("href", "/atencion/emar");
@@ -63,7 +63,7 @@ describe("piezas de layout clínico", () => {
     expect(mark).toHaveClass("status-mark", "status-occupied");
   });
 
-  it("dibuja el lecho con habitación, código y aislamiento", () => {
+  it("dibuja el lecho con habitaciÃ³n, cÃ³digo y aislamiento", () => {
     render(<BedTile room="301" code="A" status="occupied" isolation />);
     expect(screen.getByText("301-A")).toBeInTheDocument();
     expect(screen.getByText("Aislamiento")).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("piezas de layout clínico", () => {
     expect(bedTone("otro")).toBe("neutral");
   });
 
-  it("agrupa contenido clínico en un panel con título", () => {
+  it("agrupa contenido clÃ­nico en un panel con tÃ­tulo", () => {
     render(<Panel title="Cola de trabajo">Pendientes del turno</Panel>);
     expect(screen.getByRole("heading", { name: /cola de trabajo/i })).toBeInTheDocument();
     expect(screen.getByText("Pendientes del turno")).toBeInTheDocument();

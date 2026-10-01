@@ -38,7 +38,7 @@ export function MetricRow({ items }: { items: Array<{ label: string; value: numb
   );
 }
 
-/** Tile compacto de métrica del dashboard (Inicio, Camas, Alertas). */
+/** Tile compacto de mÃ©trica del dashboard (Inicio, Camas, Alertas). */
 export function StatTile({
   label,
   value,
@@ -143,7 +143,7 @@ export function BedTile({
   );
 }
 
-/** Contenedor de una sola responsabilidad para bloques de una pantalla clínica. */
+/** Contenedor de una sola responsabilidad para bloques de una pantalla clÃ­nica. */
 export function Panel({
   title,
   aside,

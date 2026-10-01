@@ -29,7 +29,7 @@ export function printClinicalDocument(title: string, bodyHtml: string) {
     <p class="kicker">Vitalsy Clinical</p>
     <h1>${title}</h1>
     ${bodyHtml}
-    <footer>Documento generado para impresión institucional.</footer>
+    <footer>Documento generado para impresiÃ³n institucional.</footer>
   </body></html>`);
   doc.close();
   frame.onload = () => {
