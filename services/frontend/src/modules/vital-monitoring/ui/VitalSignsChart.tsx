@@ -57,7 +57,7 @@ function VitalLane({ lane, series }: { lane: Lane; series: ChartPoint[] }) {
     height - padY - ((value - min) / span) * (height - padY * 2);
 
   const path = series
-    .map((point, index) => {
+    .map((_point, index) => {
       const value = lane.values[index];
       if (value === null) return null;
       return `${index === 0 || lane.values[index - 1] === null ? "M" : "L"} ${xAt(index)} ${yAt(value)}`;
@@ -83,7 +83,7 @@ function VitalLane({ lane, series }: { lane: Lane; series: ChartPoint[] }) {
         {path ? (
           <path d={path} fill="none" stroke={lane.color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
         ) : null}
-        {series.map((point, index) => {
+        {series.map((_point, index) => {
           const value = lane.values[index];
           if (value === null) return null;
           const x = xAt(index);
