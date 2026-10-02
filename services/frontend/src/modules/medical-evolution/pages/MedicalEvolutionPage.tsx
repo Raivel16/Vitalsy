@@ -72,21 +72,23 @@ export function MedicalEvolutionPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Evolución médica">
+      <Sheet kicker="Nota clínica" title="Evolución médica" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para registrar la evolución." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Atención en piso" title="Evolución médica">
+    <Sheet kicker="Nota clínica" title="Evolución médica" wide clinic="file" className="floor-care">
       <p className="lead">
         Registre la evolución clínica del paciente
         {encounter ? ` ${encounter.patientName}` : ""} durante la visita.
       </p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
-      <form className="stack" onSubmit={onSubmit} noValidate>
+      <div className="split-board">
+      <form className="stack clinical-panel" onSubmit={onSubmit} noValidate>
+        <h3>Nueva nota de evolución</h3>
         <TextAreaField
           id="evolution-body"
           label="Nota de evolución"
@@ -104,10 +106,11 @@ export function MedicalEvolutionPage() {
           <Button type="submit" disabled={saving}>{saving ? "Registrando…" : "Registrar evolución"}</Button>
         </FormActions>
       </form>
+      <section className="note-feed clinical-panel" aria-label="Notas registradas">
+        <h3>Historial de notas anteriores</h3>
       {notes === null && !error ? <LoadingState label="Cargando evoluciones…" /> : null}
       {notes && notes.length > 0 ? (
-        <section className="note-feed" aria-label="Notas registradas">
-          <h3>Notas registradas</h3>
+        <>
           <ul className="note-feed-list">
             {notes.map((item) => (
               <li key={item.id} className="note-card">
@@ -119,8 +122,12 @@ export function MedicalEvolutionPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </>
+      ) : notes && notes.length === 0 ? (
+        <Feedback tone="info">Aún no hay notas de evolución en este ingreso.</Feedback>
       ) : null}
+      </section>
+      </div>
     </Sheet>
   );
 }

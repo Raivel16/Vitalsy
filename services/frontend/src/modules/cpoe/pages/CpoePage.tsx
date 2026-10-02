@@ -161,7 +161,7 @@ export function CpoePage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Prescripción electrónica (CPOE)">
+      <Sheet kicker="Plan terapéutico" title="Prescripción electrónica (CPOE)" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para gestionar la prescripción CPOE." />
       </Sheet>
     );
@@ -170,7 +170,7 @@ export function CpoePage() {
   const hasActive = Boolean(active && active.items.length > 0);
 
   return (
-    <Sheet kicker="Atención en piso" title="Prescripción electrónica (CPOE)" wide>
+    <Sheet kicker="Plan terapéutico" title="Prescripción electrónica (CPOE)" wide clinic="file" className="floor-care">
       <p className="lead">
         Gestione el plan terapéutico
         {encounter ? ` de ${encounter.patientName}` : ""}. Edite, elimine o agregue medicamentos de forma individual.
@@ -179,6 +179,8 @@ export function CpoePage() {
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
       {fieldError ? <Feedback tone="error">{fieldError}</Feedback> : null}
 
+      <div className="split-board split-main">
+      <div className="stack">
       <Panel title="Prescripción activa" aside={hasActive ? `Firmado vigente: ${formatDateTime(active!.signedAt)}` : undefined}>
         {!hasActive ? (
           <Feedback tone="info">No hay plan CPOE activo. Cree la primera prescripción abajo.</Feedback>
@@ -268,6 +270,7 @@ export function CpoePage() {
         </form>
         </Panel>
       ) : null}
+      </div>
 
       <Panel title="Kardex electrónico">
         {kardexMeds.length === 0 ? (
@@ -287,6 +290,7 @@ export function CpoePage() {
           </div>
         )}
       </Panel>
+      </div>
     </Sheet>
   );
 }

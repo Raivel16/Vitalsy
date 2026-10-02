@@ -131,4 +131,10 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `ComplianceAlertService` en `alerts:process-slas`: control/dosis vencida → alerta + sirena; cierra al completar; escala a supervisora.
 - Config: `emar_grace_minutes`, `compliance_ack_minutes`; columna `compliance_key`.
 
+### 2026-10-01 — Procesos 2 y 3, look Pizarra
+
+- Hojas de atención y alertas usan `clinic` + clase `floor-care` (pastillas, paneles hundidos, dos columnas, chips NEWS2).
+- `CaseBar` compacto (documento, estado, lecho) solo en `/atencion` y `/alertas`. El stepper de admisión no cambia.
+- Rama: `chore/ui-procesos-2-3-pizarra`.
+
 <!-- END AGENT ANNOTATIONS -->

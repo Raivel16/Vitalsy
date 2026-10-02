@@ -46,17 +46,17 @@ export function ClinicalVisitPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Visita médica">
+      <Sheet kicker="Pase de visita" title="Visita médica" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para la visita médica." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Atención en piso" title="Visita médica" wide>
+    <Sheet kicker="Pase de visita" title="Visita médica" wide clinic="file" className="floor-care">
       <p className="lead">
-        Consolida laboratorio, imágenes, notas de enfermería y gráfica de signos vitales
-        {encounter ? ` para ${encounter.patientName}` : ""}.
+        Resultados del día, notas de enfermería y gráfica de signos vitales
+        {encounter ? ` de ${encounter.patientName}` : ""}.
       </p>
       {loading ? <LoadingState label="Cargando visita…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}

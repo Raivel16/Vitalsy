@@ -11,7 +11,7 @@ import {
 import { validateVitalSigns } from "../../nursing-assessment/domain/vitalSigns";
 import { Button } from "../../../shared/ui/Button";
 import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
-import { TextField, SelectField } from "../../../shared/ui/Field";
+import { SelectField, UnitField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
@@ -138,7 +138,7 @@ export function VitalControlsPage() {
   const visibleErrors = submitted ? liveErrors : {};
 
   return (
-    <Sheet kicker="Atención en piso" title="Controles de constantes" wide>
+    <Sheet kicker="Cumplimiento del turno" title="Controles de constantes" wide clinic="file" className="floor-care">
       <p className="lead">
         Controles programados del turno (vencidos y próximos). Registre la toma para avanzar el plan, igual que el e-MAR con las dosis.
       </p>
@@ -162,7 +162,7 @@ export function VitalControlsPage() {
             </thead>
             <tbody>
               {controls.map((row) => (
-                <tr key={row.encounterId}>
+                <tr key={row.encounterId} className={selected?.encounterId === row.encounterId ? "is-selected" : undefined}>
                   <td>{formatDateTime(row.nextDueAt)}</td>
                   <td>{row.patientName}</td>
                   <td>{row.location ?? "—"}</td>
@@ -190,7 +190,7 @@ export function VitalControlsPage() {
       )}
 
       {selected ? (
-        <form className="stack result-block" onSubmit={onComplete} noValidate aria-label="Formulario de control">
+        <form className="stack result-block clinical-panel" onSubmit={onComplete} noValidate aria-label="Formulario de control">
           <h3>
             Control de {selected.patientName}
             {" · "}
@@ -199,23 +199,25 @@ export function VitalControlsPage() {
             </Link>
           </h3>
           <div className="form-grid">
-            <TextField
+            <UnitField
               id="ctrl-rr"
               label="Frecuencia respiratoria"
+              unit="rpm"
+              abbr="FR"
               inputMode="numeric"
               value={fields.respiratoryRate}
               onChange={(e) => update("respiratoryRate", e.target.value)}
               error={visibleErrors.respiratoryRate}
-              hint="respiraciones/min"
             />
-            <TextField
+            <UnitField
               id="ctrl-spo2"
               label="Saturación"
+              unit="%"
+              abbr="SpO2"
               inputMode="numeric"
               value={fields.oxygenSaturation}
               onChange={(e) => update("oxygenSaturation", e.target.value)}
               error={visibleErrors.oxygenSaturation}
-              hint="%"
             />
             <BloodPressureField
               systolicId="ctrl-sbp"
@@ -227,23 +229,25 @@ export function VitalControlsPage() {
               systolicError={visibleErrors.systolicBloodPressure}
               diastolicError={visibleErrors.diastolicBloodPressure}
             />
-            <TextField
+            <UnitField
               id="ctrl-pulse"
               label="Pulso"
+              unit="lpm"
+              abbr="FC"
               inputMode="numeric"
               value={fields.pulse}
               onChange={(e) => update("pulse", e.target.value)}
               error={visibleErrors.pulse}
-              hint="latidos/min"
             />
-            <TextField
+            <UnitField
               id="ctrl-temperature"
               label="Temperatura"
+              unit="°C"
+              abbr="Temp"
               inputMode="decimal"
               value={fields.temperature}
               onChange={(e) => update("temperature", e.target.value)}
               error={visibleErrors.temperature}
-              hint="°C"
             />
           </div>
           <SelectField

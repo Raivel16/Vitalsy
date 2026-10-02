@@ -146,9 +146,8 @@ class PatientClinicalChart
             ->all();
 
         $clinicalAlerts = ClinicalAlert::query()
-            ->with(['events' => fn ($q) => $q->orderBy('occurred_at')->orderBy('id')])
+            ->with(['events' => fn ($q) => $q->with('user')->orderBy('occurred_at')->orderBy('id')])
             ->where('encounter_id', $encounterId)
-            ->tap(fn (Builder $q) => $this->applyDateRange($q, 'generated_at', $from, $to))
             ->orderByDesc('generated_at')
             ->limit(50)
             ->get()
@@ -166,6 +165,7 @@ class PatientClinicalChart
                     'type' => $event->type,
                     'detail' => $event->detail,
                     'role' => $event->role,
+                    'userName' => $event->user?->name,
                     'occurredAt' => optional($event->occurred_at)?->toIso8601String(),
                 ])->all(),
             ])

@@ -6,7 +6,6 @@ import { useEncounter } from "../../admission-census/EncounterContext";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 
 type LabResultRow = {
@@ -67,17 +66,28 @@ export function LabResultsPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Resultados de laboratorio">
+      <Sheet kicker="Paraclínicos · LIS" title="Resultados de laboratorio" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar laboratorio." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Atención en piso" title="Resultados de laboratorio">
+    <Sheet
+      kicker="Paraclínicos · LIS"
+      title="Resultados de laboratorio"
+      wide
+      clinic="file"
+      className="floor-care"
+      aside={(
+        <Button type="button" onClick={syncFromLis} disabled={syncing}>
+          {syncing ? "Integrando…" : "Integrar desde LIS"}
+        </Button>
+      )}
+    >
       <p className="lead">
-        El sistema consume el LIS (FHIR Observation) e integra los resultados al expediente del paciente
-        {encounter ? ` ${encounter.patientName}` : ""}.
+        Paneles integrados desde el LIS (FHIR Observation) para el expediente
+        {encounter ? ` de ${encounter.patientName}` : ""}.
       </p>
       {loading ? <LoadingState label="Cargando resultados…" /> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
@@ -99,11 +109,6 @@ export function LabResultsPage() {
           ))}
         </ul>
       ) : null}
-      <FormActions>
-        <Button type="button" onClick={syncFromLis} disabled={syncing}>
-          {syncing ? "Integrando…" : "Integrar desde LIS"}
-        </Button>
-      </FormActions>
     </Sheet>
   );
 }

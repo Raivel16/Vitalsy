@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router";
+import { IconChecklist, IconNotes } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { useEncounter } from "../../admission-census/EncounterContext";
@@ -37,9 +38,9 @@ type Activity = {
 
 type CareTab = "notas" | "actividades";
 
-const TABS: { id: CareTab; label: string }[] = [
-  { id: "notas", label: "Notas" },
-  { id: "actividades", label: "Actividades" },
+const TABS: { id: CareTab; label: string; icon: typeof IconNotes }[] = [
+  { id: "notas", label: "Notas", icon: IconNotes },
+  { id: "actividades", label: "Actividades", icon: IconChecklist },
 ];
 
 export function NursingEvolutionCarePage() {
@@ -134,7 +135,7 @@ export function NursingEvolutionCarePage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Cuidados y evolución de enfermería">
+      <Sheet kicker="Cuidados del turno" title="Cuidados y evolución de enfermería" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para documentar cuidados." />
       </Sheet>
     );
@@ -146,7 +147,7 @@ export function NursingEvolutionCarePage() {
   const activityGroups = groupByDay(filteredActivities, (item) => item.completedAt, formatDate);
 
   return (
-    <Sheet kicker="Atención en piso" title="Cuidados y evolución de enfermería" wide>
+      <Sheet kicker="Cuidados del turno" title="Cuidados y evolución de enfermería" wide clinic="file" className="floor-care">
       <p className="lead">
         Documente la evolución del turno y los cuidados básicos
         {encounter ? ` de ${encounter.patientName}` : ""}. Disponible para enfermera de piso y auxiliar.
@@ -168,6 +169,7 @@ export function NursingEvolutionCarePage() {
               className={selected ? "chart-tab is-active" : "chart-tab"}
               onClick={() => setTab(item.id)}
             >
+              <item.icon size={18} stroke={1.75} aria-hidden />
               {item.label}
             </button>
           );
@@ -184,7 +186,8 @@ export function NursingEvolutionCarePage() {
           aria-labelledby={`${tabsId}-notas`}
           aria-label="Notas"
         >
-          <form className="stack" onSubmit={onNursingNote} noValidate>
+          <div className="split-board">
+          <form className="stack clinical-panel" onSubmit={onNursingNote} noValidate>
             <h3>Evolución de enfermería</h3>
             <p className="hint">Documente estado clínico, intervenciones y respuesta del paciente durante el turno.</p>
             <TextAreaField
@@ -231,6 +234,7 @@ export function NursingEvolutionCarePage() {
               ))
             )}
           </section>
+          </div>
         </div>
       ) : null}
 
@@ -242,7 +246,8 @@ export function NursingEvolutionCarePage() {
           aria-labelledby={`${tabsId}-actividades`}
           aria-label="Actividades"
         >
-          <form className="stack" onSubmit={onCare} noValidate>
+          <div className="split-board">
+          <form className="stack clinical-panel" onSubmit={onCare} noValidate>
             <h3>Cuidados directos</h3>
             <p className="hint">
               Actividades básicas de confort e higiene (baño, cambio de ropa, alimentación, movilización).
@@ -303,6 +308,7 @@ export function NursingEvolutionCarePage() {
               ))
             )}
           </section>
+          </div>
         </div>
       ) : null}
     </Sheet>

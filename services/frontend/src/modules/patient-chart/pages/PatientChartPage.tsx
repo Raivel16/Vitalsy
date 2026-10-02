@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { Link, useSearchParams } from "react-router";
+import { IconBellRinging, IconBuildingHospital, IconFlask, IconHeartbeat, IconNotes, IconPill } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
@@ -10,6 +11,7 @@ import { DateRangeFilter, DaySection } from "../../../shared/ui/DateRangeFilter"
 import { formatDate, formatDateTime, formatTime } from "../../../shared/datetime/format";
 import {
   groupByDay,
+  isWithinDateRange,
   rangeQuery,
   resolveDateRange,
   type DateRangeValue,
@@ -70,19 +72,19 @@ type ChartPayload = {
     source: string;
     generatedAt: string | null;
     closedAt: string | null;
-    events: { id: number; type: string; detail: string | null; role: string | null; occurredAt: string | null }[];
+    events: { id: number; type: string; detail: string | null; role: string | null; userName?: string | null; occurredAt: string | null }[];
   }[];
 };
 
 type ChartTab = "admision" | "constantes" | "tratamiento" | "paraclinicos" | "evoluciones" | "alertas";
 
-const TABS: { id: ChartTab; label: string }[] = [
-  { id: "admision", label: "Admisión" },
-  { id: "constantes", label: "Constantes" },
-  { id: "tratamiento", label: "Tratamiento" },
-  { id: "paraclinicos", label: "Paraclínicos" },
-  { id: "evoluciones", label: "Evoluciones" },
-  { id: "alertas", label: "Alertas" },
+const TABS: { id: ChartTab; label: string; icon: typeof IconNotes }[] = [
+  { id: "admision", label: "Admisión", icon: IconBuildingHospital },
+  { id: "constantes", label: "Constantes", icon: IconHeartbeat },
+  { id: "tratamiento", label: "Tratamiento", icon: IconPill },
+  { id: "paraclinicos", label: "Paraclínicos", icon: IconFlask },
+  { id: "evoluciones", label: "Evoluciones", icon: IconNotes },
+  { id: "alertas", label: "Alertas", icon: IconBellRinging },
 ];
 
 function hasAdmissionContent(admission: ChartPayload["admission"]): boolean {
@@ -128,6 +130,7 @@ export function PatientChartPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<ChartTab>("admision");
   const [range, setRange] = useState<DateRangeValue>(() => resolveDateRange("30d"));
+  const [alertRange, setAlertRange] = useState<DateRangeValue>(() => resolveDateRange("todo"));
   const canRegisterEvolution = user?.role === "medico_residente" || user?.role === "medico_tratante";
 
   useEffect(() => {
@@ -148,7 +151,7 @@ export function PatientChartPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Expediente clínico">
+      <Sheet kicker="Historia clínica hospitalaria" title="Expediente clínico" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para consultar su expediente clínico." />
       </Sheet>
     );
@@ -156,7 +159,7 @@ export function PatientChartPage() {
 
   if (error) {
     return (
-      <Sheet kicker="Atención en piso" title="Expediente clínico">
+      <Sheet kicker="Historia clínica hospitalaria" title="Expediente clínico" wide clinic="file" className="floor-care">
         <Feedback tone="error">{error}</Feedback>
       </Sheet>
     );
@@ -174,15 +177,15 @@ export function PatientChartPage() {
   const careGroups = groupByDay(data.careActivities ?? [], (row) => row.completedAt, formatDate);
   const labGroups = groupByDay(data.labResults, (row) => row.resultedAt, formatDate);
   const imagingGroups = groupByDay(data.imagingReports, (row) => row.reportedAt, formatDate);
-  const showRangeFilter = tab !== "admision";
+  const showRangeFilter = tab !== "admision" && tab !== "alertas";
+  const visibleAlerts = (data.clinicalAlerts ?? []).filter((item) => isWithinDateRange(item.generatedAt, alertRange));
 
   return (
-    <Sheet kicker="Atención en piso" title="Expediente clínico" wide>
+    <Sheet kicker="Historia clínica hospitalaria" title="Expediente clínico" wide clinic="file" className="floor-care">
       <p className="lead">
-        Historial de {patient.patientName} desde el ingreso hospitalario. Solo lectura.
+        Consolidado de registros clínicos del episodio de hospitalización actual de {patient.patientName}.
       </p>
-      <div className="sheet-surface">
-      <dl className="facts">
+      <dl className="facts chart-identity">
         <div><dt>Documento</dt><dd>{patient.documentType} {patient.documentNumber}</dd></div>
         <div><dt>Expediente</dt><dd>{patient.recordId ?? "—"}</dd></div>
         <div><dt>Brazalete</dt><dd>{patient.wristbandCode ?? "—"}</dd></div>
@@ -209,6 +212,7 @@ export function PatientChartPage() {
               className={selected ? "chart-tab is-active" : "chart-tab"}
               onClick={() => setTab(item.id)}
             >
+              <item.icon size={18} stroke={1.75} aria-hidden />
               {item.label}
             </button>
           );
@@ -560,16 +564,19 @@ export function PatientChartPage() {
           aria-label="Alertas"
         >
           <h3>Alertas y respuesta clínica</h3>
-          {(data.clinicalAlerts ?? []).length === 0 ? (
+          <p className="hint">Incluye las alertas abiertas y las ya atendidas, con la evaluación y las indicaciones que registró el médico.</p>
+          <DateRangeFilter value={alertRange} onChange={setAlertRange} label="Filtrar alertas del expediente" />
+          {visibleAlerts.length === 0 ? (
             <Feedback tone="info">Sin alertas clínicas en el rango seleccionado.</Feedback>
           ) : (
-            (data.clinicalAlerts ?? []).map((item) => (
+            visibleAlerts.map((item) => (
               <section key={item.id} className="result-block" aria-label={`Alerta ${item.id}`}>
                 <p>
                   <strong>{STATUS_LABEL[item.status as AlertStatus] ?? item.status}</strong>
                   {item.news2Total !== null ? ` · NEWS2 ${item.news2Total}` : ""}
-                  {" · "}
+                  {" · Generada "}
                   {formatDateTime(item.generatedAt)}
+                  {item.closedAt ? ` · Cerrada ${formatDateTime(item.closedAt)}` : ""}
                 </p>
                 <p>{item.message}</p>
                 <p className="actions">
@@ -582,6 +589,7 @@ export function PatientChartPage() {
                     {item.events.map((event) => (
                       <li key={event.id}>
                         <p><strong>{eventLabel(event.type)}</strong> · {formatDateTime(event.occurredAt)}</p>
+                        {event.userName ? <p className="hint">{event.userName}{event.role ? ` · ${event.role}` : ""}</p> : null}
                         {event.detail ? <p>{event.detail}</p> : null}
                       </li>
                     ))}
@@ -592,7 +600,6 @@ export function PatientChartPage() {
           )}
         </div>
       ) : null}
-      </div>
     </Sheet>
   );
 }
