@@ -13,7 +13,7 @@ import { validateVitalSigns } from "../../nursing-assessment/domain/vitalSigns";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
-import { TextField, SelectField } from "../../../shared/ui/Field";
+import { SelectField, UnitField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
@@ -127,7 +127,7 @@ export function VitalMonitoringPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Monitoreo de constantes">
+      <Sheet kicker="Monitoreo fisiológico" title="Monitoreo de constantes" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para registrar constantes." />
       </Sheet>
     );
@@ -137,7 +137,7 @@ export function VitalMonitoringPage() {
   const urgent = Boolean(preview?.singleParameterAlert || preview?.band === "high");
 
   return (
-    <Sheet kicker="Atención en piso" title="Monitoreo de constantes" wide>
+    <Sheet kicker="Monitoreo fisiológico" title="Monitoreo de constantes" wide clinic="file" className="floor-care">
       <p className="lead">
         Capture constantes
         {encounter ? ` de ${encounter.patientName}` : ""}. El sistema calcula NEWS2, programa controles y activa alertas.
@@ -145,10 +145,10 @@ export function VitalMonitoringPage() {
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
       {news2Label ? <p role="status" className={`news news-${news2Label.includes(" 0") ? "green" : "yellow"}`}>{news2Label}</p> : null}
-      <form className="stack" onSubmit={onSubmit} noValidate>
+      <form className="stack clinical-panel" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
-          <TextField id="rr" label="Frecuencia respiratoria" inputMode="numeric" value={fields.respiratoryRate} onChange={(e) => update("respiratoryRate", e.target.value)} error={visibleErrors.respiratoryRate} hint="respiraciones/min" />
-          <TextField id="spo2" label="Saturación" inputMode="numeric" value={fields.oxygenSaturation} onChange={(e) => update("oxygenSaturation", e.target.value)} error={visibleErrors.oxygenSaturation} hint="%" />
+          <UnitField id="rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={fields.respiratoryRate} onChange={(e) => update("respiratoryRate", e.target.value)} error={visibleErrors.respiratoryRate} />
+          <UnitField id="spo2" label="Saturación" unit="%" abbr="SpO2" inputMode="numeric" value={fields.oxygenSaturation} onChange={(e) => update("oxygenSaturation", e.target.value)} error={visibleErrors.oxygenSaturation} />
           <BloodPressureField
             systolic={fields.systolicBloodPressure}
             diastolic={fields.diastolicBloodPressure}
@@ -157,8 +157,8 @@ export function VitalMonitoringPage() {
             systolicError={visibleErrors.systolicBloodPressure}
             diastolicError={visibleErrors.diastolicBloodPressure}
           />
-          <TextField id="pulse" label="Pulso" inputMode="numeric" value={fields.pulse} onChange={(e) => update("pulse", e.target.value)} error={visibleErrors.pulse} hint="latidos/min" />
-          <TextField id="temperature" label="Temperatura" inputMode="decimal" value={fields.temperature} onChange={(e) => update("temperature", e.target.value)} error={visibleErrors.temperature} hint="°C" />
+          <UnitField id="pulse" label="Pulso" unit="lpm" abbr="FC" inputMode="numeric" value={fields.pulse} onChange={(e) => update("pulse", e.target.value)} error={visibleErrors.pulse} />
+          <UnitField id="temperature" label="Temperatura" unit="°C" abbr="Temp" inputMode="decimal" value={fields.temperature} onChange={(e) => update("temperature", e.target.value)} error={visibleErrors.temperature} />
         </div>
         <SelectField id="spo2-scale" label="Escala de SpO2" value={spo2Scale} onChange={(e) => setSpo2Scale(e.target.value as Spo2Scale)} hint="Escala 2 solo si un clínico indicó objetivo 88-92 %.">
           <option value="scale1">Escala 1</option>
@@ -182,7 +182,7 @@ export function VitalMonitoringPage() {
           </SelectField>
         ) : null}
         {preview ? (
-          <div className={`news news-${preview.visual}`} role={urgent ? "alert" : "status"} aria-label={urgent ? undefined : "Resultado NEWS2"}>
+          <div className={`news news-${preview.visual} vitals-live`} role={urgent ? "alert" : "status"} aria-label={urgent ? undefined : "Resultado NEWS2"}>
             <strong>{preview.total} puntos. {preview.visualLabel}.</strong>
             <span>{preview.clinicalResponse}</span>
           </div>

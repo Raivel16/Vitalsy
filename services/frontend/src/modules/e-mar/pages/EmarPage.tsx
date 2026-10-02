@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -62,6 +62,7 @@ export function EmarPage() {
   const [sign, setSign] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const discrepancyRef = useRef<HTMLElement>(null);
   const [nowLabel, setNowLabel] = useState(() =>
     new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false }),
   );
@@ -84,6 +85,11 @@ export function EmarPage() {
   useEffect(() => {
     load();
   }, [ingreso]);
+
+  useEffect(() => {
+    if (!error || !selected || typeof discrepancyRef.current?.scrollIntoView !== "function") return;
+    discrepancyRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [error, selected]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -124,7 +130,7 @@ export function EmarPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso · Administración de medicamentos (e-MAR)" title="e-MAR del turno">
+      <Sheet kicker="Administración verificada" title="e-MAR del turno" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para consultar el e-MAR." />
       </Sheet>
     );
@@ -132,9 +138,11 @@ export function EmarPage() {
 
   return (
     <Sheet
-      kicker="Atención en piso · Administración de medicamentos (e-MAR)"
+      kicker="Administración verificada"
       title="e-MAR del turno"
       wide
+      clinic="file"
+      className="floor-care"
       aside={(
         <aside className="emar-clock" aria-label="Hora de estación">
           <span className="emar-clock-label">Hora actual de estación</span>
@@ -154,7 +162,7 @@ export function EmarPage() {
         . Verifique los cinco correctos antes de firmar.
       </p>
 
-      {error ? (
+      {error && !selected ? (
         <aside className="state-card state-danger" role="alert">
           <div>
             <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
@@ -331,6 +339,15 @@ export function EmarPage() {
             <input type="checkbox" checked={sign} onChange={(e) => setSign(e.target.checked)} />
             Confirmo la administración según indicación médica y validación del e-MAR.
           </label>
+
+          {error ? (
+            <aside ref={discrepancyRef} className="state-card state-danger" role="alert">
+              <div>
+                <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
+                <p>{error}</p>
+              </div>
+            </aside>
+          ) : null}
 
           <div className="form-actions-bar">
             <Button

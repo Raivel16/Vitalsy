@@ -6,7 +6,6 @@ import { useEncounter } from "../../admission-census/EncounterContext";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 
 type ImagingReportRow = {
@@ -68,16 +67,27 @@ export function ImagingReportsPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Atención en piso" title="Informes de imágenes">
+      <Sheet kicker="Paraclínicos · PACS" title="Informes de imágenes" wide clinic="file" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado desde el censo para integrar imágenes." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Atención en piso" title="Informes de imágenes">
+    <Sheet
+      kicker="Paraclínicos · PACS"
+      title="Informes de imágenes"
+      wide
+      clinic="file"
+      className="floor-care"
+      aside={(
+        <Button type="button" onClick={syncFromPacs} disabled={syncing}>
+          {syncing ? "Integrando…" : "Integrar desde PACS"}
+        </Button>
+      )}
+    >
       <p className="lead">
-        El sistema consume el PACS (FHIR DiagnosticReport) e integra los informes al expediente
+        Informes integrados desde el PACS (FHIR DiagnosticReport)
         {encounter ? ` de ${encounter.patientName}` : ""}.
       </p>
       {loading ? <LoadingState label="Cargando informes…" /> : null}
@@ -101,11 +111,6 @@ export function ImagingReportsPage() {
           ))}
         </ul>
       ) : null}
-      <FormActions>
-        <Button type="button" onClick={syncFromPacs} disabled={syncing}>
-          {syncing ? "Integrando…" : "Integrar desde PACS"}
-        </Button>
-      </FormActions>
     </Sheet>
   );
 }

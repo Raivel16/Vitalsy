@@ -8,6 +8,7 @@ export function Sheet({
   framed = false,
   aside,
   clinic,
+  className,
 }: {
   kicker: string;
   title: string;
@@ -16,6 +17,7 @@ export function Sheet({
   framed?: boolean;
   aside?: ReactNode;
   clinic?: "form" | "board" | "file";
+  className?: string;
 }) {
   const head = (
     <header className="page-head">
@@ -27,13 +29,16 @@ export function Sheet({
     </header>
   );
 
-  const clinicClass = clinic === "board"
-    ? "clinic-sheet clinic-board"
-    : clinic === "file"
-      ? "clinic-sheet clinic-file"
-      : clinic === "form"
-        ? "clinic-sheet clinic-form"
-        : "";
+  const clinicClass = [
+    clinic === "board"
+      ? "clinic-sheet clinic-board"
+      : clinic === "file"
+        ? "clinic-sheet clinic-file"
+        : clinic === "form"
+          ? "clinic-sheet clinic-form"
+          : "",
+    className,
+  ].filter(Boolean).join(" ");
 
   if (clinic === "file") {
     return (

@@ -5,7 +5,7 @@ import { errorText } from "../../../app/userMessage";
 import { useAuth } from "../../../app/AuthProvider";
 import { Button } from "../../../shared/ui/Button";
 import { BloodPressureField } from "../../../shared/ui/BloodPressureField";
-import { CheckField, TextAreaField, TextField, SelectField } from "../../../shared/ui/Field";
+import { CheckField, SelectField, TextAreaField, TextField, UnitField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { LoadingState } from "../../../shared/ui/LoadingState";
@@ -356,7 +356,7 @@ export function AlertDetailPage() {
     && NURSING_ROLES.includes(role);
 
   return (
-    <Sheet kicker="Alertas clínicas" title="Evento de alerta" wide>
+    <Sheet kicker="Gestión de alertas" title="Evento de alerta" wide clinic="file" className="floor-care">
       <p className="lead">
         {alert.patientName ?? alert.encounterId} · {alert.location ?? "Ubicación no registrada"}
       </p>
@@ -372,6 +372,8 @@ export function AlertDetailPage() {
         <Link to={`/atencion/chart?ingreso=${encodeURIComponent(alert.encounterId)}`}>Ver en el expediente clínico</Link>
       </p>
 
+      <div className="split-board">
+      <div className="stack">
       {pendingAck && !closed ? (
         <section className="result-block" aria-label="Confirmación de lectura">
           {ackError ? <Feedback tone="error">{ackError}</Feedback> : null}
@@ -419,8 +421,8 @@ export function AlertDetailPage() {
               {vitalsNotice ? <Feedback tone="success">{vitalsNotice}</Feedback> : null}
               <form className="stack" onSubmit={onReassess} noValidate>
                 <div className="form-grid">
-                  <TextField id="alert-rr" label="Frecuencia respiratoria" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleVitalsErrors.respiratoryRate} hint="respiraciones/min" />
-                  <TextField id="alert-spo2" label="Saturación" inputMode="numeric" value={vitals.oxygenSaturation} onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })} error={visibleVitalsErrors.oxygenSaturation} hint="%" />
+                  <UnitField id="alert-rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleVitalsErrors.respiratoryRate} />
+                  <UnitField id="alert-spo2" label="Saturación" unit="%" abbr="SpO2" inputMode="numeric" value={vitals.oxygenSaturation} onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })} error={visibleVitalsErrors.oxygenSaturation} />
                   <BloodPressureField
                     systolicId="alert-sbp"
                     diastolicId="alert-dbp"
@@ -431,8 +433,8 @@ export function AlertDetailPage() {
                     systolicError={visibleVitalsErrors.systolicBloodPressure}
                     diastolicError={visibleVitalsErrors.diastolicBloodPressure}
                   />
-                  <TextField id="alert-pulse" label="Pulso" inputMode="numeric" value={vitals.pulse} onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })} error={visibleVitalsErrors.pulse} hint="latidos/min" />
-                  <TextField id="alert-temp" label="Temperatura" inputMode="decimal" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} error={visibleVitalsErrors.temperature} hint="°C" />
+                  <UnitField id="alert-pulse" label="Pulso" unit="lpm" abbr="FC" inputMode="numeric" value={vitals.pulse} onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })} error={visibleVitalsErrors.pulse} />
+                  <UnitField id="alert-temp" label="Temperatura" unit="°C" abbr="Temp" inputMode="decimal" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} error={visibleVitalsErrors.temperature} />
                 </div>
                 <SelectField id="alert-consciousness" label="Conciencia" value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>
                   <option value="alert">Alerta</option>
@@ -600,6 +602,7 @@ export function AlertDetailPage() {
         </section>
       ) : null}
 
+      </div>
       <section className="result-block" aria-label="Historial del evento">
         <h3>Historial del evento</h3>
         {events.length === 0 ? (
@@ -623,6 +626,7 @@ export function AlertDetailPage() {
           </ul>
         ) : null}
       </section>
+      </div>
     </Sheet>
   );
 }

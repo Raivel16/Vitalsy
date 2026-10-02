@@ -49,7 +49,10 @@ export function UnitField({
 }: Shared & InputHTMLAttributes<HTMLInputElement> & { unit: string; abbr?: string }) {
   return (
     <div className={fieldClass(false, compact)}>
-      <FieldLabel id={id} label={label} labelAside={abbr} />
+      <span className="bp-label">
+        <FieldLabel id={id} label={label} />
+        {abbr ? <span className="field-aside" aria-hidden>{abbr}</span> : null}
+      </span>
       <div className="unit-control">
         <input id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy(id, error)} {...props} />
         <span className="unit-chip">{unit}</span>

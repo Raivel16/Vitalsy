@@ -50,14 +50,14 @@ export function DeteriorationPage() {
 
   if (!ingreso) {
     return (
-      <Sheet kicker="Alertas clínicas" title="Registrar deterioro observado">
+      <Sheet kicker="Observación clínica" title="Registrar deterioro observado" clinic="form" className="floor-care">
         <EmptyEncounter message="Abra un paciente hospitalizado para registrar un deterioro." />
       </Sheet>
     );
   }
 
   return (
-    <Sheet kicker="Alertas clínicas" title="Registrar deterioro observado">
+    <Sheet kicker="Observación clínica" title="Registrar deterioro observado" clinic="form" className="floor-care">
       <p className="lead">
         Registre el deterioro que observó
         {encounter ? ` en ${encounter.patientName}` : ""} fuera del monitoreo rutinario. La enfermera de piso recibirá la

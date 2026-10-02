@@ -7,7 +7,7 @@ const PRESETS: { id: DateRangePreset; label: string }[] = [
   { id: "7d", label: "7 días" },
   { id: "30d", label: "30 días" },
   { id: "todo", label: "Todo" },
-  { id: "custom", label: "Rango" },
+  { id: "custom", label: "Seleccionar rango" },
 ];
 
 type Props = {

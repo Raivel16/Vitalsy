@@ -127,14 +127,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <div className="toast-actions">
                     <Link
                       to={toast.followUpHref}
-                      className="btn toast-confirm"
+                      className="button toast-confirm"
                       onClick={() => dismiss(toast.id)}
                     >
                       {toast.followUpLabel ?? "Ir al evento"}
                     </Link>
                     <button
                       type="button"
-                      className="btn button-quiet toast-dismiss"
+                      className="button button-quiet toast-dismiss"
                       onClick={() => dismiss(toast.id)}
                     >
                       {toast.dismissLabel ?? "Cerrar"}
@@ -143,7 +143,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ) : (
                   <button
                     type="button"
-                    className="btn toast-confirm"
+                    className="button toast-confirm"
                     disabled={busyId === toast.id}
                     onClick={() => void confirm(toast)}
                   >

@@ -66,7 +66,7 @@ export function AlertInboxPage() {
   if (loading) return <LoadingState label="Cargando alertas…" />;
 
   return (
-    <Sheet kicker="Alertas clínicas" title="Alertas pendientes" wide>
+    <Sheet kicker="Gestión de alertas" title="Alertas pendientes" wide clinic="board" className="floor-care">
       <p className="lead">
         Confirme la lectura para callar la sirena y continúe con la reevaluación del paciente. La alerta permanece
         abierta hasta programar un nuevo control o solicitar atención médica. Si no se completa en 15 minutos, la
