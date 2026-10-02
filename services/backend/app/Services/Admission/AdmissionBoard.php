@@ -100,7 +100,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
 
-        $builder = AdmissionEncounter::query();
+        $builder = AdmissionEncounter::query()->where('current_step', '!=', 'egresado');
         $term = trim((string) $query);
         if ($term !== '') {
             $like = '%'.mb_strtolower($term).'%';
@@ -760,7 +760,12 @@ class AdmissionBoard
      */
     private function present(AdmissionEncounter $encounter): array
     {
-        $step = self::STEPS[$encounter->current_step];
+        $step = self::STEPS[$encounter->current_step] ?? [
+            'role' => null,
+            'subprocess' => '1.3',
+            'label' => 'Egresado',
+            'status' => 'Egresado',
+        ];
         $flags = $encounter->deliverables;
         $deliverables = [];
         foreach (self::DELIVERABLES as $id => $label) {

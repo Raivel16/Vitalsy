@@ -1,10 +1,11 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { IconCamera, IconHeartbeat, IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
+import { IconHeartbeat, IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { printClinicalDocument } from "../../../shared/print/printDocument";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
 import { errorText } from "../../../app/userMessage";
 import { Barcode, printBarcodeOnly } from "../components/Barcode";
+import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
@@ -335,10 +336,8 @@ export function ConsentPage() {
                 hint="Se registrará cuando el conector transversal esté disponible."
               />
               <div className="field">
-                <label htmlFor="vitalsy-life-scan">Escanear</label>
-                <Button id="vitalsy-life-scan" type="button" variant="quiet" onClick={() => document.getElementById("vitalsy-life-code")?.focus()}>
-                  <IconCamera size={16} /> Escanear código
-                </Button>
+                <label>Escanear</label>
+                <BarcodeScanner label="Escanear código" onScan={setLifeCode} />
               </div>
               <p className="hint form-span-2"><IconQrcode size={14} /> Sincronización de línea de base domiciliaria pendiente de backend.</p>
             </div>

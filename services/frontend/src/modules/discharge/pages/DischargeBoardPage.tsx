@@ -4,6 +4,7 @@ import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
+import { BarcodeScanner } from "../../../shared/ui/BarcodeScanner";
 import { ProgressTrack, StatusPill, type ClinicalTone } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
@@ -11,6 +12,16 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { ACTION_LABEL, type DischargeCase } from "../domain/discharge";
 
 type FilterId = "todas" | "orden" | "epicrisis" | "circuito";
+
+type Inpatient = {
+  encounterId: string;
+  patientName: string;
+  documentType: string;
+  documentNumber: string;
+  wristbandCode: string | null;
+  currentStep: string;
+  location: { room: string | null; bed: string | null; service: string | null };
+};
 
 function caseTone(item: DischargeCase): ClinicalTone {
   const done = item.deliverables.filter((d) => d.done).length;
@@ -34,14 +45,21 @@ export function DischargeBoardPage() {
   const [cases, setCases] = useState<DischargeCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [encounterId, setEncounterId] = useState("");
   const [filter, setFilter] = useState<FilterId>("todas");
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [inpatients, setInpatients] = useState<Inpatient[]>([]);
+  const canStart = user?.role === "medico_tratante" || user?.role === "medico_residente";
 
   const load = useCallback(async () => {
     try {
       const path = user?.role === "camillero" ? "/api/v1/discharge/authorized-exits" : "/api/v1/discharge/board";
       const data = await api<{ cases: DischargeCase[] }>(path);
       setCases(data.cases);
+      if (user?.role === "medico_tratante" || user?.role === "medico_residente") {
+        const census = await api<{ encounters?: Inpatient[] }>("/api/v1/hospital-admission/encounters?per_page=50");
+        setInpatients((census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado"));
+      }
       setError("");
     } catch (caught) {
       setError(errorText(caught, "No se pudo cargar el listado de egresos."));
@@ -55,6 +73,45 @@ export function DischargeBoardPage() {
   }, [load]);
 
   const filtered = useMemo(() => cases.filter((item) => matchesFilter(item, filter)), [cases, filter]);
+  const starters = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return inpatients.filter((patient) => {
+      if (cases.some((item) => item.encounterId === patient.encounterId)) return false;
+      if (!needle) return true;
+      const place = [patient.location?.room, patient.location?.bed, patient.location?.service].filter(Boolean).join(" ");
+      return [patient.patientName, patient.documentNumber, patient.encounterId, patient.wristbandCode, place].join(" ").toLowerCase().includes(needle);
+    });
+  }, [inpatients, cases, query]);
+
+  async function onWristbandScan(code: string) {
+    const needle = code.trim().toLowerCase();
+    if (!needle) return;
+    let pool = inpatients;
+    if (pool.length === 0) {
+      try {
+        const census = await api<{ encounters?: Inpatient[] }>("/api/v1/hospital-admission/encounters?per_page=50");
+        pool = (census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado");
+        setInpatients(pool);
+      } catch (caught) {
+        setError(errorText(caught, "No se pudo leer el censo para ese código."));
+        return;
+      }
+    }
+    const inpatient = pool.find((patient) =>
+      [patient.wristbandCode, patient.documentNumber, patient.encounterId]
+        .some((value) => value?.toLowerCase() === needle),
+    );
+    const openCase = cases.find((item) => item.encounterId.toLowerCase() === needle);
+    const encounterId = inpatient?.encounterId ?? openCase?.encounterId;
+    if (!encounterId) {
+      setSearch(code.trim());
+      setQuery(code.trim());
+      setError("No hay un paciente hospitalizado con ese código.");
+      return;
+    }
+    setError("");
+    void navigate(`/egreso/${encounterId}`);
+  }
 
   const counts = useMemo(() => ({
     todas: cases.length,
@@ -66,55 +123,106 @@ export function DischargeBoardPage() {
   if (loading) return <LoadingState label="Cargando egresos…" />;
 
   return (
-    <Sheet kicker="Alta y egreso" title="Pacientes en proceso de alta" wide>
+    <Sheet kicker="Alta y egreso" title="Pacientes en proceso de alta" wide clinic="board" className="floor-care ops-board">
       <p className="lead">
-        Continúe el entregable que corresponde a su perfil. La valoración social y la conciliación de enfermería pueden
-        avanzar en paralelo.
+        Gestión de altas del servicio. Continúe el entregable de su rol; trabajo social, enfermería y liquidación avanzan en paralelo.
       </p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      <form
-        className="stack discharge-open"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!encounterId.trim()) {
-            setError("Indique el ingreso que desea abrir.");
-            return;
-          }
-          void navigate(`/egreso/${encodeURIComponent(encounterId.trim())}`);
-        }}
-      >
-        <TextField
-          id="discharge-encounter"
-          label="Abrir ficha de egreso"
-          value={encounterId}
-          onChange={(event) => setEncounterId(event.target.value)}
-        />
-        <Button type="submit">Abrir ficha</Button>
-      </form>
-
-      <div className="filter-pills" role="group" aria-label="Filtrar flujo por estado">
-        {(
-          [
-            ["todas", `Todas ${counts.todas}`],
-            ["orden", `Pendiente orden médica ${counts.orden}`],
-            ["epicrisis", `Pendiente epicrisis ${counts.epicrisis}`],
-            ["circuito", `En circuito de egreso ${counts.circuito}`],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={`filter-pill${filter === id ? " is-active" : ""}`}
-            aria-pressed={filter === id}
-            onClick={() => setFilter(id)}
-          >
-            {label}
-          </button>
-        ))}
+      {canStart ? (
+        <form
+          className="census-toolbar"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setQuery(search.trim());
+          }}
+        >
+          <div className="census-toolbar-row">
+            <TextField
+              id="discharge-search"
+              label="Buscar paciente hospitalizado"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Nombre, DNI o habitación"
+              hint="Solo aparecen ingresos con la admisión cerrada."
+            />
+            <div className="census-toolbar-actions">
+              <Button type="submit">Buscar</Button>
+              <BarcodeScanner onScan={(code) => void onWristbandScan(code)} />
+            </div>
+          </div>
+        </form>
+      ) : (
+        <div className="ops-scan-row">
+          <BarcodeScanner onScan={(code) => void onWristbandScan(code)} />
+        </div>
+      )}
+      {canStart && starters.length > 0 ? (
+        <div className="table-wrap">
+        <table aria-label="Pacientes hospitalizados">
+          <thead>
+            <tr>
+              <th>Paciente</th>
+              <th>Ubicación</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {starters.map((patient) => (
+              <tr key={patient.encounterId}>
+                <td>
+                  <strong>{patient.patientName}</strong>
+                  <span className="census-patient-meta">{patient.documentType} {patient.documentNumber}</span>
+                </td>
+                <td>
+                  {[
+                    patient.location?.room ? `Habitación ${patient.location.room}` : null,
+                    patient.location?.bed ? `Lecho ${patient.location.bed}` : null,
+                    patient.location?.service,
+                  ].filter(Boolean).join(" · ") || "Sin ubicación"}
+                </td>
+                <td className="col-action">
+                  <Button type="button" onClick={() => void navigate(`/egreso/${patient.encounterId}`)}>
+                    Iniciar proceso de alta
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      ) : null}
+      {canStart && query && starters.length === 0 ? (
+        <Feedback tone="info">No hay hospitalizados que coincidan con la búsqueda.</Feedback>
+      ) : null}
+      <div className="ops-toolbar">
+        <div className="filter-pills" role="group" aria-label="Filtrar flujo por estado">
+          {(
+            [
+              ["todas", `Todas ${counts.todas}`],
+              ["orden", `Pendiente orden médica ${counts.orden}`],
+              ["epicrisis", `Pendiente epicrisis ${counts.epicrisis}`],
+              ["circuito", `En circuito de egreso ${counts.circuito}`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`filter-pill${filter === id ? " is-active" : ""}`}
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
-        <Feedback tone="info">No hay egresos pendientes para su perfil.</Feedback>
+        <Feedback tone="info">
+          {user?.role === "camillero"
+            ? "Cuando Altas y caja emita el pase de salida, el traslado aparecerá aquí."
+            : "Cuando el médico registre la orden de alta, el paciente aparecerá aquí con el paso que le toca."}
+        </Feedback>
       ) : (
         <ul className="discharge-board">
           {filtered.map((item) => {
@@ -133,23 +241,25 @@ export function DischargeBoardPage() {
                   </StatusPill>
                 </div>
                 <div className="discharge-card-body">
-                  <div>
+                  <div className="discharge-action">
                     <p className="kicker">Acción prioritaria</p>
-                    <p>
+                    <p className="discharge-action-title">
                       {item.nextAction ? ACTION_LABEL[item.nextAction] ?? item.nextAction : "Egreso en curso"}
                     </p>
                   </div>
-                  <ProgressTrack done={done} total={total} />
-                  <div className="chip-row">
-                    {item.deliverables.map((deliverable) => (
-                      <StatusPill key={deliverable.id} tone={deliverable.done ? "success" : "neutral"}>
-                        {deliverable.label}
-                      </StatusPill>
-                    ))}
+                  <div className="discharge-side">
+                    <ProgressTrack done={done} total={total} />
+                    <div className="chip-row">
+                      {item.deliverables.map((deliverable) => (
+                        <StatusPill key={deliverable.id} tone={deliverable.done ? "success" : "neutral"}>
+                          {deliverable.label}
+                        </StatusPill>
+                      ))}
+                    </div>
+                    <Button type="button" onClick={() => void navigate(`/egreso/${item.encounterId}`)}>
+                      {total > 0 && done === total ? "Ver seguimiento" : "Continuar alta"}
+                    </Button>
                   </div>
-                  <Button type="button" onClick={() => void navigate(`/egreso/${item.encounterId}`)}>
-                    Continuar
-                  </Button>
                 </div>
                 <p className="sr-only">
                   {done} de {total} entregables listos

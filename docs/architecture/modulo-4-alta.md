@@ -27,11 +27,11 @@ Implementa el Proceso 4. La orden de alta abre en paralelo la valoración social
 | RF-62 | Hecho | `POST .../indication-receipt` (asistido por enfermería) |
 | RF-63 | Hecho | `POST .../account` |
 | RF-64–65 | Hecho | `POST .../exit-pass` · `GET .../authorized-exits` |
-| RF-66–67 | Hecho | `POST .../exit` dispara `PatientExited` y marca el ingreso `egresado` |
+| RF-66–67 | Hecho | `POST .../exit` solo para `enfermera_piso`. Dispara `PatientExited` y marca el ingreso `egresado`. El censo y el tablero dejan de listarlo |
 
 ## Rutas UI
 
 | Ruta | Roles |
 |---|---|
-| `/egreso` | los seis perfiles del proceso |
-| `/egreso/:encounterId` | ficha con acciones filtradas por rol |
+| `/egreso` | los seis perfiles del proceso. El médico inicia el alta desde hospitalizados (`cerrado`) o escaneando el brazalete |
+| `/egreso/:encounterId` | ficha con acciones filtradas por rol. El informe de enfermería puede registrar Vitalsy Life dentro de cuidados domiciliarios |

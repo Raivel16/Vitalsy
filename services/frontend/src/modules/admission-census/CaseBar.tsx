@@ -147,7 +147,7 @@ export function CaseBar({ children }: { children: ReactNode }) {
               </div>
               <div className="actions case-bar-actions">
                 <Link className="button button-quiet case-bar-btn" to={`/pacientes/${encounter.encounterId}`}>
-                  <IconNotes size={16} /> <span>Ver ficha</span>
+                  <IconNotes size={16} /> <span>Ver ficha de admisión</span>
                 </Link>
                 {isClinicalRole(user?.role ?? "admision") ? (
                   <Link

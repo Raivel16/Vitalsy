@@ -137,4 +137,13 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `CaseBar` compacto (documento, estado, lecho) solo en `/atencion` y `/alertas`. El stepper de admisión no cambia.
 - Rama: `chore/ui-procesos-2-3-pizarra`.
 
+### 2026-10-02 — Procesos 4, 5 y 6, look Pizarra
+
+- Egreso, censo, limpieza y personal usan `clinic` + `floor-care` + `ops-board`.
+- La ficha de egreso muestra la cadena de entregables y la perspectiva del rol activo. Limpieza agrupa por etapa (`pendiente` / `completada`). Personal cambia título y paneles según jefatura, supervisora, enfermera de piso o recursos humanos.
+- El alta arranca solo con ingresos `cerrado`. El censo omite `egresado` para no romper Pacientes.
+- RF-66: la salida efectiva la registra solo `enfermera_piso`. El camillero consulta el pase y traslada.
+- El lector de códigos abre en un modal. En egreso, el escaneo abre la ficha del hospitalizado.
+- Rama: `chore/ui-procesos-4-5-6-pizarra`.
+
 <!-- END AGENT ANNOTATIONS -->

@@ -41,6 +41,20 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounters.2.deliverables.3.done', true);
     }
 
+    public function test_census_ignores_patients_who_already_left_the_hospital(): void
+    {
+        $this->asRole('enfermera_piso');
+        app(AdmissionBoard::class)->ensureDemo();
+        AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->update(['current_step' => 'egresado']);
+
+        $response = $this->getJson('/api/v1/hospital-admission/encounters');
+
+        $response->assertOk();
+        $ids = collect($response->json('encounters'))->pluck('encounterId');
+        $this->assertFalse($ids->contains('ENC-0001'));
+        $this->assertTrue($ids->contains('ENC-0002'));
+    }
+
     public function test_census_filters_by_patient_name_or_document(): void
     {
         $this->asRole('admision');

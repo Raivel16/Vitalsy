@@ -151,6 +151,10 @@ class DischargeApiTest extends TestCase
 
         $this->assertDatabaseHas('patient_exits', ['encounter_id' => 'ENC-ALTA-0001']);
         $this->assertSame('egresado', AdmissionEncounter::query()->where('encounter_id', 'ENC-ALTA-0001')->value('current_step'));
+
+        $this->getJson('/api/v1/discharge/board')
+            ->assertOk()
+            ->assertJsonCount(0, 'cases');
     }
 
     public function test_cannot_issue_exit_pass_when_account_is_pending(): void
@@ -164,6 +168,24 @@ class DischargeApiTest extends TestCase
         $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/exit-pass')
             ->assertStatus(422)
             ->assertJsonPath('message', 'La liquidación administrativa aún no está conforme.');
+    }
+
+    public function test_only_the_floor_nurse_can_confirm_the_exit(): void
+    {
+        $this->inpatientEncounter();
+        $this->asRole('medico_tratante');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/order')->assertCreated();
+        $this->completeClinicalDischarge();
+
+        $this->asRole('altas_caja');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/account', [
+            'status' => 'conforme',
+        ])->assertCreated();
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/exit-pass')->assertCreated();
+
+        $this->asRole('camillero');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/exit')
+            ->assertForbidden();
     }
 
     public function test_cashier_cannot_open_medical_order(): void

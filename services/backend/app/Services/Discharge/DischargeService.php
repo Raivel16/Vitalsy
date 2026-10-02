@@ -26,7 +26,7 @@ class DischargeService
             ->orderByDesc('ordered_at')
             ->get()
             ->map(fn (DischargeOrder $order) => $this->present($order->encounter_id, $user))
-            ->filter()
+            ->reject(fn (array $case) => ! empty($case['exit']))
             ->values();
 
         return ['cases' => $cases];
@@ -352,7 +352,11 @@ class DischargeService
             return null;
         }
         if ($pass) {
-            return $viewer?->role === 'camillero' ? 'transfer' : 'exit';
+            return match ($viewer?->role) {
+                'enfermera_piso' => 'exit',
+                'camillero' => 'transfer',
+                default => 'await_exit',
+            };
         }
         if ($account?->status === 'conforme' && $nursing && $receipt && $social) {
             return 'pass';

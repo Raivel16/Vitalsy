@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { IconCamera } from "@tabler/icons-react";
 import { Button } from "./Button";
@@ -30,6 +31,16 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -90,19 +101,33 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
   }, [elementId, open]);
 
   return (
-    <div className="scanner-box">
-      {!open ? (
-        <Button variant={variant} type="button" onClick={() => setOpen(true)}>
-          <IconCamera size={18} stroke={1.75} aria-hidden />
-          {label}
-        </Button>
-      ) : (
-        <Button variant={variant} type="button" onClick={() => setOpen(false)}>
-          Cerrar escáner
-        </Button>
-      )}
-      {open ? <div id={elementId} className="scanner-view" /> : null}
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-    </div>
+    <>
+      <Button variant={variant} type="button" onClick={() => setOpen(true)}>
+        <IconCamera size={18} stroke={1.75} aria-hidden />
+        {label}
+      </Button>
+      {open ? createPortal(
+        <div
+          className="scanner-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={label}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+        >
+          <div className="scanner-modal-card">
+            <header className="scanner-modal-head">
+              <strong>{label}</strong>
+              <Button variant="quiet" type="button" onClick={() => setOpen(false)}>Cerrar</Button>
+            </header>
+            {error ? <Feedback tone="error">{error}</Feedback> : null}
+            <div id={elementId} className="scanner-view" />
+            <p className="hint">Apunte la cámara al código. Si no puede leerlo, cierre y escríbalo.</p>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
+    </>
   );
 }

@@ -194,9 +194,11 @@ export function PatientChartPage() {
         <div><dt>Ingreso registrado</dt><dd>{formatDateTime(patient.createdAt)}</dd></div>
       </dl>
 
-      <p className="actions">
-        <Link to={`/pacientes/${encodeURIComponent(ingreso)}`}>Ficha de admisión</Link>
-      </p>
+      {user?.role === "medico_tratante" || user?.role === "medico_residente" ? (
+        <p className="actions">
+          <Link className="button" to={`/egreso/${encodeURIComponent(ingreso)}`}>Iniciar proceso de alta</Link>
+        </p>
+      ) : null}
 
       <div className="chart-tabs" role="tablist" aria-label="Secciones del expediente">
         {TABS.map((item) => {

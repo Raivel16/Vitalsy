@@ -4,6 +4,12 @@ import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 import type { DischargeCase } from "./domain/discharge";
 
+vi.mock("../../shared/ui/BarcodeScanner", () => ({
+  BarcodeScanner: ({ onScan, label }: { onScan: (code: string) => void; label?: string }) => (
+    <button type="button" onClick={() => onScan("BRZ-HOSP")}>{label ?? "Escanear brazalete"}</button>
+  ),
+}));
+
 const baseCase: DischargeCase = {
   encounterId: "ENC-ALTA-0001",
   patientName: "Paciente de Alta Demo",
@@ -71,6 +77,34 @@ describe("alta y egreso (RF-54 a RF-67)", () => {
     expect(await screen.findByRole("heading", { name: /pacientes en proceso de alta/i })).toBeInTheDocument();
     expect(screen.getByText(/paciente de alta demo/i)).toBeInTheDocument();
     expect(screen.getByText(/registrar valoración social/i)).toBeInTheDocument();
+  });
+
+  it("abre la ficha al escanear el brazalete de un hospitalizado", async () => {
+    stubDischarge((url) => {
+      if (url.includes("/hospital-admission/encounters")) {
+        return jsonResponse(200, {
+          encounters: [{
+            encounterId: "ENC-HOSP",
+            patientName: "Raivel",
+            documentType: "DNI",
+            documentNumber: "0056",
+            wristbandCode: "BRZ-HOSP",
+            currentStep: "cerrado",
+            location: { room: "304", bed: "B", service: "Medicina interna" },
+          }],
+        });
+      }
+      if (url.includes("/discharge/encounters/ENC-HOSP")) {
+        return jsonResponse(200, { case: { ...baseCase, encounterId: "ENC-HOSP", patientName: "Raivel" } });
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderApp("/egreso", { role: "medico_tratante" });
+
+    await user.click(await screen.findByRole("button", { name: /escanear brazalete/i }));
+
+    expect(await screen.findByRole("heading", { name: /raivel/i })).toBeInTheDocument();
   });
 
   it("permite al médico tratante registrar la orden de alta", async () => {

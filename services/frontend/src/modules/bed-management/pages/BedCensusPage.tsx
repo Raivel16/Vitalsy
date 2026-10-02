@@ -118,21 +118,37 @@ export function BedCensusPage() {
 
   const visibleWards = wardFilter === "todos" ? wards : wards.filter((ward) => ward.code === wardFilter);
   const firstAvailable = wards.flatMap((ward) => ward.beds).find((bed) => bed.status === "available");
+  const share = (part: number) => (totals.capacity === 0 ? 0 : Math.round((part / totals.capacity) * 100));
 
   if (loading) return <LoadingState label="Cargando censo de camas…" />;
 
   return (
-    <Sheet kicker="Gestión de camas" title="Censo hospitalario" wide>
+    <Sheet kicker="Gestión de camas" title="Censo hospitalario" wide clinic="board" className="floor-care ops-board">
       <p className="lead">Disponibilidad de lechos por servicio, lista de espera y asignación.</p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
 
       <div className="stat-grid" aria-label="Capacidad hospitalaria">
-        <StatTile label="Capacidad total" value={totals.capacity} hint="lechos" />
-        <StatTile label="Disponibles" value={totals.available} hint="libres" tone="success" />
-        <StatTile label="Ocupadas" value={totals.occupied} hint="activas" />
-        <StatTile label="Limpieza" value={totals.cleaning} hint="en proceso" tone="info" />
-        <StatTile label="Aislamiento" value={totals.isolation} hint="críticos" tone="warning" />
+        <div className="stat-cell">
+          <StatTile label="Capacidad total" value={totals.capacity} hint="lechos" />
+          <div className="stat-share" aria-hidden><span style={{ width: "100%" }} /></div>
+        </div>
+        <div className="stat-cell">
+          <StatTile label="Disponibles" value={totals.available} hint="libres" tone="success" />
+          <div className="stat-share" aria-hidden><span style={{ width: `${share(totals.available)}%` }} /></div>
+        </div>
+        <div className="stat-cell">
+          <StatTile label="Ocupadas" value={totals.occupied} hint="activas" />
+          <div className="stat-share" aria-hidden><span style={{ width: `${share(totals.occupied)}%` }} /></div>
+        </div>
+        <div className="stat-cell">
+          <StatTile label="Limpieza" value={totals.cleaning} hint="en proceso" tone="info" />
+          <div className="stat-share" aria-hidden><span style={{ width: `${share(totals.cleaning)}%` }} /></div>
+        </div>
+        <div className="stat-cell">
+          <StatTile label="Aislamiento" value={totals.isolation} hint="críticos" tone="warning" />
+          <div className="stat-share" aria-hidden><span style={{ width: `${share(totals.isolation)}%` }} /></div>
+        </div>
       </div>
 
       <div className="filter-pills" role="group" aria-label="Filtrar pabellones">
@@ -169,9 +185,21 @@ export function BedCensusPage() {
                 { label: "Ocupadas", value: ward.occupied },
                 { label: "Limpieza", value: ward.cleaning },
               ]} />
-              <div className="bed-grid">
-                {ward.beds.map((bed) => (
-                  <BedTile key={bed.id} room={bed.room} code={bed.bedCode} status={bed.status} isolation={bed.isolation} />
+              <div className="room-grid">
+                {Array.from(ward.beds.reduce((rooms, bed) => {
+                  const group = rooms.get(bed.room) ?? [];
+                  group.push(bed);
+                  rooms.set(bed.room, group);
+                  return rooms;
+                }, new Map<string, Bed[]>())).map(([room, beds]) => (
+                  <section key={room} className="room-card" aria-label={`Habitación ${room}`}>
+                    <h4>Habitación {room}</h4>
+                    <div className="bed-grid">
+                      {beds.map((bed) => (
+                        <BedTile key={bed.id} room={bed.room} code={bed.bedCode} status={bed.status} isolation={bed.isolation} />
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             </section>
