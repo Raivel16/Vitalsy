@@ -1,20 +1,43 @@
-# Vitalsy Life — app móvil (Expo)
+# Vitalsy Life
 
-Proyecto React Native con **Expo** para Vitalsy Life (bienestar ciudadano, RF-89–RF-98).
+App ciudadana de bienestar (Expo, React Native, TypeScript). No es el cliente hospitalario de Vitalsy Clinical.
 
-## Estado
+## Estructura
 
-Carpeta reservada en el monorepo. El scaffold Expo (`create-expo-app`) se ejecuta **después** de aprobar el plan:
+- `src/app` â€” rutas de Expo Router. PestaÃ±as: Hoy, Tendencias, Plan, Privacidad, Perfil.
+- `src/modules` â€” dominio por proceso: auth, health-sync, today, trends, notices, plan, privacy, profile, life.
+- `src/shared` â€” tema Aire cotidiano, componentes, cifrado, cliente HTTP y SQLite.
+- `plugins/withHealthConnectPermissions.js` â€” permisos de lectura en el manifiesto Android.
 
-- Plan: [`UI/Vitalsy Life/plan-implementacion.md`](../../UI/Vitalsy%20Life/plan-implementacion.md)
-- Inventario UI: [`UI/Vitalsy Life/inventario-de-interfaces.md`](../../UI/Vitalsy%20Life/inventario-de-interfaces.md)
+## Dependencias principales
 
-## Integración de salud
+Expo SDK 57, expo-router, expo-dev-client, expo-sqlite, expo-secure-store, react-native-health-connect, react-native-svg, @noble/ciphers, @noble/hashes.
 
-- **Android:** Health Connect  
-- **iOS:** Apple HealthKit  
-- Sync servidor + cola offline según RF-89 / RF-92  
+## Comandos
 
-## Ubicación
+```bash
+cd services/movil
+npm install
+npm test
+npx expo start
+npx expo run:android
+```
 
-`services/movil/` — junto a `services/frontend` (Clinical web) y `services/backend` (Laravel).
+`npx expo start` abre la interfaz. Health Connect solo responde en el development build de `npx expo run:android`.
+
+## ConfiguraciÃ³n
+
+Copia `.env.example` a `.env`. `EXPO_PUBLIC_API_URL` es opcional. Sin esa URL la app no marca una sincronizaciÃ³n con la nube.
+
+## Health Connect
+
+Permisos de solo lectura: pulso, pulso en reposo, variabilidad, SpO2, pasos, sueÃ±o, temperatura cutÃ¡nea y corporal.
+
+La guÃ­a de prueba, con el detalle de cuÃ¡ndo la lectura real funciona, estÃ¡ en [documento.md](documento.md). La arquitectura y el contrato con Clinical estÃ¡n en `docs/architecture/modulo-7-vitalsy-life.md`.
+
+## Limitaciones
+
+- Expo Go no incluye Health Connect.
+- iOS no lee Apple Health en este corte.
+- No hay endpoints Life en el API Laravel de este repositorio.
+- El SMS al cuidador se abre para confirmarlo; no sale en segundo plano.
