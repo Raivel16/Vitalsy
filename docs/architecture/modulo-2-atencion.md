@@ -11,7 +11,7 @@ Interfaces del ciclo diario del paciente hospitalizado (Proceso 2). Enfoque UX: 
 | `medico_residente` | Médico residente |
 | `medico_tratante` | Médico tratante |
 
-Cuentas demo: `{rol}@vitalsy.local` / `Vitalsy.2026`.
+Cuentas demo: `{rol}@vitalsy.local`. La contraseña es `DEMO_PASSWORD` del `.env` local.
 
 ## Avance por RF
 

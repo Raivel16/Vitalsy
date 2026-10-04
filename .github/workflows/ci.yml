@@ -23,33 +23,34 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: services/frontend/package-lock.json
+          cache-dependency-path: frontend/web/package-lock.json
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, pgsql
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, pgsql, pcov
+          coverage: pcov
           tools: composer
 
       - name: Install frontend dependencies
-        working-directory: services/frontend
+        working-directory: frontend/web
         run: npm ci
 
       - name: Run frontend tests
-        working-directory: services/frontend
+        working-directory: frontend/web
         run: npm test
 
       - name: Build frontend
-        working-directory: services/frontend
+        working-directory: frontend/web
         run: npm run build
 
       - name: Install backend dependencies
-        working-directory: services/backend
+        working-directory: backend/api
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Prepare backend test environment
-        working-directory: services/backend
+        working-directory: backend/api
         run: |
           cp .env.example .env
           php artisan key:generate --force
@@ -57,9 +58,9 @@ jobs:
           touch database/testing.sqlite
 
       - name: Run backend tests
-        working-directory: services/backend
+        working-directory: backend/api
         run: php artisan test
 
       - name: Run backend lint or static checks
-        working-directory: services/backend
+        working-directory: backend/api
         run: ./vendor/bin/pint --test

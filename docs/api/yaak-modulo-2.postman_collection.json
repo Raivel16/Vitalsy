@@ -9,7 +9,7 @@
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "encounterId", "value": "ENC-HOSP-0001" },
     { "key": "email", "value": "medico_residente@vitalsy.local" },
-    { "key": "password", "value": "Vitalsy.2026" },
+    { "key": "password", "value": "password_ejemplo" },
     { "key": "xsrfToken", "value": "" }
   ],
   "item": [

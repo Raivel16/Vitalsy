@@ -5,25 +5,39 @@
 
 # Node
 node_modules/
-services/frontend/node_modules/
-services/backend/node_modules/
-services/frontend/dist/
-services/frontend/.vite/
+dist/
+dist-ssr/
+.vite/
 coverage/
 
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Coverage and reports
+coverage.xml
+*.info
+*.xml
+!backend/api/phpunit.xml
+!frontend/web/phpunit.xml
+
 # Laravel / PHP
-services/backend/vendor/
-services/backend/.env
-services/backend/public/hot
-services/backend/storage/*.key
-services/backend/storage/app/*.php
-services/backend/storage/app/public/
-services/backend/storage/framework/cache/*
-services/backend/storage/framework/sessions/*
-services/backend/storage/framework/views/*
-services/backend/storage/logs/*
-services/backend/bootstrap/cache/*.php
-services/backend/bootstrap/cache/*.php
+vendor/
+public/hot
+storage/*.key
+storage/app/*.php
+storage/app/public/
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*.php
+.phpunit.result.cache
+.phpunit.cache
+
+# Restos locales del traslado de módulos (caché y sqlite; el código vive en backend/api)
+services/backend/
 
 # Docker
 *.log

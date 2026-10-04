@@ -1,29 +1,37 @@
-# El arranque de prueba del Módulo 1 está en docker-compose.yml (Nginx en el puerto 8080).
-# Este archivo de producción aún no publica el frontend compilado.
+# El arranque de desarrollo está en docker-compose.yml (Nginx en el puerto 8080).
+# Este archivo usa las mismas rutas de módulo que el laboratorio.
 
 services:
   frontend:
     build:
-      context: ./services/frontend
+      context: ./frontend/web
       dockerfile: Dockerfile
+    environment:
+      PORT: "4200"
     ports:
-      - "80:80"
+      - "4200:4200"
     depends_on:
       - backend
 
   backend:
     build:
-      context: ./services/backend
+      context: ./backend/api
       dockerfile: Dockerfile
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      PORT: "3000"
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: mi_db
-      DB_USERNAME: postgres
-      DB_PASSWORD: secret
+      DB_NAME: ${DB_NAME:-mi_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_NAME:-mi_db}
+      DB_USERNAME: ${DB_USER:-postgres}
+    ports:
+      - "3000:3000"
     depends_on:
       - postgres
 
@@ -31,9 +39,9 @@ services:
     image: postgres:16-alpine
     restart: always
     environment:
-      POSTGRES_DB: mi_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ${POSTGRES_DB:-mi_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

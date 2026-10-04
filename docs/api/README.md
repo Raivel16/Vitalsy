@@ -12,7 +12,7 @@ Colección Postman v2.1 importable en Yaak: [`yaak-modulo-2.postman_collection.j
 
 1. Ejecute **CSRF cookie** (`GET /sanctum/csrf-cookie`).
 2. Copie el valor de la cookie `XSRF-TOKEN` (URL-decoded) a la variable `xsrfToken`.
-3. Ejecute **Login** con un rol clínico (`medico_residente@vitalsy.local` / `Vitalsy.2026`).
+3. Ejecute **Login** con un rol clínico (`medico_residente@vitalsy.local`) y la contraseña definida en `DEMO_PASSWORD`.
 4. Conserve cookies de sesión en las peticiones siguientes (Yaak lo hace si el cookie jar está activo).
 
 ## Cobertura actual

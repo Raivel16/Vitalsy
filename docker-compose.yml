@@ -13,45 +13,49 @@ services:
 
   frontend:
     build:
-      context: ./services/frontend
+      context: ./frontend/web
       dockerfile: Dockerfile
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
     environment:
+      PORT: "5173"
       VITE_PROXY_TARGET: http://backend:8000
       VITE_HMR_CLIENT_PORT: "8080"
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ./services/frontend:/app
+      - ./frontend/web:/app
       - /app/node_modules
     depends_on:
       - backend
 
   backend:
     build:
-      context: ./services/backend
+      context: ./backend/api
       dockerfile: Dockerfile
     command: ["sh", "/usr/local/bin/dev-entrypoint.sh"]
     ports:
       - "8000:8000"
     volumes:
-      - ./services/backend:/var/www/html
+      - ./backend/api:/var/www/html
       - /var/www/html/vendor
       - ./docker/backend/dev-entrypoint.sh:/usr/local/bin/dev-entrypoint.sh:ro
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_KEY: base64:Dk5aG9UDHcSXVpV5u+m5OnNPqHywvv07vZKzXwJvqRY=
+      APP_KEY: ${APP_KEY}
       APP_URL: http://localhost:8080
       APP_LOCALE: es
-      # Incluye patrones LAN HTTP/HTTPS + host dinámico (IP del teléfono, etc.).
-      SANCTUM_STATEFUL_DOMAINS: localhost,localhost:8080,localhost:8443,localhost:5173,127.0.0.1:8080,127.0.0.1:8443,192.168.*.*:8080,192.168.*.*:8443,10.*.*.*:8080,10.*.*.*:8443,__SANCTUM_CURRENT_REQUEST_HOST__
-      # Vacío = cookie host-only (sirve para localhost y para la IP LAN).
+      PORT: "8000"
+      SANCTUM_STATEFUL_DOMAINS: localhost,localhost:8080,localhost:8443,localhost:5173,localhost:4200,127.0.0.1:8080,127.0.0.1:8443,192.168.*.*:8080,192.168.*.*:8443,10.*.*.*:8080,10.*.*.*:8443,__SANCTUM_CURRENT_REQUEST_HOST__
       SESSION_DOMAIN: ""
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: mi_db
-      DB_USERNAME: postgres
-      DB_PASSWORD: secret
+      DB_NAME: ${DB_NAME:-mi_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_NAME:-mi_db}
+      DB_USERNAME: ${DB_USER:-postgres}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
@@ -62,9 +66,9 @@ services:
     image: postgres:16-alpine
     restart: always
     environment:
-      POSTGRES_DB: mi_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ${POSTGRES_DB:-mi_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

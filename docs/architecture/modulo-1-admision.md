@@ -8,7 +8,7 @@ El trabajo empieza en **Pacientes**. El menú solo muestra Inicio, Pacientes y, 
 
 1. Desde la raíz del repositorio: `docker compose up --build`.
 2. Abrir http://localhost:8080.
-3. Iniciar sesión con una cuenta local. La contraseña de las cuentas demo es `Vitalsy.2026`.
+3. Iniciar sesión con una cuenta local. La contraseña de las cuentas demo es el valor de `DEMO_PASSWORD` en el `.env` local (la plantilla usa `password_ejemplo`).
 4. En **Pacientes** vea el censo. Si el caso está en su turno, pulse **Continuar**.
 5. Complete el formulario y use el botón de registro o confirmación de esa pantalla: al guardar con éxito el ingreso avanza. Ya no hay un botón aparte de «Confirmar paso en el censo».
 6. Un stepper en la barra del caso muestra los pasos hechos, el actual y los pendientes. El aviso de turno («El siguiente paso corresponde a…») solo aparece en la ficha del ingreso, con el nombre del paciente dentro del recuadro blanco (`Paciente: …`).
@@ -55,7 +55,7 @@ La cama no se asigna en el registro de ingreso. Gestión de camas (`/camas`, RF-
 | Médico residente | `medico_residente@vitalsy.local` | RF-16 |
 | Médico tratante | `medico_tratante@vitalsy.local` | Módulo 2 (visita / CPOE) |
 
-Contraseña de las cuentas demo: `Vitalsy.2026`.
+Contraseña de las cuentas demo: el valor de `DEMO_PASSWORD` en el `.env` local.
 
 Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los pasos sueltos: se llegan desde el censo con paciente cargado.
 
