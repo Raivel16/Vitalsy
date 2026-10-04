@@ -137,7 +137,7 @@ wards ── beds ── bed_assignments / cleaning_orders / bed_readiness_check
 
 ## Migraciones
 
-Prefijo `2026_09_20_100*` bajo `services/backend/database/migrations/`. Seed de catálogo: `CatalogSeeder` (wards + camas de ejemplo), invocado desde `DatabaseSeeder` sin borrar datos demo de admisión.
+Prefijo `2026_09_20_100*` bajo `backend/api/database/migrations/`. Seed de catálogo: `CatalogSeeder` (wards + camas de ejemplo), invocado desde `DatabaseSeeder` sin borrar datos demo de admisión.
 
 ## Modelos Eloquent principales
 

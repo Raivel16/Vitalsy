@@ -1,0 +1,19 @@
+project:
+  name: vitalsy
+  version: 1.0.0
+  description:  Plataforma SaaS para la Vigilancia Fisiológica Longitudinal y Gestión de Alertas Tempranas en la Continuidad Asistencial
+  authors:
+    - Lorenzo Valiente Raivel
+    - Lapierre Castillo Pavel Jordan
+    - Quintana Tumialan Renzo David
+
+stack:
+  frontend: auto
+  backend: auto
+  python: auto
+database:
+  engine: postgresql
+quality:
+  sonar: true
+security:
+  trivy: true
