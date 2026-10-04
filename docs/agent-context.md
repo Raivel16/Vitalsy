@@ -1,0 +1,124 @@
+# Contexto de agentes (iteraciones)
+
+Archivo propio para anotaciones de agentes. **No sustituye** [AGENTS.md](../AGENTS.md); solo evita reeditar el cuerpo fijo de ese archivo.
+
+## 2026-09-19 — bugfix/RF-02-stepper-nav-y-validaciones
+
+Base local usada: `feature/RF-07-celador-flujo-persistencia` (porque `origin/dev` aún no tiene el módulo 1 completo).
+
+Cambios clave:
+
+1. Eliminado `RoleStepLinks` (pills duplicados bajo el título del formulario).
+2. `AdmissionStepper` navegable con rol via `canViewRoleStep`.
+3. Formularios centrados en `clinical.css`.
+4. Validaciones en `shared/validation/inputRules.ts` (DNI/teléfono numéricos; opcionales explícitos).
+
+Al retomar: leer este archivo + sección final de anotaciones en `AGENTS.md`.
+
+## 2026-09-20 — Censo: ancho, búsqueda y paginación + esquema RF-01–RF-104
+
+### Parte A (UI/API censo)
+- Formularios más anchos en viewports grandes (`clinical.css` media queries; censo usa `Sheet wide`).
+- Censo: buscador (`q`) + paginación 10 (`page`, `per_page`) en `AdmissionBoard::list` y `CensusPage`.
+- Meta de respuesta: `{ total, page, perPage, lastPage }`.
+
+### Parte B (BD)
+- Documentación: `docs/architecture/modelo-datos.md` (dominios ↔ RF, convención `encounter_id` string sin FK).
+- Migraciones `2026_09_20_100*` en backend: pacientes, artefactos clínicos M1–M6, camas, personal; `users.is_active` / `deactivated_at`.
+- No se altera la estructura de `admission_encounters`; tablas nuevas van en paralelo.
+- `CatalogSeeder` (wards + camas) desde `DatabaseSeeder`; no limpia demo de admisión.
+- Prueba: `tests/Feature/SchemaCoverageTest.php`.
+
+Para aplicar esquema en entorno local (cuando el usuario lo autorice): `php artisan migrate` (evitar `migrate:fresh` si hay datos a conservar).
+
+## 2026-09-20 — RF-20 camillero + escáner de brazalete
+
+Base: `feature/RF-92-camillero-brazalete-censo` (desde `bugfix/RF-02-shared-ui-spacing`; requisito renumerado a RF-20).
+
+- Rol técnico `celador` → `camillero`; cuenta demo `camillero@vitalsy.local`. Etiqueta UI y docs de actor: **Celador / Camillero**.
+- RF-08: al escanear en verificación de identidad se valida y avanza sin segundo clic.
+- RF-20: escáner en censo (`/pacientes`) para todos los roles; `q` incluye `wristband_code`.
+- `BarcodeScanner` movido a `shared/ui/BarcodeScanner.tsx`.
+
+## 2026-09-21 — Módulo 2: roles clínicos separados
+
+Rama: `feature/RF-17-modulo-2-atencion-seguimiento` (desde `origin/dev` actualizado).
+
+- Roles: `enfermera_piso`, `auxiliar_enfermeria`, `medico_residente`, `medico_tratante` (sin claves genéricas `enfermeria`/`medico`). Catálogo en `requerimientos.md`.
+- UX Módulo 2 orientativa: censo + chart (Opción A), no stepper de admisión.
+
+## 2026-09-21 — RF-21 integración LIS
+
+- `LisClient`/`StubLisClient`, `LabResultsIntegrator`, API `inpatient-care/.../lab-results`, UI `/atencion/laboratorio`.
+- Guía: `docs/architecture/modulo-2-atencion.md`.
+
+## 2026-09-21 — Módulo 2 RF-21–33 completo (rama feature)
+
+- Commits atómicos por RF/subproceso en `feature/RF-17-modulo-2-atencion-seguimiento`.
+- UX: chart + acciones (`/atencion/*`), no stepper de admisión.
+- Cubierto: LIS, PACS, visita, evolución médica, CPOE, vitals/NEWS2/Butterworth/alertas, e-MAR, cuidados.
+- Yaak: `docs/api/yaak-modulo-2.postman_collection.json` (pendiente validar auth Sanctum en cliente).
+
+## 2026-09-25 — Expediente con pestañas + cuidados compartidos
+
+- Expediente clínico: tabs Admisión / Constantes / Tratamiento / Paraclínicos / Evoluciones.
+- Notas de evolución y cuidados directos disponibles para `enfermera_piso` y `auxiliar_enfermeria` (API + UI).
+- Pruebas: `patient-chart.test.tsx`, `nursing-care.test.tsx`, `EmarAndCareApiTest`.
+
+## 2026-09-25 — Timeline por fecha + trazabilidad de cuidados
+
+- Cuidados: tabs Notas / Actividades; actividades exponen `completedByName`.
+- Expediente: incluye `careActivities`; historiales agrupados por día con filtro (Hoy/7/30/Todo/rango); API `from`/`to`.
+- Título de admisión sin «Proceso 1».
+
+## 2026-09-25 — UX chart/censo + RF-24 ambos médicos
+
+- Gráfica evolutiva respeta el filtro de fechas; loader centrado; menú lateral a altura completa.
+- Censo: sin paginación si hay 1 página; botón Acción a ancho de celda; `?next=` restaura la pantalla pedida.
+- RF-24: evolución médica para `medico_residente` y `medico_tratante`.
+
+## 2026-09-25 — Pulido visual (menos azul uniforme)
+
+- Cabeceras sin franja azul uniforme; tipografía de lectura más contrastada.
+- Loader solo barra; menú `position: fixed`; fondo con patrón salud muy sutil.
+- Evoluciones/labs/imágenes en tarjetas; gap Editar/Eliminar; CTA de ficha centrado.
+
+## 2026-09-25 — RF-16 tratante + loader global
+
+- Indicaciones basales: `medico_tratante` también firma (API + Continuar en censo).
+- CaseBar: una sola barra de carga global antes de montar la pantalla con `ingreso`.
+- Valoración/Kardex: botones alineados/centrados + lead en Kardex.
+
+## 2026-09-25 — Indicaciones plantilla + UX escalas/CPOE
+
+- `medicalOrders` ya no 404 en ingresos reales sin payload previo (plantilla pendiente).
+- Acordeones cerrados por defecto; CPOE «Agregar medicamento» como sección; Morse con opciones claras; alergias en chips.
+
+## 2026-09-25 — Censo genérico + búsqueda + avance tratante
+
+- Censo: títulos genéricos («Pacientes» / «Listado»); sin «admisión» ni «ingreso hospitalario» en el listado.
+- Búsqueda solo con botón Buscar o Enter (el escáner sigue buscando al instante).
+- Escalas Morse: radios simples (sin pastillas).
+- RF-16: `advance` de `indicaciones` acepta `medico_tratante` además de residente.
+
+## Pendiente posterior al rediseño de pantallas (no entra en RNF-16)
+
+Registrado para una iteración aparte. No se implementa junto con el ajuste visual de las pantallas actuales.
+
+- **RF-101 a RF-104.** Mockups `screen_1_usuarios_listado`, `screen_2_registrar_usuario` y `screen_3_editar_desactivar_usuario`. La administración de cuentas está en la rama `feature/RF-101-administracion-usuarios`, fuera de `dev`.
+- **Vitalsy Life.** App móvil y mockups de `UI/Vitalsy Life/`. Producto distinto; ver `UI/Vitalsy Life/plan-implementacion.md`.
+- **RF-06.** Bloque Life en el consentimiento de admisión: el mock está listo; no completar la lógica si el backend no la cubre.
+- **RF-61 y RF-96.** QR de vinculación al alta: el mock está en la ficha de egreso; no inventar el código si el backend no lo entrega.
+
+## 2026-09-29 — Pizarra clínica (RNF-16)
+
+- Tokens en `clinical.css`: canvas `#ECEEF1`, texto `#1B2228`, acento `#1E6B7B`. Tipografía Source Sans 3.
+- Wordmark: «Vitalsy» con la línea vital debajo. Top bar 68px, sidebar 256px, ítem activo con fondo `#E6EFF1` y barra de 3px.
+- NEWS2 usa `--news-low|mid|high`, aparte de los banners de éxito, aviso y error.
+- No cambia rutas, roles, textos ni APIs.
+- Piezas reutilizables en `shared/ui/clinical.tsx`: `MetricRow`, `StatusMark`, `BedTile`, `Panel`, `StatTile`, `QueueRow`, `StatusPill`, `ProgressTrack`.
+- Rediseño fiel a mocks (`code.html`/`screen.png`), sin datos inventados:
+  - Inicio: tiles + action bar + cola desde APIs reales.
+  - Pacientes/ficha: pastillas, prioridad, entregables en grilla.
+  - Egreso/alertas/camas: filtros, cards, KPIs; mismos handlers.
+- Formularios M1/M2 restantes: Sheet/`form-grid`; pulido fino pendiente.

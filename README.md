@@ -9,27 +9,32 @@ Vitalsy es un monorepo para una plataforma orientada a la investigación bibliog
 - Base de datos: PostgreSQL
 - Infraestructura: Docker
 
-## Arranque rápido
+## Arranque rápido en desarrollo
+
+Desde la raíz del repositorio:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-Luego accede a:
+Nginx publica la aplicación en http://localhost:8080. El puerto 80 queda libre para XAMPP. La API queda en el mismo origen, bajo `/api`. PostgreSQL queda en `localhost:5432`.
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- PostgreSQL: localhost:5432
+El ingreso pide una cuenta local. Las cuentas de revisión y qué pantalla corresponde a cada requisito están en [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md).
+
+La guía para revisar cada pantalla del ingreso está en [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md).
 
 ## Documentación
 
 - Requerimientos: [docs/requirements/requerimientos.md](docs/requirements/requerimientos.md)
 - Reglas de desarrollo: [docs/architecture/reglas.md](docs/architecture/reglas.md)
+- Módulo 1: [docs/architecture/modulo-1-admision.md](docs/architecture/modulo-1-admision.md)
 
 ## Estructura principal
 
-- `services/frontend/` - aplicación React + Vite
-- `services/backend/` - API Laravel
+- `frontend/web/` - aplicación React + Vite
+- `backend/api/` - API Laravel
+- `database/` - `init.sql` y `seeds.sql` para el laboratorio
+- `services/movil/` - app ciudadana Vitalsy Life
 - `docker/` - configuración de Docker y Nginx
 - `docs/` - documentación técnica y requisitos
 - `bibliography/` - referencias bibliográficas
