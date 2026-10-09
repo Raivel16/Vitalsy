@@ -27,7 +27,7 @@ COPY . /var/www/html
 
 RUN composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache vendor
 
 ARG PORT=3000
 ENV PORT=${PORT}
