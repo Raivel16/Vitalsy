@@ -267,6 +267,32 @@ class BedAssignmentFlowTest extends TestCase
         $this->postJson('/api/v1/beds/assignments/1/acknowledge')->assertForbidden();
     }
 
+    // --- Censo con ocupante (diseño: cama ocupada muestra al paciente) --------------------------
+
+    public function test_census_exposes_the_occupant_of_an_occupied_bed(): void
+    {
+        $this->encounter('ENC-OC-1', 'Carlos Ramírez', 'cerrado', '70000061');
+        $bed = $this->bed('101', 'A');
+        $bed->update(['status' => 'occupied']);
+        BedAssignment::query()->create([
+            'bed_id' => $bed->id,
+            'encounter_id' => 'ENC-OC-1',
+            'assigned_at' => now()->subDays(2),
+        ]);
+        $this->asRole('enfermera_supervisora');
+
+        $beds = collect($this->getJson('/api/v1/beds/census')->assertOk()->json('wards'))
+            ->flatMap(fn (array $ward) => $ward['beds']);
+
+        $occupied = $beds->firstWhere('id', $bed->id);
+        $this->assertSame('ENC-OC-1', $occupied['occupant']['encounterId']);
+        $this->assertSame('Carlos Ramírez', $occupied['occupant']['patientName']);
+        $this->assertNotNull($occupied['occupant']['since']);
+
+        $free = $beds->firstWhere('id', $this->bed('101', 'B')->id);
+        $this->assertNull($free['occupant']);
+    }
+
     // --- Selector de pacientes -------------------------------------------------------------------
 
     public function test_patient_lookup_lists_open_encounters_without_a_bed(): void

@@ -48,8 +48,9 @@ class BedManagement
 
     public function census(): array
     {
-        $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) {
-            $beds = $ward->beds->map(fn (Bed $bed) => $this->presentBed($bed));
+        $occupants = $this->occupants();
+        $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) use ($occupants) {
+            $beds = $ward->beds->map(fn (Bed $bed) => $this->presentBed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
 
             return [
                 'id' => $ward->id,
@@ -380,6 +381,46 @@ class BedManagement
             'm' => 'male',
             default => null,
         };
+    }
+
+    /**
+     * Ocupante vigente por cama (una sola consulta por tabla, sin N+1).
+     *
+     * @return array<int, array{encounterId: string, patientName: ?string, since: ?string}>
+     */
+    private function occupants(): array
+    {
+        $assignments = BedAssignment::query()->whereNull('released_at')->orderBy('id')->get();
+        if ($assignments->isEmpty()) {
+            return [];
+        }
+
+        $encounterIds = $assignments->pluck('encounter_id');
+        $encounterNames = AdmissionEncounter::query()
+            ->whereIn('encounter_id', $encounterIds->all())
+            ->pluck('patient_name', 'encounter_id');
+        $requestIds = $encounterIds
+            ->filter(fn (string $id) => str_starts_with($id, 'REQ-'))
+            ->map(fn (string $id) => (int) substr($id, 4))
+            ->all();
+        $requestNames = $requestIds === []
+            ? collect()
+            : BedRequest::query()->whereIn('id', $requestIds)->pluck('patient_name', 'id');
+
+        $occupants = [];
+        foreach ($assignments as $assignment) {
+            $name = $encounterNames[$assignment->encounter_id]
+                ?? (str_starts_with($assignment->encounter_id, 'REQ-')
+                    ? ($requestNames[(int) substr($assignment->encounter_id, 4)] ?? null)
+                    : null);
+            $occupants[$assignment->bed_id] = [
+                'encounterId' => $assignment->encounter_id,
+                'patientName' => $name,
+                'since' => optional($assignment->assigned_at)?->toIso8601String(),
+            ];
+        }
+
+        return $occupants;
     }
 
     private function patientNameFor(string $encounterId): ?string
