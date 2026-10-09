@@ -128,8 +128,9 @@ class BedManagementApiTest extends TestCase
 
         $order = CleaningOrder::query()->where('bed_id', $bed->id)->firstOrFail();
         $this->asRole('servicios_generales');
-        $this->postJson("/api/v1/beds/cleaning-orders/{$order->id}/complete")
-            ->assertOk()
+        $this->postJson("/api/v1/beds/cleaning-orders/{$order->id}/complete", [
+            'checklist' => ['superficies' => true, 'portasuero' => true, 'colchon' => true, 'ventilacion' => true],
+        ])->assertOk()
             ->assertJsonPath('order.status', 'completada');
 
         $this->asRole('auxiliar_enfermeria');

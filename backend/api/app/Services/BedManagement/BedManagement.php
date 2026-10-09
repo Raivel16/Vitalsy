@@ -6,12 +6,13 @@ use App\Exceptions\ClinicalRuleException;
 use App\Models\AdmissionEncounter;
 use App\Models\Bed;
 use App\Models\BedAssignment;
-use App\Models\BedReadinessCheck;
 use App\Models\BedRequest;
 use App\Models\CleaningOrder;
 use App\Models\DischargeProjection;
+use App\Models\Patient;
 use App\Models\User;
 use App\Models\Ward;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BedManagement
@@ -22,6 +23,13 @@ class BedManagement
         'media' => 2,
         'baja' => 1,
     ];
+
+    private const ISOLATING_TYPES = ['gotas', 'contacto', 'respiratorio'];
+
+    public function __construct(
+        private readonly CleaningWorkflow $cleaning,
+        private readonly BedCompatibility $compatibility,
+    ) {}
 
     public function available(): array
     {
@@ -40,8 +48,9 @@ class BedManagement
 
     public function census(): array
     {
-        $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) {
-            $beds = $ward->beds->map(fn (Bed $bed) => $this->presentBed($bed));
+        $occupants = $this->occupants();
+        $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) use ($occupants) {
+            $beds = $ward->beds->map(fn (Bed $bed) => $this->presentBed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
 
             return [
                 'id' => $ward->id,
@@ -61,29 +70,43 @@ class BedManagement
     /** @param array<string, mixed> $data */
     public function storeRequest(array $data): array
     {
-        $suggestions = $this->suggestBeds($data);
-        $status = $suggestions === [] ? 'en_espera' : 'pendiente';
+        $encounter = isset($data['encounterId'])
+            ? AdmissionEncounter::query()->where('encounter_id', $data['encounterId'])->first()
+            : null;
+
+        $isolationType = $data['isolationType'] ?? null;
+        $isolation = (bool) ($data['isolation'] ?? false) || in_array($isolationType, self::ISOLATING_TYPES, true);
+        $profile = [
+            'isolation' => $isolation,
+            'gender' => $data['gender'] ?? ($encounter ? $this->genderOf($encounter) : null),
+            'specialty' => $data['specialty'] ?? null,
+        ];
+
+        $suggestions = $this->suggestBeds($profile);
 
         $request = BedRequest::query()->create([
             'encounter_id' => $data['encounterId'] ?? null,
-            'patient_name' => $data['patientName'] ?? null,
+            'patient_name' => $data['patientName'] ?? $encounter?->patient_name,
             'source' => $data['source'],
             'priority' => $data['priority'],
-            'specialty' => $data['specialty'] ?? null,
-            'gender' => $data['gender'] ?? null,
-            'isolation' => (bool) ($data['isolation'] ?? false),
-            'status' => $status,
+            'specialty' => $profile['specialty'],
+            'gender' => $profile['gender'],
+            'isolation' => $isolation,
+            'isolation_type' => $isolationType ?? ($isolation ? null : 'ninguno'),
+            'equipment' => $data['equipment'] ?? [],
+            'status' => $suggestions === [] ? 'en_espera' : 'pendiente',
             'requested_at' => now(),
         ]);
 
         return ['request' => $this->presentRequest($request), 'suggestions' => $suggestions];
     }
 
+    /** Estados separados por coma, p. ej. `pendiente,en_espera`. */
     public function listRequests(?string $status = null): array
     {
         $query = BedRequest::query();
         if ($status) {
-            $query->where('status', $status);
+            $query->whereIn('status', array_filter(array_map('trim', explode(',', $status))));
         }
 
         $requests = $query->get()
@@ -105,91 +128,182 @@ class BedManagement
         ])];
     }
 
+    /** RF-72/73: valida compatibilidad, asigna de forma atómica y notifica a la supervisora. */
     public function assign(int $requestId, int $bedId): array
     {
-        $request = $this->requireRequest($requestId);
-        $bed = Bed::query()->with('ward')->find($bedId);
-        if (! $bed) {
-            throw new NotFoundHttpException('No se encontró el lecho.');
-        }
-        if ($bed->status !== 'available') {
-            throw new ClinicalRuleException('El lecho ya no está disponible.');
-        }
+        return DB::transaction(function () use ($requestId, $bedId) {
+            $request = BedRequest::query()->lockForUpdate()->find($requestId);
+            if (! $request) {
+                throw new NotFoundHttpException('No se encontró la solicitud de cama.');
+            }
+            if (! in_array($request->status, ['pendiente', 'en_espera'], true)) {
+                throw new ClinicalRuleException('La solicitud ya fue atendida.');
+            }
 
-        $bed->update(['status' => 'occupied']);
-        $assignment = BedAssignment::query()->create([
-            'bed_id' => $bed->id,
-            'encounter_id' => $request->encounter_id ?? "REQ-{$request->id}",
-            'assigned_at' => now(),
-        ]);
-        $request->update(['status' => 'asignada']);
+            $bed = Bed::query()->with('ward')->lockForUpdate()->find($bedId);
+            if (! $bed) {
+                throw new NotFoundHttpException('No se encontró el lecho.');
+            }
+            if ($bed->status !== 'available') {
+                throw new ClinicalRuleException('El lecho ya no está disponible.');
+            }
 
-        if ($request->encounter_id) {
-            AdmissionEncounter::query()->where('encounter_id', $request->encounter_id)->update([
-                'room' => $bed->room,
-                'bed' => $bed->bed_code,
-                'service' => $bed->ward?->name,
+            $violations = $this->compatibility->violations($bed, [
+                'isolation' => $request->isolation,
+                'gender' => $request->gender,
+                'specialty' => $request->specialty,
             ]);
-        }
+            if ($violations !== []) {
+                throw new ClinicalRuleException('El lecho no es compatible con el paciente: '.implode(' ', $violations));
+            }
 
-        return [
-            'assignment' => [
-                'id' => $assignment->id,
-                'bedId' => $bed->id,
-                'encounterId' => $assignment->encounter_id,
-            ],
-        ];
+            $bed->update(['status' => 'occupied']);
+            $assignment = BedAssignment::query()->create([
+                'bed_id' => $bed->id,
+                'encounter_id' => $request->encounter_id ?? "REQ-{$request->id}",
+                'assigned_at' => now(),
+                'notified_at' => now(),
+                'notified_role' => 'enfermera_supervisora',
+            ]);
+            $request->update(['status' => 'asignada']);
+
+            if ($request->encounter_id) {
+                AdmissionEncounter::query()->where('encounter_id', $request->encounter_id)->update([
+                    'room' => $bed->room,
+                    'bed' => $bed->bed_code,
+                    'service' => $bed->ward?->name,
+                ]);
+            }
+
+            return [
+                'assignment' => [
+                    'id' => $assignment->id,
+                    'bedId' => $bed->id,
+                    'encounterId' => $assignment->encounter_id,
+                    'notifiedRole' => $assignment->notified_role,
+                ],
+            ];
+        });
     }
 
-    public function completeCleaning(int $orderId): array
+    /** RF-73: asignaciones notificadas a la supervisora y aún no reconocidas. */
+    public function notifications(): array
     {
-        $order = CleaningOrder::query()->find($orderId);
-        if (! $order) {
-            throw new NotFoundHttpException('No se encontró la orden de limpieza.');
+        $rows = BedAssignment::query()
+            ->with('bed.ward')
+            ->where('notified_role', 'enfermera_supervisora')
+            ->whereNull('acknowledged_at')
+            ->orderBy('assigned_at')
+            ->get();
+
+        return ['notifications' => $rows->map(fn (BedAssignment $assignment) => [
+            'id' => $assignment->id,
+            'encounterId' => $assignment->encounter_id,
+            'patientName' => $this->patientNameFor($assignment->encounter_id),
+            'ward' => $assignment->bed?->ward?->name,
+            'room' => $assignment->bed?->room,
+            'bedCode' => $assignment->bed?->bed_code,
+            'assignedAt' => optional($assignment->assigned_at)?->toIso8601String(),
+        ])->values()->all()];
+    }
+
+    public function acknowledge(int $assignmentId, User $user): array
+    {
+        $assignment = BedAssignment::query()->find($assignmentId);
+        if (! $assignment) {
+            throw new NotFoundHttpException('No se encontró la asignación.');
         }
 
-        $order->update([
-            'status' => 'completada',
-            'completed_at' => now(),
-        ]);
+        if (! $assignment->acknowledged_at) {
+            $assignment->update(['acknowledged_at' => now(), 'acknowledged_by' => $user->id]);
+        }
 
-        return ['order' => $this->presentCleaning($order->fresh())];
+        return ['acknowledged' => true, 'id' => $assignment->id];
+    }
+
+    /** Ingresos abiertos sin cama ni solicitud vigente: origen del selector de pacientes (RF-68). */
+    public function patients(?string $query = null): array
+    {
+        $withBed = BedAssignment::query()->whereNull('released_at')->pluck('encounter_id');
+        $withRequest = BedRequest::query()
+            ->whereIn('status', ['pendiente', 'en_espera'])
+            ->whereNotNull('encounter_id')
+            ->pluck('encounter_id');
+
+        $encounters = AdmissionEncounter::query()
+            ->where('current_step', '!=', 'egresado')
+            ->whereNotIn('encounter_id', $withBed->merge($withRequest)->all())
+            ->when($query, function ($builder, string $term) {
+                $like = '%'.addcslashes($term, '%_\\').'%';
+                $builder->where(function ($inner) use ($like) {
+                    $inner->where('patient_name', 'like', $like)->orWhere('document_number', 'like', $like);
+                });
+            })
+            ->orderBy('patient_name')
+            ->limit(25)
+            ->get();
+
+        $sexByDocument = Patient::query()
+            ->whereIn('document_number', $encounters->pluck('document_number')->all())
+            ->get()
+            ->mapWithKeys(fn (Patient $patient) => [$patient->document_type.'|'.$patient->document_number => $patient->sex]);
+
+        return ['patients' => $encounters->map(fn (AdmissionEncounter $encounter) => [
+            'encounterId' => $encounter->encounter_id,
+            'patientName' => $encounter->patient_name,
+            'documentNumber' => $encounter->document_number,
+            'originService' => $encounter->origin_service,
+            'gender' => $this->normalizeGender($sexByDocument[$encounter->document_type.'|'.$encounter->document_number] ?? null),
+        ])->values()->all()];
+    }
+
+    /** RF-71: proyecciones de alta vigentes (hoy en adelante). */
+    public function listProjections(): array
+    {
+        $rows = DischargeProjection::query()
+            ->where('projected_at', '>=', now()->startOfDay())
+            ->orderBy('projected_at')
+            ->get();
+        $names = AdmissionEncounter::query()
+            ->whereIn('encounter_id', $rows->pluck('encounter_id')->all())
+            ->pluck('patient_name', 'encounter_id');
+
+        return ['projections' => $rows->map(fn (DischargeProjection $projection) => [
+            'id' => $projection->id,
+            'encounterId' => $projection->encounter_id,
+            'patientName' => $names[$projection->encounter_id] ?? null,
+            'projectedAt' => optional($projection->projected_at)?->toIso8601String(),
+        ])->values()->all()];
+    }
+
+    /** @param array<string, mixed> $checklist */
+    public function completeCleaning(int $orderId, array $checklist, User $user): array
+    {
+        $order = $this->cleaning->complete($orderId, $checklist, $user);
+
+        return ['order' => $this->presentCleaning($order->load('bed.ward'))];
     }
 
     public function markEquipped(int $bedId, User $user): array
     {
         $bed = $this->requireBed($bedId);
-        $completed = CleaningOrder::query()
-            ->where('bed_id', $bedId)
-            ->where('status', 'completada')
-            ->latest('id')
-            ->first();
-        if (! $completed) {
-            throw new ClinicalRuleException('La desinfección de la unidad aún no está completa.');
-        }
+        $result = $this->cleaning->equip($bed, $user);
 
-        BedReadinessCheck::query()->create([
-            'bed_id' => $bed->id,
-            'linen_ok' => true,
-            'supplies_ok' => true,
-            'confirmed_by' => $user->id,
-            'confirmed_at' => now(),
-        ]);
-
-        return ['bed' => $this->presentBed($bed)];
+        return [
+            'bed' => $this->presentBed($bed->fresh('ward')),
+            'order' => $this->presentCleaning($result['order']->load('bed.ward')),
+        ];
     }
 
-    public function release(int $bedId): array
+    public function release(int $bedId, User $user): array
     {
         $bed = $this->requireBed($bedId);
-        $ready = BedReadinessCheck::query()->where('bed_id', $bedId)->latest('id')->first();
-        if (! $ready) {
-            throw new ClinicalRuleException('La unidad aún no está equipada.');
-        }
+        $order = $this->cleaning->enable($bed, $user);
 
-        $bed->update(['status' => 'available']);
-
-        return ['bed' => $this->presentBed($bed->fresh())];
+        return [
+            'bed' => $this->presentBed($bed->fresh('ward')),
+            'order' => $this->presentCleaning($order->load('bed.ward')),
+        ];
     }
 
     /** @param array<string, mixed> $data */
@@ -244,22 +358,78 @@ class BedManagement
     /** @param array<string, mixed> $profile */
     private function suggestBeds(array $profile): array
     {
-        $query = Bed::query()->with('ward')->where('status', 'available');
-        if ($profile['isolation'] ?? false) {
-            $query->where('isolation', true);
-        } else {
-            $query->where('isolation', false);
-        }
-        if (! empty($profile['specialty'])) {
-            $query->whereHas('ward', fn ($ward) => $ward->where('specialty', $profile['specialty']));
-        }
-        if (! empty($profile['gender'])) {
-            $query->where(function ($beds) use ($profile) {
-                $beds->where('gender_policy', 'mixed')->orWhere('gender_policy', $profile['gender']);
-            });
+        return array_map(fn (Bed $bed) => $this->presentBed($bed), $this->compatibility->suggest($profile));
+    }
+
+    private function genderOf(AdmissionEncounter $encounter): ?string
+    {
+        $sex = Patient::query()
+            ->where('document_type', $encounter->document_type)
+            ->where('document_number', $encounter->document_number)
+            ->value('sex');
+
+        return $this->normalizeGender($sex);
+    }
+
+    /** `Femenino`/`F`/`female` → `female`; `Masculino`/`M`/`male` → `male`; otro → null. */
+    private function normalizeGender(?string $sex): ?string
+    {
+        $initial = strtolower(substr(trim((string) $sex), 0, 1));
+
+        return match ($initial) {
+            'f' => 'female',
+            'm' => 'male',
+            default => null,
+        };
+    }
+
+    /**
+     * Ocupante vigente por cama (una sola consulta por tabla, sin N+1).
+     *
+     * @return array<int, array{encounterId: string, patientName: ?string, since: ?string}>
+     */
+    private function occupants(): array
+    {
+        $assignments = BedAssignment::query()->whereNull('released_at')->orderBy('id')->get();
+        if ($assignments->isEmpty()) {
+            return [];
         }
 
-        return $query->get()->map(fn (Bed $bed) => $this->presentBed($bed))->values()->all();
+        $encounterIds = $assignments->pluck('encounter_id');
+        $encounterNames = AdmissionEncounter::query()
+            ->whereIn('encounter_id', $encounterIds->all())
+            ->pluck('patient_name', 'encounter_id');
+        $requestIds = $encounterIds
+            ->filter(fn (string $id) => str_starts_with($id, 'REQ-'))
+            ->map(fn (string $id) => (int) substr($id, 4))
+            ->all();
+        $requestNames = $requestIds === []
+            ? collect()
+            : BedRequest::query()->whereIn('id', $requestIds)->pluck('patient_name', 'id');
+
+        $occupants = [];
+        foreach ($assignments as $assignment) {
+            $name = $encounterNames[$assignment->encounter_id]
+                ?? (str_starts_with($assignment->encounter_id, 'REQ-')
+                    ? ($requestNames[(int) substr($assignment->encounter_id, 4)] ?? null)
+                    : null);
+            $occupants[$assignment->bed_id] = [
+                'encounterId' => $assignment->encounter_id,
+                'patientName' => $name,
+                'since' => optional($assignment->assigned_at)?->toIso8601String(),
+            ];
+        }
+
+        return $occupants;
+    }
+
+    private function patientNameFor(string $encounterId): ?string
+    {
+        if (str_starts_with($encounterId, 'REQ-')) {
+            return BedRequest::query()->find((int) substr($encounterId, 4))?->patient_name;
+        }
+
+        return AdmissionEncounter::query()->where('encounter_id', $encounterId)->value('patient_name');
     }
 
     private function presentBed(Bed $bed): array
@@ -286,6 +456,8 @@ class BedManagement
             'specialty' => $request->specialty,
             'gender' => $request->gender,
             'isolation' => $request->isolation,
+            'isolationType' => $request->isolation_type,
+            'equipment' => $request->equipment ?? [],
             'status' => $request->status,
             'requestedAt' => optional($request->requested_at)?->toIso8601String(),
         ];
@@ -298,8 +470,15 @@ class BedManagement
             'bedId' => $order->bed_id,
             'room' => $order->bed?->room,
             'bedCode' => $order->bed?->bed_code,
+            'ward' => $order->bed?->ward?->name,
+            'isolation' => (bool) $order->bed?->isolation,
             'protocol' => $order->protocol,
             'status' => $order->status,
+            'checklist' => $order->checklist ?? (object) [],
+            'dispatchedAt' => optional($order->dispatched_at)?->toIso8601String(),
+            'completedAt' => optional($order->completed_at)?->toIso8601String(),
+            'equippedAt' => optional($order->equipped_at)?->toIso8601String(),
+            'enabledAt' => optional($order->enabled_at)?->toIso8601String(),
         ];
     }
 

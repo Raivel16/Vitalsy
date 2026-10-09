@@ -14,6 +14,8 @@ class BedRequest extends Model
         'specialty',
         'gender',
         'isolation',
+        'isolation_type',
+        'equipment',
         'status',
         'requested_at',
     ];
@@ -22,6 +24,7 @@ class BedRequest extends Model
     {
         return [
             'isolation' => 'boolean',
+            'equipment' => 'array',
             'requested_at' => 'datetime',
         ];
     }
