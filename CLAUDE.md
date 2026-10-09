@@ -10,7 +10,7 @@ Vitalsy es un monorepo hospitalario (documentación y UI en español): ingreso, 
 |---|---|
 | `frontend/web/` | React 19 + Vite + TypeScript (Vitest + Testing Library) |
 | `backend/api/` | Laravel (PHP 8.2), API en `/api/v1`, auth con Sanctum |
-| `services/movil/` | Vitalsy Life, Expo/React Native (tiene su propio `AGENTS.md`; leerlo antes de tocar APIs de Expo) |
+| `movil/` | Vitalsy Life, Expo/React Native (tiene su propio `AGENTS.md`; leerlo antes de tocar APIs de Expo) |
 | `docs/` | `requirements/requerimientos.md` (RF-XX/RNF-XX), `architecture/` (reglas + un doc por módulo), `agent-context.md` |
 | `docker/`, `docker-compose*.yml` | Nginx + frontend + backend + PostgreSQL |
 
@@ -53,7 +53,7 @@ composer test:coverage                           # genera coverage.xml (requiere
 php artisan alerts:process-slas                  # SLA de alertas y recordatorios de cumplimiento
 ```
 
-Móvil (`services/movil`): `npm test` (jest), `npm run typecheck`, `npx expo lint`.
+Móvil (`movil`): `npm test` (jest), `npm run typecheck`, `npx expo lint`.
 
 Validación local completa antes de push: `scripts/pre-push.sh`. CI (`.github/workflows/ci.yml`): tests + build del frontend, tests + `pint --test` del backend.
 

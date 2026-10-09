@@ -1,6 +1,6 @@
 # Módulo 7 — Vitalsy Life (app móvil)
 
-Cliente ciudadano en `services/movil`. Vitalsy Clinical no se modifica en este corte. Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
+Cliente ciudadano en `movil`. Vitalsy Clinical no se modifica en este corte. Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
 
 ## Flujo
 
@@ -41,4 +41,4 @@ Las reglas de dominio tienen pruebas Jest antes de la interfaz. El cifrado local
 
 ## Cómo probar
 
-La guía operativa está en `services/movil/documento.md`.
+La guía operativa está en `movil/documento.md`.

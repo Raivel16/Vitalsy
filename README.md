@@ -34,7 +34,7 @@ La guía para revisar cada pantalla del ingreso está en [docs/architecture/modu
 - `frontend/web/` - aplicación React + Vite
 - `backend/api/` - API Laravel
 - `database/` - `init.sql` y `seeds.sql` para el laboratorio
-- `services/movil/` - app ciudadana Vitalsy Life
+- `movil/` - app ciudadana Vitalsy Life
 - `docker/` - configuración de Docker y Nginx
 - `docs/` - documentación técnica y requisitos
 - `bibliography/` - referencias bibliográficas
