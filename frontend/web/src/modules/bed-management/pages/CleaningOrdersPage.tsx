@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
@@ -11,6 +11,7 @@ import { CleaningStageStrip } from "../components/CleaningStageStrip";
 import { FlowGuide } from "../components/FlowGuide";
 import { stageCounts, unitTitle, type Checklist, type CleaningStatus } from "../domain/cleaningStage";
 import { elapsedLabel } from "../domain/flowGuide";
+import { useCleaningOrders } from "../hooks/useCleaningOrders";
 import type { CleaningOrder } from "../types";
 
 type StageFilter = CleaningStatus | "todas";
@@ -28,31 +29,13 @@ const RECENT_ENABLED = 5;
 export function CleaningOrdersPage() {
   const { user } = useAuth();
   const role = user?.role ?? "servicios_generales";
-  const [orders, setOrders] = useState<CleaningOrder[]>([]);
-  const [error, setError] = useState("");
+  const board = useCleaningOrders();
+  const { orders } = board;
+  const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [filter, setFilter] = useState<StageFilter>("todas");
   const [search, setSearch] = useState("");
-  const [loadedAt, setLoadedAt] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await bedApi.cleaningOrders();
-      setOrders(data.orders);
-      setLoadedAt(new Date().toISOString());
-      setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron cargar las órdenes de limpieza."));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function run(order: CleaningOrder, request: () => Promise<unknown>, success: string, failure: string) {
     if (busyId !== null) return;
@@ -60,12 +43,12 @@ export function CleaningOrdersPage() {
     setNotice("");
     try {
       await request();
-      setError("");
+      setActionError("");
       setNotice(success);
-      await load();
+      await board.reload();
     } catch (caught) {
       setNotice("");
-      setError(errorText(caught, failure));
+      setActionError(errorText(caught, failure));
     } finally {
       setBusyId(null);
     }
@@ -96,7 +79,7 @@ export function CleaningOrdersPage() {
     return [...open, ...enabled];
   }, [orders, filter, search]);
 
-  if (loading) return <LoadingState label="Cargando órdenes de limpieza…" />;
+  if (board.loading) return <LoadingState label="Cargando órdenes de limpieza…" />;
 
   return (
     <Sheet kicker="Gestión de camas" title="Habilitación de unidades y protocolo de higiene" wide clinic="board" className="floor-care ops-board">
@@ -111,7 +94,8 @@ export function CleaningOrdersPage() {
           toEnable: counts.equipada,
         }}
       />
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
+      {board.error ? <Feedback tone="error">{board.error}</Feedback> : null}
+      {actionError ? <Feedback tone="error">{actionError}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
 
       <CleaningStageStrip counts={counts} active={filter} onSelect={setFilter} />
@@ -141,8 +125,8 @@ export function CleaningOrdersPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <span className="sync-chip">Actualizado {elapsedLabel(loadedAt).toLowerCase()}</span>
-          <Button type="button" variant="quiet" onClick={() => void load()}>Actualizar</Button>
+          <span className="sync-chip">Actualizado {elapsedLabel(board.loadedAt).toLowerCase()}</span>
+          <Button type="button" variant="quiet" onClick={() => void board.reload()}>Actualizar</Button>
         </div>
       </div>
 

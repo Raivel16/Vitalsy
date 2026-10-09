@@ -8,6 +8,7 @@ export type Bed = {
   genderPolicy?: string | null;
   isolation: boolean;
   status: string;
+  occupant?: { encounterId: string; patientName: string | null; since: string | null } | null;
 };
 
 export type WardCensus = {
