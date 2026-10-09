@@ -50,3 +50,6 @@ docker/nginx/certs/
 Thumbs.db
 .vscode/
 .idea/
+
+# graphify (grafo local regenerable)
+graphify-out/
