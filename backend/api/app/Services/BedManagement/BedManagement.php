@@ -6,7 +6,6 @@ use App\Exceptions\ClinicalRuleException;
 use App\Models\AdmissionEncounter;
 use App\Models\Bed;
 use App\Models\BedAssignment;
-use App\Models\BedReadinessCheck;
 use App\Models\BedRequest;
 use App\Models\CleaningOrder;
 use App\Models\DischargeProjection;
@@ -22,6 +21,8 @@ class BedManagement
         'media' => 2,
         'baja' => 1,
     ];
+
+    public function __construct(private readonly CleaningWorkflow $cleaning) {}
 
     public function available(): array
     {
@@ -141,55 +142,34 @@ class BedManagement
         ];
     }
 
-    public function completeCleaning(int $orderId): array
+    /** @param array<string, mixed> $checklist */
+    public function completeCleaning(int $orderId, array $checklist, User $user): array
     {
-        $order = CleaningOrder::query()->find($orderId);
-        if (! $order) {
-            throw new NotFoundHttpException('No se encontró la orden de limpieza.');
-        }
+        $order = $this->cleaning->complete($orderId, $checklist, $user);
 
-        $order->update([
-            'status' => 'completada',
-            'completed_at' => now(),
-        ]);
-
-        return ['order' => $this->presentCleaning($order->fresh())];
+        return ['order' => $this->presentCleaning($order->load('bed.ward'))];
     }
 
     public function markEquipped(int $bedId, User $user): array
     {
         $bed = $this->requireBed($bedId);
-        $completed = CleaningOrder::query()
-            ->where('bed_id', $bedId)
-            ->where('status', 'completada')
-            ->latest('id')
-            ->first();
-        if (! $completed) {
-            throw new ClinicalRuleException('La desinfección de la unidad aún no está completa.');
-        }
+        $result = $this->cleaning->equip($bed, $user);
 
-        BedReadinessCheck::query()->create([
-            'bed_id' => $bed->id,
-            'linen_ok' => true,
-            'supplies_ok' => true,
-            'confirmed_by' => $user->id,
-            'confirmed_at' => now(),
-        ]);
-
-        return ['bed' => $this->presentBed($bed)];
+        return [
+            'bed' => $this->presentBed($bed->fresh('ward')),
+            'order' => $this->presentCleaning($result['order']->load('bed.ward')),
+        ];
     }
 
-    public function release(int $bedId): array
+    public function release(int $bedId, User $user): array
     {
         $bed = $this->requireBed($bedId);
-        $ready = BedReadinessCheck::query()->where('bed_id', $bedId)->latest('id')->first();
-        if (! $ready) {
-            throw new ClinicalRuleException('La unidad aún no está equipada.');
-        }
+        $order = $this->cleaning->enable($bed, $user);
 
-        $bed->update(['status' => 'available']);
-
-        return ['bed' => $this->presentBed($bed->fresh())];
+        return [
+            'bed' => $this->presentBed($bed->fresh('ward')),
+            'order' => $this->presentCleaning($order->load('bed.ward')),
+        ];
     }
 
     /** @param array<string, mixed> $data */
@@ -298,8 +278,15 @@ class BedManagement
             'bedId' => $order->bed_id,
             'room' => $order->bed?->room,
             'bedCode' => $order->bed?->bed_code,
+            'ward' => $order->bed?->ward?->name,
+            'isolation' => (bool) $order->bed?->isolation,
             'protocol' => $order->protocol,
             'status' => $order->status,
+            'checklist' => $order->checklist ?? (object) [],
+            'dispatchedAt' => optional($order->dispatched_at)?->toIso8601String(),
+            'completedAt' => optional($order->completed_at)?->toIso8601String(),
+            'equippedAt' => optional($order->equipped_at)?->toIso8601String(),
+            'enabledAt' => optional($order->enabled_at)?->toIso8601String(),
         ];
     }
 

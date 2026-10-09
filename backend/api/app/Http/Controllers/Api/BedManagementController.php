@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\BedManagement\BedManagement;
+use App\Services\BedManagement\CleaningWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,9 +61,18 @@ class BedManagementController extends Controller
         return response()->json($this->beds->assign($requestId, (int) $data['bedId']), 201);
     }
 
-    public function completeCleaning(int $orderId): JsonResponse
+    public function completeCleaning(Request $request, int $orderId): JsonResponse
     {
-        return response()->json($this->beds->completeCleaning($orderId));
+        $rules = ['checklist' => ['required', 'array']];
+        $messages = ['checklist.required' => 'Complete el checklist de desinfección.'];
+        foreach (CleaningWorkflow::CHECKLIST_ITEMS as $item) {
+            $rules["checklist.{$item}"] = ['required', 'accepted'];
+            $messages["checklist.{$item}.required"] = 'Complete todo el checklist antes de registrar la desinfección.';
+            $messages["checklist.{$item}.accepted"] = 'Complete todo el checklist antes de registrar la desinfección.';
+        }
+        $data = $request->validate($rules, $messages);
+
+        return response()->json($this->beds->completeCleaning($orderId, $data['checklist'], $request->user()));
     }
 
     public function equip(Request $request, int $bedId): JsonResponse
@@ -70,9 +80,9 @@ class BedManagementController extends Controller
         return response()->json($this->beds->markEquipped($bedId, $request->user()), 201);
     }
 
-    public function release(int $bedId): JsonResponse
+    public function release(Request $request, int $bedId): JsonResponse
     {
-        return response()->json($this->beds->release($bedId));
+        return response()->json($this->beds->release($bedId, $request->user()));
     }
 
     public function storeProjection(Request $request): JsonResponse
