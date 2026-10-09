@@ -31,6 +31,9 @@ services:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
+    # Solo desarrollo: el entrypoint ejecuta `composer install` sobre el volumen anonimo de
+    # vendor. Como root no depende del dueno que traiga ese volumen (imagen vieja o recreada).
+    user: root
     command: ["sh", "/usr/local/bin/dev-entrypoint.sh"]
     ports:
       - "8000:8000"
