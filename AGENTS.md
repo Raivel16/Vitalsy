@@ -155,4 +155,5 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Pendiente fuera de alcance: bloques del diseño sin RF (personal operativo, tiempo de rotación, insumos, bitácora, avería). Proceso 6 (`/personal`) sigue con las brechas detectadas en la revisión (selectores de enfermeras, confirmar retén RF-88, resultado de ausencias).
 - Rama: `bugfix/RF-68-77-camas-flujo-e-interfaz`.
 
+- Camas (UI): se retira `FlowGuide` (guía de pasos) de `/camas` y `/camas/limpieza`; el panel lateral de `/camas` queda sticky y «Nueva solicitud» abre `BedRequestDrawer` (cajón) desde la lista de espera.
 <!-- END AGENT ANNOTATIONS -->

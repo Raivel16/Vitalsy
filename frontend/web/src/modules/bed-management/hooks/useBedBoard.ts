@@ -11,14 +11,13 @@ type BoardState = {
   waiting: WaitingItem[];
   notifications: AssignmentNotification[];
   projections: Projection[];
-  toEnable: number;
   loadedAt: string | null;
   loading: boolean;
   error: string;
 };
 
 const INITIAL: BoardState = {
-  wards: [], waiting: [], notifications: [], projections: [], toEnable: 0, loadedAt: null, loading: true, error: "",
+  wards: [], waiting: [], notifications: [], projections: [], loadedAt: null, loading: true, error: "",
 };
 
 /** Carga el censo y, según el rol, lista de espera con sugerencias, proyecciones y notificaciones. */
@@ -28,19 +27,17 @@ export function useBedBoard(role: string) {
   const load = useCallback(async () => {
     const caps = capabilitiesFor(role);
     try {
-      const [census, waiting, projections, notifications, orders] = await Promise.all([
+      const [census, waiting, projections, notifications] = await Promise.all([
         bedApi.census(),
         caps.seesWaitingList ? loadWaiting() : Promise.resolve<WaitingItem[]>([]),
         caps.seesProjections ? bedApi.projections() : Promise.resolve({ projections: [] as Projection[] }),
         caps.seesNotifications ? bedApi.notifications() : Promise.resolve({ notifications: [] as AssignmentNotification[] }),
-        caps.tracksEnablement ? bedApi.cleaningOrders() : Promise.resolve({ orders: [] }),
       ]);
       setState({
         wards: census.wards,
         waiting,
         projections: projections.projections,
         notifications: notifications.notifications,
-        toEnable: orders.orders.filter((order) => order.status === "equipada").length,
         loadedAt: new Date().toISOString(),
         loading: false,
         error: "",

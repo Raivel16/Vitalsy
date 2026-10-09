@@ -54,7 +54,7 @@ Fuente única en `App\Services\BedManagement\BedCompatibility`. Un lecho es comp
 | `/camas` | `gestion_camas`, `enfermera_supervisora` | `screen_3_censo_hospitalario_corregido` |
 | `/camas/limpieza` | `servicios_generales`, `auxiliar_enfermeria`, `enfermera_supervisora` | `screen_4_limpieza_habilitaci_n_de_unidades` |
 
-Ambas pantallas muestran una guía del proceso con «Tu siguiente paso» según el rol y su cola. Cada tarjeta expone solo la acción que corresponde al rol y a la etapa; en cualquier otro caso indica a quién se espera.
+Las pantallas no muestran guía de pasos informativos. En `/camas` el panel lateral (lista de espera priorizada, notificaciones y proyecciones) queda fijo al hacer scroll y «Nueva solicitud» abre el registro en un cajón lateral. Cada tarjeta expone solo la acción que corresponde al rol y a la etapa; en cualquier otro caso indica a quién se espera.
 
 ## Fuera de alcance (sin RF en `requerimientos.md`)
 

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -49,14 +49,13 @@ describe("habilitación de unidades (RF-74 a RF-77)", () => {
     sessionStorage.clear();
   });
 
-  it("explica el siguiente paso al rol y muestra el circuito", async () => {
+  it("no muestra la guía de pasos informativos", async () => {
     stubApi([order({ id: 1 }), order({ id: 2, bedId: 12, bedCode: "C" })]);
     renderApp("/camas/limpieza", { role: "servicios_generales" });
 
-    const guide = await screen.findByRole("region", { name: /guía del proceso/i });
-    expect(within(guide).getByText(/tiene 2 desinfecciones pendientes/i)).toBeInTheDocument();
-    expect(within(guide).getByText(/tu siguiente paso/i)).toBeInTheDocument();
-    expect(within(guide).getByText(/desinfección/i, { selector: "li *" })).toBeInTheDocument();
+    await screen.findAllByRole("button", { name: /registrar desinfección terminada/i });
+    expect(screen.queryByRole("region", { name: /guía del proceso/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu siguiente paso/i)).not.toBeInTheDocument();
   });
 
   it("servicios generales no puede registrar la desinfección sin completar el checklist", async () => {

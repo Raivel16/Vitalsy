@@ -8,7 +8,6 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { bedApi } from "../bedApi";
 import { CleaningOrderCard } from "../components/CleaningOrderCard";
 import { CleaningStageStrip } from "../components/CleaningStageStrip";
-import { FlowGuide } from "../components/FlowGuide";
 import { stageCounts, unitTitle, type Checklist, type CleaningStatus } from "../domain/cleaningStage";
 import { elapsedLabel } from "../domain/flowGuide";
 import { useCleaningOrders } from "../hooks/useCleaningOrders";
@@ -84,16 +83,6 @@ export function CleaningOrdersPage() {
   return (
     <Sheet kicker="Gestión de camas" title="Habilitación de unidades y protocolo de higiene" wide clinic="board" className="floor-care ops-board">
       <p className="lead">Control operativo del circuito de acondicionamiento de camas tras el egreso o traslado de pacientes.</p>
-      <FlowGuide
-        role={role}
-        counts={{
-          waiting: 0,
-          notifications: 0,
-          pendingDisinfect: counts.pendiente,
-          toEquip: counts.completada,
-          toEnable: counts.equipada,
-        }}
-      />
       {board.error ? <Feedback tone="error">{board.error}</Feedback> : null}
       {actionError ? <Feedback tone="error">{actionError}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}

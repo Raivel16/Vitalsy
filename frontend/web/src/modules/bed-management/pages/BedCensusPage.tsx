@@ -8,8 +8,8 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { bedApi } from "../bedApi";
 import { AssignConfirm, type AssignDraft } from "../components/AssignConfirm";
 import { BedKpiStrip } from "../components/BedKpiStrip";
+import { BedRequestDrawer } from "../components/BedRequestDrawer";
 import { BedRequestForm } from "../components/BedRequestForm";
-import { FlowGuide } from "../components/FlowGuide";
 import { NotificationsPanel } from "../components/NotificationsPanel";
 import { ProjectionPanel, type Occupant } from "../components/ProjectionPanel";
 import { WaitingList } from "../components/WaitingList";
@@ -31,7 +31,8 @@ export function BedCensusPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [wardFilter, setWardFilter] = useState("todos");
   const [draft, setDraft] = useState<AssignDraft | null>(null);
-  const [formKey, setFormKey] = useState(0);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const closeRequest = useCallback(() => setRequestOpen(false), []);
 
   const searchPatients = useCallback(async (query: string): Promise<PatientOption[]> => (await bedApi.patients(query)).patients, []);
 
@@ -107,7 +108,7 @@ export function BedCensusPage() {
       "Solicitud de cama registrada. Aparece en la lista de espera priorizada.",
       "No se pudo registrar la solicitud.",
     );
-    if (done) setFormKey((key) => key + 1);
+    if (done) setRequestOpen(false);
   }
 
   const submitProjection = (encounterId: string, projectedAt: string) =>
@@ -121,16 +122,6 @@ export function BedCensusPage() {
   return (
     <Sheet kicker="Gestión de camas" title="Censo hospitalario" wide clinic="board" className="floor-care ops-board">
       <p className="lead">Disponibilidad de lechos por servicio, lista de espera y asignación.</p>
-      <FlowGuide
-        role={role}
-        counts={{
-          waiting: board.waiting.length,
-          notifications: board.notifications.length,
-          pendingDisinfect: 0,
-          toEquip: 0,
-          toEnable: board.toEnable,
-        }}
-      />
       {board.error ? <Feedback tone="error">{board.error}</Feedback> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
@@ -139,14 +130,6 @@ export function BedCensusPage() {
         <span className="sync-chip">Sincronizado: {elapsedLabel(board.loadedAt).toLowerCase()}</span>
         <div className="ops-toolbar-tools">
           <Button type="button" variant="quiet" onClick={() => void board.reload()}>Actualizar</Button>
-          {caps.canRequest ? (
-            <Button
-              type="button"
-              onClick={() => document.getElementById("bed-request-form")?.scrollIntoView?.({ behavior: "smooth" })}
-            >
-              Nueva solicitud
-            </Button>
-          ) : null}
         </div>
       </div>
 
@@ -193,15 +176,12 @@ export function BedCensusPage() {
             />
           ) : null}
 
-          {caps.seesWaitingList ? <WaitingList items={board.waiting} canAssign={caps.canAssign} onAssign={draftFromWaiting} /> : null}
-
-          {caps.canRequest ? (
-            <BedRequestForm
-              key={formKey}
-              specialties={specialties}
-              busy={busy === "request"}
-              onSearch={searchPatients}
-              onSubmit={(form) => void submitRequest(form)}
+          {caps.seesWaitingList ? (
+            <WaitingList
+              items={board.waiting}
+              canAssign={caps.canAssign}
+              onAssign={draftFromWaiting}
+              onNewRequest={caps.canRequest ? () => setRequestOpen(true) : undefined}
             />
           ) : null}
 
@@ -224,6 +204,18 @@ export function BedCensusPage() {
           ) : null}
         </aside>
       </div>
+
+      {caps.canRequest && requestOpen ? (
+        <BedRequestDrawer title="Nueva solicitud de cama" onClose={closeRequest}>
+          {error ? <Feedback tone="error">{error}</Feedback> : null}
+          <BedRequestForm
+            specialties={specialties}
+            busy={busy === "request"}
+            onSearch={searchPatients}
+            onSubmit={(form) => void submitRequest(form)}
+          />
+        </BedRequestDrawer>
+      ) : null}
     </Sheet>
   );
 }

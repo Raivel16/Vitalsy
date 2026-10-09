@@ -9,13 +9,23 @@ export function WaitingList({
   items,
   canAssign,
   onAssign,
+  onNewRequest,
 }: {
   items: WaitingItem[];
   canAssign: boolean;
   onAssign: (item: WaitingItem) => void;
+  onNewRequest?: () => void;
 }) {
   return (
-    <Panel title="Lista de espera priorizada" aside={<StatusPill tone={items.length > 0 ? "danger" : "neutral"}>{items.length} pendientes</StatusPill>}>
+    <Panel
+      title="Lista de espera priorizada"
+      aside={
+        <>
+          <StatusPill tone={items.length > 0 ? "danger" : "neutral"}>{items.length} pendientes</StatusPill>
+          {onNewRequest ? <Button type="button" onClick={onNewRequest}>Nueva solicitud</Button> : null}
+        </>
+      }
+    >
       {items.length === 0 ? (
         <p className="banner banner-info" role="status">
           No hay solicitudes en espera. Cuando urgencias, quirófano o admisión pidan una cama aparecerán aquí, ordenadas por gravedad.

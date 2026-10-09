@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "../../../shared/ui/Button";
-import { Panel } from "../../../shared/ui/clinical";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import {
   EQUIPMENT,
@@ -72,9 +71,7 @@ export function BedRequestForm({
     });
 
   return (
-    <div id="bed-request-form">
-      <Panel title="Nueva solicitud de cama">
-        <form className="stack" onSubmit={submit} noValidate>
+    <form className="stack" onSubmit={submit} noValidate>
           <fieldset className="segmented">
             <legend>Origen del paciente</legend>
             {SOURCES.map((source) => (
@@ -186,8 +183,6 @@ export function BedRequestForm({
           </fieldset>
 
           <Button type="submit" pending={busy}>{busy ? "Registrando…" : "Registrar solicitud"}</Button>
-        </form>
-      </Panel>
-    </div>
+    </form>
   );
 }

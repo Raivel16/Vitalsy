@@ -99,6 +99,10 @@ function stubApi(options: Options = {}) {
 
 const posts = (calls: Call[]) => calls.filter((call) => call.method === "POST");
 
+async function openRequestDrawer(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("button", { name: /nueva solicitud/i }));
+}
+
 describe("censo y asignación de camas (RF-68 a RF-73)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -111,7 +115,8 @@ describe("censo y asignación de camas (RF-68 a RF-73)", () => {
 
     expect(await screen.findByRole("heading", { name: /censo hospitalario/i })).toBeInTheDocument();
     expect(await screen.findByText("Carlos Ramírez")).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /guía del proceso/i })).toHaveTextContent(/tiene 2 solicitudes en espera/i);
+    expect(screen.queryByRole("region", { name: /guía del proceso/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu siguiente paso/i)).not.toBeInTheDocument();
 
     const waiting = screen.getByRole("region", { name: /lista de espera priorizada/i });
     expect(within(waiting).getByText("Prioridad 1: Crítica")).toBeInTheDocument();
@@ -176,11 +181,44 @@ describe("censo y asignación de camas (RF-68 a RF-73)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/no es compatible con el paciente/i);
   });
 
+  it("abre el registro de solicitud en un cajón desde la lista de espera y lo cierra con Escape", async () => {
+    stubApi();
+    const user = userEvent.setup();
+    renderApp("/camas", { role: "gestion_camas" });
+
+    const waiting = await screen.findByRole("region", { name: /lista de espera priorizada/i });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^paciente$/i)).not.toBeInTheDocument();
+
+    await user.click(within(waiting).getByRole("button", { name: /nueva solicitud/i }));
+    const drawer = screen.getByRole("dialog", { name: /nueva solicitud de cama/i });
+    expect(within(drawer).getByLabelText(/^paciente$/i)).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("cierra el cajón al registrar la solicitud y confirma el éxito", async () => {
+    stubApi();
+    const user = userEvent.setup();
+    renderApp("/camas", { role: "gestion_camas" });
+
+    await openRequestDrawer(user);
+    await user.type(await screen.findByLabelText(/^paciente$/i), "Ana");
+    await user.click(await screen.findByRole("button", { name: /ana quispe/i }));
+    await user.selectOptions(screen.getByLabelText(/^especialidad$/i), "medicina_interna");
+    await user.click(screen.getByRole("button", { name: /registrar solicitud/i }));
+
+    expect(await screen.findByText(/solicitud de cama registrada/i)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("valida la solicitud antes de enviarla", async () => {
     const calls = stubApi();
     const user = userEvent.setup();
     renderApp("/camas", { role: "gestion_camas" });
 
+    await openRequestDrawer(user);
     await user.click(await screen.findByRole("button", { name: /registrar solicitud/i }));
 
     expect(screen.getByText(/seleccione al paciente o escriba su nombre/i)).toBeInTheDocument();
@@ -194,6 +232,7 @@ describe("censo y asignación de camas (RF-68 a RF-73)", () => {
     const user = userEvent.setup();
     renderApp("/camas", { role: "gestion_camas" });
 
+    await openRequestDrawer(user);
     await user.type(await screen.findByLabelText(/^paciente$/i), "Ana");
     await user.click(await screen.findByRole("button", { name: /ana quispe/i }));
     await user.selectOptions(screen.getByLabelText(/^especialidad$/i), "medicina_interna");
@@ -220,6 +259,7 @@ describe("censo y asignación de camas (RF-68 a RF-73)", () => {
     const user = userEvent.setup();
     renderApp("/camas", { role: "gestion_camas" });
 
+    await openRequestDrawer(user);
     await user.type(await screen.findByLabelText(/^paciente$/i), "Carlos");
     await user.click(await screen.findByRole("button", { name: /carlos soto/i }));
     await user.selectOptions(screen.getByLabelText(/^especialidad$/i), "cirugia");
@@ -235,6 +275,7 @@ describe("censo y asignación de camas (RF-68 a RF-73)", () => {
     const user = userEvent.setup();
     renderApp("/camas", { role: "gestion_camas" });
 
+    await openRequestDrawer(user);
     await user.type(await screen.findByLabelText(/^paciente$/i), "Ana");
     await user.click(await screen.findByRole("button", { name: /ana quispe/i }));
     await user.selectOptions(screen.getByLabelText(/^especialidad$/i), "medicina_interna");
@@ -259,7 +300,7 @@ describe("proyección de altas y notificaciones (RF-71, RF-73)", () => {
     renderApp("/camas", { role: "enfermera_supervisora" });
 
     expect(await screen.findByRole("heading", { name: /censo hospitalario/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /registrar solicitud/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /nueva solicitud/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /asignar lecho/i })).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: /proyección de altas/i })).toBeInTheDocument();
   });
