@@ -131,7 +131,10 @@ class BedManagement
     public function assign(int $requestId, int $bedId): array
     {
         return DB::transaction(function () use ($requestId, $bedId) {
-            $request = $this->requireRequest($requestId);
+            $request = BedRequest::query()->lockForUpdate()->find($requestId);
+            if (! $request) {
+                throw new NotFoundHttpException('No se encontró la solicitud de cama.');
+            }
             if (! in_array($request->status, ['pendiente', 'en_espera'], true)) {
                 throw new ClinicalRuleException('La solicitud ya fue atendida.');
             }

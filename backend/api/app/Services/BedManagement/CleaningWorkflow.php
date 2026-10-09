@@ -15,6 +15,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *
  * pendiente → completada → equipada → habilitada
  * La cama solo vuelve a `available` al habilitar (paso final de la supervisora).
+ *
+ * Cada transición lee y valida el estado dentro de la transacción con la fila
+ * bloqueada, para que dos peticiones simultáneas no registren el mismo paso dos veces.
  */
 class CleaningWorkflow
 {
@@ -32,14 +35,6 @@ class CleaningWorkflow
     /** @param array<string, mixed> $checklist */
     public function complete(int $orderId, array $checklist, User $user): CleaningOrder
     {
-        $order = CleaningOrder::query()->find($orderId);
-        if (! $order) {
-            throw new NotFoundHttpException('No se encontró la orden de limpieza.');
-        }
-        if ($order->status !== self::STATUS_PENDING) {
-            throw new ClinicalRuleException('La desinfección de esta unidad ya fue registrada.');
-        }
-
         $normalized = [];
         foreach (self::CHECKLIST_ITEMS as $item) {
             if (($checklist[$item] ?? false) !== true) {
@@ -48,25 +43,35 @@ class CleaningWorkflow
             $normalized[$item] = true;
         }
 
-        $order->update([
-            'status' => self::STATUS_DISINFECTED,
-            'checklist' => $normalized,
-            'completed_at' => now(),
-            'disinfected_by' => $user->id,
-        ]);
+        return DB::transaction(function () use ($orderId, $normalized, $user) {
+            $order = CleaningOrder::query()->lockForUpdate()->find($orderId);
+            if (! $order) {
+                throw new NotFoundHttpException('No se encontró la orden de limpieza.');
+            }
+            if ($order->status !== self::STATUS_PENDING) {
+                throw new ClinicalRuleException('La desinfección de esta unidad ya fue registrada.');
+            }
 
-        return $order->fresh();
+            $order->update([
+                'status' => self::STATUS_DISINFECTED,
+                'checklist' => $normalized,
+                'completed_at' => now(),
+                'disinfected_by' => $user->id,
+            ]);
+
+            return $order->fresh();
+        });
     }
 
     /** @return array{order: CleaningOrder, check: BedReadinessCheck} */
     public function equip(Bed $bed, User $user): array
     {
-        $order = $this->latestOrder($bed);
-        if (! $order || $order->status !== self::STATUS_DISINFECTED) {
-            throw new ClinicalRuleException('La desinfección de la unidad aún no está completa.');
-        }
+        return DB::transaction(function () use ($bed, $user) {
+            $order = $this->latestOrderLocked($bed);
+            if (! $order || $order->status !== self::STATUS_DISINFECTED) {
+                throw new ClinicalRuleException('La desinfección de la unidad aún no está completa.');
+            }
 
-        return DB::transaction(function () use ($bed, $order, $user) {
             $check = BedReadinessCheck::query()->create([
                 'bed_id' => $bed->id,
                 'cleaning_order_id' => $order->id,
@@ -87,35 +92,40 @@ class CleaningWorkflow
 
     public function enable(Bed $bed, User $user): CleaningOrder
     {
-        if ($bed->status !== 'cleaning') {
-            throw new ClinicalRuleException('La unidad no está en proceso de limpieza.');
-        }
+        return DB::transaction(function () use ($bed, $user) {
+            $locked = Bed::query()->lockForUpdate()->find($bed->id);
+            if (! $locked || $locked->status !== 'cleaning') {
+                throw new ClinicalRuleException('La unidad no está en proceso de limpieza.');
+            }
 
-        $order = $this->latestOrder($bed);
-        $equipped = $order
-            && $order->status === self::STATUS_EQUIPPED
-            && BedReadinessCheck::query()
-                ->where('bed_id', $bed->id)
-                ->where('cleaning_order_id', $order->id)
-                ->exists();
-        if (! $equipped) {
-            throw new ClinicalRuleException('La unidad aún no está equipada.');
-        }
+            $order = $this->latestOrderLocked($locked);
+            $equipped = $order
+                && $order->status === self::STATUS_EQUIPPED
+                && BedReadinessCheck::query()
+                    ->where('bed_id', $locked->id)
+                    ->where('cleaning_order_id', $order->id)
+                    ->exists();
+            if (! $equipped) {
+                throw new ClinicalRuleException('La unidad aún no está equipada.');
+            }
 
-        return DB::transaction(function () use ($bed, $order, $user) {
             $order->update([
                 'status' => self::STATUS_ENABLED,
                 'enabled_at' => now(),
                 'enabled_by' => $user->id,
             ]);
-            $bed->update(['status' => 'available']);
+            $locked->update(['status' => 'available']);
 
             return $order->fresh();
         });
     }
 
-    private function latestOrder(Bed $bed): ?CleaningOrder
+    private function latestOrderLocked(Bed $bed): ?CleaningOrder
     {
-        return CleaningOrder::query()->where('bed_id', $bed->id)->latest('id')->first();
+        return CleaningOrder::query()
+            ->where('bed_id', $bed->id)
+            ->latest('id')
+            ->lockForUpdate()
+            ->first();
     }
 }
