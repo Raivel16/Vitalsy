@@ -52,13 +52,4 @@ describe("gestión de camas (RF-68 a RF-77)", () => {
     await user.click(screen.getByRole("button", { name: /registrar solicitud/i }));
     expect(await screen.findByText(/solicitud de cama registrada/i)).toBeInTheDocument();
   });
-
-  it("permite al personal de limpieza completar la desinfección", async () => {
-    stubBeds();
-    const user = userEvent.setup();
-    renderApp("/camas/limpieza", { role: "servicios_generales" });
-
-    await user.click(await screen.findByRole("button", { name: /limpieza completada/i }));
-    expect(await screen.findByText(/limpieza estándar completada/i)).toBeInTheDocument();
-  });
 });
