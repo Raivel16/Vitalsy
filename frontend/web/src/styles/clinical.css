@@ -4168,3 +4168,6 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
 .ops-board .priority-alta { color: #9a4a00; background: #fff1e2; }
 .ops-board .priority-media { color: var(--warning); background: var(--warning-bg); }
 .ops-board .priority-baja { color: var(--muted); background: var(--sunken); }
+.ops-board .equipment-list { display: grid; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+.ops-board .equipment-list legend { margin-bottom: 0.3rem; padding: 0; font-size: 0.82rem; font-weight: 700; }
+.ops-board .segmented label { white-space: nowrap; }

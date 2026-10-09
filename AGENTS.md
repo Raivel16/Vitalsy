@@ -146,4 +146,13 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - El lector de códigos abre en un modal. En egreso, el escaneo abre la ficha del hospitalizado.
 - Rama: `chore/ui-procesos-4-5-6-pizarra`.
 
+### 2026-10-09 — Proceso 5 camas: flujo completo y fidelidad al diseño
+
+- Ciclo de la orden de limpieza cerrado: `pendiente → completada → equipada → habilitada`, con guardas de estado, checklist obligatorio y chequeo de equipamiento ligado a la orden (`CleaningWorkflow`). Migraciones aditivas `2026_10_09_100000` y `2026_10_09_100100`.
+- `assign` es atómico y valida compatibilidad (aislamiento, especialidad, género) con `BedCompatibility`; deja la asignación notificada a la supervisora hasta que la reconoce (RF-73).
+- Nuevos endpoints de lectura: `GET beds/patients`, `GET beds/projections`, `GET beds/assignments/notifications`; el censo expone `occupant` por cama.
+- `/camas` y `/camas/limpieza` rehechas según `screen_3_censo_hospitalario_corregido` y `screen_4_limpieza_habilitaci_n_de_unidades`; se agrega `FlowGuide` («Tu siguiente paso» por rol). La solicitud ya no envía especialidad/género ocultos.
+- Pendiente fuera de alcance: bloques del diseño sin RF (personal operativo, tiempo de rotación, insumos, bitácora, avería). Proceso 6 (`/personal`) sigue con las brechas detectadas en la revisión (selectores de enfermeras, confirmar retén RF-88, resultado de ausencias).
+- Rama: `bugfix/RF-68-77-camas-flujo-e-interfaz`.
+
 <!-- END AGENT ANNOTATIONS -->

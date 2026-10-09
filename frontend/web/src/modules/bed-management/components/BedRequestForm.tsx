@@ -172,7 +172,7 @@ export function BedRequestForm({
             ))}
           </SelectField>
 
-          <fieldset className="segmented">
+          <fieldset className="equipment-list">
             <legend>Equipamiento requerido</legend>
             {EQUIPMENT.map((item) => (
               <CheckField
