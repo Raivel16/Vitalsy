@@ -221,9 +221,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('census', [BedManagementController::class, 'census']);
                 Route::get('requests', [BedManagementController::class, 'requests']);
                 Route::get('requests/{requestId}/suggestions', [BedManagementController::class, 'suggestions']);
+                Route::get('projections', [BedManagementController::class, 'projections']);
             });
 
             Route::middleware('role:gestion_camas')->group(function () {
+                Route::get('patients', [BedManagementController::class, 'patients']);
                 Route::post('requests', [BedManagementController::class, 'storeRequest']);
                 Route::post('requests/{requestId}/assign', [BedManagementController::class, 'assign']);
             });
@@ -231,6 +233,8 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:enfermera_supervisora')->group(function () {
                 Route::post('projections', [BedManagementController::class, 'storeProjection']);
                 Route::post('{bedId}/release', [BedManagementController::class, 'release']);
+                Route::get('assignments/notifications', [BedManagementController::class, 'notifications']);
+                Route::post('assignments/{assignmentId}/acknowledge', [BedManagementController::class, 'acknowledge']);
             });
 
             Route::middleware('role:servicios_generales,enfermera_supervisora,auxiliar_enfermeria')->group(function () {

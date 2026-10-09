@@ -30,11 +30,17 @@ class BedManagementController extends Controller
             'specialty' => ['nullable', 'string'],
             'gender' => ['nullable', 'in:female,male'],
             'isolation' => ['nullable', 'boolean'],
-            'patientName' => ['nullable', 'string'],
+            'isolationType' => ['nullable', 'in:ninguno,gotas,contacto,respiratorio'],
+            'equipment' => ['nullable', 'array'],
+            'equipment.*' => ['in:oxigeno_central,monitor'],
+            'patientName' => ['required_without:encounterId', 'nullable', 'string', 'max:160'],
             'encounterId' => ['nullable', 'string'],
         ], [
             'source.required' => 'Indique el origen de la solicitud.',
             'priority.required' => 'Indique la prioridad clínica.',
+            'patientName.required_without' => 'Seleccione o indique el paciente de la solicitud.',
+            'isolationType.in' => 'El tipo de aislamiento no es válido.',
+            'equipment.*.in' => 'El equipamiento solicitado no es válido.',
         ]);
 
         return response()->json($this->beds->storeRequest($data), 201);
@@ -89,13 +95,34 @@ class BedManagementController extends Controller
     {
         $data = $request->validate([
             'encounterId' => ['required', 'string'],
-            'projectedAt' => ['required', 'date'],
+            'projectedAt' => ['required', 'date', 'after:now'],
         ], [
             'encounterId.required' => 'Indique el ingreso proyectado.',
             'projectedAt.required' => 'Indique la hora proyectada de alta.',
+            'projectedAt.after' => 'La hora proyectada de alta debe ser futura.',
         ]);
 
         return response()->json($this->beds->storeProjection($data, $request->user()), 201);
+    }
+
+    public function projections(): JsonResponse
+    {
+        return response()->json($this->beds->listProjections());
+    }
+
+    public function patients(Request $request): JsonResponse
+    {
+        return response()->json($this->beds->patients($request->query('query')));
+    }
+
+    public function notifications(): JsonResponse
+    {
+        return response()->json($this->beds->notifications());
+    }
+
+    public function acknowledge(Request $request, int $assignmentId): JsonResponse
+    {
+        return response()->json($this->beds->acknowledge($assignmentId, $request->user()));
     }
 
     public function cleaningOrders(): JsonResponse
