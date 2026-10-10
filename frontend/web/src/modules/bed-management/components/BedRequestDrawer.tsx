@@ -27,7 +27,8 @@ export function BedRequestDrawer({
   }, [onClose]);
 
   return (
-    <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="drawer-backdrop">
+      <button type="button" className="drawer-scrim" aria-hidden="true" tabIndex={-1} onClick={onClose} />
       <dialog ref={panelRef} className="drawer-panel" open aria-modal="true" aria-label={title} tabIndex={-1}>
         <header className="drawer-head">
           <h3>{title}</h3>

@@ -17,7 +17,11 @@ describe("BedRequestDrawer", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveFocus();
     expect(dialog.parentElement).toHaveClass("drawer-backdrop");
-    expect(dialog.parentElement).toHaveAttribute("role", "presentation");
+    // El fondo clicable es un botón nativo oculto a lectores de pantalla y fuera del orden de tabulación.
+    const scrim = dialog.parentElement?.querySelector(".drawer-scrim");
+    expect(scrim?.tagName).toBe("BUTTON");
+    expect(scrim).toHaveAttribute("aria-hidden", "true");
+    expect(scrim).toHaveAttribute("tabindex", "-1");
     expect(screen.getByText("Contenido del formulario")).toBeInTheDocument();
   });
 
@@ -39,7 +43,7 @@ describe("BedRequestDrawer", () => {
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledTimes(2);
 
-    await user.pointer({ keys: "[MouseLeft]", target: screen.getByRole("dialog").parentElement as HTMLElement });
+    await user.click(screen.getByRole("dialog").parentElement?.querySelector(".drawer-scrim") as HTMLElement);
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 

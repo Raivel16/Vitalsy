@@ -1468,8 +1468,16 @@ a.stepper-label:hover {
   padding: 1.5rem;
   background: rgba(27, 34, 40, 0.48);
 }
+.scanner-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
 .scanner-modal-card {
-  position: static;
+  position: relative;
   margin: 0;
   border: 0;
   color: inherit;
@@ -2042,8 +2050,16 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   justify-content: flex-end;
   background: rgba(20, 28, 36, 0.45);
 }
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
 .drawer-panel {
-  position: static;
+  position: relative;
   margin: 0;
   padding: 0;
   border: 0;

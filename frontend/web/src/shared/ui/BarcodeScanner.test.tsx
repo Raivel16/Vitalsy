@@ -56,9 +56,12 @@ describe("BarcodeScanner", () => {
     expect(dialog.tagName).toBe("DIALOG");
     expect(dialog).toHaveAttribute("open");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    // El fondo solo es una superficie de clic: no es el diálogo ni recibe foco de teclado.
+    // El fondo clicable es un botón nativo oculto a lectores de pantalla y fuera del orden de tabulación.
     expect(dialog.parentElement).toHaveClass("scanner-modal");
-    expect(dialog.parentElement).toHaveAttribute("role", "presentation");
+    const scrim = dialog.parentElement?.querySelector(".scanner-scrim");
+    expect(scrim?.tagName).toBe("BUTTON");
+    expect(scrim).toHaveAttribute("aria-hidden", "true");
+    expect(scrim).toHaveAttribute("tabindex", "-1");
 
     await user.click(screen.getByRole("button", { name: /cerrar/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -76,8 +79,8 @@ describe("BarcodeScanner", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /escanear brazalete/i }));
-    const backdrop = screen.getByRole("dialog").parentElement as HTMLElement;
-    await user.click(backdrop);
+    const scrim = screen.getByRole("dialog").parentElement?.querySelector(".scanner-scrim") as HTMLElement;
+    await user.click(scrim);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 

@@ -107,13 +107,8 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
         {label}
       </Button>
       {open ? createPortal(
-        <div
-          className="scanner-modal"
-          role="presentation"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
-          }}
-        >
+        <div className="scanner-modal">
+          <button type="button" className="scanner-scrim" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} />
           <dialog className="scanner-modal-card" open aria-modal="true" aria-label={label}>
             <header className="scanner-modal-head">
               <strong>{label}</strong>
