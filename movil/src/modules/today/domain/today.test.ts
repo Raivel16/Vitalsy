@@ -34,4 +34,26 @@ describe('format helpers via today', () => {
     expect(today.metrics[0].valueLabel).toBe('64');
     expect(today.metrics[0].footnote).toMatch(/construcción/i);
   });
+
+  it('reports the most recent reading across metrics as the update time', () => {
+    const sample = (id: string, kind: BiometricSample['kind'], value: number, at: string): BiometricSample => ({
+      id,
+      kind,
+      value,
+      unit: kind === 'spo2' ? '%' : 'lpm',
+      startedAt: at,
+      endedAt: at,
+      origin: 'manual',
+    });
+    const today = buildToday(
+      [
+        sample('a', 'spo2', 97, '2026-10-03T10:30:00.000Z'),
+        sample('b', 'heart_rate', 64, '2026-10-03T07:15:00.000Z'),
+        sample('c', 'heart_rate', 66, '2026-10-02T23:59:00.000Z'),
+      ],
+      now,
+    );
+    expect(today.updatedAt).toBe('2026-10-03T10:30:00.000Z');
+    expect(buildToday([], now).updatedAt).toBeNull();
+  });
 });

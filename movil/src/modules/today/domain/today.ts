@@ -84,7 +84,7 @@ export function buildToday(samples: BiometricSample[], now: Date): TodaySnapshot
   const updatedAt = visible
     .map((item) => item.latestAt)
     .filter((value): value is string => Boolean(value))
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .at(-1) ?? null;
 
   return {
