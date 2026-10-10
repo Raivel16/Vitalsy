@@ -28,6 +28,23 @@ export function daysOfMonth(yearMonth: string): number[] {
   return Array.from({ length: total }, (_, index) => index + 1);
 }
 
+const WEEKDAYS = [
+  { short: "Do", long: "domingo" },
+  { short: "Lu", long: "lunes" },
+  { short: "Ma", long: "martes" },
+  { short: "Mi", long: "miércoles" },
+  { short: "Ju", long: "jueves" },
+  { short: "Vi", long: "viernes" },
+  { short: "Sá", long: "sábado" },
+] as const;
+
+/** Día real de la semana de una fecha del calendario (UTC: no depende de la zona horaria). */
+export function weekdayOf(yearMonth: string, day: number): { short: string; long: string; weekend: boolean } {
+  const [year, month] = yearMonth.split("-").map(Number);
+  const index = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return { ...WEEKDAYS[index], weekend: index === 0 || index === 6 };
+}
+
 export function shiftMonth(yearMonth: string, delta: number): string {
   const [year, month] = yearMonth.split("-").map(Number);
   const moved = new Date(Date.UTC(year, month - 1 + delta, 1));

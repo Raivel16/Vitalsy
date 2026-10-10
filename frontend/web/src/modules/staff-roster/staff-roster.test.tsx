@@ -163,6 +163,19 @@ describe("personal asistencial (RF-78 a RF-88)", () => {
     expect(screen.getByRole("button", { name: /beto auxiliar, día 5: noche/i })).toBeInTheDocument();
   });
 
+  it("la matriz muestra el día real de la semana en cada columna", async () => {
+    stubStaff({ plans: [publishedPlan("2026-10")] });
+    const user = userEvent.setup();
+    renderApp("/personal", { role: "jefatura_enfermeria" });
+
+    // El mes mostrado es el actual; se navega a octubre de 2026 si hace falta.
+    const select = await screen.findByLabelText("Mes");
+    await user.selectOptions(select, "2026-10");
+    const header = await screen.findByRole("columnheader", { name: /viernes 9/i });
+    expect(header).toHaveTextContent("Vi");
+    expect(screen.getByRole("columnheader", { name: /sábado 10/i })).toHaveTextContent("Sá");
+  });
+
   it("la jefatura exige marcar al menos un turno antes de publicar", async () => {
     stubStaff();
     const user = userEvent.setup();

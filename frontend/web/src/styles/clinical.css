@@ -3991,7 +3991,7 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
 .ops-board .roster-nav {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem 1.5rem;
   margin-bottom: 0.5rem;
 }
@@ -4109,6 +4109,11 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   border-right: 1px solid var(--line);
 }
 .ops-board .shift-matrix thead .shift-person { background: var(--sunken); }
+.ops-board .shift-matrix thead .shift-day { padding: 0.35rem 0.2rem; line-height: 1.25; }
+.ops-board .shift-matrix .shift-weekday { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
+.ops-board .shift-matrix thead .shift-day > span:last-child { display: block; }
+.ops-board .shift-matrix .shift-day.is-weekend { background: color-mix(in srgb, var(--sunken) 80%, var(--line)); }
+.ops-board .shift-matrix thead .shift-day.is-weekend { color: var(--ink); }
 .ops-board .shift-matrix .shift-person strong { display: block; font-size: 0.9rem; }
 .ops-board .shift-matrix .shift-person span { display: block; font-size: 0.75rem; color: var(--muted); font-weight: 400; }
 .ops-board .shift-cell {

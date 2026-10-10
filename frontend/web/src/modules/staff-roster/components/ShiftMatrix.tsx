@@ -1,4 +1,4 @@
-import { type CellKind, type MatrixRow, cycleKind, daysOfMonth } from "../domain/shiftMatrix";
+import { type CellKind, type MatrixRow, cycleKind, daysOfMonth, weekdayOf } from "../domain/shiftMatrix";
 
 const SHORT: Record<CellKind, string> = { D: "Diurno", N: "Noche", L: "Libre", R: "Retén" };
 
@@ -55,9 +55,20 @@ export function ShiftMatrix({
             <thead>
               <tr>
                 <th scope="col" className="shift-person">Colaborador</th>
-                {days.map((day) => (
-                  <th key={day} scope="col" className="shift-day">{String(day).padStart(2, "0")}</th>
-                ))}
+                {days.map((day) => {
+                  const weekday = weekdayOf(yearMonth, day);
+                  return (
+                    <th
+                      key={day}
+                      scope="col"
+                      className={weekday.weekend ? "shift-day is-weekend" : "shift-day"}
+                      aria-label={`${weekday.long} ${day}`}
+                    >
+                      <span className="shift-weekday" aria-hidden>{weekday.short}</span>
+                      <span aria-hidden>{String(day).padStart(2, "0")}</span>
+                    </th>
+                  );
+                })}
                 <th scope="col"><span className="sr-only">Quitar</span></th>
               </tr>
             </thead>
@@ -72,7 +83,7 @@ export function ShiftMatrix({
                     const kind = row.cells[day] ?? "L";
                     const name = `${row.name}, día ${day}: ${SHORT[kind]}`;
                     return (
-                      <td key={day} className="shift-day">
+                      <td key={day} className={weekdayOf(yearMonth, day).weekend ? "shift-day is-weekend" : "shift-day"}>
                         <button
                           type="button"
                           className={`shift-cell kind-${kind}`}

@@ -3,6 +3,7 @@ import {
   countKinds,
   cycleKind,
   daysOfMonth,
+  weekdayOf,
   monthLabel,
   shiftMonth,
   toShifts,
@@ -13,6 +14,15 @@ describe("matriz mensual de turnos (RF-78)", () => {
     expect(daysOfMonth("2026-09")).toHaveLength(30);
     expect(daysOfMonth("2028-02")).toHaveLength(29);
     expect(daysOfMonth("2026-10")[30]).toBe(31);
+  });
+
+  it("calcula el día real de la semana de cada fecha", () => {
+    // 9 de octubre de 2026 es viernes; 1 de enero de 2026, jueves; 29 de febrero de 2028, martes.
+    expect(weekdayOf("2026-10", 9)).toEqual({ short: "Vi", long: "viernes", weekend: false });
+    expect(weekdayOf("2026-01", 1)).toEqual({ short: "Ju", long: "jueves", weekend: false });
+    expect(weekdayOf("2028-02", 29)).toEqual({ short: "Ma", long: "martes", weekend: false });
+    expect(weekdayOf("2026-10", 10)).toEqual({ short: "Sá", long: "sábado", weekend: true });
+    expect(weekdayOf("2026-10", 11)).toEqual({ short: "Do", long: "domingo", weekend: true });
   });
 
   it("recorre meses sin saltos de año", () => {
