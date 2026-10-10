@@ -7,6 +7,7 @@ import { SelectField } from "../../../shared/ui/Field";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { Feedback } from "../../../shared/ui/Sheet";
 import { SERVICES, todayIso } from "../domain/coverage";
+import { orderMonthOptions } from "../domain/months";
 import {
   type MatrixRow,
   buildRows,
@@ -75,10 +76,7 @@ export function RosterPanel({ members }: { members: StaffMember[] }) {
   }, [month, version]);
 
   const stats = useMemo(() => countKinds(rows), [rows]);
-  const monthOptions = useMemo(() => {
-    const set = new Set<string>([month, ...plans.map((item) => item.yearMonth)]);
-    return [...set].sort().reverse();
-  }, [month, plans]);
+  const monthOptions = useMemo(() => orderMonthOptions(month, plans), [month, plans]);
   const serviceOptions = useMemo(() => (SERVICES.includes(unit as (typeof SERVICES)[number]) ? [...SERVICES] : [unit, ...SERVICES]), [unit]);
 
   function goTo(next: string) {
