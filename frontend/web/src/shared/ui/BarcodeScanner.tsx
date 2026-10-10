@@ -21,7 +21,7 @@ const BARCODE_FORMATS = [
 ];
 
 export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant = "quiet" }: Props) {
-  const reactId = useId().replace(/:/g, "");
+  const reactId = useId().replaceAll(":", "");
   const elementId = `scanner-${reactId}`;
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");

@@ -45,7 +45,7 @@ export const SPECIALTY_LABEL: Record<string, string> = {
   cirugia: "Cirugía",
 };
 
-export const specialtyLabel = (value: string): string => SPECIALTY_LABEL[value] ?? value.replace(/_/g, " ");
+export const specialtyLabel = (value: string): string => SPECIALTY_LABEL[value] ?? value.replaceAll("_", " ");
 
 export function emptyRequestForm(): RequestForm {
   return {
