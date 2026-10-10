@@ -53,3 +53,7 @@ Thumbs.db
 
 # graphify (grafo local regenerable)
 graphify-out/
+
+# SonarQube
+.scannerwork/
+movil/coverage/

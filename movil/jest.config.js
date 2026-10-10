@@ -1,6 +1,8 @@
 module.exports = {
   preset: 'jest-expo',
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.test.{ts,tsx}'],
+  coverageReporters: ['text-summary', 'lcov'],
   moduleNameMapper: {
     '^react-native/setup-env$': '<rootDir>/jest/setup-env.js',
   },
