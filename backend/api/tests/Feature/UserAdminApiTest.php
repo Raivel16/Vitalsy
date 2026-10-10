@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\ClinicalRuleException;
 use App\Models\User;
+use App\Services\Users\UserAdministration;
 use App\Support\RoleCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -159,6 +161,16 @@ class UserAdminApiTest extends TestCase
 
         $this->postJson("/api/v1/users/{$target->id}/deactivate")->assertStatus(422);
         $this->assertSame(0, DB::table('access_audit_logs')->where('action', 'user.deactivated')->count());
+    }
+
+    public function test_service_rejects_an_actor_deactivated_after_the_request_was_authorized(): void
+    {
+        $staleActor = User::factory()->create(['role' => 'administrador_accesos']);
+        $target = User::factory()->create(['role' => 'camillero']);
+        User::query()->whereKey($staleActor->id)->update(['is_active' => false]);
+
+        $this->expectException(ClinicalRuleException::class);
+        app(UserAdministration::class)->deactivate($target, $staleActor);
     }
 
     public function test_non_admin_roles_get_403_on_user_endpoints(): void

@@ -2,12 +2,12 @@
 
 namespace App\Services\Users;
 
+use App\Exceptions\ClinicalRuleException;
 use App\Models\User;
 use App\Support\RoleCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 /** RF-101–104: ciclo de vida de cuentas con auditoría; nunca elimina usuarios. */
 class UserAdministration
@@ -39,6 +39,7 @@ class UserAdministration
     {
         $password = Str::password(14, symbols: false);
         $user = DB::transaction(function () use ($data, $password, $actor) {
+            $this->assertActorStillAdministrator($actor);
             $user = User::query()->create([
                 'name' => trim($data['name']),
                 'email' => mb_strtolower(trim($data['email'])),
@@ -71,11 +72,12 @@ class UserAdministration
         DB::transaction(function () use ($user, $changes, $actor) {
             // Bloquea las filas de administradores para que el chequeo y el cambio sean atómicos.
             $this->lockAdministrators();
+            $this->assertActorStillAdministrator($actor);
             $current = User::query()->lockForUpdate()->findOrFail($user->getKey());
 
             if (isset($changes['role']) && $changes['role'] !== $current->role) {
                 if ($current->is($actor)) {
-                    throw new RuntimeException('No puede cambiar su propio rol.');
+                    throw new ClinicalRuleException('No puede cambiar su propio rol.');
                 }
                 if ($current->role === 'administrador_accesos' && $current->is_active) {
                     $this->assertAnotherActiveAdministrator($current);
@@ -95,13 +97,14 @@ class UserAdministration
     {
         DB::transaction(function () use ($user, $actor) {
             $this->lockAdministrators();
+            $this->assertActorStillAdministrator($actor);
             $current = User::query()->lockForUpdate()->findOrFail($user->getKey());
 
             if ($current->is($actor)) {
-                throw new RuntimeException('No puede desactivar su propia cuenta.');
+                throw new ClinicalRuleException('No puede desactivar su propia cuenta.');
             }
             if (! $current->is_active) {
-                throw new RuntimeException('La cuenta ya está desactivada.');
+                throw new ClinicalRuleException('La cuenta ya está desactivada.');
             }
             if ($current->role === 'administrador_accesos') {
                 $this->assertAnotherActiveAdministrator($current);
@@ -117,6 +120,15 @@ class UserAdministration
         return $this->present($user->fresh());
     }
 
+    /** Revalida al actor dentro de la transacción: pudo desactivarse tras pasar el middleware. */
+    private function assertActorStillAdministrator(User $actor): void
+    {
+        $fresh = User::query()->lockForUpdate()->find($actor->getKey());
+        if ($fresh === null || ! $fresh->is_active || $fresh->role !== 'administrador_accesos') {
+            throw new ClinicalRuleException('Su cuenta ya no tiene permiso para esta acción.');
+        }
+    }
+
     private function lockAdministrators(): void
     {
         User::query()->where('role', 'administrador_accesos')->lockForUpdate()->pluck('id');
@@ -127,7 +139,7 @@ class UserAdministration
         $others = User::query()->where('role', 'administrador_accesos')
             ->where('is_active', true)->whereKeyNot($user->getKey())->count();
         if ($others === 0) {
-            throw new RuntimeException('Debe quedar al menos un administrador de accesos activo.');
+            throw new ClinicalRuleException('Debe quedar al menos un administrador de accesos activo.');
         }
     }
 

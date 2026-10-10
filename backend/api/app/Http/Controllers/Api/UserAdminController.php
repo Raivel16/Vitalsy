@@ -9,8 +9,6 @@ use App\Models\User;
 use App\Services\Users\UserAdministration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 class UserAdminController extends Controller
 {
@@ -35,22 +33,14 @@ class UserAdminController extends Controller
     {
         $user = User::query()->findOrFail($id);
 
-        try {
-            return response()->json(['user' => $this->users->update($user, $request->validated(), $request->user())]);
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['user' => $e->getMessage()]);
-        }
+        return response()->json(['user' => $this->users->update($user, $request->validated(), $request->user())]);
     }
 
     public function deactivate(Request $request, string $id): JsonResponse
     {
         $user = User::query()->findOrFail($id);
 
-        try {
-            return response()->json(['user' => $this->users->deactivate($user, $request->user())]);
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['user' => $e->getMessage()]);
-        }
+        return response()->json(['user' => $this->users->deactivate($user, $request->user())]);
     }
 
     public function members(Request $request): JsonResponse
