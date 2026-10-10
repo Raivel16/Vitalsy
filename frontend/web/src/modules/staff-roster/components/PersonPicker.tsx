@@ -31,6 +31,7 @@ export function PersonPicker({
   onPick: (member: StaffMember) => void;
 }) {
   const listId = useId();
+  const optionId = (index: number) => `${listId}-opt-${index}`;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -94,6 +95,7 @@ export function PersonPicker({
         autoComplete="off"
         aria-expanded={open}
         aria-controls={listId}
+        aria-activedescendant={open && matches[active] ? optionId(active) : undefined}
         aria-autocomplete="list"
         placeholder="Nombre, correo o rol"
         value={query}
@@ -114,11 +116,18 @@ export function PersonPicker({
             matches.map((member, index) => (
               <li
                 key={member.id}
+                id={optionId(index)}
                 role="option"
                 aria-selected={index === active}
                 className={index === active ? "is-active" : undefined}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => pick(member)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    pick(member);
+                  }
+                }}
               >
                 <strong>{member.name}</strong>
                 {member.email ? <span> · {member.email}</span> : null}

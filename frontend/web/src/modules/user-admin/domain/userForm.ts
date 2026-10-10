@@ -3,7 +3,8 @@ import { ROLES, type Role } from "../../../app/roles";
 export type UserFormValues = { name: string; email: string; role: string };
 export type UserFormErrors = Partial<Record<keyof UserFormValues, string>>;
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Las etiquetas del dominio excluyen el punto: `\.` solo casa un separador y no hay retroceso.
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 /** Validación previa al envío (RF-102/103); el servidor repite las reglas. */
 export function validateUserForm(values: UserFormValues): UserFormErrors {
