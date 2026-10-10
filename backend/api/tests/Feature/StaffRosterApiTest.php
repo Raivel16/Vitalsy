@@ -197,4 +197,166 @@ class StaffRosterApiTest extends TestCase
         $alert = app(AlertRecorder::class)->openFromMonitoring('ENC-STAFF-5', 4);
         $this->assertSame($nurse->id, $alert->assigned_user_id);
     }
+
+    private function assignment(string $date, User $nurse, string $encounterId, int $weight): DailyPatientAssignment
+    {
+        return DailyPatientAssignment::query()->create([
+            'shift_date' => $date,
+            'nurse_user_id' => $nurse->id,
+            'encounter_id' => $encounterId,
+            'news2_weight' => $weight,
+        ]);
+    }
+
+    public function test_absence_rejects_unknown_or_non_care_user_and_missing_reason(): void
+    {
+        $this->asRole('enfermera_supervisora');
+        $admission = User::factory()->create(['role' => 'admision']);
+
+        $this->postJson('/api/v1/staff/absences', ['userId' => 999999, 'shiftDate' => '2026-09-26', 'reason' => 'Inasistencia'])
+            ->assertStatus(422);
+        $this->postJson('/api/v1/staff/absences', ['userId' => $admission->id, 'shiftDate' => '2026-09-26', 'reason' => 'Inasistencia'])
+            ->assertStatus(422);
+        $nurse = User::factory()->create(['role' => 'enfermera_piso']);
+        $this->postJson('/api/v1/staff/absences', ['userId' => $nurse->id, 'shiftDate' => '2026-09-26'])
+            ->assertStatus(422);
+    }
+
+    public function test_absence_cannot_be_registered_twice_for_the_same_day(): void
+    {
+        $this->asRole('enfermera_supervisora');
+        $nurse = User::factory()->create(['role' => 'enfermera_piso']);
+        $payload = ['userId' => $nurse->id, 'shiftDate' => '2026-09-26', 'reason' => 'Inasistencia'];
+
+        $this->postJson('/api/v1/staff/absences', $payload)->assertCreated();
+        $this->postJson('/api/v1/staff/absences', $payload)->assertStatus(422);
+        $this->assertSame(1, StaffAbsence::query()->count());
+    }
+
+    public function test_approve_rejects_unknown_nurse(): void
+    {
+        $this->asRole('enfermera_supervisora');
+        $this->hospitalized('ENC-STAFF-6');
+
+        $this->postJson('/api/v1/staff/assignments/approve', [
+            'shiftDate' => '2026-09-26',
+            'assignments' => [['nurseUserId' => 999999, 'encounterId' => 'ENC-STAFF-6']],
+        ])->assertStatus(422);
+        $this->assertDatabaseCount('daily_patient_assignments', 0);
+    }
+
+    public function test_absence_rebalances_by_weight_to_least_loaded_nurse_and_reports_it(): void
+    {
+        $absent = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Ausente']);
+        $heavy = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Cargada']);
+        $light = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Holgada']);
+        $this->assignment('2026-09-26', $absent, 'ENC-A1', 2);
+        $this->assignment('2026-09-26', $absent, 'ENC-A2', 1);
+        $this->assignment('2026-09-26', $heavy, 'ENC-H1', 5);
+        $this->assignment('2026-09-26', $heavy, 'ENC-H2', 5);
+        $this->assignment('2026-09-26', $light, 'ENC-L1', 1);
+        $this->asRole('enfermera_supervisora');
+
+        $response = $this->postJson('/api/v1/staff/absences', [
+            'userId' => $absent->id, 'shiftDate' => '2026-09-26', 'reason' => 'Inasistencia',
+        ])->assertCreated()
+            ->assertJsonPath('coverage.required', false)
+            ->assertJsonPath('reassignments.0.nurseName', 'Holgada')
+            ->assertJsonPath('reassignments.0.patients', 2);
+
+        $this->assertSame(0, $response->json('unassigned'));
+        $this->assertSame(2, DailyPatientAssignment::query()->where('nurse_user_id', $light->id)->whereIn('encounter_id', ['ENC-A1', 'ENC-A2'])->count());
+    }
+
+    public function test_absence_without_receiving_nurses_opens_coverage_and_reports_unassigned(): void
+    {
+        $absent = User::factory()->create(['role' => 'enfermera_piso']);
+        $this->assignment('2026-09-26', $absent, 'ENC-A3', 1);
+        $this->asRole('enfermera_supervisora');
+
+        $this->postJson('/api/v1/staff/absences', [
+            'userId' => $absent->id, 'shiftDate' => '2026-09-26', 'reason' => 'Licencia',
+        ])->assertCreated()
+            ->assertJsonPath('coverage.required', true)
+            ->assertJsonPath('unassigned', 1);
+    }
+
+    public function test_coverage_list_exposes_names_date_reason_and_approvers(): void
+    {
+        $absent = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Marta Ausente']);
+        $this->assignment('2026-09-26', $absent, 'ENC-A4', 8);
+        $this->asRole('enfermera_supervisora');
+        $this->postJson('/api/v1/staff/absences', [
+            'userId' => $absent->id, 'shiftDate' => '2026-09-26', 'reason' => 'Descanso médico',
+        ])->assertCreated();
+
+        $row = $this->getJson('/api/v1/staff/coverage-requests')->assertOk()->json('requests.0');
+
+        $this->assertSame('Marta Ausente', $row['absentName']);
+        $this->assertSame('2026-09-26', $row['shiftDate']);
+        $this->assertSame('Descanso médico', $row['reason']);
+        $this->assertNull($row['approvedByName']);
+    }
+
+    public function test_coverage_transitions_reject_wrong_state_and_repeats(): void
+    {
+        $absent = User::factory()->create(['role' => 'enfermera_piso']);
+        $this->assignment('2026-09-26', $absent, 'ENC-A5', 8);
+        $this->asRole('enfermera_supervisora');
+        $this->postJson('/api/v1/staff/absences', ['userId' => $absent->id, 'shiftDate' => '2026-09-26', 'reason' => 'X'])->assertCreated();
+        $id = $this->getJson('/api/v1/staff/coverage-requests')->json('requests.0.id');
+        $retainer = User::factory()->create(['role' => 'enfermera_piso']);
+
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/confirm", ['userId' => $retainer->id])->assertStatus(422);
+
+        $this->asRole('jefatura_enfermeria');
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/approve")->assertOk();
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/approve")->assertStatus(422);
+
+        $this->asRole('recursos_humanos');
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/authorize")->assertOk();
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/authorize")->assertStatus(422);
+
+        $this->asRole('enfermera_supervisora');
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/confirm", ['userId' => 999999])->assertStatus(422);
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/confirm", ['userId' => $retainer->id])->assertCreated();
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/confirm", ['userId' => $retainer->id])->assertStatus(422);
+
+        $this->asRole('jefatura_enfermeria');
+        $this->postJson("/api/v1/staff/coverage-requests/{$id}/approve")->assertStatus(422);
+    }
+
+    public function test_handover_preview_lists_the_outgoing_nurse_patients_for_the_incoming_one(): void
+    {
+        $this->hospitalized('ENC-STAFF-7');
+        $outgoing = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Saliente']);
+        $incoming = $this->asRole('enfermera_piso');
+        $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-7', 2);
+
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")
+            ->assertOk()
+            ->assertJsonPath('handover.fromName', 'Saliente')
+            ->assertJsonPath('handover.patients.0.encounterId', 'ENC-STAFF-7');
+
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => 999999, 'shiftDate' => '2026-09-26'])->assertStatus(422);
+
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-26'])->assertCreated();
+        $this->assertSame(1, DailyPatientAssignment::query()->where('nurse_user_id', $incoming->id)->count());
+    }
+
+    public function test_staff_endpoints_enforce_roles_and_missing_plan_is_404(): void
+    {
+        $this->asRole('enfermera_piso');
+        $this->postJson('/api/v1/staff/shift-plans', [])->assertForbidden();
+        $this->postJson('/api/v1/staff/absences', [])->assertForbidden();
+        $this->postJson('/api/v1/staff/assignments/approve', [])->assertForbidden();
+
+        $this->asRole('recursos_humanos');
+        $this->postJson('/api/v1/staff/coverage-requests/1/approve')->assertForbidden();
+        $this->getJson('/api/v1/staff/handover?shiftDate=2026-09-26')->assertForbidden();
+
+        $this->asRole('jefatura_enfermeria');
+        $this->postJson('/api/v1/staff/coverage-requests/1/authorize')->assertForbidden();
+        $this->getJson('/api/v1/staff/shift-plans/2030-01')->assertNotFound();
+    }
 }
