@@ -56,3 +56,73 @@ describe('discharge plan', () => {
     expect(next.medications[0].name).toBe('Paracetamol');
   });
 });
+
+describe('discharge plan edge cases', () => {
+  const local = new Date(2026, 9, 3, 12, 0, 0);
+
+  function plan(body: unknown) {
+    const result = parseDischargePayload(JSON.stringify(body), local);
+    if (!result.ok) {
+      throw new Error(result.message);
+    }
+    return result.plan;
+  }
+
+  it('asks for a code when the input is empty', () => {
+    const result = parseDischargePayload('   ', local);
+    expect(result).toEqual({ ok: false, message: expect.stringMatching(/escribe o escanea/i) });
+  });
+
+  it('trims names and falls back to 08:00 for an unreadable schedule', () => {
+    const created = plan({
+      medications: [
+        { name: ' Paracetamol ', dose: ' 1 g ', schedule: '20:30' },
+        { name: 'Omeprazol', dose: '20 mg', schedule: 'por la noche' },
+        { name: '', dose: 'sin nombre' },
+      ],
+    });
+    expect(created.medications).toHaveLength(2);
+    expect(created.medications[0]).toMatchObject({ name: 'Paracetamol', dose: '1 g', schedule: '20:30' });
+    expect(created.medications[1]).toMatchObject({ id: 'med-2', schedule: '08:00' });
+  });
+
+  it('schedules a dose today when its time has not come and tomorrow when it passed', () => {
+    const created = plan({
+      medications: [
+        { name: 'Tarde', dose: '1', schedule: '20:30' },
+        { name: 'Manana', dose: '1', schedule: '08:00' },
+      ],
+    });
+    const later = new Date(created.medications[0].dueAt);
+    expect([later.getDate(), later.getHours(), later.getMinutes()]).toEqual([3, 20, 30]);
+    const tomorrow = new Date(created.medications[1].dueAt);
+    expect([tomorrow.getDate(), tomorrow.getHours()]).toEqual([4, 8]);
+  });
+
+  it('defaults validity to fourteen days and accepts a nested plan object', () => {
+    const created = plan({ plan: { medications: [{ name: 'A', dose: '1' }] } });
+    expect(created.validUntil).toBe(new Date(local.getTime() + 14 * 86400000).toISOString());
+  });
+
+  it('refuses a plan without medication, comfort signs or home care', () => {
+    const result = parseDischargePayload('{"medications": []}', local);
+    expect(result).toEqual({ ok: false, message: expect.stringMatching(/no incluye medicación/i) });
+  });
+
+  it('reports unreadable JSON and unknown text', () => {
+    expect(parseDischargePayload('{roto', local)).toEqual({ ok: false, message: expect.stringMatching(/legible/i) });
+    expect(parseDischargePayload('¿?', local)).toEqual({ ok: false, message: expect.stringMatching(/no reconocemos/i) });
+  });
+
+  it('moves a confirmed dose to the next day and leaves the other medications untouched', () => {
+    const created = plan({
+      medications: [
+        { name: 'A', dose: '1', schedule: '08:00' },
+        { name: 'B', dose: '2', schedule: '09:00' },
+      ],
+    });
+    const next = confirmDose(created, 'med-1', local);
+    expect(new Date(next.medications[0].dueAt).getDate()).toBe(4);
+    expect(next.medications[1]).toBe(created.medications[1]);
+  });
+});
