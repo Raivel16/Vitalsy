@@ -198,4 +198,10 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Rama: `chore/calidad-sonarqube`.
 
 - Fiabilidad (MQR) llevada a A: 20 incidencias corregidas (regex sin retroceso en correo y etiquetas de riesgo, `codePointAt`/`replaceAll`, espacios JSX explícitos, `<dialog>` nativo y fondo con botón en cajón de camas y visor del escáner). Las pruebas largas usan `user.paste`. Si `npm test` da timeouts, es carga de la máquina (antivirus/SonarQube): detener `sonarqube` y reintentar.
+### 2026-10-10 — Calidad (2): código nuevo de personal y usuarios
+
+- Tras integrar RF-78–88 y RF-101–104, SonarQube marcó Reliability D: `RosterPanel` ordena meses con `orderMonthOptions` (comparador explícito), `userForm` valida correo sin backtracking, `PersonPicker` expone `aria-activedescendant` y teclado en opciones, `HandoverPanel` simplifica el radio de enfermera saliente.
+- `sonar-project.properties` excluye `movil/android/**`, `movil/ios/**`, `**/build/**` y `**/.expo/**`: son salidas de `expo prebuild`; analizadas con `-Dsonar.scm.disabled=true` (que no respeta `.gitignore`) sumaban 23 vulnerabilidades ajenas al código.
+- El reporte clover del backend generado en Docker trae rutas `/var/www/html/`; hay que reescribirlas a `backend/api/` antes de escanear o el backend cuenta como 0 % de cobertura.
+- Rama: `chore/calidad-sonarqube-2`.
 <!-- END AGENT ANNOTATIONS -->
