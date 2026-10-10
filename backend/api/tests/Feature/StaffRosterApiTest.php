@@ -176,7 +176,7 @@ class StaffRosterApiTest extends TestCase
 
         $this->planShifts([
             [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
-            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
         ]);
         $this->actingAs($incoming);
         $this->postJson('/api/v1/staff/handover', [
@@ -380,7 +380,7 @@ class StaffRosterApiTest extends TestCase
         $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-7', 2);
         $this->planShifts([
             [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
-            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
         ]);
 
         $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")
@@ -430,5 +430,22 @@ class StaffRosterApiTest extends TestCase
         $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")->assertStatus(422);
         $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
         $this->assertSame(1, DailyPatientAssignment::query()->where('nurse_user_id', $outgoing->id)->count());
+    }
+
+    public function test_handover_is_refused_between_overlapping_shifts_of_the_same_unit(): void
+    {
+        $this->hospitalized('ENC-STAFF-10');
+        $colleague = User::factory()->create(['role' => 'enfermera_piso']);
+        $incoming = $this->asRole('enfermera_piso');
+        $this->assignment('2026-09-26', $colleague, 'ENC-STAFF-10', 2);
+        // Mismo servicio y mismo horario: es una compañera, no un relevo.
+        $this->planShifts([
+            [$colleague, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+        ]);
+
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$colleague->id}")->assertStatus(422);
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $colleague->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
+        $this->assertSame(1, DailyPatientAssignment::query()->where('nurse_user_id', $colleague->id)->count());
     }
 }

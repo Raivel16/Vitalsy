@@ -8,7 +8,7 @@ Implementa el Proceso 6: rol mensual, balanceo por NEWS2, handover y coberturas.
 |---|---|---|
 | RF-78 | Hecho | `POST /api/v1/staff/shift-plans` (varios turnos del mes; la UI usa selector de personal) |
 | RF-79–80 | Hecho | `POST .../assignments/suggest` · `POST .../approve` (propuesta editable). **RF-80 parcial:** no hay notificación persistente a la enfermera; la UI ya no afirma que se notificó |
-| RF-81–83 | Hecho | `GET /api/v1/staff/handover?fromUserId=` consolida a la saliente (alertas y dosis); `POST` firma y solo reasigna lo mostrado. Exige que ambas estén en el rol publicado del mismo servicio (falla cerrado). **RF-82 parcial:** el reporte se guarda en `payload`, sin validación aparte |
+| RF-81–83 | Hecho | `GET /api/v1/staff/handover?fromUserId=` consolida a la saliente (alertas y dosis); `POST` firma y solo reasigna lo mostrado. Exige turnos consecutivos del mismo servicio en el rol publicado (el de la saliente termina cuando empieza el de la entrante; falla cerrado). **RF-82 parcial:** el reporte se guarda en `payload`, sin validación aparte |
 | RF-84–85 | Hecho | `POST .../absences` (motivo obligatorio, sin duplicados, transaccional); rebalanceo ponderado por NEWS2 y respuesta con reasignaciones y pacientes sin cubrir |
 | RF-86–88 | Hecho | cobertura `solicitada → aprobada_jefatura → autorizada → confirmada`; cada transición valida el estado previo (422); la supervisora confirma al retén (RF-88) desde `/personal` |
 | apoyo | Hecho | `GET /api/v1/staff/members` (selectores; ver Parte A de usuarios) |

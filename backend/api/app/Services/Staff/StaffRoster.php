@@ -417,19 +417,23 @@ class StaffRoster
     private function assertSameUnit(User $incoming, User $outgoing, string $shiftDate): void
     {
         // Turnos que cubren el día, incluidos los nocturnos iniciados el día anterior.
-        $unitsOf = fn (User $user) => StaffShift::query()
+        $shiftsOf = fn (User $user) => StaffShift::query()
             ->where('user_id', $user->id)
             ->whereDate('starts_at', '<=', $shiftDate)
             ->whereDate('ends_at', '>=', $shiftDate)
-            ->pluck('unit')
-            ->filter()
-            ->unique()
-            ->values();
+            ->get();
 
-        // Falla cerrado: sin ambas personas ubicadas en el rol publicado y con un servicio
-        // en común no se consultan ni reasignan pacientes ajenos.
-        if ($unitsOf($incoming)->intersect($unitsOf($outgoing))->isEmpty()) {
-            throw new ClinicalRuleException('La entrega requiere que ambas enfermeras estén en el rol publicado del mismo servicio.');
+        // Falla cerrado: solo es un relevo real si, en el mismo servicio, el turno de la saliente
+        // termina cuando empieza el de la entrante (tolerancia de una hora).
+        $incomingShifts = $shiftsOf($incoming);
+        $isRelief = $shiftsOf($outgoing)->contains(function (StaffShift $left) use ($incomingShifts) {
+            return $left->unit !== null && $incomingShifts->contains(function (StaffShift $right) use ($left) {
+                return $right->unit === $left->unit
+                    && abs($left->ends_at->diffInSeconds($right->starts_at, false)) <= 3600;
+            });
+        });
+        if (! $isRelief) {
+            throw new ClinicalRuleException('La entrega solo procede entre turnos consecutivos del mismo servicio en el rol publicado.');
         }
     }
 
