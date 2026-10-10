@@ -104,12 +104,10 @@ export function HandoverPanel() {
                     setSummary(null);
                   }}
                 />
-                <span>
-                  <strong>{candidate.name}</strong>
-                  <small>
-                    {candidate.unit} · termina {formatTime(candidate.endsAt)} · {candidate.patients} paciente(s)
-                  </small>
-                </span>
+                <strong>{candidate.name}</strong>
+                <small>
+                  {candidate.unit} · termina {formatTime(candidate.endsAt)} · {candidate.patients} paciente(s)
+                </small>
               </label>
             ))}
           </fieldset>
