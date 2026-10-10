@@ -44,6 +44,14 @@ export type HandoverSummary = {
   patients: HandoverPatient[];
 };
 
+export type HandoverCandidate = {
+  userId: number;
+  name: string;
+  unit: string;
+  endsAt: string;
+  patients: number;
+};
+
 export type PlannedShift = {
   userId: number;
   userName?: string | null;

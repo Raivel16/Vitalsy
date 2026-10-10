@@ -41,24 +41,33 @@ export function StaffBoardPage() {
       {membersError ? <Feedback tone="error">{membersError}</Feedback> : null}
       {coverage.error ? <Feedback tone="error">{coverage.error}</Feedback> : null}
 
-      <div className={capabilities.assign ? "ops-split" : "ops-stack"}>
-        {capabilities.publishRoster ? <RosterPanel members={members} /> : null}
-        {capabilities.assign ? (
-          <div className="ops-stack">
-            <AssignmentPanel members={members} />
+      {capabilities.assign ? (
+        <div className="ops-split ops-supervision">
+          <AssignmentPanel members={members} />
+          <aside className="ops-stack ops-side" aria-label="Contingencias y coberturas">
             {capabilities.recordAbsence ? <AbsencePanel members={members} onRecorded={() => coverage.reload()} /> : null}
-          </div>
-        ) : null}
-        {capabilities.handover ? <HandoverPanel members={members} /> : null}
-        {capabilities.viewCoverage ? (
-          <CoveragePanel
-            requests={coverage.requests}
-            members={members}
-            capabilities={capabilities}
-            onChanged={() => coverage.reload()}
-          />
-        ) : null}
-      </div>
+            <CoveragePanel
+              requests={coverage.requests}
+              members={members}
+              capabilities={capabilities}
+              onChanged={() => coverage.reload()}
+            />
+          </aside>
+        </div>
+      ) : (
+        <div className="ops-stack">
+          {capabilities.publishRoster ? <RosterPanel members={members} /> : null}
+          {capabilities.handover ? <HandoverPanel /> : null}
+          {capabilities.viewCoverage ? (
+            <CoveragePanel
+              requests={coverage.requests}
+              members={members}
+              capabilities={capabilities}
+              onChanged={() => coverage.reload()}
+            />
+          ) : null}
+        </div>
+      )}
     </Sheet>
   );
 }

@@ -49,7 +49,7 @@ function coverage(status: string): Coverage {
   };
 }
 
-function stubStaff(options?: { coverage?: Coverage[]; absence?: unknown; handoverPatients?: unknown[]; plans?: PlanFixture[] }) {
+function stubStaff(options?: { coverage?: Coverage[]; absence?: unknown; handoverPatients?: unknown[]; plans?: PlanFixture[]; candidates?: unknown[] }) {
   calls.length = 0;
   const plans = [...(options?.plans ?? [])];
   vi.stubGlobal(
@@ -105,6 +105,11 @@ function stubStaff(options?: { coverage?: Coverage[]; absence?: unknown; handove
       if (url.includes("/confirm")) return jsonResponse(201, { confirmation: { id: 1, userId: 5, confirmedBy: 1 } });
       if (url.includes("/approve")) return jsonResponse(200, { request: { id: 7, status: "aprobada_jefatura" } });
       if (url.includes("/authorize")) return jsonResponse(200, { request: { id: 7, status: "autorizada" } });
+      if (url.includes("/staff/handover/candidates")) {
+        return jsonResponse(200, {
+          candidates: options?.candidates ?? [{ userId: 4, name: "Ana Piso", unit: "Medicina", endsAt: "2026-10-09T19:00:00+00:00", patients: 1 }],
+        });
+      }
       if (url.includes("/staff/handover") && method === "GET") {
         return jsonResponse(200, {
           handover: {
@@ -132,8 +137,11 @@ describe("personal asistencial (RF-78 a RF-88)", () => {
     const user = userEvent.setup();
     renderApp("/personal", { role: "jefatura_enfermeria" });
 
-    await user.type(await screen.findByRole("combobox", { name: /agregar colaborador/i }), "beto.aux");
+    await user.type(await screen.findByRole("combobox", { name: /colaborador/i }), "beto.aux");
     await user.click(await screen.findByRole("option", { name: /beto auxiliar/i }));
+    // Elegir a la persona no la agrega: se confirma con el botón.
+    expect(screen.queryByRole("button", { name: /beto auxiliar, día 5/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /agregar al rol/i }));
 
     const cell = await screen.findByRole("button", { name: /beto auxiliar, día 5: libre/i });
     await user.click(cell);
@@ -287,12 +295,12 @@ describe("personal asistencial (RF-78 a RF-88)", () => {
     expect(await screen.findByText(/no hay solicitudes de cobertura/i)).toBeInTheDocument();
   });
 
-  it("la enfermera de piso consolida el handover de la saliente y firma", async () => {
+  it("la enfermera de piso ve a quién relevar ahora, consolida y firma", async () => {
     stubStaff();
     const user = userEvent.setup();
     renderApp("/personal", { role: "enfermera_piso" });
 
-    await pickPerson(user, /enfermera saliente/i, "Ana Piso");
+    await user.click(await screen.findByRole("radio", { name: /ana piso/i }));
     await user.click(screen.getByRole("button", { name: /consolidar handover/i }));
     expect(await screen.findByText("Paciente Uno")).toBeInTheDocument();
     expect(screen.getByText(/alerta abierta/i)).toBeInTheDocument();
@@ -302,6 +310,24 @@ describe("personal asistencial (RF-78 a RF-88)", () => {
     expect(await screen.findByText(/recepción de turno firmada/i)).toBeInTheDocument();
     const post = calls.find((c) => c.method === "POST" && c.url.includes("/staff/handover"));
     expect(JSON.parse(post?.body ?? "{}")).toMatchObject({ fromUserId: 4 });
+  });
+
+  it("explica por qué no hay relevo disponible cuando no es el cambio de turno", async () => {
+    stubStaff({ candidates: [] });
+    renderApp("/personal", { role: "enfermera_piso" });
+
+    expect(await screen.findByText(/no hay un relevo disponible ahora/i)).toBeInTheDocument();
+    expect(screen.getByText(/rol del mes está publicado/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /consolidar handover/i })).not.toBeInTheDocument();
+  });
+
+  it("recursos humanos ve cómo llega una solicitud y cuántas esperan su autorización", async () => {
+    stubStaff({ coverage: [{ ...coverage("aprobada_jefatura"), id: 8 }, coverage("solicitada")] });
+    renderApp("/personal", { role: "recursos_humanos" });
+
+    expect(await screen.findByText(/cómo llega una solicitud/i)).toBeInTheDocument();
+    const tile = screen.getByText(/esperan su autorización/i).closest(".stat-tile");
+    expect(tile).toHaveTextContent("1");
   });
 
   it("no ofrece la pantalla de personal a otros perfiles", async () => {

@@ -180,4 +180,11 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Fuera de alcance: horas totales, descanso normativo, exportar matriz, versiones por publicación. R solo se pinta; no se edita.
 - /usuarios: la barra de acciones del formulario ocupa su propia fila (`form-span-2 form-actions-bar`).
 
+### 2026-10-09 — /personal: rediseño de vistas y personas de prueba
+
+- Jefatura: «Agregar colaborador» es un panel aparte encima del rol (elegir persona + botón «Agregar al rol»); «Servicio del rol» es un selector (catálogo de wards) porque el relevo exige el mismo servicio; chevrones y mes alineados; botón de publicar separado.
+- Supervisora: asignación a la izquierda y contingencias + coberturas en columna lateral fija (sin scroll entre formularios).
+- RRHH: guía «Cómo llega una solicitud» y contadores por estado. Enfermera de piso: `GET handover/candidates` muestra a quién releva ahora o explica por qué no hay relevo.
+- Seeder `DemoPeopleSeeder`: 22 personas ficticias (`nombre.apellido@vitalsy.local`, contraseña `DEMO_PASSWORD`) y un escenario de práctica de relevo (Rosa Quispe → Lucía Mendoza, 3 pacientes ENC-PRAC-*) válido ~3 h desde `db:seed`.
+
 <!-- END AGENT ANNOTATIONS -->

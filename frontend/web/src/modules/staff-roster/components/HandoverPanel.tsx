@@ -1,34 +1,50 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { errorText } from "../../../app/userMessage";
+import { formatTime } from "../../../shared/datetime/format";
 import { Button } from "../../../shared/ui/Button";
 import { Panel } from "../../../shared/ui/clinical";
-import { TextField } from "../../../shared/ui/Field";
-import { PersonPicker } from "./PersonPicker";
+import { LoadingState } from "../../../shared/ui/LoadingState";
 import { Feedback } from "../../../shared/ui/Sheet";
 import { todayIso } from "../domain/coverage";
-import { previewHandover, signHandover } from "../staffApi";
-import type { HandoverSummary, StaffMember } from "../types";
+import { listHandoverCandidates, previewHandover, signHandover } from "../staffApi";
+import type { HandoverCandidate, HandoverSummary } from "../types";
 
-/** RF-81/82: la entrante consolida los pacientes de la saliente y firma la recepción. */
-export function HandoverPanel({ members, selfId }: { members: StaffMember[]; selfId?: number }) {
-  const [date, setDate] = useState(todayIso());
-  const [from, setFrom] = useState<StaffMember | null>(null);
+/** RF-81/82: la entrante ve a quién releva ahora, consolida sus pacientes y firma la recepción. */
+export function HandoverPanel() {
+  const date = todayIso();
+  const [candidates, setCandidates] = useState<HandoverCandidate[] | null>(null);
+  const [fromId, setFromId] = useState<number | null>(null);
   const [summary, setSummary] = useState<HandoverSummary | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
+  const [version, setVersion] = useState(0);
 
-  const outgoing = members.filter((m) => m.id !== selfId);
+  useEffect(() => {
+    let active = true;
+    listHandoverCandidates(date)
+      .then((data) => {
+        if (active) setCandidates(data);
+      })
+      .catch((caught) => {
+        if (!active) return;
+        setCandidates([]);
+        setError(errorText(caught, "No se pudo consultar el cambio de turno."));
+      });
+    return () => {
+      active = false;
+    };
+  }, [date, version]);
 
   async function consolidate() {
     setNotice("");
-    if (!from) {
+    if (fromId === null) {
       setError("Seleccione a la enfermera saliente.");
       return;
     }
     setPending(true);
     try {
-      setSummary(await previewHandover(date, from.id));
+      setSummary(await previewHandover(date, fromId));
       setError("");
     } catch (caught) {
       setSummary(null);
@@ -46,6 +62,8 @@ export function HandoverPanel({ members, selfId }: { members: StaffMember[]; sel
       setError("");
       setNotice("Recepción de turno firmada.");
       setSummary(null);
+      setFromId(null);
+      setVersion((current) => current + 1);
     } catch (caught) {
       setError(errorText(caught, "No se pudo firmar el handover."));
     } finally {
@@ -57,18 +75,47 @@ export function HandoverPanel({ members, selfId }: { members: StaffMember[]; sel
     <Panel title="Entrega de turno">
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <div className="stack ops-form">
-        <TextField id="handover-date" label="Fecha del turno" type="date" value={date} onChange={(e) => { setDate(e.target.value); setSummary(null); }} />
-        <PersonPicker
-          id="handover-from"
-          label="Enfermera saliente"
-          members={outgoing}
-          selected={from}
-          onPick={(member) => { setFrom(member); setSummary(null); }}
-          onClear={() => { setFrom(null); setSummary(null); }}
-        />
-        <Button type="button" pending={pending} onClick={() => void consolidate()}>Consolidar handover</Button>
-      </div>
+
+      {candidates === null ? <LoadingState label="Consultando el cambio de turno…" /> : null}
+
+      {candidates && candidates.length === 0 ? (
+        <div className="handover-empty">
+          <p><strong>No hay un relevo disponible ahora.</strong></p>
+          <p className="hint">
+            La entrega solo procede en el cambio de turno (de 1 hora antes a 2 horas después) y cuando la jefatura
+            publicó en el rol turnos consecutivos del mismo servicio para usted y la enfermera saliente.
+            Consulte con su jefatura si el rol del mes está publicado.
+          </p>
+        </div>
+      ) : null}
+
+      {candidates && candidates.length > 0 ? (
+        <>
+          <fieldset className="handover-candidates">
+            <legend>Enfermera saliente</legend>
+            {candidates.map((candidate) => (
+              <label key={candidate.userId} className="handover-candidate">
+                <input
+                  type="radio"
+                  name="handover-from"
+                  checked={fromId === candidate.userId}
+                  onChange={() => {
+                    setFromId(candidate.userId);
+                    setSummary(null);
+                  }}
+                />
+                <span>
+                  <strong>{candidate.name}</strong>
+                  <small>
+                    {candidate.unit} · termina {formatTime(candidate.endsAt)} · {candidate.patients} paciente(s)
+                  </small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <Button type="button" pending={pending} onClick={() => void consolidate()}>Consolidar handover</Button>
+        </>
+      ) : null}
 
       {summary ? (
         <div className="ops-suggestion">

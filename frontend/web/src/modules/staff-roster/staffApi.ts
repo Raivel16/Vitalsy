@@ -2,6 +2,7 @@ import { api } from "../../app/api";
 import type {
   AbsenceResult,
   CoverageRequest,
+  HandoverCandidate,
   HandoverSummary,
   NurseLoad,
   PlanSummary,
@@ -72,6 +73,13 @@ export function authorizeCoverage(id: number) {
 
 export function confirmRetainer(id: number, userId: number) {
   return api(`${BASE}/coverage-requests/${id}/confirm`, { method: "POST", body: JSON.stringify({ userId }) });
+}
+
+export async function listHandoverCandidates(shiftDate: string): Promise<HandoverCandidate[]> {
+  const data = await api<{ candidates: HandoverCandidate[] }>(
+    `${BASE}/handover/candidates?shiftDate=${encodeURIComponent(shiftDate)}`,
+  );
+  return data.candidates;
 }
 
 export async function previewHandover(shiftDate: string, fromUserId: number): Promise<HandoverSummary> {

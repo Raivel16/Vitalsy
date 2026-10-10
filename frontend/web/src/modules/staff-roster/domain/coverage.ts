@@ -52,4 +52,7 @@ export function yearMonthOf(isoDate: string): string {
   return isoDate.slice(0, 7);
 }
 
+/** Servicios del hospital (catálogo `wards`); el relevo de enfermería exige el mismo servicio. */
+export const SERVICES = ["Medicina Interna A", "Cirugía B"] as const;
+
 export const ABSENCE_REASONS = ["Inasistencia", "Descanso médico", "Licencia", "Permiso", "Otro"] as const;

@@ -72,7 +72,7 @@ export function AssignmentPanel({ members }: { members: StaffMember[] }) {
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       <div className="stack ops-form">
         <TextField id="assign-date" label="Fecha del turno" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <fieldset>
+        <fieldset className="nurse-grid">
           <legend>Enfermeras del turno</legend>
           {members.length === 0 ? <p className="hint">No hay personal activo para asignar.</p> : null}
           {members.map((member) => (

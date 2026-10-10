@@ -57,7 +57,7 @@ export function AbsencePanel({ members, onRecorded }: { members: StaffMember[]; 
     <Panel title="Registro de contingencias">
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <div className="stack ops-form">
+      <div className="stack ops-form absence-form">
         <PersonPicker
           id="absence-user"
           label="Colaborador (quien falta)"

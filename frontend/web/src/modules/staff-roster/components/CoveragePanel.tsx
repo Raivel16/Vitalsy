@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
-import { Panel, StatusPill } from "../../../shared/ui/clinical";
+import { Panel, StatTile, StatusPill } from "../../../shared/ui/clinical";
 import { PersonPicker } from "./PersonPicker";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { Feedback } from "../../../shared/ui/Sheet";
@@ -55,8 +55,33 @@ export function CoveragePanel({
     <Panel title="Coberturas y retén" aside={requests ? `${requests.length} solicitud(es)` : undefined}>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
+      <div className="coverage-guide">
+        <p className="kicker">Cómo llega una solicitud</p>
+        <ol>
+          <li>La supervisora registra una inasistencia con pacientes críticos (NEWS2 ≥ 7) o sin enfermera que los reciba.</li>
+          <li>La jefatura aprueba la convocatoria del retén.</li>
+          <li>Recursos humanos valida la justificación y autoriza la cobertura.</li>
+          <li>La supervisora confirma el ingreso del retén al piso.</li>
+        </ol>
+      </div>
+      {requests ? (
+        <div className="roster-stats">
+          <StatTile label="Esperan a la jefatura" value={requests.filter((r) => r.status === "solicitada").length} />
+          <StatTile
+            label={capabilities.authorizeCoverage ? "Esperan su autorización" : "Esperan a RRHH"}
+            value={requests.filter((r) => r.status === "aprobada_jefatura").length}
+            tone={capabilities.authorizeCoverage ? "warning" : "neutral"}
+          />
+          <StatTile label="Listas para ingreso" value={requests.filter((r) => r.status === "autorizada").length} />
+        </div>
+      ) : null}
       {requests === null ? <LoadingState label="Cargando coberturas…" /> : null}
-      {requests && requests.length === 0 ? <p className="hint">No hay solicitudes de cobertura.</p> : null}
+      {requests && requests.length === 0 ? (
+        <p className="hint">
+          No hay solicitudes de cobertura. Cuando la supervisora registre una inasistencia que lo requiera, aparecerá aquí con
+          el motivo, la persona ausente y el estado del trámite.
+        </p>
+      ) : null}
       {requests && requests.length > 0 ? (
         <ul className="work-queue">
           {requests.map((request) => {
