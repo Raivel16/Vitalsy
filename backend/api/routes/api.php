@@ -15,15 +15,21 @@ use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\MonitoringControlsController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
+use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    // Rutas permitidas aun con contraseña temporal (RF-102).
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
+        Route::post('auth/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:10,1');
+    });
+
+    Route::middleware(['auth:sanctum', 'active', 'password.rotated'])->group(function () {
 
         Route::prefix('hospital-admission')->group(function () {
             Route::get('encounters', [AdmissionCensusController::class, 'index']);
@@ -251,8 +257,20 @@ Route::prefix('v1')->group(function () {
         });
 
         // Módulo 6 — Gestión del personal asistencial (RF-78–82)
+        // RF-101–104: administración de cuentas (solo administrador de accesos).
+        Route::middleware('role:administrador_accesos')->prefix('users')->group(function () {
+            Route::get('/', [UserAdminController::class, 'index']);
+            Route::post('/', [UserAdminController::class, 'store']);
+            Route::patch('{id}', [UserAdminController::class, 'update']);
+            Route::post('{id}/deactivate', [UserAdminController::class, 'deactivate']);
+        });
+
         Route::prefix('staff')->group(function () {
+            // Apoyo a /personal: selectores de personal asistencial activo.
+            Route::get('members', [UserAdminController::class, 'members'])
+                ->middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos');
             Route::middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos')->group(function () {
+                Route::get('shift-plans', [StaffRosterController::class, 'listPlans']);
                 Route::get('shift-plans/{yearMonth}', [StaffRosterController::class, 'showPlan']);
             });
 
@@ -273,6 +291,7 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('handover/candidates', [StaffRosterController::class, 'handoverCandidates']);
                 Route::get('handover', [StaffRosterController::class, 'handoverPreview']);
                 Route::post('handover', [StaffRosterController::class, 'signHandover']);
             });

@@ -3971,6 +3971,229 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   background: #fff;
   border: 1px solid var(--line);
 }
+/* Tablas y controles compartidos por /usuarios y /personal. */
+.clinic-sheet .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.clinic-sheet .data-table th,
+.clinic-sheet .data-table td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.clinic-sheet .data-table th { color: var(--muted); font-weight: 600; }
+.clinic-sheet .filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+/* ---- /personal · matriz mensual de turnos (frame 6A) ---- */
+.ops-board .roster-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+/* Chevrones y selector comparten la misma altura y línea. */
+.ops-board .roster-month {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ops-board .roster-month .button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.7rem;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.ops-board .roster-month .field {
+  display: block; /* sin la grilla de 3 filas: el meta vacío subía el selector */
+  margin: 0;
+  min-width: 12rem;
+}
+.ops-board .roster-month .field-meta { display: none; }
+.ops-board .roster-month select { min-height: 44px; margin: 0; }
+.ops-board .roster-nav > .field { flex: 1 1 16rem; max-width: 24rem; margin: 0; }
+.ops-board .roster-status { margin: 0 0 0.9rem; }
+.ops-board .roster-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.ops-board .roster-add .field { margin: 0; }
+.ops-board .roster-add .person-picker-selected { min-height: 44px; }
+.ops-board .roster-publish { margin-top: 1.25rem; }
+.ops-board .coverage-guide {
+  margin: 0 0 0.9rem;
+  padding: 0.75rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sunken);
+  font-size: 0.88rem;
+}
+.ops-board .coverage-guide ol { margin: 0.35rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.2rem; }
+.ops-board .handover-empty { padding: 0.25rem 0 0.5rem; }
+.ops-board .handover-candidates { display: grid; gap: 0.5rem; margin: 0 0 0.9rem; }
+.ops-board .handover-candidate {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.ops-board .handover-candidate small { display: block; color: var(--muted); }
+.ops-board .nurse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.9rem;
+}
+.ops-board .nurse-grid legend { grid-column: 1 / -1; }
+.ops-board .absence-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+.ops-board .absence-form > .person-picker,
+.ops-board .absence-form > .button { grid-column: 1 / -1; }
+.ops-board .ops-supervision { gap: 1.25rem; }
+.ops-board .ops-side { gap: 1.25rem; }
+.ops-board .roster-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+.ops-board .roster-tools { margin-bottom: 0.75rem; }
+.ops-board .shift-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.ops-board .shift-legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.ops-board .shift-matrix-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.ops-board .shift-matrix { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+.ops-board .shift-matrix th,
+.ops-board .shift-matrix td {
+  padding: 0.3rem 0.2rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ops-board .shift-matrix thead th { background: var(--sunken); color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+.ops-board .shift-matrix .shift-person {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11rem;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+.ops-board .shift-matrix thead .shift-person { background: var(--sunken); }
+.ops-board .shift-matrix thead .shift-day { padding: 0.35rem 0.2rem; line-height: 1.25; }
+.ops-board .shift-matrix .shift-weekday { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
+.ops-board .shift-matrix thead .shift-day > span:last-child { display: block; }
+.ops-board .shift-matrix .shift-day.is-weekend { background: color-mix(in srgb, var(--sunken) 80%, var(--line)); }
+.ops-board .shift-matrix thead .shift-day.is-weekend { color: var(--ink); }
+.ops-board .shift-matrix .shift-person strong { display: block; font-size: 0.9rem; }
+.ops-board .shift-matrix .shift-person span { display: block; font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+.ops-board .shift-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.ops-board button.shift-cell { cursor: pointer; padding: 0; }
+.ops-board button.shift-cell:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.ops-board .shift-cell.kind-D { background: var(--navy); color: #fff; }
+.ops-board .shift-cell.kind-N { background: var(--info-bg); color: var(--info); border-color: color-mix(in srgb, var(--info) 30%, var(--line)); }
+.ops-board .shift-cell.kind-L { background: var(--sunken); color: var(--muted); border-color: var(--line); }
+.ops-board .shift-cell.kind-R { background: var(--warning-bg); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, var(--line)); }
+.ops-board .shift-remove {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+}
+.ops-board .shift-remove:hover { color: var(--danger); }
+
+.ops-board .person-picker { position: relative; }
+.ops-board .person-picker-list {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0.2rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 48, 64, 0.14);
+}
+.ops-board .person-picker-list li { padding: 0.5rem 0.65rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+.ops-board .person-picker-list li span { color: var(--muted); }
+.ops-board .person-picker-list li.is-active,
+.ops-board .person-picker-list li:hover { background: var(--accent-soft); }
+.ops-board .person-picker-empty { cursor: default; color: var(--muted); }
+.ops-board .person-picker-selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sunken);
+}
+.ops-board .person-picker-selected .link-button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font-weight: 600;
+  cursor: pointer;
+}
+.clinic-sheet .temp-password {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
 .ops-board .ops-suggestion pre {
   margin: 0;
   white-space: pre-wrap;
@@ -3982,7 +4205,8 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   .ops-board .pipeline-card { grid-template-columns: 1fr; }
 }
 @media (min-width: 1100px) {
-  .ops-board .ops-split { grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.8fr); }
+  .ops-board .ops-split { grid-template-columns: minmax(0, 1.35fr) minmax(22rem, 1fr); }
+  .ops-board .ops-supervision > .ops-side { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
 }
 
 /* ---- Proceso 5 · gestión de camas: etapas, checklist y lista de espera ---- */

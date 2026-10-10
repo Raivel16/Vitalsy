@@ -156,4 +156,37 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Rama: `bugfix/RF-68-77-camas-flujo-e-interfaz`.
 
 - Camas (UI): se retira `FlowGuide` (guía de pasos) de `/camas` y `/camas/limpieza`; el panel lateral de `/camas` queda sticky y «Nueva solicitud» abre `BedRequestDrawer` (cajón) desde la lista de espera.
+### 2026-10-09 — Administración de usuarios (RF-101–104)
+
+- Decisión: rol 15 `administrador_accesos` en `RoleCatalog.php` y `roles.ts` (cuenta demo `administrador_accesos@vitalsy.local`).
+- Backend: `UserAdminController` + `UserAdministration` (transacciones con bloqueo de administradores), `StoreUserRequest`/`UpdateUserRequest`, middleware `active` (cuenta inactiva → 401), login rechaza inactivos, tabla `access_audit_logs`, `users.must_change_password`.
+- `GET /staff/members` queda disponible para los selectores de `/personal` (Parte B).
+- Frontend: `modules/user-admin` (`/usuarios`, `/usuarios/nuevo`, `/usuarios/:userId`).
+- Rama: `feature/RF-101-104-administracion-usuarios`.
+
+### 2026-10-09 — Proceso 6 personal: interfaces y reglas (RF-78–88)
+
+- Backend: validación `exists` con rol asistencial activo, motivo obligatorio, ausencia sin duplicados, transiciones de cobertura validadas, `whereDate` y transacciones; rebalanceo por carga NEWS2; `recordAbsence` devuelve `reassignments`/`unassigned`; `listCoverage` incluye nombres, fecha, motivo y responsables; handover de la saliente (`fromUserId`) con control de mismo servicio.
+- Frontend: `modules/staff-roster` dividido en `staffApi.ts`, `domain/` (`coverage`, `capabilities`), `hooks/` y paneles por responsabilidad; sin IDs tecleados, con fechas por control y estado por panel; RF-88 disponible en UI.
+- Rulings: no se partió `StaffRoster` en cuatro servicios (queda como deuda de refactor); `suggest` no filtra por fecha/servicio ni excluye ya asignados; sin notificación persistente (RF-80) ni validación formal del reporte (RF-82).
+- Fuera de alcance (sin RF): montos, planilla, SBAR, checklist, KPIs de horas, exportar matriz.
+- Rama: `bugfix/RF-78-88-interfaces-personal` (basada en `feature/RF-101-104-administracion-usuarios`).
+
+### 2026-10-09 — /personal: matriz mensual de turnos y buscador de personas
+
+- Jefatura: `RosterPanel` ahora es la matriz colaborador × día (frame 6A) con leyenda D/N/L/R, navegador de meses (12 atrás), estado «Publicado el … por …» y confirmación al reemplazar un mes. El rol publicado ya no desaparece.
+- `PersonPicker` (nombre, correo, rol) reemplaza a los `<select>` de colaborador, quien falta, saliente y retén. `email` solo se expone a jefatura y supervisora.
+- Backend: `GET staff/shift-plans`; `showPlan` con nombres, publicador y retenes (retenes ocultos para quien no puede leer coberturas).
+- Fuera de alcance: horas totales, descanso normativo, exportar matriz, versiones por publicación. R solo se pinta; no se edita.
+- /usuarios: la barra de acciones del formulario ocupa su propia fila (`form-span-2 form-actions-bar`).
+
+### 2026-10-09 — /personal: rediseño de vistas y personas de prueba
+
+- Jefatura: «Agregar colaborador» es un panel aparte encima del rol (elegir persona + botón «Agregar al rol»); «Servicio del rol» es un selector (catálogo de wards) porque el relevo exige el mismo servicio; chevrones y mes alineados; botón de publicar separado.
+- Supervisora: asignación a la izquierda y contingencias + coberturas en columna lateral fija (sin scroll entre formularios).
+- RRHH: guía «Cómo llega una solicitud» y contadores por estado. Enfermera de piso: `GET handover/candidates` muestra a quién releva ahora o explica por qué no hay relevo.
+- Seeder `DemoPeopleSeeder`: 22 personas ficticias (`nombre.apellido@vitalsy.local`, contraseña `DEMO_PASSWORD`) y un escenario de práctica de relevo (Rosa Quispe → Lucía Mendoza, 3 pacientes ENC-PRAC-*) válido ~3 h desde `db:seed`.
+
+- Rotación obligatoria (RF-102): middleware `password.rotated` bloquea la API con 403 `password_change_required` mientras `must_change_password`; `POST auth/change-password` (mínimo 10 caracteres, letras y números, distinta de la actual) y pantalla `ChangePasswordPage` en el `Gate`.
+
 <!-- END AGENT ANNOTATIONS -->

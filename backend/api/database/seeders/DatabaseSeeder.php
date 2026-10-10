@@ -42,5 +42,8 @@ class DatabaseSeeder extends Seeder
         $this->call(CatalogSeeder::class);
 
         app(AdmissionBoard::class)->ensureDemo();
+
+        // Después de ensureDemo(): esa carga solo corre si aún no hay ingresos.
+        $this->call(DemoPeopleSeeder::class);
     }
 }

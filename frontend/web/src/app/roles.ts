@@ -13,6 +13,7 @@ export const ROLES = [
   "servicios_generales",
   "jefatura_enfermeria",
   "recursos_humanos",
+  "administrador_accesos",
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -32,6 +33,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   servicios_generales: "Servicios generales / Limpieza",
   jefatura_enfermeria: "Jefatura de enfermería",
   recursos_humanos: "Recursos humanos",
+  administrador_accesos: "Administrador de accesos",
 };
 
 export function isRole(value: string): value is Role {
@@ -42,4 +44,5 @@ export type SessionUser = {
   name: string;
   email: string;
   role: Role;
+  mustChangePassword?: boolean;
 };
