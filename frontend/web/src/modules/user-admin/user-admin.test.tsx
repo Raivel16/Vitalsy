@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -92,6 +92,29 @@ describe("administración de usuarios (RF-101 a RF-104)", () => {
 
     expect(await screen.findByText("Temporal12345")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/cuenta creada/i);
+  });
+
+  it("oculta la contraseña temporal pasado un minuto", async () => {
+    stubUsers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderApp("/usuarios/nuevo", { role: "administrador_accesos" });
+
+      await user.type(await screen.findByLabelText(/nombre completo/i), "Lucía Mendoza");
+      await user.type(screen.getByLabelText(/correo/i), "lucia@vitalsy.local");
+      await user.selectOptions(screen.getByLabelText(/rol/i), "enfermera_piso");
+      await user.click(screen.getByRole("button", { name: /crear cuenta/i }));
+      expect(await screen.findByText("Temporal12345")).toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(61_000);
+      });
+      expect(screen.queryByText("Temporal12345")).not.toBeInTheDocument();
+      expect(screen.getByText(/ya no se muestra/i)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("muestra el error del servidor cuando el correo ya existe", async () => {
