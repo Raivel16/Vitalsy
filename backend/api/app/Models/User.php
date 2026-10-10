@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role',
         'is_active',
         'deactivated_at',
+        'must_change_password',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'deactivated_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 }

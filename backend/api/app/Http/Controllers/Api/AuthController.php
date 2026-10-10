@@ -20,6 +20,8 @@ class AuthController extends Controller
         ]);
         $credentials['email'] = mb_strtolower(trim($credentials['email']));
 
+        $credentials['is_active'] = true;
+
         if (! Auth::attempt($credentials, false)) {
             throw ValidationException::withMessages([
                 'email' => 'El correo o la contraseña no son correctos.',

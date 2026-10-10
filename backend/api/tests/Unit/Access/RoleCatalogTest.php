@@ -24,6 +24,7 @@ class RoleCatalogTest extends TestCase
             'servicios_generales',
             'jefatura_enfermeria',
             'recursos_humanos',
+            'administrador_accesos',
         ], RoleCatalog::all());
     }
 

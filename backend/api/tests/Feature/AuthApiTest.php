@@ -55,6 +55,22 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('message', 'El correo o la contraseña no son correctos.');
     }
 
+    public function test_login_rejects_deactivated_accounts(): void
+    {
+        User::factory()->create([
+            'email' => 'baja@vitalsy.local',
+            'password' => 'password_ejemplo',
+            'role' => 'camillero',
+            'is_active' => false,
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'baja@vitalsy.local',
+            'password' => 'password_ejemplo',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'El correo o la contraseña no son correctos.');
+    }
+
     public function test_login_starts_a_session_and_logout_ends_it(): void
     {
         User::factory()->create([

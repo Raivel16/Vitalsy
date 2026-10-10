@@ -15,13 +15,14 @@ use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\MonitoringControlsController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
+use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
 
@@ -251,7 +252,18 @@ Route::prefix('v1')->group(function () {
         });
 
         // Módulo 6 — Gestión del personal asistencial (RF-78–82)
+        // RF-101–104: administración de cuentas (solo administrador de accesos).
+        Route::middleware('role:administrador_accesos')->prefix('users')->group(function () {
+            Route::get('/', [UserAdminController::class, 'index']);
+            Route::post('/', [UserAdminController::class, 'store']);
+            Route::patch('{id}', [UserAdminController::class, 'update']);
+            Route::post('{id}/deactivate', [UserAdminController::class, 'deactivate']);
+        });
+
         Route::prefix('staff')->group(function () {
+            // Apoyo a /personal: selectores de personal asistencial activo.
+            Route::get('members', [UserAdminController::class, 'members'])
+                ->middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos');
             Route::middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos')->group(function () {
                 Route::get('shift-plans/{yearMonth}', [StaffRosterController::class, 'showPlan']);
             });
