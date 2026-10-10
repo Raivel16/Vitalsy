@@ -187,4 +187,6 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - RRHH: guía «Cómo llega una solicitud» y contadores por estado. Enfermera de piso: `GET handover/candidates` muestra a quién releva ahora o explica por qué no hay relevo.
 - Seeder `DemoPeopleSeeder`: 22 personas ficticias (`nombre.apellido@vitalsy.local`, contraseña `DEMO_PASSWORD`) y un escenario de práctica de relevo (Rosa Quispe → Lucía Mendoza, 3 pacientes ENC-PRAC-*) válido ~3 h desde `db:seed`.
 
+- Rotación obligatoria (RF-102): middleware `password.rotated` bloquea la API con 403 `password_change_required` mientras `must_change_password`; `POST auth/change-password` (mínimo 10 caracteres, letras y números, distinta de la actual) y pantalla `ChangePasswordPage` en el `Gate`.
+
 <!-- END AGENT ANNOTATIONS -->
