@@ -166,6 +166,7 @@ export function VitalMonitoringPage() {
         </SelectField>
         <label className="check">
           <input type="checkbox" checked={supplementalOxygen} onChange={(e) => setSupplementalOxygen(e.target.checked)} />
+          {" "}
           Oxígeno suplementario
         </label>
         <SelectField id="consciousness" label="Conciencia" value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>

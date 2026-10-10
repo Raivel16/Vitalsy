@@ -100,6 +100,7 @@ export function MedicalEvolutionPage() {
         />
         <label className="check">
           <input type="checkbox" checked={sign} onChange={(event) => setSign(event.target.checked)} />
+          {" "}
           Firmar digitalmente la nota
         </label>
         <FormActions align="center">

@@ -189,4 +189,13 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 
 - Rotación obligatoria (RF-102): middleware `password.rotated` bloquea la API con 403 `password_change_required` mientras `must_change_password`; `POST auth/change-password` (mínimo 10 caracteres, letras y números, distinta de la actual) y pantalla `ChangePasswordPage` en el `Gate`.
 
+### 2026-10-10 — Calidad: SonarQube local y cobertura global
+
+- SonarQube Community local (Docker, puerto 9000) analiza `dev`; configuración en `sonar-project.properties` (fuentes `frontend/web/src`, `backend/api/app`, `movil`). El escaneo desde una worktree usa `-Dsonar.scm.disabled=true`.
+- Cobertura global pasó de 71 % a 83,1 % alimentando los tres reportes: `frontend/web/coverage/lcov.info`, `movil/coverage/lcov.info` (`npx jest --coverage`) y `backend/api/coverage.xml` (PCOV en la imagen Docker del backend; requiere `.env` + `key:generate` como en CI).
+- Corregidos 2 bugs y 4 vulnerabilidades: `randomHex` móvil usa `Crypto.getRandomBytes`, comparador explícito en `today.ts`, base `https` ficticia en `returnTo.ts`, visor de escáner con `<dialog>` nativo. 0 bugs, 0 vulnerabilidades, Quality Gate OK.
+- Nota: `npm run lint` del frontend ya tenía 40 errores previos en `dev`; no se corrigieron aquí.
+- Rama: `chore/calidad-sonarqube`.
+
+- Fiabilidad (MQR) llevada a A: 20 incidencias corregidas (regex sin retroceso en correo y etiquetas de riesgo, `codePointAt`/`replaceAll`, espacios JSX explícitos, `<dialog>` nativo y fondo con botón en cajón de camas y visor del escáner). Las pruebas largas usan `user.paste`. Si `npm test` da timeouts, es carga de la máquina (antivirus/SonarQube): detener `sonarqube` y reintentar.
 <!-- END AGENT ANNOTATIONS -->

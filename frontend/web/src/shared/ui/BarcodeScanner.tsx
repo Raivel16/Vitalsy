@@ -21,7 +21,7 @@ const BARCODE_FORMATS = [
 ];
 
 export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant = "quiet" }: Props) {
-  const reactId = useId().replace(/:/g, "");
+  const reactId = useId().replaceAll(":", "");
   const elementId = `scanner-${reactId}`;
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
@@ -107,16 +107,9 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
         {label}
       </Button>
       {open ? createPortal(
-        <div
-          className="scanner-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
-          }}
-        >
-          <div className="scanner-modal-card">
+        <div className="scanner-modal">
+          <button type="button" className="scanner-scrim" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} />
+          <dialog className="scanner-modal-card" open aria-modal="true" aria-label={label}>
             <header className="scanner-modal-head">
               <strong>{label}</strong>
               <Button variant="quiet" type="button" onClick={() => setOpen(false)}>Cerrar</Button>
@@ -124,7 +117,7 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
             {error ? <Feedback tone="error">{error}</Feedback> : null}
             <div id={elementId} className="scanner-view" />
             <p className="hint">Apunte la cámara al código. Si no puede leerlo, cierre y escríbalo.</p>
-          </div>
+          </dialog>
         </div>,
         document.body,
       ) : null}

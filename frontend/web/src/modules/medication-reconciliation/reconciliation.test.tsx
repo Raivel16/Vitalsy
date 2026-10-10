@@ -50,10 +50,13 @@ describe("conciliación farmacéutica de ingreso", () => {
     renderApp("/enfermeria/conciliacion?ingreso=ENC-0001");
 
     await screen.findByLabelText(/alergias conocidas/i);
-    await user.type(screen.getByLabelText(/alergias conocidas/i), "Penicilina");
-    await user.type(screen.getByLabelText(/^medicamento$/i), "Amoxicilina");
+    await user.click(screen.getByLabelText(/alergias conocidas/i));
+    await user.paste("Penicilina");
+    await user.click(screen.getByLabelText(/^medicamento$/i));
+    await user.paste("Amoxicilina");
     await user.type(screen.getByLabelText(/dosis/i), "500 mg");
-    await user.type(screen.getByLabelText(/frecuencia/i), "cada 8 horas");
+    await user.click(screen.getByLabelText(/frecuencia/i));
+    await user.paste("cada 8 horas");
     await user.selectOptions(screen.getByLabelText(/vía/i), "oral");
     await user.click(screen.getByRole("button", { name: /agregar medicamento/i }));
 

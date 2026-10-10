@@ -308,7 +308,7 @@ nav a[aria-current="page"] { background: var(--accent-soft); color: var(--navy);
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.05rem 1.1rem; align-items: start; }
 .form-span-2 { grid-column: 1 / -1; }
 .field { display: grid; grid-template-rows: auto auto minmax(1.2rem, auto); gap: 0.4rem; min-width: 0; align-content: start; }
-.field label, .check label, legend { font-weight: 700; color: var(--ink); font-size: 14px; }
+.field label, .field-label, .check label, legend { font-weight: 700; color: var(--ink); font-size: 14px; }
 .field label {
   display: flex;
   justify-content: space-between;
@@ -1468,7 +1468,19 @@ a.stepper-label:hover {
   padding: 1.5rem;
   background: rgba(27, 34, 40, 0.48);
 }
+.scanner-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
 .scanner-modal-card {
+  position: relative;
+  margin: 0;
+  border: 0;
+  color: inherit;
   width: min(100%, 28rem);
   display: grid;
   gap: 0.85rem;
@@ -2038,7 +2050,22 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   justify-content: flex-end;
   background: rgba(20, 28, 36, 0.45);
 }
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
 .drawer-panel {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  max-width: none;
+  max-height: none;
   display: flex;
   flex-direction: column;
   width: min(100%, 30rem);

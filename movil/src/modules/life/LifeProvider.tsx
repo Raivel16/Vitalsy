@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { apiBaseUrl, fetchDischargeBody, postLifeBatch } from '../../shared/api/lifeClient';
+import { randomHex } from '../../shared/crypto/randomHex';
 import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
 import { SqlitePersistence } from '../../shared/storage/sqlitePersistence';
@@ -28,10 +29,6 @@ type LifeContextValue = {
 };
 
 const LifeContext = createContext<LifeContextValue | null>(null);
-
-function randomHex(): string {
-  return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
-}
 
 async function encryptionKey(): Promise<Uint8Array> {
   const existing = await SecureStore.getItemAsync('vitalsy.life.key');

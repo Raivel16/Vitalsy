@@ -337,6 +337,7 @@ export function EmarPage() {
 
           <label className="check">
             <input type="checkbox" checked={sign} onChange={(e) => setSign(e.target.checked)} />
+            {" "}
             Confirmo la administración según indicación médica y validación del e-MAR.
           </label>
 

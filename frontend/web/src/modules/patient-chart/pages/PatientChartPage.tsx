@@ -18,6 +18,7 @@ import {
 } from "../../../shared/datetime/range";
 import { VitalSignsChartPanel } from "../../vital-monitoring/ui/VitalSignsChartPanel";
 import { eventLabel, STATUS_LABEL, type AlertStatus } from "../../clinical-alerts/domain/alert";
+import { cleanRiskLabel } from "../domain/riskLabel";
 
 type ChartPayload = {
   encounter: {
@@ -98,16 +99,6 @@ function hasAdmissionContent(admission: ChartPayload["admission"]): boolean {
     || admission.consent
     || (admission.kardexMedications && admission.kardexMedications.length > 0),
   );
-}
-
-function cleanRiskLabel(value?: string | null): string {
-  if (!value) return "—";
-  return value
-    .replace(/\s+de caídas(?=\s+de caídas)/gi, "")
-    .replace(/\s+de úlceras por presión(?=\s+de úlceras)/gi, "")
-    .replace(/\s+de caída:(?=\s+de caída:)/gi, "")
-    .replace(/\s+de úlcera por presión:(?=\s+de úlcera)/gi, "")
-    .trim();
 }
 
 type OrderItem = string | { title?: string; detail?: string; category?: string };

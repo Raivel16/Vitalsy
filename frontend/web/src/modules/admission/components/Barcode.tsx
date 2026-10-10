@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 
 function FallbackBars({ value }: { value: string }) {
-  const widths = value.split("").map((char) => (char.charCodeAt(0) % 3) + 1);
+  const widths = value.split("").map((char) => ((char.codePointAt(0) ?? 0) % 3) + 1);
   let x = 4;
   const bars = widths.map((width, index) => {
     const rect = <rect key={index} x={x} y="4" width={width} height="40" fill="#0E4C92" />;

@@ -11,7 +11,7 @@ export function BedRequestDrawer({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -27,14 +27,15 @@ export function BedRequestDrawer({
   }, [onClose]);
 
   return (
-    <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panelRef} className="drawer-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
+    <div className="drawer-backdrop">
+      <button type="button" className="drawer-scrim" aria-hidden="true" tabIndex={-1} onClick={onClose} />
+      <dialog ref={panelRef} className="drawer-panel" open aria-modal="true" aria-label={title} tabIndex={-1}>
         <header className="drawer-head">
           <h3>{title}</h3>
           <Button type="button" variant="quiet" onClick={onClose}>Cerrar</Button>
         </header>
         <div className="drawer-body">{children}</div>
-      </div>
+      </dialog>
     </div>
   );
 }
