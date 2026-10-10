@@ -196,4 +196,6 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Corregidos 2 bugs y 4 vulnerabilidades: `randomHex` móvil usa `Crypto.getRandomBytes`, comparador explícito en `today.ts`, base `https` ficticia en `returnTo.ts`, visor de escáner con `<dialog>` nativo. 0 bugs, 0 vulnerabilidades, Quality Gate OK.
 - Nota: `npm run lint` del frontend ya tenía 40 errores previos en `dev`; no se corrigieron aquí.
 - Rama: `chore/calidad-sonarqube`.
+
+- Fiabilidad (MQR) llevada a A: 20 incidencias corregidas (regex sin retroceso en correo y etiquetas de riesgo, `codePointAt`/`replaceAll`, espacios JSX explícitos, `<dialog>` nativo y fondo con botón en cajón de camas y visor del escáner). Las pruebas largas usan `user.paste`. Si `npm test` da timeouts, es carga de la máquina (antivirus/SonarQube): detener `sonarqube` y reintentar.
 <!-- END AGENT ANNOTATIONS -->
