@@ -84,7 +84,8 @@ describe("cuidados y evolución (RF-36–37)", () => {
     expect(await screen.findByRole("tab", { name: /^notas$/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("heading", { name: /^evolución de enfermería$/i })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/nota de evolución/i), "Paciente estable en el turno.");
+    await user.click(screen.getByLabelText(/nota de evolución/i));
+    await user.paste("Paciente estable en el turno.");
     await user.click(screen.getByRole("button", { name: /registrar nota/i }));
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/nota de enfermería registrada/i);
 
@@ -104,7 +105,8 @@ describe("cuidados y evolución (RF-36–37)", () => {
     renderApp("/atencion/cuidados?ingreso=ENC-HOSP-0001");
     expect(await screen.findByRole("tab", { name: /^notas$/i })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/nota de evolución/i), "Apoyo en cuidados del turno.");
+    await user.click(screen.getByLabelText(/nota de evolución/i));
+    await user.paste("Apoyo en cuidados del turno.");
     await user.click(screen.getByRole("button", { name: /registrar nota/i }));
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/nota de enfermería registrada/i);
 

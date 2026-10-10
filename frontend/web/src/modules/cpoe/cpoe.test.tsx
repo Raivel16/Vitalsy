@@ -82,10 +82,12 @@ describe("prescripción CPOE (RF-25)", () => {
     expect(screen.queryByRole("heading", { name: /reemplazar plan completo/i })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /nueva prescripción/i })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/^medicamento$/i), "Paracetamol");
+    await user.click(screen.getByLabelText(/^medicamento$/i));
+    await user.paste("Paracetamol");
     await user.type(screen.getByLabelText(/^dosis$/i), "1 g");
     await user.type(screen.getByLabelText(/^vía$/i), "VO");
-    await user.type(screen.getByLabelText(/^frecuencia$/i), "cada 8 horas");
+    await user.click(screen.getByLabelText(/^frecuencia$/i));
+    await user.paste("cada 8 horas");
     await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
 
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/e-mar/i);
