@@ -64,6 +64,16 @@ describe("administración de usuarios (RF-101 a RF-104)", () => {
     expect(calls.some((c) => c.url.includes("status=inactive"))).toBe(true);
   });
 
+  it("coloca la acción del formulario en su propia fila, a todo el ancho", async () => {
+    stubUsers();
+    renderApp("/usuarios/nuevo", { role: "administrador_accesos" });
+
+    const submit = await screen.findByRole("button", { name: /crear cuenta/i });
+    const row = submit.closest(".form-span-2");
+    expect(row).not.toBeNull();
+    expect(row).toHaveClass("form-actions-bar");
+  });
+
   it("niega el acceso a otros perfiles", async () => {
     stubUsers();
     renderApp("/usuarios", { role: "recursos_humanos" });

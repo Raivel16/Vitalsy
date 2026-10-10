@@ -2,7 +2,6 @@ import { type FormEvent, useState } from "react";
 import { ROLES, ROLE_LABEL } from "../../../app/roles";
 import { Button } from "../../../shared/ui/Button";
 import { SelectField, TextField } from "../../../shared/ui/Field";
-import { FormActions } from "../../../shared/ui/FormActions";
 import { type UserFormErrors, type UserFormValues, validateUserForm } from "../domain/userForm";
 
 export function UserForm({
@@ -56,9 +55,9 @@ export function UserForm({
           <option key={role} value={role}>{ROLE_LABEL[role]}</option>
         ))}
       </SelectField>
-      <FormActions>
+      <div className="form-span-2 form-actions-bar">
         <Button type="submit" pending={pending}>{submitLabel}</Button>
-      </FormActions>
+      </div>
     </form>
   );
 }
