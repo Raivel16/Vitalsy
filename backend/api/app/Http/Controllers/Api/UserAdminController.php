@@ -35,7 +35,11 @@ class UserAdminController extends Controller
     {
         $user = User::query()->findOrFail($id);
 
-        return response()->json(['user' => $this->users->update($user, $request->validated(), $request->user())]);
+        try {
+            return response()->json(['user' => $this->users->update($user, $request->validated(), $request->user())]);
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['user' => $e->getMessage()]);
+        }
     }
 
     public function deactivate(Request $request, string $id): JsonResponse

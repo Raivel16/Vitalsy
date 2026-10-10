@@ -69,9 +69,22 @@ class UserAdministration
         }
 
         DB::transaction(function () use ($user, $changes, $actor) {
-            $before = $user->only(array_keys($changes));
-            $user->update($changes);
-            $this->audit($actor, $user, 'user.updated', ['before' => $before, 'after' => $changes]);
+            // Bloquea las filas de administradores para que el chequeo y el cambio sean atómicos.
+            $this->lockAdministrators();
+            $current = User::query()->lockForUpdate()->findOrFail($user->getKey());
+
+            if (isset($changes['role']) && $changes['role'] !== $current->role) {
+                if ($current->is($actor)) {
+                    throw new RuntimeException('No puede cambiar su propio rol.');
+                }
+                if ($current->role === 'administrador_accesos' && $current->is_active) {
+                    $this->assertAnotherActiveAdministrator($current);
+                }
+            }
+
+            $before = $current->only(array_keys($changes));
+            $current->update($changes);
+            $this->audit($actor, $current, 'user.updated', ['before' => $before, 'after' => $changes]);
         });
 
         return $this->present($user->fresh());
@@ -80,26 +93,42 @@ class UserAdministration
     /** @return array<string, mixed> */
     public function deactivate(User $user, User $actor): array
     {
-        if ($user->is($actor)) {
-            throw new RuntimeException('No puede desactivar su propia cuenta.');
-        }
-        if ($user->role === 'administrador_accesos' && $user->is_active) {
-            $others = User::query()->where('role', 'administrador_accesos')
-                ->where('is_active', true)->whereKeyNot($user->getKey())->count();
-            if ($others === 0) {
-                throw new RuntimeException('Debe quedar al menos un administrador de accesos activo.');
-            }
-        }
-
         DB::transaction(function () use ($user, $actor) {
-            $user->forceFill(['is_active' => false, 'deactivated_at' => now()])->save();
-            if (Schema::hasTable('sessions')) {
-                DB::table('sessions')->where('user_id', $user->getKey())->delete();
+            $this->lockAdministrators();
+            $current = User::query()->lockForUpdate()->findOrFail($user->getKey());
+
+            if ($current->is($actor)) {
+                throw new RuntimeException('No puede desactivar su propia cuenta.');
             }
-            $this->audit($actor, $user, 'user.deactivated', []);
+            if (! $current->is_active) {
+                throw new RuntimeException('La cuenta ya está desactivada.');
+            }
+            if ($current->role === 'administrador_accesos') {
+                $this->assertAnotherActiveAdministrator($current);
+            }
+
+            $current->forceFill(['is_active' => false, 'deactivated_at' => now()])->save();
+            if (Schema::hasTable('sessions')) {
+                DB::table('sessions')->where('user_id', $current->getKey())->delete();
+            }
+            $this->audit($actor, $current, 'user.deactivated', []);
         });
 
         return $this->present($user->fresh());
+    }
+
+    private function lockAdministrators(): void
+    {
+        User::query()->where('role', 'administrador_accesos')->lockForUpdate()->pluck('id');
+    }
+
+    private function assertAnotherActiveAdministrator(User $user): void
+    {
+        $others = User::query()->where('role', 'administrador_accesos')
+            ->where('is_active', true)->whereKeyNot($user->getKey())->count();
+        if ($others === 0) {
+            throw new RuntimeException('Debe quedar al menos un administrador de accesos activo.');
+        }
     }
 
     /** @return array<int, array{id: int, name: string, role: string, isActive: bool}> */

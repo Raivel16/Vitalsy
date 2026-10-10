@@ -142,6 +142,25 @@ class UserAdminApiTest extends TestCase
         $this->assertSame(1, User::query()->where('role', 'administrador_accesos')->where('is_active', true)->count());
     }
 
+    public function test_admin_cannot_change_own_role_through_update(): void
+    {
+        $admin = $this->admin();
+
+        $this->patchJson("/api/v1/users/{$admin->id}", ['role' => 'camillero'])->assertStatus(422);
+
+        $this->assertSame('administrador_accesos', $admin->fresh()->role);
+        $this->patchJson("/api/v1/users/{$admin->id}", ['name' => 'Nuevo nombre'])->assertOk();
+    }
+
+    public function test_deactivating_an_already_inactive_account_is_rejected_without_new_audit(): void
+    {
+        $this->admin();
+        $target = User::factory()->create(['role' => 'camillero', 'is_active' => false]);
+
+        $this->postJson("/api/v1/users/{$target->id}/deactivate")->assertStatus(422);
+        $this->assertSame(0, DB::table('access_audit_logs')->where('action', 'user.deactivated')->count());
+    }
+
     public function test_non_admin_roles_get_403_on_user_endpoints(): void
     {
         $target = User::factory()->create(['role' => 'camillero']);
