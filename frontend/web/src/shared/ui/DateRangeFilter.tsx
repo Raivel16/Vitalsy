@@ -36,6 +36,7 @@ export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }
         <div className="date-range-inputs">
           <label>
             Desde
+            {" "}
             <input
               type="date"
               value={value.from ?? ""}
@@ -44,6 +45,7 @@ export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }
           </label>
           <label>
             Hasta
+            {" "}
             <input
               type="date"
               value={value.to ?? ""}

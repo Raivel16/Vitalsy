@@ -265,6 +265,7 @@ export function VitalControlsPage() {
               checked={supplementalOxygen}
               onChange={(e) => setSupplementalOxygen(e.target.checked)}
             />
+            {" "}
             Oxígeno suplementario
           </label>
           <SelectField

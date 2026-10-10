@@ -66,6 +66,7 @@ export function CleaningOrderCard({
           <fieldset className="check-panel">
             <legend>
               Checklist requerido de habilitación clínica
+              {" "}
               <span className="check-progress">{done} / {CHECKLIST_ITEMS.length} completados</span>
             </legend>
             <div className="check-grid">
