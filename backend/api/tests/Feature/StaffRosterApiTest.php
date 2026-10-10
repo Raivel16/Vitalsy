@@ -6,6 +6,8 @@ use App\Models\AdmissionEncounter;
 use App\Models\ClinicalAlert;
 use App\Models\DailyPatientAssignment;
 use App\Models\StaffAbsence;
+use App\Models\StaffShift;
+use App\Models\StaffShiftPlan;
 use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\ClinicalAlerts\AlertRecorder;
@@ -104,6 +106,46 @@ class StaffRosterApiTest extends TestCase
         $this->assertDatabaseCount('daily_patient_assignments', 2);
     }
 
+    /** Publica turnos directamente para ubicar a cada persona en un servicio ese día. */
+    private function planShifts(array $shifts): void
+    {
+        $plan = StaffShiftPlan::query()->firstOrCreate(
+            ['year_month' => '2026-09'],
+            ['published_at' => now()],
+        );
+        foreach ($shifts as [$user, $unit, $startsAt, $endsAt]) {
+            StaffShift::query()->create([
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+                'unit' => $unit,
+            ]);
+        }
+    }
+
+    public function test_handover_requires_both_nurses_in_the_published_roster_of_the_same_unit(): void
+    {
+        $this->hospitalized('ENC-STAFF-9');
+        $outgoing = User::factory()->create(['role' => 'enfermera_piso']);
+        $incoming = $this->asRole('enfermera_piso');
+        $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-9', 2);
+
+        // Sin rol publicado no se puede consultar ni reasignar pacientes de otra persona.
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")->assertStatus(422);
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
+
+        // Turno noche de la saliente iniciado el día anterior y que cruza la medianoche.
+        $this->planShifts([
+            [$outgoing, 'Medicina', '2026-09-25T19:00:00', '2026-09-26T07:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+        ]);
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")->assertOk();
+
+        // No se firma una entrega consigo misma.
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $incoming->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
+    }
+
     public function test_handover_consolidates_vitals_emar_and_alerts_then_signs(): void
     {
         $this->hospitalized('ENC-STAFF-3');
@@ -132,6 +174,10 @@ class StaffRosterApiTest extends TestCase
             ->assertJsonPath('handover.patients.0.encounterId', 'ENC-STAFF-3');
         $this->assertNotEmpty($preview->json('handover.patients.0.alerts'));
 
+        $this->planShifts([
+            [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+        ]);
         $this->actingAs($incoming);
         $this->postJson('/api/v1/staff/handover', [
             'fromUserId' => $outgoing->id,
@@ -332,6 +378,10 @@ class StaffRosterApiTest extends TestCase
         $outgoing = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Saliente']);
         $incoming = $this->asRole('enfermera_piso');
         $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-7', 2);
+        $this->planShifts([
+            [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+        ]);
 
         $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")
             ->assertOk()

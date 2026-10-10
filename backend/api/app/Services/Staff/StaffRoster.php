@@ -182,6 +182,9 @@ class StaffRoster
     /** @param array<string, mixed> $data */
     public function signHandover(array $data, User $incoming): array
     {
+        if ((int) $data['fromUserId'] === $incoming->id) {
+            throw new ClinicalRuleException('No puede firmar una entrega de turno consigo misma.');
+        }
         $preview = $this->handoverPreview($incoming, $data['shiftDate'], (int) $data['fromUserId']);
         $shown = collect($preview['handover']['patients'])->pluck('encounterId')->all();
 
@@ -413,18 +416,20 @@ class StaffRoster
      */
     private function assertSameUnit(User $incoming, User $outgoing, string $shiftDate): void
     {
+        // Turnos que cubren el día, incluidos los nocturnos iniciados el día anterior.
         $unitsOf = fn (User $user) => StaffShift::query()
             ->where('user_id', $user->id)
-            ->whereDate('starts_at', $shiftDate)
+            ->whereDate('starts_at', '<=', $shiftDate)
+            ->whereDate('ends_at', '>=', $shiftDate)
             ->pluck('unit')
             ->filter()
             ->unique()
             ->values();
 
-        $incomingUnits = $unitsOf($incoming);
-        $outgoingUnits = $unitsOf($outgoing);
-        if ($incomingUnits->isNotEmpty() && $outgoingUnits->isNotEmpty() && $incomingUnits->intersect($outgoingUnits)->isEmpty()) {
-            throw new ClinicalRuleException('La enfermera saliente pertenece a otro servicio en el rol publicado.');
+        // Falla cerrado: sin ambas personas ubicadas en el rol publicado y con un servicio
+        // en común no se consultan ni reasignan pacientes ajenos.
+        if ($unitsOf($incoming)->intersect($unitsOf($outgoing))->isEmpty()) {
+            throw new ClinicalRuleException('La entrega requiere que ambas enfermeras estén en el rol publicado del mismo servicio.');
         }
     }
 
