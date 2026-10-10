@@ -359,4 +359,26 @@ class StaffRosterApiTest extends TestCase
         $this->postJson('/api/v1/staff/coverage-requests/1/authorize')->assertForbidden();
         $this->getJson('/api/v1/staff/shift-plans/2030-01')->assertNotFound();
     }
+
+    public function test_handover_is_refused_between_nurses_published_in_different_units(): void
+    {
+        $this->hospitalized('ENC-STAFF-8');
+        $outgoing = User::factory()->create(['role' => 'enfermera_piso']);
+        $incoming = User::factory()->create(['role' => 'enfermera_piso']);
+        $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-8', 2);
+
+        $this->asRole('jefatura_enfermeria');
+        $this->postJson('/api/v1/staff/shift-plans', [
+            'yearMonth' => '2026-09',
+            'shifts' => [
+                ['userId' => $outgoing->id, 'startsAt' => '2026-09-26T07:00:00', 'endsAt' => '2026-09-26T19:00:00', 'unit' => 'UCI'],
+                ['userId' => $incoming->id, 'startsAt' => '2026-09-26T19:00:00', 'endsAt' => '2026-09-27T07:00:00', 'unit' => 'Medicina'],
+            ],
+        ])->assertCreated();
+
+        $this->actingAs($incoming);
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$outgoing->id}")->assertStatus(422);
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
+        $this->assertSame(1, DailyPatientAssignment::query()->where('nurse_user_id', $outgoing->id)->count());
+    }
 }

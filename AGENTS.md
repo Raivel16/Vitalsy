@@ -164,4 +164,12 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Frontend: `modules/user-admin` (`/usuarios`, `/usuarios/nuevo`, `/usuarios/:userId`).
 - Rama: `feature/RF-101-104-administracion-usuarios`.
 
+### 2026-10-09 — Proceso 6 personal: interfaces y reglas (RF-78–88)
+
+- Backend: validación `exists` con rol asistencial activo, motivo obligatorio, ausencia sin duplicados, transiciones de cobertura validadas, `whereDate` y transacciones; rebalanceo por carga NEWS2; `recordAbsence` devuelve `reassignments`/`unassigned`; `listCoverage` incluye nombres, fecha, motivo y responsables; handover de la saliente (`fromUserId`) con control de mismo servicio.
+- Frontend: `modules/staff-roster` dividido en `staffApi.ts`, `domain/` (`coverage`, `capabilities`), `hooks/` y paneles por responsabilidad; sin IDs tecleados, con fechas por control y estado por panel; RF-88 disponible en UI.
+- Rulings: no se partió `StaffRoster` en cuatro servicios (queda como deuda de refactor); `suggest` no filtra por fecha/servicio ni excluye ya asignados; sin notificación persistente (RF-80) ni validación formal del reporte (RF-82).
+- Fuera de alcance (sin RF): montos, planilla, SBAR, checklist, KPIs de horas, exportar matriz.
+- Rama: `bugfix/RF-78-88-interfaces-personal` (basada en `feature/RF-101-104-administracion-usuarios`).
+
 <!-- END AGENT ANNOTATIONS -->

@@ -141,6 +141,9 @@ class StaffRoster
         $from = $fromUserId !== null && $fromUserId !== $viewer->id
             ? User::query()->findOrFail($fromUserId)
             : $viewer;
+        if (! $from->is($viewer)) {
+            $this->assertSameUnit($viewer, $from, $shiftDate);
+        }
 
         $ids = DailyPatientAssignment::query()
             ->whereDate('shift_date', $shiftDate)
@@ -402,6 +405,27 @@ class StaffRoster
         }
 
         return [$reassignments, 0];
+    }
+
+    /**
+     * Control de objeto del handover: si el rol publicado ubica a ambas enfermeras ese día,
+     * deben compartir servicio; así no se consultan ni reasignan pacientes de otra unidad.
+     */
+    private function assertSameUnit(User $incoming, User $outgoing, string $shiftDate): void
+    {
+        $unitsOf = fn (User $user) => StaffShift::query()
+            ->where('user_id', $user->id)
+            ->whereDate('starts_at', $shiftDate)
+            ->pluck('unit')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $incomingUnits = $unitsOf($incoming);
+        $outgoingUnits = $unitsOf($outgoing);
+        if ($incomingUnits->isNotEmpty() && $outgoingUnits->isNotEmpty() && $incomingUnits->intersect($outgoingUnits)->isEmpty()) {
+            throw new ClinicalRuleException('La enfermera saliente pertenece a otro servicio en el rol publicado.');
+        }
     }
 
     private function presentPlan(StaffShiftPlan $plan): array

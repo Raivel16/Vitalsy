@@ -3971,6 +3971,30 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
   background: #fff;
   border: 1px solid var(--line);
 }
+/* Tablas y controles compartidos por /usuarios y /personal. */
+.clinic-sheet .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.clinic-sheet .data-table th,
+.clinic-sheet .data-table td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.clinic-sheet .data-table th { color: var(--muted); font-weight: 600; }
+.clinic-sheet .filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.clinic-sheet .temp-password {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
 .ops-board .ops-suggestion pre {
   margin: 0;
   white-space: pre-wrap;
