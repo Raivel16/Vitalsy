@@ -144,17 +144,18 @@ class UserAdministration
     }
 
     /** @return array<int, array{id: int, name: string, role: string, isActive: bool}> */
-    public function careMembers(?string $role): array
+    public function careMembers(?string $role, bool $withEmail = false): array
     {
         $roles = $role !== null && in_array($role, self::CARE_ROLES, true) ? [$role] : self::CARE_ROLES;
 
         return User::query()->whereIn('role', $roles)->where('is_active', true)->orderBy('name')->get()
-            ->map(fn (User $u) => [
+            ->map(fn (User $u) => array_filter([
                 'id' => $u->id,
                 'name' => $u->name,
+                'email' => $withEmail ? $u->email : null,
                 'role' => $u->role,
                 'isActive' => (bool) $u->is_active,
-            ])->all();
+            ], fn ($value, $key) => $key !== 'email' || $withEmail, ARRAY_FILTER_USE_BOTH))->all();
     }
 
     /** @return array<string, mixed> */

@@ -53,6 +53,31 @@ class StaffRoster
         return ['plan' => $this->presentPlan($plan->fresh())];
     }
 
+    /** Roles publicados de los últimos 12 meses (y futuros), del más reciente al más antiguo. */
+    public function listPlans(): array
+    {
+        $since = now()->subMonths(12)->format('Y-m');
+        $names = User::query()->pluck('name', 'id');
+
+        $plans = StaffShiftPlan::query()
+            ->where('year_month', '>=', $since)
+            ->orderByDesc('year_month')
+            ->get()
+            ->map(function (StaffShiftPlan $plan) use ($names) {
+                $shifts = StaffShift::query()->where('plan_id', $plan->id)->get();
+
+                return [
+                    'yearMonth' => $plan->year_month,
+                    'publishedAt' => optional($plan->published_at)?->toIso8601String(),
+                    'publishedByName' => $plan->published_by ? ($names[$plan->published_by] ?? null) : null,
+                    'shiftCount' => $shifts->count(),
+                    'staffCount' => $shifts->pluck('user_id')->unique()->count(),
+                ];
+            });
+
+        return ['plans' => $plans->values()];
+    }
+
     public function showPlan(string $yearMonth): array
     {
         $plan = StaffShiftPlan::query()->where('year_month', $yearMonth)->first();
@@ -447,8 +472,11 @@ class StaffRoster
 
     private function presentPlan(StaffShiftPlan $plan): array
     {
+        $users = User::query()->get(['id', 'name', 'role'])->keyBy('id');
         $shifts = StaffShift::query()->where('plan_id', $plan->id)->get()->map(fn (StaffShift $shift) => [
             'userId' => $shift->user_id,
+            'userName' => $users[$shift->user_id]->name ?? null,
+            'userRole' => $users[$shift->user_id]->role ?? null,
             'startsAt' => optional($shift->starts_at)?->toIso8601String(),
             'endsAt' => optional($shift->ends_at)?->toIso8601String(),
             'unit' => $shift->unit,
@@ -457,8 +485,40 @@ class StaffRoster
         return [
             'yearMonth' => $plan->year_month,
             'published' => (bool) $plan->published_at,
+            'publishedAt' => optional($plan->published_at)?->toIso8601String(),
+            'publishedByName' => $plan->published_by ? ($users[$plan->published_by]->name ?? null) : null,
             'shifts' => $shifts->values(),
+            'retainers' => $this->retainersOfMonth($plan->year_month, $users),
         ];
+    }
+
+    /**
+     * Retenes confirmados cuyo día de cobertura cae en el mes (pinta «R» en la matriz).
+     *
+     * @param  Collection<int, User>  $users
+     * @return list<array{userId: int, userName: string|null, date: string}>
+     */
+    private function retainersOfMonth(string $yearMonth, Collection $users): array
+    {
+        $start = $yearMonth.'-01';
+        $end = date('Y-m-t', strtotime($start));
+        $absences = StaffAbsence::query()->whereDate('shift_date', '>=', $start)->whereDate('shift_date', '<=', $end)->get()->keyBy('id');
+        if ($absences->isEmpty()) {
+            return [];
+        }
+        $coverage = CoverageRequest::query()->whereIn('absence_id', $absences->keys())->get()->keyBy('id');
+        if ($coverage->isEmpty()) {
+            return [];
+        }
+
+        return RetainerConfirmation::query()
+            ->whereIn('coverage_request_id', $coverage->keys())
+            ->get()
+            ->map(fn (RetainerConfirmation $row) => [
+                'userId' => $row->user_id,
+                'userName' => $users[$row->user_id]->name ?? null,
+                'date' => $absences[$coverage[$row->coverage_request_id]->absence_id]->shift_date->toDateString(),
+            ])->values()->all();
     }
 
     private function requireCoverage(int $id): CoverageRequest

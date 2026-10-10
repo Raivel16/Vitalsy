@@ -201,7 +201,10 @@ class UserAdminApiTest extends TestCase
             $this->assertFalse($names->contains('Inactiva'));
             $this->assertFalse($names->contains('Beto Aux'));
             $this->assertFalse($names->contains('Mesa'));
-            $this->assertSame(['id', 'name', 'role', 'isActive'], array_keys($response->json('data.0')));
+            $expected = in_array($role, ['jefatura_enfermeria', 'enfermera_supervisora'], true)
+                ? ['id', 'name', 'email', 'role', 'isActive']
+                : ['id', 'name', 'role', 'isActive'];
+            $this->assertSame($expected, array_keys($response->json('data.0')));
         }
 
         $this->actingAs(User::factory()->create(['role' => 'camillero']));

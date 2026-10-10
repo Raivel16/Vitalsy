@@ -265,6 +265,7 @@ Route::prefix('v1')->group(function () {
             Route::get('members', [UserAdminController::class, 'members'])
                 ->middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos');
             Route::middleware('role:jefatura_enfermeria,enfermera_supervisora,enfermera_piso,recursos_humanos')->group(function () {
+                Route::get('shift-plans', [StaffRosterController::class, 'listPlans']);
                 Route::get('shift-plans/{yearMonth}', [StaffRosterController::class, 'showPlan']);
             });
 

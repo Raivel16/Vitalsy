@@ -47,6 +47,9 @@ class UserAdminController extends Controller
     {
         $role = $request->query('role');
 
-        return response()->json(['data' => $this->users->careMembers(is_string($role) ? $role : null)]);
+        // El correo distingue a personas con el mismo nombre: solo lo ven quienes arman el rol.
+        $withEmail = in_array($request->user()->role, ['jefatura_enfermeria', 'enfermera_supervisora'], true);
+
+        return response()->json(['data' => $this->users->careMembers(is_string($role) ? $role : null, $withEmail)]);
     }
 }

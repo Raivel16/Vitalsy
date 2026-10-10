@@ -38,6 +38,11 @@ class StaffRosterController extends Controller
         return response()->json($this->roster->publishPlan($data, $request->user()), 201);
     }
 
+    public function listPlans(): JsonResponse
+    {
+        return response()->json($this->roster->listPlans());
+    }
+
     public function showPlan(string $yearMonth): JsonResponse
     {
         return response()->json($this->roster->showPlan($yearMonth));

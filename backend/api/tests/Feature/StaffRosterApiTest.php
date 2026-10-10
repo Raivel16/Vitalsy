@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
 use App\Models\ClinicalAlert;
+use App\Models\CoverageRequest;
 use App\Models\DailyPatientAssignment;
+use App\Models\RetainerConfirmation;
 use App\Models\StaffAbsence;
 use App\Models\StaffShift;
 use App\Models\StaffShiftPlan;
@@ -476,5 +478,71 @@ class StaffRosterApiTest extends TestCase
         $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-27'])->assertStatus(422);
         $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&{$query}")->assertOk();
         $this->assertSame(2, DailyPatientAssignment::query()->where('nurse_user_id', $outgoing->id)->count());
+    }
+
+    public function test_plans_listing_returns_published_months_within_twelve_months_newest_first(): void
+    {
+        $leader = $this->asRole('jefatura_enfermeria');
+        $nurse = User::factory()->create(['role' => 'enfermera_piso']);
+        $thisMonth = now()->format('Y-m');
+        $lastYear = now()->subMonths(11)->format('Y-m');
+        $tooOld = now()->subMonths(14)->format('Y-m');
+        foreach ([$tooOld, $lastYear, $thisMonth] as $month) {
+            $this->postJson('/api/v1/staff/shift-plans', [
+                'yearMonth' => $month,
+                'shifts' => [['userId' => $nurse->id, 'startsAt' => "{$month}-05T07:00:00", 'endsAt' => "{$month}-05T19:00:00", 'unit' => 'Medicina']],
+            ])->assertCreated();
+        }
+
+        $response = $this->getJson('/api/v1/staff/shift-plans')->assertOk();
+
+        $this->assertSame([$thisMonth, $lastYear], collect($response->json('plans'))->pluck('yearMonth')->all());
+        $this->assertSame($leader->name, $response->json('plans.0.publishedByName'));
+        $this->assertSame(1, $response->json('plans.0.shiftCount'));
+        $this->assertSame(1, $response->json('plans.0.staffCount'));
+    }
+
+    public function test_republishing_a_month_replaces_it_and_listing_keeps_a_single_row(): void
+    {
+        $this->asRole('jefatura_enfermeria');
+        $nurse = User::factory()->create(['role' => 'enfermera_piso']);
+        $other = User::factory()->create(['role' => 'auxiliar_enfermeria']);
+        $month = now()->format('Y-m');
+        $shift = fn (User $user) => ['userId' => $user->id, 'startsAt' => "{$month}-05T07:00:00", 'endsAt' => "{$month}-05T19:00:00", 'unit' => 'Medicina'];
+
+        $this->postJson('/api/v1/staff/shift-plans', ['yearMonth' => $month, 'shifts' => [$shift($nurse)]])->assertCreated();
+        $this->postJson('/api/v1/staff/shift-plans', ['yearMonth' => $month, 'shifts' => [$shift($other), $shift($nurse)]])->assertCreated();
+
+        $plans = $this->getJson('/api/v1/staff/shift-plans')->json('plans');
+        $this->assertCount(1, $plans);
+        $this->assertSame(2, $plans[0]['shiftCount']);
+    }
+
+    public function test_show_plan_includes_names_publisher_and_confirmed_retainers(): void
+    {
+        $leader = $this->asRole('jefatura_enfermeria');
+        $nurse = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Rosa Quispe']);
+        $retainer = User::factory()->create(['role' => 'auxiliar_enfermeria']);
+        $this->postJson('/api/v1/staff/shift-plans', [
+            'yearMonth' => '2026-09',
+            'shifts' => [['userId' => $nurse->id, 'startsAt' => '2026-09-05T07:00:00', 'endsAt' => '2026-09-05T19:00:00', 'unit' => 'Medicina']],
+        ])->assertCreated();
+        $absence = StaffAbsence::query()->create(['user_id' => $nurse->id, 'shift_date' => '2026-09-09', 'reason' => 'X', 'recorded_by' => $leader->id]);
+        $coverage = CoverageRequest::query()->create(['absence_id' => $absence->id, 'status' => 'confirmada']);
+        RetainerConfirmation::query()->create(['coverage_request_id' => $coverage->id, 'user_id' => $retainer->id, 'confirmed_at' => now()]);
+
+        $plan = $this->getJson('/api/v1/staff/shift-plans/2026-09')->assertOk()->json('plan');
+
+        $this->assertSame('Rosa Quispe', $plan['shifts'][0]['userName']);
+        $this->assertSame('enfermera_piso', $plan['shifts'][0]['userRole']);
+        $this->assertSame($leader->name, $plan['publishedByName']);
+        $this->assertNotNull($plan['publishedAt']);
+        $this->assertSame([['userId' => $retainer->id, 'userName' => $retainer->name, 'date' => '2026-09-09']], $plan['retainers']);
+    }
+
+    public function test_plans_listing_is_forbidden_for_non_roster_roles(): void
+    {
+        $this->asRole('admision');
+        $this->getJson('/api/v1/staff/shift-plans')->assertForbidden();
     }
 }
