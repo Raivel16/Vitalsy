@@ -2,7 +2,7 @@ import { useState } from "react";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
 import { Panel, StatusPill } from "../../../shared/ui/clinical";
-import { SelectField } from "../../../shared/ui/Field";
+import { PersonPicker } from "./PersonPicker";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { Feedback } from "../../../shared/ui/Sheet";
 import type { StaffCapabilities } from "../domain/capabilities";
@@ -22,7 +22,7 @@ export function CoveragePanel({
   capabilities: StaffCapabilities;
   onChanged: () => void;
 }) {
-  const [retainers, setRetainers] = useState<Record<number, string>>({});
+  const [retainers, setRetainers] = useState<Record<number, StaffMember | null>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -43,12 +43,12 @@ export function CoveragePanel({
   }
 
   function confirm(request: CoverageRequest) {
-    const userId = retainers[request.id];
-    if (!userId) {
+    const person = retainers[request.id];
+    if (!person) {
       setError("Seleccione al retén que ingresa.");
       return;
     }
-    void run(request.id, () => confirmRetainer(request.id, Number(userId)), "Ingreso del retén confirmado.", "No se pudo confirmar el retén.");
+    void run(request.id, () => confirmRetainer(request.id, person.id), "Ingreso del retén confirmado.", "No se pudo confirmar el retén.");
   }
 
   return (
@@ -93,17 +93,14 @@ export function CoveragePanel({
                 ) : null}
                 {capabilities.confirmRetainer && request.status === "autorizada" ? (
                   <div className="stack ops-form">
-                    <SelectField
+                    <PersonPicker
                       id={`retainer-${request.id}`}
                       label="Retén que ingresa"
-                      value={retainers[request.id] ?? ""}
-                      onChange={(e) => setRetainers({ ...retainers, [request.id]: e.target.value })}
-                    >
-                      <option value="">Seleccione personal</option>
-                      {members.filter((m) => m.id !== request.absentUserId).map((member) => (
-                        <option key={member.id} value={member.id}>{member.name}</option>
-                      ))}
-                    </SelectField>
+                      members={members.filter((m) => m.id !== request.absentUserId)}
+                      selected={retainers[request.id] ?? null}
+                      onPick={(member) => setRetainers({ ...retainers, [request.id]: member })}
+                      onClear={() => setRetainers({ ...retainers, [request.id]: null })}
+                    />
                     <Button type="button" pending={busy === request.id} onClick={() => confirm(request)}>
                       Confirmar ingreso del retén
                     </Button>

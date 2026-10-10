@@ -1,4 +1,4 @@
-export type StaffMember = { id: number; name: string; role: string; isActive: boolean };
+export type StaffMember = { id: number; name: string; email?: string | null; role: string; isActive: boolean };
 
 export type CoverageRequest = {
   id: number;
@@ -44,4 +44,27 @@ export type HandoverSummary = {
   patients: HandoverPatient[];
 };
 
-export type PlannedShift = { userId: number; startsAt: string; endsAt: string; unit: string | null };
+export type PlannedShift = {
+  userId: number;
+  userName?: string | null;
+  userRole?: string | null;
+  startsAt: string;
+  endsAt: string;
+  unit: string | null;
+};
+
+export type PublishedPlan = {
+  yearMonth: string;
+  publishedAt: string | null;
+  publishedByName: string | null;
+  shifts: PlannedShift[];
+  retainers: Array<{ userId: number; userName?: string | null; date: string }>;
+};
+
+export type PlanSummary = {
+  yearMonth: string;
+  publishedAt: string | null;
+  publishedByName: string | null;
+  shiftCount: number;
+  staffCount: number;
+};

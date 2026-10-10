@@ -4,7 +4,8 @@ import type {
   CoverageRequest,
   HandoverSummary,
   NurseLoad,
-  PlannedShift,
+  PlanSummary,
+  PublishedPlan,
   ProposedAssignment,
   StaffMember,
 } from "./types";
@@ -16,9 +17,15 @@ export async function listMembers(): Promise<StaffMember[]> {
   return data.data;
 }
 
-export async function getPlan(yearMonth: string): Promise<PlannedShift[]> {
-  const data = await api<{ plan: { shifts: PlannedShift[] } }>(`${BASE}/shift-plans/${yearMonth}`);
-  return data.plan.shifts;
+/** Lanza si el mes no tiene rol publicado (404). */
+export async function getPlan(yearMonth: string): Promise<PublishedPlan> {
+  const data = await api<{ plan: PublishedPlan }>(`${BASE}/shift-plans/${yearMonth}`);
+  return data.plan;
+}
+
+export async function listPlans(): Promise<PlanSummary[]> {
+  const data = await api<{ plans: PlanSummary[] }>(`${BASE}/shift-plans`);
+  return data.plans;
 }
 
 export function publishPlan(yearMonth: string, shifts: Array<{ userId: number; startsAt: string; endsAt: string; unit: string }>) {

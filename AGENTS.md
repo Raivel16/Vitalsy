@@ -172,4 +172,12 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Fuera de alcance (sin RF): montos, planilla, SBAR, checklist, KPIs de horas, exportar matriz.
 - Rama: `bugfix/RF-78-88-interfaces-personal` (basada en `feature/RF-101-104-administracion-usuarios`).
 
+### 2026-10-09 — /personal: matriz mensual de turnos y buscador de personas
+
+- Jefatura: `RosterPanel` ahora es la matriz colaborador × día (frame 6A) con leyenda D/N/L/R, navegador de meses (12 atrás), estado «Publicado el … por …» y confirmación al reemplazar un mes. El rol publicado ya no desaparece.
+- `PersonPicker` (nombre, correo, rol) reemplaza a los `<select>` de colaborador, quien falta, saliente y retén. `email` solo se expone a jefatura y supervisora.
+- Backend: `GET staff/shift-plans`; `showPlan` con nombres, publicador y retenes (retenes ocultos para quien no puede leer coberturas).
+- Fuera de alcance: horas totales, descanso normativo, exportar matriz, versiones por publicación. R solo se pinta; no se edita.
+- /usuarios: la barra de acciones del formulario ocupa su propia fila (`form-span-2 form-actions-bar`).
+
 <!-- END AGENT ANNOTATIONS -->
