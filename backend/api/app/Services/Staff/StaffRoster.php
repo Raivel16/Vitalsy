@@ -78,14 +78,20 @@ class StaffRoster
         return ['plans' => $plans->values()];
     }
 
-    public function showPlan(string $yearMonth): array
+    public function showPlan(string $yearMonth, ?User $viewer = null): array
     {
         $plan = StaffShiftPlan::query()->where('year_month', $yearMonth)->first();
         if (! $plan) {
             throw new NotFoundHttpException('No hay un rol publicado para ese mes.');
         }
 
-        return ['plan' => $this->presentPlan($plan)];
+        return ['plan' => $this->presentPlan($plan, $this->mayReadCoverage($viewer))];
+    }
+
+    /** Mismos perfiles que `GET coverage-requests`: los retenes derivan de ausencias. */
+    private function mayReadCoverage(?User $viewer): bool
+    {
+        return $viewer !== null && in_array($viewer->role, ['jefatura_enfermeria', 'enfermera_supervisora', 'recursos_humanos'], true);
     }
 
     /** @param array<string, mixed> $data */
@@ -470,7 +476,7 @@ class StaffRoster
         }
     }
 
-    private function presentPlan(StaffShiftPlan $plan): array
+    private function presentPlan(StaffShiftPlan $plan, bool $withRetainers = false): array
     {
         $users = User::query()->get(['id', 'name', 'role'])->keyBy('id');
         $shifts = StaffShift::query()->where('plan_id', $plan->id)->get()->map(fn (StaffShift $shift) => [
@@ -488,7 +494,7 @@ class StaffRoster
             'publishedAt' => optional($plan->published_at)?->toIso8601String(),
             'publishedByName' => $plan->published_by ? ($users[$plan->published_by]->name ?? null) : null,
             'shifts' => $shifts->values(),
-            'retainers' => $this->retainersOfMonth($plan->year_month, $users),
+            'retainers' => $withRetainers ? $this->retainersOfMonth($plan->year_month, $users) : [],
         ];
     }
 

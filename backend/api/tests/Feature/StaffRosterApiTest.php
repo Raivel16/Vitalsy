@@ -540,6 +540,27 @@ class StaffRosterApiTest extends TestCase
         $this->assertSame([['userId' => $retainer->id, 'userName' => $retainer->name, 'date' => '2026-09-09']], $plan['retainers']);
     }
 
+    public function test_show_plan_hides_retainers_from_roles_that_cannot_read_coverage(): void
+    {
+        $leader = $this->asRole('jefatura_enfermeria');
+        $nurse = User::factory()->create(['role' => 'enfermera_piso']);
+        $this->postJson('/api/v1/staff/shift-plans', [
+            'yearMonth' => '2026-09',
+            'shifts' => [['userId' => $nurse->id, 'startsAt' => '2026-09-05T07:00:00', 'endsAt' => '2026-09-05T19:00:00', 'unit' => 'Medicina']],
+        ])->assertCreated();
+        $absence = StaffAbsence::query()->create(['user_id' => $nurse->id, 'shift_date' => '2026-09-09', 'reason' => 'X', 'recorded_by' => $leader->id]);
+        $coverage = CoverageRequest::query()->create(['absence_id' => $absence->id, 'status' => 'confirmada']);
+        RetainerConfirmation::query()->create(['coverage_request_id' => $coverage->id, 'user_id' => $nurse->id, 'confirmed_at' => now()]);
+
+        foreach (['jefatura_enfermeria', 'enfermera_supervisora', 'recursos_humanos'] as $role) {
+            $this->asRole($role);
+            $this->assertCount(1, $this->getJson('/api/v1/staff/shift-plans/2026-09')->json('plan.retainers'), $role);
+        }
+
+        $this->asRole('enfermera_piso');
+        $this->assertSame([], $this->getJson('/api/v1/staff/shift-plans/2026-09')->json('plan.retainers'));
+    }
+
     public function test_plans_listing_is_forbidden_for_non_roster_roles(): void
     {
         $this->asRole('admision');

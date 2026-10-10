@@ -43,9 +43,9 @@ class StaffRosterController extends Controller
         return response()->json($this->roster->listPlans());
     }
 
-    public function showPlan(string $yearMonth): JsonResponse
+    public function showPlan(Request $request, string $yearMonth): JsonResponse
     {
-        return response()->json($this->roster->showPlan($yearMonth));
+        return response()->json($this->roster->showPlan($yearMonth, $request->user()));
     }
 
     public function suggest(Request $request): JsonResponse
