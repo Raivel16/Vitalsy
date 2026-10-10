@@ -9,6 +9,7 @@ import {
   isBedRole,
   isClinicalRole,
   isDischargeRole,
+  isAdminRole,
   isStaffRole,
 } from "./navigation";
 import { ButtonLink } from "../shared/ui/Button";
@@ -30,6 +31,7 @@ const GUIDE: Record<Role, string> = {
   servicios_generales: "Reciba las órdenes de limpieza terminal y registre la desinfección de cada unidad.",
   jefatura_enfermeria: "Publique el rol mensual de turnos y apruebe las convocatorias de personal de retén.",
   recursos_humanos: "Valide las justificaciones y autorice las coberturas extraordinarias del personal asistencial.",
+  administrador_accesos: "Cree cuentas, asigne el rol de cada persona y desactive los accesos que ya no corresponden.",
 };
 
 const CONTROL_ROLES: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "enfermera_supervisora"];
@@ -79,6 +81,7 @@ export function HomePage() {
       label: "Abrir gestión de camas",
       hint: "Censo y habilitación",
     } : null,
+    isAdminRole(role) ? { to: "/usuarios", label: "Abrir administración de usuarios", hint: "Cuentas, roles y accesos" } : null,
     isStaffRole(role) ? { to: "/personal", label: "Abrir turnos y cobertura", hint: "Rol y asignación del día" } : null,
   ].filter((item): item is { to: string; label: string; hint: string } => item !== null);
 
