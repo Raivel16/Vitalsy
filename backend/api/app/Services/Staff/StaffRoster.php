@@ -15,6 +15,7 @@ use App\Models\StaffShift;
 use App\Models\StaffShiftPlan;
 use App\Models\User;
 use App\Models\VitalSignReading;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -447,6 +448,14 @@ class StaffRoster
      */
     private function assertSameUnit(User $incoming, User $outgoing, string $shiftDate): void
     {
+        if (! $this->isRelief($incoming, $outgoing, $shiftDate)) {
+            throw new ClinicalRuleException('La entrega solo procede en el cambio de turno, entre turnos consecutivos del mismo servicio del rol publicado.');
+        }
+    }
+
+    /** @return array{unit: string, endsAt: Carbon}|null */
+    private function reliefBoundary(User $incoming, User $outgoing, string $shiftDate): ?array
+    {
         // Turnos que cubren el día, incluidos los nocturnos iniciados el día anterior.
         $shiftsOf = fn (User $user) => StaffShift::query()
             ->where('user_id', $user->id)
@@ -459,21 +468,52 @@ class StaffRoster
         // de la entrante en el límite (1 h) y el cambio de turno es ahora (-1 h a +2 h).
         $incomingShifts = $shiftsOf($incoming);
         $now = now();
-        $isRelief = $shiftsOf($outgoing)->contains(function (StaffShift $left) use ($incomingShifts, $shiftDate, $now) {
+        foreach ($shiftsOf($outgoing) as $left) {
             if ($left->unit === null || $left->ends_at->toDateString() !== $shiftDate) {
-                return false;
+                continue;
             }
             $secondsToBoundary = $now->diffInSeconds($left->ends_at, false);
             if ($secondsToBoundary > 3600 || $secondsToBoundary < -7200) {
-                return false;
+                continue;
             }
-
-            return $incomingShifts->contains(fn (StaffShift $right) => $right->unit === $left->unit
+            $matches = $incomingShifts->contains(fn (StaffShift $right) => $right->unit === $left->unit
                 && abs($left->ends_at->diffInSeconds($right->starts_at, false)) <= 3600);
-        });
-        if (! $isRelief) {
-            throw new ClinicalRuleException('La entrega solo procede en el cambio de turno, entre turnos consecutivos del mismo servicio del rol publicado.');
+            if ($matches) {
+                return ['unit' => $left->unit, 'endsAt' => $left->ends_at];
+            }
         }
+
+        return null;
+    }
+
+    private function isRelief(User $incoming, User $outgoing, string $shiftDate): bool
+    {
+        return $this->reliefBoundary($incoming, $outgoing, $shiftDate) !== null;
+    }
+
+    /** Enfermeras a las que la persona puede relevar ahora (misma regla que firmar la entrega). */
+    public function handoverCandidates(User $incoming, string $shiftDate): array
+    {
+        $candidates = [];
+        $nurses = User::query()->where('is_active', true)->whereIn('role', self::CARE_ROLES)
+            ->whereKeyNot($incoming->id)->orderBy('name')->get();
+
+        foreach ($nurses as $nurse) {
+            $boundary = $this->reliefBoundary($incoming, $nurse, $shiftDate);
+            if ($boundary === null) {
+                continue;
+            }
+            $candidates[] = [
+                'userId' => $nurse->id,
+                'name' => $nurse->name,
+                'unit' => $boundary['unit'],
+                'endsAt' => $boundary['endsAt']->toIso8601String(),
+                'patients' => DailyPatientAssignment::query()
+                    ->whereDate('shift_date', $shiftDate)->where('nurse_user_id', $nurse->id)->count(),
+            ];
+        }
+
+        return ['candidates' => $candidates];
     }
 
     private function presentPlan(StaffShiftPlan $plan, bool $withRetainers = false): array

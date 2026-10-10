@@ -566,4 +566,33 @@ class StaffRosterApiTest extends TestCase
         $this->asRole('admision');
         $this->getJson('/api/v1/staff/shift-plans')->assertForbidden();
     }
+
+    public function test_handover_candidates_list_only_nurses_being_relieved_now(): void
+    {
+        $this->hospitalized('ENC-STAFF-13');
+        $outgoing = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Saliente Real']);
+        $colleague = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Compañera']);
+        $incoming = $this->asRole('enfermera_piso');
+        $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-13', 2);
+        $this->planShifts([
+            [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$colleague, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
+        ]);
+
+        Carbon::setTestNow('2026-09-26 19:10:00');
+        $response = $this->getJson('/api/v1/staff/handover/candidates?shiftDate=2026-09-26')->assertOk();
+        $this->assertSame(['Saliente Real'], collect($response->json('candidates'))->pluck('name')->all());
+        $this->assertSame(1, $response->json('candidates.0.patients'));
+        $this->assertSame('Medicina', $response->json('candidates.0.unit'));
+
+        Carbon::setTestNow('2026-09-26 12:00:00');
+        $this->getJson('/api/v1/staff/handover/candidates?shiftDate=2026-09-26')->assertOk()->assertJsonCount(0, 'candidates');
+    }
+
+    public function test_handover_candidates_are_forbidden_for_other_roles(): void
+    {
+        $this->asRole('enfermera_supervisora');
+        $this->getJson('/api/v1/staff/handover/candidates?shiftDate=2026-09-26')->assertForbidden();
+    }
 }

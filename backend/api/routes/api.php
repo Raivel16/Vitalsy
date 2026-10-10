@@ -286,6 +286,7 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::middleware('role:enfermera_piso')->group(function () {
+                Route::get('handover/candidates', [StaffRosterController::class, 'handoverCandidates']);
                 Route::get('handover', [StaffRosterController::class, 'handoverPreview']);
                 Route::post('handover', [StaffRosterController::class, 'signHandover']);
             });

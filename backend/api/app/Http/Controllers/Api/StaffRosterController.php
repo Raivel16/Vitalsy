@@ -93,6 +93,13 @@ class StaffRosterController extends Controller
         ));
     }
 
+    public function handoverCandidates(Request $request): JsonResponse
+    {
+        $data = $request->validate(['shiftDate' => ['required', 'date']]);
+
+        return response()->json($this->roster->handoverCandidates($request->user(), $data['shiftDate']));
+    }
+
     public function signHandover(Request $request): JsonResponse
     {
         $data = $request->validate([
