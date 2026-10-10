@@ -10,7 +10,8 @@ export type FieldErrors = Record<string, string>;
 
 export type Digest = (value: string) => string;
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Las etiquetas del dominio excluyen el punto: así `\.` solo puede casar un separador y no hay retroceso.
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 export function validateLogin(email: string, password: string): FieldErrors {
   const errors: FieldErrors = {};
