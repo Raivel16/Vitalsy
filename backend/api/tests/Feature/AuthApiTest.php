@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -132,5 +133,73 @@ class AuthApiTest extends TestCase
             ->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
+    }
+
+    public function test_temporary_password_blocks_every_route_except_the_rotation_ones(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'admision',
+            'password' => 'password_temporal',
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($user);
+
+        $this->getJson('/api/v1/hospital-admission/encounters')
+            ->assertForbidden()
+            ->assertJsonPath('code', 'password_change_required');
+
+        $this->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('user.mustChangePassword', true);
+    }
+
+    public function test_user_rotates_the_temporary_password_and_regains_access(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'admision',
+            'password' => 'password_temporal',
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($user);
+
+        $this->postJson('/api/v1/auth/change-password', [
+            'currentPassword' => 'password_temporal',
+            'password' => 'Clave-nueva-segura-9',
+            'password_confirmation' => 'Clave-nueva-segura-9',
+        ])->assertOk()->assertJsonPath('user.mustChangePassword', false);
+
+        $this->assertFalse($user->fresh()->must_change_password);
+        $this->assertTrue(Hash::check('Clave-nueva-segura-9', $user->fresh()->password));
+        $this->getJson('/api/v1/hospital-admission/encounters')->assertOk();
+    }
+
+    public function test_rotation_rejects_wrong_current_weak_or_reused_passwords(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'admision',
+            'password' => 'password_temporal',
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($user);
+
+        $this->postJson('/api/v1/auth/change-password', [
+            'currentPassword' => 'equivocada',
+            'password' => 'Clave-nueva-segura-9',
+            'password_confirmation' => 'Clave-nueva-segura-9',
+        ])->assertStatus(422);
+
+        $this->postJson('/api/v1/auth/change-password', [
+            'currentPassword' => 'password_temporal',
+            'password' => 'corta',
+            'password_confirmation' => 'corta',
+        ])->assertStatus(422);
+
+        $this->postJson('/api/v1/auth/change-password', [
+            'currentPassword' => 'password_temporal',
+            'password' => 'password_temporal',
+            'password_confirmation' => 'password_temporal',
+        ])->assertStatus(422);
+
+        $this->assertTrue($user->fresh()->must_change_password);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveAccount;
+use App\Http\Middleware\EnsurePasswordRotated;
 use App\Http\Middleware\EnsureRequestOrigin;
 use App\Http\Middleware\EnsureUserRole;
 use Illuminate\Auth\AuthenticationException;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserRole::class,
             'active' => EnsureActiveAccount::class,
+            'password.rotated' => EnsurePasswordRotated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
