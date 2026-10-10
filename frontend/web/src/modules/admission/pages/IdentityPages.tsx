@@ -336,7 +336,7 @@ export function ConsentPage() {
                 hint="Se registrará cuando el conector transversal esté disponible."
               />
               <div className="field">
-                <label>Escanear</label>
+                <span className="field-label">Escanear</span>
                 <BarcodeScanner label="Escanear código" onScan={setLifeCode} />
               </div>
               <p className="hint form-span-2"><IconQrcode size={14} /> Sincronización de línea de base domiciliaria pendiente de backend.</p>

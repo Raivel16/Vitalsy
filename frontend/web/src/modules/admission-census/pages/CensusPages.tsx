@@ -325,7 +325,7 @@ export function EncounterFilePage() {
       </Panel>
       {encounter.coverageReferral ? (
         <Panel title="Derivación de cobertura">
-          <section className="referral-status" role="region" aria-label="Estado de la derivación de cobertura">
+          <section className="referral-status" aria-label="Estado de la derivación de cobertura">
             <Feedback tone="info">
               Trámite derivado a {encounter.coverageReferral.destinationLabel}. Estado: {encounter.coverageReferral.status}.
             </Feedback>
