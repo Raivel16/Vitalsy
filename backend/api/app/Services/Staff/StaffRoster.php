@@ -423,17 +423,25 @@ class StaffRoster
             ->whereDate('ends_at', '>=', $shiftDate)
             ->get();
 
-        // Falla cerrado: solo es un relevo real si, en el mismo servicio, el turno de la saliente
-        // termina cuando empieza el de la entrante (tolerancia de una hora).
+        // Falla cerrado. Es un relevo real solo si, en el mismo servicio: el turno de la saliente
+        // termina el día indicado (así la fecha reasignada es la del turno relevado), empieza el
+        // de la entrante en el límite (1 h) y el cambio de turno es ahora (-1 h a +2 h).
         $incomingShifts = $shiftsOf($incoming);
-        $isRelief = $shiftsOf($outgoing)->contains(function (StaffShift $left) use ($incomingShifts) {
-            return $left->unit !== null && $incomingShifts->contains(function (StaffShift $right) use ($left) {
-                return $right->unit === $left->unit
-                    && abs($left->ends_at->diffInSeconds($right->starts_at, false)) <= 3600;
-            });
+        $now = now();
+        $isRelief = $shiftsOf($outgoing)->contains(function (StaffShift $left) use ($incomingShifts, $shiftDate, $now) {
+            if ($left->unit === null || $left->ends_at->toDateString() !== $shiftDate) {
+                return false;
+            }
+            $secondsToBoundary = $now->diffInSeconds($left->ends_at, false);
+            if ($secondsToBoundary > 3600 || $secondsToBoundary < -7200) {
+                return false;
+            }
+
+            return $incomingShifts->contains(fn (StaffShift $right) => $right->unit === $left->unit
+                && abs($left->ends_at->diffInSeconds($right->starts_at, false)) <= 3600);
         });
         if (! $isRelief) {
-            throw new ClinicalRuleException('La entrega solo procede entre turnos consecutivos del mismo servicio en el rol publicado.');
+            throw new ClinicalRuleException('La entrega solo procede en el cambio de turno, entre turnos consecutivos del mismo servicio del rol publicado.');
         }
     }
 

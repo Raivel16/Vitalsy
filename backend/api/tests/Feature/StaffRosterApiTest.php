@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\ClinicalAlerts\AlertRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class StaffRosterApiTest extends TestCase
@@ -136,6 +137,7 @@ class StaffRosterApiTest extends TestCase
         $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
 
         // Turno noche de la saliente iniciado el día anterior y que cruza la medianoche.
+        Carbon::setTestNow('2026-09-26 07:10:00');
         $this->planShifts([
             [$outgoing, 'Medicina', '2026-09-25T19:00:00', '2026-09-26T07:00:00'],
             [$incoming, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
@@ -178,6 +180,7 @@ class StaffRosterApiTest extends TestCase
             [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
             [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
         ]);
+        Carbon::setTestNow('2026-09-26 19:10:00');
         $this->actingAs($incoming);
         $this->postJson('/api/v1/staff/handover', [
             'fromUserId' => $outgoing->id,
@@ -378,6 +381,7 @@ class StaffRosterApiTest extends TestCase
         $outgoing = User::factory()->create(['role' => 'enfermera_piso', 'name' => 'Saliente']);
         $incoming = $this->asRole('enfermera_piso');
         $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-7', 2);
+        Carbon::setTestNow('2026-09-26 19:10:00');
         $this->planShifts([
             [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
             [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
@@ -447,5 +451,30 @@ class StaffRosterApiTest extends TestCase
         $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&fromUserId={$colleague->id}")->assertStatus(422);
         $this->postJson('/api/v1/staff/handover', ['fromUserId' => $colleague->id, 'shiftDate' => '2026-09-26'])->assertStatus(422);
         $this->assertSame(1, DailyPatientAssignment::query()->where('nurse_user_id', $colleague->id)->count());
+    }
+
+    public function test_handover_is_bound_to_the_relieved_shift_boundary_and_date(): void
+    {
+        $this->hospitalized('ENC-STAFF-11');
+        $outgoing = User::factory()->create(['role' => 'enfermera_piso']);
+        $incoming = $this->asRole('enfermera_piso');
+        $this->assignment('2026-09-26', $outgoing, 'ENC-STAFF-11', 2);
+        $this->assignment('2026-09-27', $outgoing, 'ENC-STAFF-12', 2);
+        $this->planShifts([
+            [$outgoing, 'Medicina', '2026-09-26T07:00:00', '2026-09-26T19:00:00'],
+            [$incoming, 'Medicina', '2026-09-26T19:00:00', '2026-09-27T07:00:00'],
+        ]);
+        $query = "fromUserId={$outgoing->id}";
+
+        // A media jornada no hay relevo: la entrega no procede.
+        Carbon::setTestNow('2026-09-26 12:00:00');
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&{$query}")->assertStatus(422);
+
+        // En el cambio de turno, solo la fecha del turno relevado.
+        Carbon::setTestNow('2026-09-26 19:10:00');
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-27&{$query}")->assertStatus(422);
+        $this->postJson('/api/v1/staff/handover', ['fromUserId' => $outgoing->id, 'shiftDate' => '2026-09-27'])->assertStatus(422);
+        $this->getJson("/api/v1/staff/handover?shiftDate=2026-09-26&{$query}")->assertOk();
+        $this->assertSame(2, DailyPatientAssignment::query()->where('nurse_user_id', $outgoing->id)->count());
     }
 }
