@@ -53,6 +53,8 @@ describe("BarcodeScanner", () => {
     await user.click(screen.getByRole("button", { name: /escanear brazalete/i }));
 
     const dialog = screen.getByRole("dialog", { name: /escanear brazalete/i });
+    expect(dialog.tagName).toBe("DIALOG");
+    expect(dialog).toHaveAttribute("open");
     expect(dialog).toHaveAttribute("aria-modal", "true");
     // El fondo solo es una superficie de clic: no es el diálogo ni recibe foco de teclado.
     expect(dialog.parentElement).toHaveClass("scanner-modal");

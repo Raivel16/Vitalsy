@@ -114,7 +114,7 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
             if (event.target === event.currentTarget) setOpen(false);
           }}
         >
-          <div className="scanner-modal-card" role="dialog" aria-modal="true" aria-label={label}>
+          <dialog className="scanner-modal-card" open aria-modal="true" aria-label={label}>
             <header className="scanner-modal-head">
               <strong>{label}</strong>
               <Button variant="quiet" type="button" onClick={() => setOpen(false)}>Cerrar</Button>
@@ -122,7 +122,7 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
             {error ? <Feedback tone="error">{error}</Feedback> : null}
             <div id={elementId} className="scanner-view" />
             <p className="hint">Apunte la cámara al código. Si no puede leerlo, cierre y escríbalo.</p>
-          </div>
+          </dialog>
         </div>,
         document.body,
       ) : null}
