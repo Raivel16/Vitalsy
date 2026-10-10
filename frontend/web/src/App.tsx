@@ -3,6 +3,7 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
+import { ChangePasswordPage } from "./app/ChangePasswordPage";
 import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, ADMIN_ROLES, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
@@ -287,6 +288,7 @@ function Gate() {
   const { user, ready } = useAuth();
   if (!ready) return <LoadingState label="Cargando sesión…" />;
   if (!user) return <LoginPage />;
+  if (user.mustChangePassword) return <ChangePasswordPage />;
   return <Shell />;
 }
 

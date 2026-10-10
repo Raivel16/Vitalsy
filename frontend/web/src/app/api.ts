@@ -58,3 +58,18 @@ export async function loginRequest(email: string, password: string): Promise<{ u
     body: JSON.stringify({ email, password }),
   });
 }
+
+export async function changePasswordRequest(input: {
+  currentPassword: string;
+  password: string;
+  passwordConfirmation: string;
+}): Promise<{ user: SessionUser }> {
+  return api("/api/v1/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      currentPassword: input.currentPassword,
+      password: input.password,
+      password_confirmation: input.passwordConfirmation,
+    }),
+  });
+}
