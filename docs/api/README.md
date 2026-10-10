@@ -25,3 +25,15 @@ Colección Postman v2.1 importable en Yaak: [`yaak-modulo-2.postman_collection.j
 | RF-24 | `GET/POST .../medical-evolution-notes` |
 
 `encounterId` debe existir en `admission_encounters` (p. ej. un ingreso demo o uno creado en pruebas).
+
+## Administración de usuarios (RF-101–104)
+
+Rol `administrador_accesos`. Una cuenta desactivada no inicia sesión y pierde sus sesiones activas.
+
+| RF | Petición |
+|---|---|
+| RF-101 | `GET /api/v1/users?search=&status=active\|inactive` |
+| RF-102 | `POST /api/v1/users` → `{ user, temporaryPassword }` (se muestra una sola vez) |
+| RF-103 | `PATCH /api/v1/users/{id}` (no permite cambiar el rol propio ni dejar al sistema sin administrador activo) |
+| RF-104 | `POST /api/v1/users/{id}/deactivate` (no borra; 422 si es la propia cuenta, ya está inactiva o es el último administrador) |
+| apoyo RF-78–88 | `GET /api/v1/staff/members?role=` — personal asistencial activo (`id, name, role, isActive`) para jefatura, supervisora, piso y RRHH |

@@ -21,7 +21,8 @@ Estados y acciones (`status`, `action`, `protocol`) se modelan como `string`, no
 | `patients` | Identidad canónica (documento único por tipo+número) | RF-02, RF-99+ |
 | `patient_contacts` | Familiar / contacto | RF-02, RF-03 |
 | `patient_allergies` | Alergias del paciente (`is_optional` para marcar registro opcional) | RF-11, RF-13 |
-| `users` (+ `is_active`, `deactivated_at`) | Cuentas y baja lógica | RF-99–104 |
+| `users` (+ `is_active`, `deactivated_at`, `must_change_password`) | Cuentas y baja lógica | RF-99–104 |
+| `access_audit_logs` | Auditoría de alta, edición y desactivación de cuentas (actor, objetivo, acción, detalle) | RF-102–104 |
 | `admission_encounters` *(existente)* | Caso de ingreso en curso / demo | RF-01–20 |
 
 ---

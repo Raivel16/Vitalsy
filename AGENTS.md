@@ -156,4 +156,12 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Rama: `bugfix/RF-68-77-camas-flujo-e-interfaz`.
 
 - Camas (UI): se retira `FlowGuide` (guía de pasos) de `/camas` y `/camas/limpieza`; el panel lateral de `/camas` queda sticky y «Nueva solicitud» abre `BedRequestDrawer` (cajón) desde la lista de espera.
+### 2026-10-09 — Administración de usuarios (RF-101–104)
+
+- Decisión: rol 15 `administrador_accesos` en `RoleCatalog.php` y `roles.ts` (cuenta demo `administrador_accesos@vitalsy.local`).
+- Backend: `UserAdminController` + `UserAdministration` (transacciones con bloqueo de administradores), `StoreUserRequest`/`UpdateUserRequest`, middleware `active` (cuenta inactiva → 401), login rechaza inactivos, tabla `access_audit_logs`, `users.must_change_password`.
+- `GET /staff/members` queda disponible para los selectores de `/personal` (Parte B).
+- Frontend: `modules/user-admin` (`/usuarios`, `/usuarios/nuevo`, `/usuarios/:userId`).
+- Rama: `feature/RF-101-104-administracion-usuarios`.
+
 <!-- END AGENT ANNOTATIONS -->
