@@ -39,7 +39,8 @@ Route::prefix('v1')->group(function () {
             Route::put('consent', [LifeConsentController::class, 'update']);
             Route::post('link-codes', [LifeLinkCodeController::class, 'store']);
             Route::get('notices', [LifeNoticesController::class, 'index']);
-            Route::get('discharge-plans/{code}', [LifeDischargePlanController::class, 'show']);
+            Route::get('discharge-plans/{code}', [LifeDischargePlanController::class, 'show'])
+                ->middleware('throttle:30,1');
         });
     });
 
@@ -233,6 +234,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('encounters/{encounterId}/nursing-report', [DischargeController::class, 'storeNursingReport']);
                 Route::post('encounters/{encounterId}/indication-receipt', [DischargeController::class, 'storeIndicationReceipt']);
                 Route::post('encounters/{encounterId}/exit', [DischargeController::class, 'confirmExit']);
+                // RF-96: plan de seguimiento y código para Vitalsy Life.
+                Route::post('encounters/{encounterId}/life-plan', [DischargeController::class, 'storeLifePlan']);
             });
 
             Route::middleware('role:altas_caja')->group(function () {

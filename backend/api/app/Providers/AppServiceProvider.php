@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\PatientExited;
+use App\Listeners\ActivateLifePlanOnExit;
 use App\Listeners\DispatchCleaningOnPatientExit;
 use App\Services\Interoperability\LisClient;
 use App\Services\Interoperability\PacsClient;
@@ -28,5 +29,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(PatientExited::class, DispatchCleaningOnPatientExit::class);
+        Event::listen(PatientExited::class, ActivateLifePlanOnExit::class);
     }
 }

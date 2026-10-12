@@ -11,11 +11,13 @@ use App\Models\DischargeIndicationReceipt;
 use App\Models\DischargeOrder;
 use App\Models\EpicrisisDocument;
 use App\Models\ExitPass;
+use App\Models\LifeDischargePlan;
 use App\Models\NursingDischargeReport;
 use App\Models\PatientExit;
 use App\Models\PharmaDischargeReconciliation;
 use App\Models\SocialAssessment;
 use App\Models\User;
+use App\Services\Life\DischargeLifePlan;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DischargeService
@@ -331,6 +333,9 @@ class DischargeService
                 'confirmed' => true,
                 'exitedAt' => optional($exit->exited_at)?->toIso8601String(),
             ] : null,
+            'lifePlan' => app(DischargeLifePlan::class)->present(
+                LifeDischargePlan::query()->where('encounter_id', $encounterId)->first(),
+            ),
             'administered' => [],
         ];
     }
