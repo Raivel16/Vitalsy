@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Life\LifeAuthController;
 use App\Http\Controllers\Api\Life\LifeConsentController;
 use App\Http\Controllers\Api\Life\LifeDischargePlanController;
 use App\Http\Controllers\Api\Life\LifeLinkCodeController;
+use App\Http\Controllers\Api\Life\LifeNoticesController;
 use App\Http\Controllers\Api\Life\LifeSyncController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\MonitoringControlsController;
@@ -37,6 +38,7 @@ Route::prefix('v1')->group(function () {
             Route::post('sync', [LifeSyncController::class, 'store']);
             Route::put('consent', [LifeConsentController::class, 'update']);
             Route::post('link-codes', [LifeLinkCodeController::class, 'store']);
+            Route::get('notices', [LifeNoticesController::class, 'index']);
             Route::get('discharge-plans/{code}', [LifeDischargePlanController::class, 'show']);
         });
     });

@@ -24,15 +24,16 @@ class BaselineCalculator
 
     /**
      * @param  Collection<int, object>  $samples  objetos con kind, value y started_at
+     * @param  array<int, string>|null  $kinds  tipos a resumir; por defecto KINDS
      * @return array<int, array{kind:string,low:float,high:float,days:int}>
      */
-    public function summarize(Collection $samples, ?CarbonInterface $now = null): array
+    public function summarize(Collection $samples, ?CarbonInterface $now = null, ?array $kinds = null): array
     {
         $now = $now ? Carbon::instance($now) : Carbon::now();
         $from = $now->copy()->subDays(self::WINDOW_DAYS);
 
         $metrics = [];
-        foreach (self::KINDS as $kind) {
+        foreach ($kinds ?? self::KINDS as $kind) {
             $series = $samples
                 ->filter(fn ($s) => $s->kind === $kind)
                 ->map(fn ($s) => ['at' => Carbon::parse($s->started_at), 'value' => (float) $s->value])
