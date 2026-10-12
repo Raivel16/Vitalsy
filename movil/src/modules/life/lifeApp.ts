@@ -33,7 +33,17 @@ export type LifeSnapshot = {
   dismissedNoticeIds: string[];
   /** Revocación hecha en el teléfono que el servidor aún no confirmó. Se reintenta hasta confirmar. */
   consentRevokePending: boolean;
+  /**
+   * Revocaciones sin entregar de cuentas que ya no tienen sesión. Sobreviven a cierres de
+   * sesión y cambios de cuenta; se reintentan solo cuando vuelve a iniciar sesión ESA cuenta.
+   */
+  pendingRevokes: PendingRevoke[];
 };
+
+export type PendingRevoke = { accountId: string; pendingSince: string };
+
+const MAX_NOTICES = 200;
+const MAX_DISMISSED = 500;
 
 function isServerAccount(account: Account): boolean {
   return account.origin === 'server' || (!account.passwordHash && !account.salt);
@@ -53,6 +63,7 @@ export function emptySnapshot(): LifeSnapshot {
     lastServerSyncAt: null,
     dismissedNoticeIds: [],
     consentRevokePending: false,
+    pendingRevokes: [],
   };
 }
 
@@ -65,17 +76,25 @@ type Clock = {
 export class LifeApp {
   private snapshot: LifeSnapshot;
   private consentRevision = 0;
+  private transitions = 0;
+  private sessionEpochValue = 0;
 
   constructor(
     snapshot: LifeSnapshot,
     private clock: Clock,
   ) {
+    const consent = { ...CLOSED_CONSENT, ...snapshot.consent };
+    // Un código sin vencimiento es un código local anterior a la integración: el servidor nunca lo conoció.
+    const legacyCode = Boolean(consent.linkingCode) && !consent.linkingExpiresAt;
     this.snapshot = {
       ...emptySnapshot(),
       ...snapshot,
-      consent: { ...CLOSED_CONSENT, ...snapshot.consent },
+      consent: legacyCode ? { ...consent, linkingCode: null, linkingIssuedAt: null, linkingExpiresAt: null } : consent,
       consentRevokePending: snapshot.consentRevokePending ?? false,
-      dismissedNoticeIds: snapshot.dismissedNoticeIds ?? [],
+      pendingRevokes: snapshot.pendingRevokes ?? [],
+      queue: (snapshot.queue ?? []).filter((item) => item.kind !== ('consent' as SyncItem['kind'])),
+      notices: (snapshot.notices ?? []).slice(0, MAX_NOTICES),
+      dismissedNoticeIds: (snapshot.dismissedNoticeIds ?? []).slice(-MAX_DISMISSED),
     };
   }
 
@@ -114,25 +133,105 @@ export class LifeApp {
   openServerSession(
     account: { id: number | string; name: string; email: string },
     options: { confirmed?: boolean } = {},
-  ): { status: 'ok'; switched: boolean } | { status: 'needs_confirmation'; pendingCount: number } {
+  ):
+    | { status: 'ok'; switched: boolean; undeliveredRevoke: boolean }
+    | { status: 'needs_confirmation'; pendingCount: number; undeliveredRevoke: boolean } {
     const id = String(account.id);
-    const previous = this.snapshot.accounts.find((existing) => isServerAccount(existing));
-    const switched = Boolean(previous && previous.id !== id);
+    const email = account.email.trim().toLowerCase();
+    const serverPrevious = this.snapshot.accounts.find((existing) => isServerAccount(existing));
+    const localAccounts = this.snapshot.accounts.filter((existing) => !isServerAccount(existing));
+    // Los datos locales solo se adoptan si la cuenta local es de la misma persona (mismo correo).
+    const switched = serverPrevious
+      ? serverPrevious.id !== id
+      : localAccounts.length > 0 && !localAccounts.some((existing) => existing.email.trim().toLowerCase() === email);
     const unsent = pendingCount(this.snapshot.queue);
-    if (switched && unsent > 0 && !options.confirmed) {
-      return { status: 'needs_confirmation', pendingCount: unsent };
+    const departing = this.departingServerAccountId(id);
+    const undeliveredNow = Boolean(this.snapshot.consentRevokePending && departing);
+    if (switched && (unsent > 0 || undeliveredNow) && !options.confirmed) {
+      return {
+        status: 'needs_confirmation',
+        pendingCount: unsent,
+        undeliveredRevoke: undeliveredNow || this.snapshot.pendingRevokes.length > 0,
+      };
     }
-    const base = switched ? emptySnapshot() : this.snapshot;
-    this.snapshot = {
+    // Una revocación sin confirmar nunca se pierde con el reinicio: pasa al registro por cuenta.
+    let pendingRevokes = this.snapshot.pendingRevokes;
+    if (undeliveredNow && departing) {
+      pendingRevokes = this.withRevoke(pendingRevokes, departing);
+    }
+    const base: LifeSnapshot = switched
+      ? { ...emptySnapshot(), pendingRevokes }
+      : { ...this.snapshot, pendingRevokes, consentRevokePending: undeliveredNow ? false : this.snapshot.consentRevokePending };
+    let next: LifeSnapshot = {
       ...base,
-      accounts: [{ id, name: account.name, email: account.email.trim().toLowerCase(), origin: 'server' }],
+      accounts: [{ id, name: account.name, email, origin: 'server' }],
       sessionUserId: id,
     };
-    return { status: 'ok', switched };
+    // Vuelve la cuenta con una revocación sin entregar: queda pendiente y cerrada en el teléfono.
+    if (next.pendingRevokes.some((record) => record.accountId === id)) {
+      next = {
+        ...next,
+        pendingRevokes: next.pendingRevokes.filter((record) => record.accountId !== id),
+        consent: revokeAll(next.consent, this.clock.now()),
+        consentRevokePending: true,
+      };
+    }
+    this.snapshot = next;
+    this.sessionEpochValue += 1;
+    return { status: 'ok', switched, undeliveredRevoke: next.pendingRevokes.length > 0 };
   }
 
   logout(): void {
-    this.snapshot = { ...this.snapshot, sessionUserId: null };
+    const departing = this.snapshot.consentRevokePending ? this.departingServerAccountId(null) : null;
+    this.snapshot = {
+      ...this.snapshot,
+      sessionUserId: null,
+      ...(departing
+        ? { pendingRevokes: this.withRevoke(this.snapshot.pendingRevokes, departing), consentRevokePending: false }
+        : {}),
+    };
+    this.sessionEpochValue += 1;
+  }
+
+  /** Cuenta del servidor con sesión abierta distinta de `nextId` (null: cualquiera). */
+  private departingServerAccountId(nextId: string | null): string | null {
+    const current = this.currentUser();
+    if (!current || !isServerAccount(current) || current.id === nextId) {
+      return null;
+    }
+    return current.id;
+  }
+
+  private withRevoke(records: PendingRevoke[], accountId: string): PendingRevoke[] {
+    if (records.some((record) => record.accountId === accountId)) {
+      return records;
+    }
+    return [...records, { accountId, pendingSince: this.snapshot.consent.revokedAt ?? this.clock.now().toISOString() }];
+  }
+
+  /** Cuenta del servidor cuya revocación sigue sin confirmarse (sesión actual o ya cerrada). */
+  hasUndeliveredRevoke(): boolean {
+    return this.snapshot.consentRevokePending || this.snapshot.pendingRevokes.length > 0;
+  }
+
+  /** Mientras dura un cambio de sesión nada se envía al servidor (el token y la cuenta no coinciden aún). */
+  beginSessionChange(): void {
+    this.transitions += 1;
+    this.sessionEpochValue += 1;
+  }
+
+  endSessionChange(): void {
+    this.transitions = Math.max(0, this.transitions - 1);
+    this.sessionEpochValue += 1;
+  }
+
+  get sessionChanging(): boolean {
+    return this.transitions > 0;
+  }
+
+  /** Cambia con cada apertura/cierre de sesión: un envío en curso lo compara para no seguir con otra cuenta. */
+  get sessionEpoch(): number {
+    return this.sessionEpochValue;
   }
 
   addSamples(samples: BiometricSample[]): number {
@@ -268,7 +367,7 @@ export class LifeApp {
       });
     }
     if (fresh.length > 0) {
-      this.snapshot = { ...this.snapshot, notices: [...fresh, ...this.snapshot.notices] };
+      this.snapshot = { ...this.snapshot, notices: [...fresh, ...this.snapshot.notices].slice(0, MAX_NOTICES) };
     }
     return fresh.length;
   }
@@ -339,7 +438,7 @@ export class LifeApp {
       notices: this.snapshot.notices.filter((notice) => notice.id !== id),
       dismissedNoticeIds: this.snapshot.dismissedNoticeIds.includes(id)
         ? this.snapshot.dismissedNoticeIds
-        : [...this.snapshot.dismissedNoticeIds, id],
+        : [...this.snapshot.dismissedNoticeIds, id].slice(-MAX_DISMISSED),
     };
   }
 
@@ -396,6 +495,6 @@ export class LifeApp {
       return;
     }
     const notice: Notice = { ...draft, readAt: null, snoozedUntil: null };
-    this.snapshot = { ...this.snapshot, notices: [notice, ...this.snapshot.notices] };
+    this.snapshot = { ...this.snapshot, notices: [notice, ...this.snapshot.notices].slice(0, MAX_NOTICES) };
   }
 }

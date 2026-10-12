@@ -10,6 +10,7 @@ type Mode = 'login' | 'register';
 
 export type Confirmation = {
   pendingCount: number;
+  undeliveredRevoke?: boolean;
   confirm: () => Promise<AuthOutcome>;
   cancel: () => Promise<void>;
 };
@@ -82,11 +83,20 @@ export function AuthForm({
     return (
       <View style={styles.wrap}>
         <Text style={styles.title}>Cambio de cuenta</Text>
-        <Banner
-          message={`Hay ${count} ${subject} de la otra cuenta. Si continúas, se borrarán de este teléfono.`}
-          palette={aire}
-          tone="warning"
-        />
+        {count > 0 ? (
+          <Banner
+            message={`Hay ${count} ${subject} de la otra cuenta. Si continúas, se borrarán de este teléfono.`}
+            palette={aire}
+            tone="warning"
+          />
+        ) : null}
+        {confirmation.undeliveredRevoke ? (
+          <Banner
+            message="Tu revocación aún no llegó al servidor. Se enviará cuando inicies sesión de nuevo con esa cuenta."
+            palette={aire}
+            tone="warning"
+          />
+        ) : null}
         {errors.form ? <Banner message={errors.form} palette={aire} tone="danger" /> : null}
         <Button label="Continuar y borrar" loading={loading} onPress={() => void submit(confirmation.confirm)} palette={aire} />
         <Button

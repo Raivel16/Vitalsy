@@ -223,8 +223,18 @@ export function LifeProvider({
 
   const consentDeps = useCallback(async () => {
     const session = Boolean(await tokenStore.get().catch(() => null));
-    return { life, client, hasSession: session, online: onlineRef.current, onUnauthorized: () => tokenStore.clear() };
-  }, [client, life]);
+    return {
+      life,
+      client,
+      hasSession: session,
+      online: onlineRef.current,
+      onUnauthorized: () => tokenStore.clear(),
+      // La revocación se guarda antes de la llamada de red: si matan la app, no se pierde el toque.
+      persist: async () => {
+        await store?.save(life.state);
+      },
+    };
+  }, [client, life, store]);
 
   const changeSharingNow = useCallback(
     async (enabled: boolean) => {

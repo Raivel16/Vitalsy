@@ -10,6 +10,8 @@ export type ConsentDeps = {
   hasSession: boolean;
   online?: boolean;
   onUnauthorized: () => Promise<void>;
+  /** Guarda el estado local. Se invoca antes de la llamada de red de una revocación (no perder el toque). */
+  persist?: () => Promise<void>;
 };
 
 export type SharingOutcome = { ok: boolean; status: 'confirmed' | 'pending' | 'failed'; message: string };
@@ -35,7 +37,8 @@ async function callSetConsent(client: ConsentClient, enabled: boolean) {
 }
 
 function canReachServer(deps: ConsentDeps): boolean {
-  return deps.hasSession && deps.online !== false;
+  // Durante un cambio de sesión el token y la cuenta pueden no coincidir: no se envía nada.
+  return deps.hasSession && deps.online !== false && !deps.life.sessionChanging;
 }
 
 async function attemptRevoke(deps: ConsentDeps): Promise<boolean> {
@@ -43,7 +46,12 @@ async function attemptRevoke(deps: ConsentDeps): Promise<boolean> {
   if (!client || !canReachServer(deps) || !life.state.consentRevokePending) {
     return false;
   }
+  const epoch = life.sessionEpoch;
   const result = await callSetConsent(client, false);
+  if (life.sessionEpoch !== epoch) {
+    // La sesión cambió durante la llamada: el pendiente ya no es de esta cuenta, no se toca.
+    return false;
+  }
   if (!result.ok) {
     if (result.status === 401) {
       await deps.onUnauthorized();
@@ -61,6 +69,11 @@ async function attemptRevoke(deps: ConsentDeps): Promise<boolean> {
 async function revoke(deps: ConsentDeps): Promise<SharingOutcome> {
   const { life, client } = deps;
   life.revokeSharing(Boolean(client));
+  try {
+    await deps.persist?.();
+  } catch {
+    // Si no se pudo guardar, igual se intenta avisar al servidor.
+  }
   if (!client) {
     return { ok: true, status: 'confirmed', message: 'La compartición quedó apagada y el código anterior ya no vale.' };
   }

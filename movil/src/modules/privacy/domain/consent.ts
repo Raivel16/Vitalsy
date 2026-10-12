@@ -28,7 +28,8 @@ export function activeLinkingCode(state: ConsentState, now: Date): string | null
   if (!state.linkingCode) {
     return null;
   }
-  if (state.linkingExpiresAt && Date.parse(state.linkingExpiresAt) <= now.getTime()) {
+  // Solo vale un código con vencimiento: el emitido por el servidor. Sin él sería un código local.
+  if (!state.linkingExpiresAt || !(Date.parse(state.linkingExpiresAt) > now.getTime())) {
     return null;
   }
   return state.linkingCode;

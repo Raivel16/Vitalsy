@@ -2,7 +2,16 @@ import { createHash } from 'crypto';
 import type { ApiResult, AuthPayload, LifeClient } from '../../shared/api/lifeClient';
 import { createTokenStore } from '../../shared/api/tokenStore';
 import { emptySnapshot, LifeApp } from './lifeApp';
-import { loginAccount, logoutSession, registerCitizen, SWITCHED_ACCOUNT_NOTICE, UNSAFE_STORAGE_NOTICE } from './sessionAuth';
+import { retryPendingConsent } from './consentSync';
+import {
+  loginAccount,
+  logoutSession,
+  REVOKE_UNDELIVERED_NOTICE,
+  registerCitizen,
+  SWITCHED_ACCOUNT_NOTICE,
+  UNSAFE_STORAGE_NOTICE,
+} from './sessionAuth';
+import { runSync } from './syncRunner';
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const clock = { now: () => new Date('2026-10-03T12:00:00.000Z'), random: () => 'salt-abcd1234', digest };
@@ -206,6 +215,168 @@ describe('sessionAuth', () => {
     expect(outcome.confirmation).toBeUndefined();
     expect(outcome.notices).toContain(SWITCHED_ACCOUNT_NOTICE);
     expect(life.currentUser()?.id).toBe('9');
+  });
+
+  it('adopts local-only data only when the server account has the same email; otherwise it is a switch', async () => {
+    const local = app();
+    local.register({ ...input, email: 'maria@correo.test' });
+    local.addManual('heart_rate', '70');
+    const tokenStore = memoryStore();
+    const outcome = await loginAccount({ life: local, client: serverLogin(7, 'elena@correo.test'), tokenStore }, 'elena@correo.test', PW);
+    expect(outcome.confirmation?.pendingCount).toBeGreaterThan(0);
+    expect(local.state.samples).toHaveLength(1);
+    expect(await tokenStore.get()).toBeNull();
+    const confirmed = await outcome.confirmation!.confirm();
+    expect(confirmed.notices).toContain(SWITCHED_ACCOUNT_NOTICE);
+    expect(local.state.samples).toHaveLength(0);
+
+    const quiet = app();
+    quiet.register({ ...input, email: 'maria@correo.test' });
+    const wiped = await loginAccount({ life: quiet, client: serverLogin(7, 'elena@correo.test'), tokenStore: memoryStore() }, 'elena@correo.test', PW);
+    expect(wiped.notices).toContain(SWITCHED_ACCOUNT_NOTICE);
+  });
+
+  describe('pending consent revocation', () => {
+    const okConsent = { ok: true, data: { sharingEnabled: false, revokedAt: 'x' } };
+    const network = { ok: false, status: 0, message: 'Sin conexión' };
+
+    async function loggedIn(id: number, email: string, tokenStore = memoryStore()) {
+      const life = app();
+      await loginAccount({ life, client: serverLogin(id, email), tokenStore }, email, PW);
+      return { life, tokenStore };
+    }
+
+    function clientFor(tokenStore: ReturnType<typeof memoryStore>, replies: unknown[], log: string[], loginId?: number) {
+      const setConsent = jest.fn(async (enabled: boolean) => {
+        log.push(`consent:${enabled}:${await tokenStore.get()}`);
+        return replies.length > 1 ? replies.shift() : replies[0];
+      });
+      return {
+        client: {
+          login: jest.fn(async () => ok(payload(loginId ?? 7, loginId === 9 ? 'otro@correo.test' : 'elena@correo.test'))),
+          register: jest.fn(),
+          logout: jest.fn(async () => {
+            log.push('logout');
+            return { ok: true, data: undefined };
+          }),
+          setConsent,
+        } as unknown as LifeClient,
+        setConsent,
+      };
+    }
+
+    it('delivers a pending revoke with the old token before wiping on an account switch', async () => {
+      const { life, tokenStore } = await loggedIn(7, 'elena@correo.test');
+      life.addManual('heart_rate', '70');
+      life.confirmSharing();
+      life.revokeSharing(true);
+      const log: string[] = [];
+      const seen: number[] = [];
+      const { client, setConsent } = clientFor(tokenStore, [okConsent], log, 9);
+      setConsent.mockImplementationOnce(async (enabled: boolean) => {
+        log.push(`consent:${enabled}:${await tokenStore.get()}`);
+        seen.push(life.state.samples.length);
+        return okConsent;
+      });
+      const outcome = await loginAccount({ life, client, tokenStore }, 'otro@correo.test', PW);
+      expect(log[0]).toBe('consent:false:tok-7');
+      expect(seen).toEqual([1]);
+      expect(life.state.consentRevokePending).toBe(false);
+      await outcome.confirmation!.confirm();
+      expect(life.state.pendingRevokes).toEqual([]);
+      expect(life.state.samples).toHaveLength(0);
+    });
+
+    it('keeps an undelivered revoke across a switch and sends it only on that account next login', async () => {
+      const { life, tokenStore } = await loggedIn(7, 'elena@correo.test');
+      life.confirmSharing();
+      life.revokeSharing(true);
+      const log: string[] = [];
+      const { client } = clientFor(tokenStore, [network], log, 9);
+      const outcome = await loginAccount({ life, client, tokenStore }, 'otro@correo.test', PW);
+      expect(outcome.confirmation?.undeliveredRevoke).toBe(true);
+      expect(await tokenStore.get()).toBe('tok-7');
+      const confirmed = await outcome.confirmation!.confirm();
+      expect(confirmed.notices).toContain(REVOKE_UNDELIVERED_NOTICE);
+      expect(life.state.pendingRevokes.map((r) => r.accountId)).toEqual(['7']);
+      expect(life.state.consentRevokePending).toBe(false);
+
+      // La otra cuenta no envía la revocación con su token.
+      log.length = 0;
+      const replies = [okConsent];
+      const second = clientFor(tokenStore, replies, log, 9);
+      await retryPendingConsent({ life, client: second.client, hasSession: true, online: true, onUnauthorized: async () => undefined });
+      expect(second.setConsent).not.toHaveBeenCalled();
+
+      await logoutSession({ life, client: second.client, tokenStore });
+      expect(life.state.pendingRevokes.map((r) => r.accountId)).toEqual(['7']);
+      const back = clientFor(tokenStore, replies, log, 7);
+      await loginAccount({ life, client: back.client, tokenStore }, 'elena@correo.test', PW);
+      expect(life.state.consentRevokePending).toBe(true);
+      expect(life.state.pendingRevokes).toEqual([]);
+      await retryPendingConsent({ life, client: back.client, hasSession: true, online: true, onUnauthorized: async () => undefined });
+      expect(log).toContain('consent:false:tok-7');
+      expect(life.state.consentRevokePending).toBe(false);
+    });
+
+    it('logout attempts delivery first, then keeps an undelivered revoke for that account', async () => {
+      const { life, tokenStore } = await loggedIn(7, 'elena@correo.test');
+      life.confirmSharing();
+      life.revokeSharing(true);
+      const log: string[] = [];
+      const { client } = clientFor(tokenStore, [network], log);
+      const result = await logoutSession({ life, client, tokenStore });
+      expect(log).toEqual(['consent:false:tok-7', 'logout']);
+      expect(result.undeliveredRevoke).toBe(true);
+      expect(life.state.pendingRevokes.map((r) => r.accountId)).toEqual(['7']);
+      expect(await tokenStore.get()).toBeNull();
+    });
+
+    it('logout delivers a pending revoke and does not auto-revoke an active sharing', async () => {
+      const first = await loggedIn(7, 'elena@correo.test');
+      first.life.confirmSharing();
+      first.life.revokeSharing(true);
+      const log: string[] = [];
+      const delivered = clientFor(first.tokenStore, [okConsent], log);
+      expect((await logoutSession({ life: first.life, client: delivered.client, tokenStore: first.tokenStore })).undeliveredRevoke).toBe(false);
+      expect(first.life.state.pendingRevokes).toEqual([]);
+
+      const second = await loggedIn(7, 'elena@correo.test');
+      second.life.confirmSharing();
+      const quiet = clientFor(second.tokenStore, [okConsent], []);
+      await logoutSession({ life: second.life, client: quiet.client, tokenStore: second.tokenStore });
+      expect(quiet.setConsent).not.toHaveBeenCalled();
+      expect(second.life.state.consent.sharingEnabled).toBe(true);
+    });
+
+    it('never sends the previous account queue with the new token while a confirmation is in progress', async () => {
+      const { life, tokenStore } = await loggedIn(7, 'elena@correo.test');
+      life.addSamples(
+        Array.from({ length: 150 }, (_, index) => ({
+          id: `s-${index}`,
+          kind: 'heart_rate' as const,
+          value: 60 + (index % 5),
+          unit: 'lpm',
+          startedAt: `2026-10-03T08:${String(index % 60).padStart(2, '0')}:00.000Z`,
+          endedAt: `2026-10-03T08:${String(index % 60).padStart(2, '0')}:00.000Z`,
+          origin: 'manual' as const,
+        })),
+      );
+      const sentWith: string[] = [];
+      const sync = jest.fn(async (chunk: { id: string }[]) => {
+        sentWith.push(String(await tokenStore.get()));
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return { ok: true, data: { accepted: chunk.map((c) => c.id), rejected: [] } };
+      });
+      const client = { ...serverLogin(9, 'otro@correo.test'), sync } as unknown as LifeClient;
+      const outcome = await loginAccount({ life, client, tokenStore }, 'otro@correo.test', PW);
+      const running = runSync({ life, client, online: true, hasSession: true, onUnauthorized: async () => undefined });
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      await outcome.confirmation!.confirm();
+      await runSync({ life, client, online: true, hasSession: true, onUnauthorized: async () => undefined });
+      await running;
+      expect(sentWith).not.toContain('tok-9');
+    });
   });
 
   it('warns when the token cannot be stored securely', async () => {

@@ -23,7 +23,12 @@ async function flushQueue({ life, client, online, hasSession, onUnauthorized, no
   if (!client || decision.send.length === 0) {
     return false;
   }
+  const epoch = life.sessionEpoch;
   for (const chunk of chunkForSend(decision.send)) {
+    // Si la sesión cambió (otra cuenta, o confirmación en curso) esta cola ya no es de quien tiene el token.
+    if (life.sessionChanging || life.sessionEpoch !== epoch) {
+      return false;
+    }
     try {
       const result = await client.sync(chunk);
       if (!result.ok) {
@@ -63,7 +68,7 @@ async function pullNotices({ life, client, onUnauthorized }: Required<Deps>): Pr
  * inválida o excepción) deja sus datos pendientes; lo ya aplicado se conserva.
  */
 export async function runSync({ life, client, online, hasSession, onUnauthorized, now = () => new Date().toISOString() }: Deps): Promise<void> {
-  if (!client || !online || !hasSession) {
+  if (!client || !online || !hasSession || life.sessionChanging) {
     // Sin servidor/red/sesión nada se envía; la cola y la revocación pendiente se conservan.
     return;
   }
@@ -74,8 +79,9 @@ export async function runSync({ life, client, online, hasSession, onUnauthorized
   } catch {
     // Se reintentará en la siguiente sincronización.
   }
+  const epoch = life.sessionEpoch;
   const unauthorized = await flushQueue(deps);
-  if (!unauthorized) {
+  if (!unauthorized && !life.sessionChanging && life.sessionEpoch === epoch) {
     await pullNotices(deps);
   }
 }

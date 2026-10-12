@@ -46,7 +46,7 @@ function normaliseNotices(data: unknown): { notices: ServerNotice[] } | null {
   return { notices };
 }
 
-export type LifeAccount ={ id: number; name: string; email: string };
+export type LifeAccount = { id: number; name: string; email: string };
 export type AuthPayload = { token: string; account: LifeAccount };
 
 export function apiBaseUrl(): string | undefined {

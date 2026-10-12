@@ -44,6 +44,20 @@ describe('changeSharing', () => {
     expect(result.message).toContain('Se revocará en cuanto haya conexión');
   });
 
+  it('persists the revoke intent before awaiting the network call', async () => {
+    const life = sharingOn();
+    const order: string[] = [];
+    const setConsent = jest.fn(async () => {
+      order.push(`put:pending=${life.state.consentRevokePending}`);
+      return net;
+    });
+    const persist = jest.fn(async () => {
+      order.push(`save:pending=${life.state.consentRevokePending}`);
+    });
+    await changeSharing(false, { ...deps(life, { setConsent }), persist });
+    expect(order).toEqual(['save:pending=true', 'put:pending=true']);
+  });
+
   it('revoking without a session stays pending and does not call the server', async () => {
     const life = sharingOn();
     const setConsent = jest.fn();
