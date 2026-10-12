@@ -90,6 +90,27 @@ class HospitalAdmissionApiTest extends TestCase
         ])->assertCreated()->assertJsonPath('consent.status', 'firmado');
     }
 
+    public function test_consent_stores_life_user_flag(): void
+    {
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
+            'signerName' => 'Rosa Quispe',
+            'accepted' => true,
+            'lifeUser' => true,
+        ])->assertCreated();
+
+        $payload = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first()->clinical_payload;
+        $this->assertTrue($payload['consent']['lifeUser']);
+
+        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
+            'signerName' => 'Rosa Quispe',
+            'accepted' => true,
+            'lifeUser' => 'tal vez',
+        ])->assertStatus(422);
+    }
+
     public function test_referral_phone_rejects_letters(): void
     {
         $this->asRole('admision');

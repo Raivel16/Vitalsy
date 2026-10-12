@@ -8,6 +8,7 @@ use App\Models\CareActivityCompletion;
 use App\Models\ClinicalAlert;
 use App\Models\ImagingReport;
 use App\Models\LabResult;
+use App\Models\LifeBaselineImport;
 use App\Models\MedicalEvolutionNote;
 use App\Models\MedicationAdministration;
 use App\Models\NursingEvolutionNote;
@@ -213,6 +214,7 @@ class PatientClinicalChart
                 'consent' => $consent,
                 'kardexMedications' => array_values(array_filter($admissionMeds)),
             ],
+            'lifeBaseline' => LifeBaselineImport::presentFor($encounterId),
             'activePrescription' => $prescription ? [
                 'id' => $prescription->id,
                 'status' => $prescription->status,

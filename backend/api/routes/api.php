@@ -67,6 +67,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('wristbands', [HospitalAdmissionController::class, 'issueWristband']);
                 Route::post('clinical-records', [HospitalAdmissionController::class, 'openRecord']);
                 Route::post('informed-consents', [HospitalAdmissionController::class, 'storeConsent']);
+                // RF-95: importa la línea de base de Vitalsy Life; el código tiene ~41 bits, de ahí el tope de intentos.
+                Route::post('life-links', [HospitalAdmissionController::class, 'linkLife'])->middleware('throttle:20,1');
+            });
+
+            // RF-95: lectura de la línea de base importada de Vitalsy Life.
+            Route::middleware('role:admision,enfermera_piso,medico_residente,medico_tratante')->group(function () {
+                Route::get('encounters/{encounterId}/life-baseline', [HospitalAdmissionController::class, 'showLifeBaseline']);
             });
 
             Route::middleware('role:camillero')->group(function () {

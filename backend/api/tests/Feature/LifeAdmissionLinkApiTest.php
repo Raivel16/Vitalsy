@@ -1,0 +1,185 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\AdmissionEncounter;
+use App\Models\LifeAccount;
+use App\Models\LifeBiometricSample;
+use App\Models\LifeConsent;
+use App\Models\LifeLinkCode;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class LifeAdmissionLinkApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function asRole(string $role): static
+    {
+        return $this->actingAs(User::factory()->create(['role' => $role]));
+    }
+
+    private function encounter(string $id): AdmissionEncounter
+    {
+        return AdmissionEncounter::query()->create([
+            'encounter_id' => $id,
+            'order_number' => 'OI-'.$id,
+            'source' => 'manual',
+            'patient_name' => 'Paciente Life Demo',
+            'document_type' => 'DNI',
+            'document_number' => '11223344',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'Essalud',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'Regular',
+            'current_step' => 'indicaciones',
+            'deliverables' => [],
+            'clinical_payload' => [],
+        ]);
+    }
+
+    /** @return array{0: LifeAccount, 1: string} */
+    private function citizenWithCodeAndHistory(): array
+    {
+        $account = LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
+        LifeConsent::query()->create(['life_account_id' => $account->id, 'sharing_enabled' => true]);
+        for ($day = 1; $day <= 10; $day++) {
+            for ($n = 0; $n < 2; $n++) {
+                LifeBiometricSample::query()->create([
+                    'life_account_id' => $account->id,
+                    'client_id' => "hr-$day-$n",
+                    'kind' => 'heart_rate',
+                    'value' => 60 + $day + $n,
+                    'unit' => 'bpm',
+                    'started_at' => now()->subDays($day)->subMinutes($n),
+                    'ended_at' => now()->subDays($day)->subMinutes($n),
+                    'origin' => 'health_connect',
+                ]);
+            }
+        }
+        LifeLinkCode::query()->create([
+            'life_account_id' => $account->id,
+            'code' => 'VL-ABCD-2345',
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
+        return [$account, 'VL-ABCD-2345'];
+    }
+
+    public function test_admission_imports_baseline_with_valid_code(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertCreated()
+            ->assertJsonPath('link.status', 'importada')
+            ->assertJsonMissingPath('link.accountName')
+            ->assertJsonMissingPath('link.email');
+
+        $this->assertNotNull(LifeLinkCode::query()->first()->consumed_at);
+        $this->assertSame('ENC-LIFE-1', LifeLinkCode::query()->first()->consumed_encounter_id);
+
+        $this->asRole('enfermera_piso');
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')
+            ->assertOk()->assertJsonPath('baseline.metrics.0.kind', 'heart_rate');
+    }
+
+    public function test_baseline_is_null_when_nothing_imported(): void
+    {
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('medico_tratante');
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')
+            ->assertOk()->assertJsonPath('baseline', null);
+    }
+
+    public function test_consumed_or_unknown_code_is_rejected(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        $this->encounter('ENC-LIFE-2');
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-2', 'code' => $code])
+            ->assertStatus(422)->assertJsonPath('code', 'code_consumed');
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-2', 'code' => 'VL-ZZZZ-ZZZZ'])
+            ->assertStatus(422)->assertJsonPath('code', 'code_not_found');
+    }
+
+    public function test_expired_code_is_rejected_with_code_expired(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('admision');
+        $this->travel(31)->minutes();
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertStatus(422)->assertJsonPath('code', 'code_expired');
+        $this->assertDatabaseCount('life_baseline_imports', 0);
+    }
+
+    public function test_revoked_sharing_blocks_import(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        LifeConsent::query()->where('life_account_id', $account->id)
+            ->update(['sharing_enabled' => false, 'revoked_at' => now()]);
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertStatus(422)->assertJsonPath('code', 'sharing_closed');
+        $this->assertDatabaseCount('life_baseline_imports', 0);
+        $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
+    }
+
+    public function test_unknown_encounter_is_not_found_and_keeps_code_usable(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-NOPE', 'code' => $code])
+            ->assertNotFound();
+        $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
+    }
+
+    public function test_encounter_can_only_be_linked_once(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        LifeLinkCode::query()->create([
+            'life_account_id' => $account->id,
+            'code' => 'VL-WXYZ-6789',
+            'expires_at' => now()->addMinutes(30),
+        ]);
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => 'VL-WXYZ-6789'])
+            ->assertStatus(422)->assertJsonPath('code', 'already_linked');
+        $this->assertDatabaseCount('life_baseline_imports', 1);
+        $this->assertNull(LifeLinkCode::query()->where('code', 'VL-WXYZ-6789')->first()->consumed_at);
+    }
+
+    public function test_roles_are_enforced(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+
+        $this->asRole('enfermera_piso');
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertForbidden();
+
+        $this->asRole('camillero');
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertForbidden();
+    }
+
+    public function test_link_requires_encounter_and_code(): void
+    {
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/life-links', [])->assertStatus(422);
+    }
+}

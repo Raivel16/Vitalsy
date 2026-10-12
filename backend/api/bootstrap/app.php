@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ClinicalRuleException;
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureLifeAccount;
 use App\Http\Middleware\EnsurePasswordRotated;
@@ -81,8 +82,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $message === ''
                 || preg_match('/SQLSTATE|Exception|Stack trace|Server Error|could not be found/i', $message) === 1;
 
-            return response()->json([
+            $body = [
                 'message' => $technical ? 'No se pudo completar la operación. Intente de nuevo.' : $message,
-            ], $status);
+            ];
+            if ($exception instanceof ClinicalRuleException && $exception->errorCode !== null) {
+                $body['code'] = $exception->errorCode;
+            }
+
+            return response()->json($body, $status);
         });
     })->create();
