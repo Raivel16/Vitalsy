@@ -102,7 +102,7 @@ Cubren línea de base, avisos, cola offline, consentimiento, plan, mapeo de Heal
 
 ## Limitaciones
 
-- No hay API Laravel de Life en este repositorio. La cola espera un `POST /api/life/sync` que todavía no existe.
+- La nube usa `/api/v1/life/*` con token Sanctum (cuenta Life, guardado en `expo-secure-store`). Sin token o sin https (fuera de desarrollo) la cola se queda pendiente. La sincronización marca `synced` solo los ids de `accepted`; los de `rejected` pasan a `rejected` y no se reintentan; un 422 o un fallo de red los deja pendientes. El envío se parte en lotes de hasta 100 items y 1 000 000 de caracteres.
 - Apple Health queda detrás del mismo puerto, sin lector en este corte.
 - El aviso al cuidador abre el SMS; no se envía oculto.
 - La lectura de Health Connect ocurre al abrir Hoy, al pulsar sincronizar y al recuperar la red. No hay un sondeo continuo.

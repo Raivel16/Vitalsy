@@ -1,25 +1,89 @@
 import type { SyncItem } from '../../modules/health-sync/domain/syncQueue';
+import { lifeErrorMessage } from './lifeClient.errors';
+
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string; message: string };
+
+export type LifeAccount = { id: number; name: string; email: string };
+export type AuthPayload = { token: string; account: LifeAccount };
 
 export function apiBaseUrl(): string | undefined {
   const value = process.env.EXPO_PUBLIC_API_URL?.trim();
-  return value ? value.replace(/\/$/, '') : undefined;
+  if (!value) {
+    return undefined;
+  }
+  const url = value.replace(/\/$/, '');
+  const secure = /^https:\/\//i.test(url);
+  const dev = typeof __DEV__ !== 'undefined' && __DEV__;
+  return secure || dev ? url : undefined;
 }
 
-export async function postLifeBatch(baseUrl: string, items: SyncItem[]): Promise<boolean> {
-  const response = await fetch(`${baseUrl}/api/life/sync`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
-  });
-  return response.ok;
-}
+type Options = { method: 'GET' | 'POST' | 'PUT'; body?: unknown; auth: boolean; raw?: boolean };
 
-export async function fetchDischargeBody(baseUrl: string, code: string): Promise<string | null> {
-  const response = await fetch(`${baseUrl}/api/life/discharge-plans/${encodeURIComponent(code)}`, {
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) {
+function parseJson(text: string): Record<string, unknown> | null {
+  try {
+    const value: unknown = JSON.parse(text);
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+  } catch {
     return null;
   }
-  return response.text();
 }
+
+export function createLifeClient(baseUrl: string, getToken: () => Promise<string | null>) {
+  async function request<T>(path: string, options: Options): Promise<ApiResult<T>> {
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (options.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (options.auth) {
+      const token = await getToken().catch(() => null);
+      if (!token) {
+        return { ok: false, status: 401, code: 'no_session', message: lifeErrorMessage(401, 'no_session') };
+      }
+      headers.Authorization = `Bearer ${token}`;
+    }
+    let response: Response;
+    try {
+      response = await fetch(`${baseUrl}/api/v1/life/${path}`, {
+        method: options.method,
+        headers,
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      });
+    } catch {
+      return { ok: false, status: 0, message: 'Sin conexión' };
+    }
+    const text = await response.text().catch(() => '');
+    if (!response.ok) {
+      const parsed = parseJson(text);
+      const code = typeof parsed?.code === 'string' ? parsed.code : undefined;
+      const serverMessage = typeof parsed?.message === 'string' ? parsed.message : undefined;
+      return { ok: false, status: response.status, code, message: lifeErrorMessage(response.status, code, serverMessage) };
+    }
+    if (options.raw) {
+      return { ok: true, data: text as unknown as T };
+    }
+    if (response.status === 204 || text === '') {
+      return { ok: true, data: undefined as unknown as T };
+    }
+    const parsed = parseJson(text);
+    if (!parsed) {
+      return { ok: false, status: response.status, message: lifeErrorMessage(500) };
+    }
+    return { ok: true, data: parsed as T };
+  }
+
+  return {
+    register: (input: { name: string; email: string; password: string }) =>
+      request<AuthPayload>('auth/register', { method: 'POST', body: input, auth: false }),
+    login: (input: { email: string; password: string }) => request<AuthPayload>('auth/login', { method: 'POST', body: input, auth: false }),
+    logout: () => request<undefined>('auth/logout', { method: 'POST', auth: true }),
+    sync: (items: SyncItem[]) =>
+      request<{ accepted: string[]; rejected: { id: string; reason: string }[] }>('sync', { method: 'POST', body: { items }, auth: true }),
+    setConsent: (sharingEnabled: boolean) =>
+      request<{ sharingEnabled: boolean; revokedAt: string | null }>('consent', { method: 'PUT', body: { sharingEnabled }, auth: true }),
+    issueLinkCode: () => request<{ code: string; expiresAt: string }>('link-codes', { method: 'POST', auth: true }),
+    fetchDischargePlan: (code: string) =>
+      request<string>(`discharge-plans/${encodeURIComponent(code)}`, { method: 'GET', auth: true, raw: true }),
+  };
+}
+
+export type LifeClient = ReturnType<typeof createLifeClient>;

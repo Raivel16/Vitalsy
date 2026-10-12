@@ -3,7 +3,9 @@ import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { apiBaseUrl, fetchDischargeBody, postLifeBatch } from '../../shared/api/lifeClient';
+import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
+import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
+import { chunkForSend } from '../health-sync/domain/syncQueue';
 import { randomHex } from '../../shared/crypto/randomHex';
 import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
@@ -26,6 +28,9 @@ type LifeContextValue = {
   refresh: () => Promise<void>;
   syncHealth: () => Promise<string | null>;
   activateFromCode: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  /** Cliente autenticado de /api/v1/life (null si la API no está configurada o no es https). */
+  client: LifeClient | null;
+  tokenStore: TokenStore;
 };
 
 const LifeContext = createContext<LifeContextValue | null>(null);
@@ -58,6 +63,10 @@ export function LifeProvider({
     permission: 'unknown',
   });
   const [tick, setTick] = useState(0);
+  const client = useMemo(() => {
+    const baseUrl = apiBaseUrl();
+    return baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null;
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -118,19 +127,26 @@ export function LifeProvider({
     life.addSamples(read.samples);
     setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
     const baseUrl = apiBaseUrl();
-    const decision = life.flushDecision(online, Boolean(baseUrl));
-    if (baseUrl && decision.send.length > 0) {
-      const ok = await postLifeBatch(baseUrl, decision.send).catch(() => false);
-      if (ok) {
-        life.markQueueSynced(
-          decision.send.map((item) => item.id),
-          new Date().toISOString(),
-        );
+    const hasSession = Boolean(await tokenStore.get().catch(() => null));
+    const decision = life.flushDecision(online, Boolean(baseUrl), hasSession);
+    if (client && decision.send.length > 0) {
+      for (const chunk of chunkForSend(decision.send)) {
+        const result = await client.sync(chunk);
+        if (result.ok) {
+          // Solo los ids aceptados pasan a synced; los rechazados quedan en estado terminal.
+          life.applySyncResult(result.data.accepted, result.data.rejected, new Date().toISOString());
+          continue;
+        }
+        if (result.status === 401) {
+          await tokenStore.clear();
+        }
+        // Cualquier otro fallo (red, 422 batch_too_large, 5xx) deja los items pendientes para reintentar.
+        break;
       }
     }
     await refresh();
     return read.message;
-  }, [life, online, refresh]);
+  }, [client, life, online, refresh]);
 
   const wasOnline = useRef(true);
   useEffect(() => {
@@ -145,18 +161,25 @@ export function LifeProvider({
 
   const activateFromCode = useCallback(
     async (raw: string) => {
-      const baseUrl = apiBaseUrl();
-      const remote = baseUrl ? await fetchDischargeBody(baseUrl, raw.trim()).catch(() => null) : null;
+      let remote: string | null = null;
+      if (client) {
+        const plan = await client.fetchDischargePlan(raw.trim());
+        if (plan.ok) {
+          remote = plan.data;
+        } else if (plan.status === 401) {
+          await tokenStore.clear();
+        }
+      }
       const result = life.activateDischarge(raw, remote);
       await refresh();
       return result;
     },
-    [life, refresh],
+    [client, life, refresh],
   );
 
   const value = useMemo(
-    () => ({ ready, life, online, health, refresh, syncHealth, activateFromCode }),
-    [ready, life, online, health, refresh, syncHealth, activateFromCode, tick],
+    () => ({ ready, life, online, health, refresh, syncHealth, activateFromCode, client, tokenStore }),
+    [ready, life, online, health, refresh, syncHealth, activateFromCode, client, tick],
   );
 
   return <LifeContext.Provider value={value}>{children}</LifeContext.Provider>;

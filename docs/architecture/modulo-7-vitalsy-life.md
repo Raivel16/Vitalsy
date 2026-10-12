@@ -23,7 +23,7 @@ Clinical emite el QR de alta (RF-96). Life lo acepta así:
 - JSON con `medications` (`name`, `dose`, `schedule` `HH:mm`), `comfortSigns`, `homeCare` y `validUntil`, o
 - un código opaco que el servidor resuelve en `GET {EXPO_PUBLIC_API_URL}/api/v1/life/discharge-plans/{code}`.
 
-La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/v1/life/sync` con `{ items: [{ id, kind, body, status }] }`. Estos endpoints se implementan en Laravel según el contrato (RF-89 a RF-98); la app migra del prefijo `/api/life/*` a `/api/v1/life/*`. Mientras no haya servidor, la app no simula una respuesta correcta.
+La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/v1/life/sync` con `{ items: [{ id, kind, body, status }] }`. Todas las llamadas (salvo registro e inicio de sesión) llevan `Authorization: Bearer <token>` de la cuenta Life; la app rechaza URLs `http` fuera de desarrollo. La respuesta `{ accepted, rejected }` es la única fuente de verdad: un item pasa a `synced` solo si su `id` está en `accepted`; los `rejected` quedan en estado terminal `rejected` (no se reintentan) y cualquier otro fallo (sin red, 401, 422 `batch_too_large`, 5xx) los deja `pending`. La cola se envía en lotes de hasta 100 items y 1 000 000 de caracteres. Un 401 borra el token guardado. La app no simula una respuesta correcta si el servidor no responde.
 
 ## Salud
 
