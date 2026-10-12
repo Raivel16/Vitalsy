@@ -23,20 +23,15 @@ class LifeLinkCodeController extends Controller
         /** @var LifeAccount $account */
         $account = $request->user();
 
-        $open = LifeConsent::query()
-            ->where('life_account_id', $account->id)
-            ->where('sharing_enabled', true)
-            ->exists();
-        if (! $open) {
-            return response()->json([
-                'code' => 'sharing_closed',
-                'message' => 'Active la compartición de datos para generar un código de vinculación.',
-            ], 409);
-        }
+        $closed = false;
+        $link = DB::transaction(function () use ($account, &$closed): ?LifeLinkCode {
+            // Serializa emisiones y revocaciones de la misma cuenta, y revalida bajo el bloqueo.
+            $consent = LifeConsent::query()->where('life_account_id', $account->id)->lockForUpdate()->first();
+            if ($consent === null || ! $consent->sharing_enabled) {
+                $closed = true;
 
-        $link = DB::transaction(function () use ($account): ?LifeLinkCode {
-            // Serializa emisiones concurrentes de la misma cuenta.
-            LifeConsent::query()->where('life_account_id', $account->id)->lockForUpdate()->first();
+                return null;
+            }
 
             LifeLinkCode::query()
                 ->where('life_account_id', $account->id)
@@ -55,6 +50,13 @@ class LifeLinkCodeController extends Controller
                 'expires_at' => now()->addMinutes(self::TTL_MINUTES),
             ]);
         });
+
+        if ($closed) {
+            return response()->json([
+                'code' => 'sharing_closed',
+                'message' => 'Active la compartición de datos para generar un código de vinculación.',
+            ], 409);
+        }
 
         if ($link === null) {
             return response()->json([

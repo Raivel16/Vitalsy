@@ -85,6 +85,8 @@ Modos de `life-plan`: `usuario` (el paciente ya tiene cuenta Life, el plan queda
 | 422 | `code_expired` | El código de vinculación venció (más de 30 min). |
 | 422 | `code_consumed` | El código ya se usó. |
 | 409 | `sharing_closed` | Compartición cerrada: no se emite código ni se importa. |
+| 422 | `batch_too_large` | La solicitud de sync excede 2000 muestras en total o 1 000 000 de caracteres de cuerpo; se rechaza completa y no se guarda nada. |
+| 503 | `code_unavailable` | No se pudo generar un código de vinculación único; reintentar. |
 | 404 | `plan_not_found` | El código de plan no existe. |
 | 409 | `plan_claimed` | El plan ya fue reclamado por otra cuenta. |
 
@@ -93,3 +95,5 @@ Cuerpo de error: `{message, code}`. Otros errores de validación siguen el forma
 ## Sync (RF-92)
 
 `POST /life/sync` es idempotente por `id` de ítem (`life_biometric_samples` único por cuenta + `client_id`). `accepted` lista los ids guardados (incluidos los repetidos) y `rejected` los inválidos con su `reason`. La app marca «Sincronizado» solo con los ids aceptados.
+
+Topes: por ítem, 500 muestras y 200 000 caracteres; por solicitud, 200 ítems. Topes agregados: 2000 muestras en total y 1 000 000 de caracteres de cuerpo; al excederlos responde `422 batch_too_large`, se rechaza toda la solicitud y no se guarda nada.

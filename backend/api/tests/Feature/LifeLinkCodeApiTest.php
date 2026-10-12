@@ -29,6 +29,27 @@ class LifeLinkCodeApiTest extends TestCase
         $this->assertDatabaseCount('life_link_codes', 0);
     }
 
+    public function test_issue_after_revoke_is_rejected_and_creates_no_new_code(): void
+    {
+        $this->asCitizen();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true]);
+        $this->postJson('/api/v1/life/link-codes')->assertCreated();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])->assertOk();
+
+        $this->postJson('/api/v1/life/link-codes')->assertStatus(409)->assertJsonPath('code', 'sharing_closed');
+        $this->assertDatabaseCount('life_link_codes', 1);
+        $this->assertFalse(LifeLinkCode::query()->first()->isUsable());
+    }
+
+    public function test_issue_with_explicitly_closed_consent_creates_no_rows(): void
+    {
+        $this->asCitizen();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])->assertOk();
+
+        $this->postJson('/api/v1/life/link-codes')->assertStatus(409)->assertJsonPath('code', 'sharing_closed');
+        $this->assertDatabaseCount('life_link_codes', 0);
+    }
+
     public function test_link_code_has_expected_format_and_expiry(): void
     {
         $this->asCitizen();
