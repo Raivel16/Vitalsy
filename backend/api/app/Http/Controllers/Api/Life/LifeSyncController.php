@@ -3,14 +3,23 @@
 namespace App\Http\Controllers\Api\Life;
 
 use App\Http\Controllers\Controller;
+use App\Models\LifeAccount;
+use App\Services\Life\LifeSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LifeSyncController extends Controller
 {
-    /** Pendiente de implementar en una tarea posterior del plan de integración Life. */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, LifeSync $sync): JsonResponse
     {
-        return response()->json(['message' => 'No implementado'], 501);
+        $data = $request->validate([
+            'items' => ['required', 'array', 'max:200'],
+            'items.*' => ['array'],
+        ]);
+
+        /** @var LifeAccount $account */
+        $account = $request->user();
+
+        return response()->json($sync->ingest($account, $data['items']));
     }
 }

@@ -32,7 +32,8 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/register', [LifeAuthController::class, 'register'])->middleware('throttle:10,1');
         Route::post('auth/login', [LifeAuthController::class, 'login'])->middleware('throttle:10,1');
 
-        Route::middleware(['auth:sanctum', 'life'])->group(function () {
+        Route::middleware(['auth:sanctum', 'life', 'abilities:life'])->group(function () {
+            Route::post('auth/logout', [LifeAuthController::class, 'logout']);
             Route::post('sync', [LifeSyncController::class, 'store']);
             Route::put('consent', [LifeConsentController::class, 'update']);
             Route::post('link-codes', [LifeLinkCodeController::class, 'store']);

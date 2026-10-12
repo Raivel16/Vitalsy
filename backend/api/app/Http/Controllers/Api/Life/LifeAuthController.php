@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LifeAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,14 @@ class LifeAuthController extends Controller
         }
 
         return response()->json($this->payload($account));
+    }
+
+    /** Revoca solo el token de la sesión actual. */
+    public function logout(Request $request): Response
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->noContent();
     }
 
     /** @return array{token: string, account: array{id: int, name: string, email: string}} */
