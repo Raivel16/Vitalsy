@@ -47,9 +47,9 @@ class DischargeService
         return ['cases' => $cases];
     }
 
-    public function show(string $encounterId): array
+    public function show(string $encounterId, ?User $viewer = null): array
     {
-        return ['case' => $this->present($encounterId)];
+        return ['case' => $this->present($encounterId, $viewer)];
     }
 
     public function registerOrder(string $encounterId, User $user): array
@@ -333,8 +333,10 @@ class DischargeService
                 'confirmed' => true,
                 'exitedAt' => optional($exit->exited_at)?->toIso8601String(),
             ] : null,
+            // Los códigos son secretos al portador: solo la enfermera de piso los ve completos.
             'lifePlan' => app(DischargeLifePlan::class)->present(
                 LifeDischargePlan::query()->where('encounter_id', $encounterId)->first(),
+                $viewer?->role === 'enfermera_piso',
             ),
             'administered' => [],
         ];

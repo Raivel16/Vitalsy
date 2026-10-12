@@ -30,7 +30,7 @@ class LifeDischargePlanController extends Controller
 
             if ($plan->claimed_by_account_id === null) {
                 $plan->update(['status' => 'reclamado', 'claimed_by_account_id' => $accountId, 'claimed_at' => now()]);
-            } elseif ($plan->claimed_by_account_id !== $accountId) {
+            } elseif ((int) $plan->claimed_by_account_id !== (int) $accountId) {
                 return response()->json(['code' => 'plan_claimed', 'message' => 'Este plan ya fue reclamado por otra cuenta.'], 409);
             }
 

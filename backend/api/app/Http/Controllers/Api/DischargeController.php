@@ -23,9 +23,9 @@ class DischargeController extends Controller
         return response()->json($this->discharge->authorizedExits());
     }
 
-    public function show(string $encounterId): JsonResponse
+    public function show(Request $request, string $encounterId): JsonResponse
     {
-        return response()->json($this->discharge->show($encounterId));
+        return response()->json($this->discharge->show($encounterId, $request->user()));
     }
 
     public function storeOrder(Request $request, string $encounterId): JsonResponse

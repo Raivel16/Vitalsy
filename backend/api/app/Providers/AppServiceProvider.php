@@ -2,14 +2,10 @@
 
 namespace App\Providers;
 
-use App\Events\PatientExited;
-use App\Listeners\ActivateLifePlanOnExit;
-use App\Listeners\DispatchCleaningOnPatientExit;
 use App\Services\Interoperability\LisClient;
 use App\Services\Interoperability\PacsClient;
 use App\Services\Interoperability\StubLisClient;
 use App\Services\Interoperability\StubPacsClient;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,10 +21,9 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     *
+     * Los listeners de app/Listeners (p. ej. PatientExited) se descubren solos; registrarlos
+     * a mano los ejecutaría dos veces.
      */
-    public function boot(): void
-    {
-        Event::listen(PatientExited::class, DispatchCleaningOnPatientExit::class);
-        Event::listen(PatientExited::class, ActivateLifePlanOnExit::class);
-    }
+    public function boot(): void {}
 }

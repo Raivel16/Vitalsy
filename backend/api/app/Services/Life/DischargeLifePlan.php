@@ -4,10 +4,12 @@ namespace App\Services\Life;
 
 use App\Exceptions\ClinicalRuleException;
 use App\Models\AmbulatoryPrescription;
+use App\Models\DischargeOrder;
 use App\Models\LifeDischargePlan;
 use App\Models\NursingDischargeReport;
 use App\Models\PharmaDischargeReconciliation;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /** Emite el plan de seguimiento estructurado que la app Vitalsy Life reclama con un código (RF-96). */
@@ -29,18 +31,36 @@ class DischargeLifePlan
             return null;
         }
 
+        try {
+            return $this->persist($encounterId, $mode, $by, $source);
+        } catch (UniqueConstraintViolationException) {
+            // Emisión simultánea del primer plan: reintenta leyendo la fila ya creada.
+            return $this->persist($encounterId, $mode, $by, $source);
+        }
+    }
+
+    /** @param array<string, mixed> $source */
+    private function persist(string $encounterId, string $mode, User $by, array $source): LifeDischargePlan
+    {
         return DB::transaction(function () use ($encounterId, $mode, $by, $source) {
             $plan = LifeDischargePlan::query()->where('encounter_id', $encounterId)->lockForUpdate()->first();
+            if ($plan?->custody_transferred_at) {
+                throw new ClinicalRuleException('El paciente ya egresó; el plan no puede reemitirse.');
+            }
             if ($plan && $plan->status === 'reclamado') {
                 throw new ClinicalRuleException('El plan ya fue reclamado por el ciudadano y no puede reemitirse.');
             }
 
             $code = $plan?->code ?? $this->newCode('VLA', 'code');
             $validUntil = now()->addDays(30)->toDateString();
+            $invitation = $plan?->invitation_code;
+            if ($mode === 'invitacion' && ! $invitation) {
+                $invitation = $this->newCode('VLI', 'invitation_code');
+            }
             $attributes = [
                 'mode' => $mode,
                 'code' => $code,
-                'invitation_code' => $mode === 'invitacion' ? ($plan?->invitation_code ?? $this->newCode('VLI', 'invitation_code')) : null,
+                'invitation_code' => $invitation,
                 'payload' => ['id' => $code] + $source + ['validUntil' => $validUntil],
                 'valid_until' => $validUntil,
                 'created_by' => $by->id,
@@ -57,10 +77,18 @@ class DischargeLifePlan
     }
 
     /** @return array<string, mixed>|null */
-    public function present(?LifeDischargePlan $plan): ?array
+    public function present(?LifeDischargePlan $plan, bool $withSecrets = true): ?array
     {
         if (! $plan) {
             return null;
+        }
+
+        if (! $withSecrets) {
+            return [
+                'mode' => $plan->mode,
+                'status' => $plan->status,
+                'validUntil' => $plan->valid_until?->toDateString(),
+            ];
         }
 
         return [
@@ -75,6 +103,9 @@ class DischargeLifePlan
     /** @return array{medications: array<int, array<string, string>>, comfortSigns: array<int, string>, homeCare: array<int, string>} */
     private function source(string $encounterId): array
     {
+        if (! DischargeOrder::query()->where('encounter_id', $encounterId)->exists()) {
+            throw new ClinicalRuleException('Registre primero la orden digital de alta.');
+        }
         $prescription = AmbulatoryPrescription::query()->where('encounter_id', $encounterId)->first();
         if (! $prescription || empty($prescription->content['items'] ?? [])) {
             throw new ClinicalRuleException('Registre primero la receta ambulatoria de alta.');

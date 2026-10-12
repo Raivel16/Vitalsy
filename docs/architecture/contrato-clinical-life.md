@@ -65,6 +65,8 @@ Modos de `life-plan`: `usuario` (el paciente ya tiene cuenta Life, el plan queda
 
 - `id` es estable e igual al código del plan.
 - `schedule` es `HH:mm`; `validUntil` es `YYYY-MM-DD`.
+- Si la frecuencia de la receta no trae una hora explícita `HH:mm`, el horario de la dosis cae a `08:00` (decisión de producto pendiente: la enfermera debería revisarlo en la web antes de emitir).
+- `code`, `invitationCode` y `payload` son secretos al portador: `GET discharge/encounters/{id}` y el tablero solo los devuelven a `enfermera_piso`; el resto de roles de alta ve únicamente `mode`, `status` y `validUntil`.
 
 ### Diferencias verificadas con la app (`movil/src/modules/plan/domain/plan.ts`)
 

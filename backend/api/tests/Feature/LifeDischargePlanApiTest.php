@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Events\PatientExited;
-use App\Listeners\ActivateLifePlanOnExit;
-use App\Listeners\DispatchCleaningOnPatientExit;
 use App\Models\AdmissionEncounter;
 use App\Models\LifeAccount;
 use App\Models\LifeDischargePlan;
@@ -221,12 +219,59 @@ class LifeDischargePlanApiTest extends TestCase
 
     public function test_both_listeners_are_registered_for_patient_exit(): void
     {
-        $classes = collect(Event::getListeners(PatientExited::class))
-            ->map(fn ($l) => (new \ReflectionFunction($l))->getStaticVariables()['listener'] ?? null)
-            ->all();
+        // Descubrimiento automático de app/Listeners: exactamente un registro por listener.
+        $this->assertCount(2, Event::getListeners(PatientExited::class));
+    }
 
-        $this->assertContains(DispatchCleaningOnPatientExit::class, $classes);
-        $this->assertContains(ActivateLifePlanOnExit::class, $classes);
+    public function test_plan_requires_discharge_order_first(): void
+    {
+        $this->inpatientEncounter('ENC-ALTA-0003');
+        $this->asRole('enfermera_piso');
+
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0003/life-plan', ['mode' => 'usuario'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Registre primero la orden digital de alta.');
+    }
+
+    public function test_other_roles_do_not_see_codes_or_payload_but_nurse_does(): void
+    {
+        $this->issuedPlanCode('invitacion');
+
+        foreach (['medico_tratante', 'camillero', 'altas_caja', 'trabajo_social'] as $role) {
+            $this->asRole($role);
+            $plan = $this->getJson('/api/v1/discharge/encounters/'.self::ENC)->assertOk()->json('case.lifePlan');
+            $this->assertSame('invitacion', $plan['mode']);
+            $this->assertSame('pendiente', $plan['status']);
+            $this->assertArrayNotHasKey('code', $plan);
+            $this->assertArrayNotHasKey('invitationCode', $plan);
+            $this->assertArrayNotHasKey('payload', $plan);
+        }
+
+        $this->asRole('enfermera_piso');
+        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)
+            ->assertJsonStructure(['case' => ['lifePlan' => ['code', 'invitationCode', 'payload']]]);
+    }
+
+    public function test_cannot_reissue_after_exit(): void
+    {
+        $this->issuedPlanCode('usuario', true);
+        $this->asRole('enfermera_piso');
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'El paciente ya egresó; el plan no puede reemitirse.');
+    }
+
+    public function test_switching_to_usuario_keeps_issued_invitation_code(): void
+    {
+        $this->issuedPlanCode('invitacion');
+        $invitation = LifeDischargePlan::query()->firstOrFail()->invitation_code;
+
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+            ->assertStatus(201)
+            ->assertJsonPath('lifePlan.invitationCode', $invitation);
+        $this->assertSame($invitation, LifeDischargePlan::query()->firstOrFail()->invitation_code);
     }
 
     public function test_case_presentation_includes_life_plan(): void
