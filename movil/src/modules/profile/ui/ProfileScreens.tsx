@@ -9,10 +9,11 @@ import { Field } from '../../../shared/ui/Field';
 import { Screen } from '../../../shared/ui/Screen';
 import { chalk, font } from '../../../shared/theme/tokens';
 import { useLife } from '../../life/LifeProvider';
+import { logoutSession } from '../../life/sessionAuth';
 
 export function ProfileScreen() {
   const router = useRouter();
-  const { life, refresh } = useLife();
+  const { life, refresh, client, tokenStore } = useLife();
   const user = life.currentUser();
   const contact = life.state.contact;
   const baseline = life.today();
@@ -49,8 +50,9 @@ export function ProfileScreen() {
       <Button
         label="Cerrar sesión"
         onPress={() => {
-          life.logout();
-          void refresh().then(() => router.replace('/'));
+          void logoutSession({ life, client, tokenStore })
+            .then(() => refresh())
+            .then(() => router.replace('/'));
         }}
         palette={chalk}
         tone="ghost"

@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import type { LifeClient } from '../../shared/api/lifeClient';
 import { activatePlan } from './activatePlan';
 import { emptySnapshot, LifeApp } from './lifeApp';
-import { runSync } from './syncRunner';
+import { needsResync, runSync } from './syncRunner';
 
 const clock = {
   now: () => new Date('2026-10-03T12:00:00.000Z'),
@@ -101,5 +101,14 @@ describe('activatePlan', () => {
     });
     expect(result.ok).toBe(true);
     expect(life.state.plan).not.toBeNull();
+  });
+});
+
+describe('needsResync', () => {
+  it('re-runs once only when connectivity came back while the run was in flight', () => {
+    expect(needsResync(false, true)).toBe(true);
+    expect(needsResync(true, true)).toBe(false);
+    expect(needsResync(false, false)).toBe(false);
+    expect(needsResync(true, false)).toBe(false);
   });
 });

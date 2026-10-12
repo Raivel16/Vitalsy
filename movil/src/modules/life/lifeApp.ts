@@ -90,6 +90,33 @@ export class LifeApp {
     return { ok: true, errors: {} };
   }
 
+  /**
+   * Abre la sesión de una cuenta del servidor. No se guarda contraseña ni hash.
+   * Si el id difiere del de la cuenta anterior, los datos locales se descartan
+   * para no adjuntarlos a otra persona.
+   */
+  openServerSession(account: { id: number | string; name: string; email: string }): { switched: boolean } {
+    const id = String(account.id);
+    const switched = this.snapshot.accounts.some((existing) => existing.id !== id);
+    const base = switched ? emptySnapshot() : this.snapshot;
+    this.snapshot = {
+      ...base,
+      accounts: [{ id, name: account.name, email: account.email.trim().toLowerCase() }],
+      sessionUserId: id,
+    };
+    return { switched };
+  }
+
+  /** Reanuda la sesión de una cuenta ya conocida (token guardado, sin red). */
+  resumeSession(email: string): boolean {
+    const account = this.snapshot.accounts.find((item) => item.email === email.trim().toLowerCase());
+    if (!account) {
+      return false;
+    }
+    this.snapshot = { ...this.snapshot, sessionUserId: account.id };
+    return true;
+  }
+
   logout(): void {
     this.snapshot = { ...this.snapshot, sessionUserId: null };
   }

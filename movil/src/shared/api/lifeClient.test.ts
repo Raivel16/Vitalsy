@@ -102,6 +102,23 @@ describe('life client', () => {
     expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toBe('https://api.test/api/v1/life/auth/register');
   });
 
+  it('exposes 422 field errors as the first message per field', async () => {
+    mockFetch({ status: 422, body: '{"message":"x","errors":{"email":["El correo ya está registrado."],"password":"Muy corta","name":[]}}' });
+    const result = await createLifeClient('https://api.test', async () => null).register({ name: 'A', email: 'a@b.c', password: 'x' });
+    expect(result).toMatchObject({ ok: false, status: 422, errors: { email: 'El correo ya está registrado.', password: 'Muy corta' } });
+    expect((result as { errors: Record<string, string> }).errors.name).toBeUndefined();
+  });
+
+  it('logs out with the bearer token and accepts 204', async () => {
+    const fetchMock = mockFetch({ status: 204 });
+    const result = await createLifeClient('https://api.test', token).logout();
+    expect(result.ok).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.test/api/v1/life/auth/logout');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer tok-123');
+  });
+
   it('returns the plain discharge plan body and encodes the code', async () => {
     const fetchMock = mockFetch({ status: 200, body: '{"medications":[]}' });
     const client = createLifeClient('https://api.test', token);

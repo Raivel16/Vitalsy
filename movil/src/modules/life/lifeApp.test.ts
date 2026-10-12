@@ -16,12 +16,12 @@ function app() {
 describe('LifeApp', () => {
   it('opens a session after registration and closes it on logout', () => {
     const life = app();
-    const created = life.register({ name: 'Elena', email: 'elena@correo.test', password: 'calma1234', confirm: 'calma1234' });
+    const created = life.register({ name: 'Elena', email: 'elena@correo.test', password: 'calma12345', confirm: 'calma12345' });
     expect(created.ok).toBe(true);
     expect(life.currentUser()?.name).toBe('Elena');
     life.logout();
     expect(life.currentUser()).toBeNull();
-    expect(life.login('elena@correo.test', 'calma1234').ok).toBe(true);
+    expect(life.login('elena@correo.test', 'calma12345').ok).toBe(true);
   });
 
   it('refuses a linking code until sharing is on, then revokes it', () => {

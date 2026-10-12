@@ -15,7 +15,9 @@ export function Button({ label, onPress, palette, tone = 'primary', disabled, lo
   const color = tone === 'primary' ? palette.onAccent : palette.accent;
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [

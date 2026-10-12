@@ -7,7 +7,7 @@ import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
 import { singleFlight } from '../../shared/async/singleFlight';
 import { activatePlan } from './activatePlan';
-import { runSync } from './syncRunner';
+import { needsResync, runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
 import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
@@ -65,10 +65,16 @@ export function LifeProvider({
     permission: 'unknown',
   });
   const [tick, setTick] = useState(0);
+  // La red puede volver mientras una sincronización está en curso: se lee al usarla, no al arrancar.
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
   const client = useMemo(() => {
     const baseUrl = apiBaseUrl();
     return baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null;
   }, []);
+
+  const clientRef = useRef(client);
+  clientRef.current = client;
 
   useEffect(() => {
     let active = true;
@@ -102,7 +108,8 @@ export function LifeProvider({
   const refresh = useCallback(async () => {
     setTick((value) => value + 1);
     const network = await Network.getNetworkStateAsync().catch(() => null);
-    setOnline(Boolean(network?.isConnected));
+    onlineRef.current = Boolean(network?.isConnected);
+    setOnline(onlineRef.current);
     if (store) {
       await store.save(life.state);
     }
@@ -130,12 +137,16 @@ export function LifeProvider({
     setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
     try {
       const hasSession = Boolean(await tokenStore.get().catch(() => null));
-      await runSync({ life, client, online, hasSession, onUnauthorized: () => tokenStore.clear() });
+      const usedOnline = onlineRef.current;
+      await runSync({ life, client: clientRef.current, online: usedOnline, hasSession, onUnauthorized: () => tokenStore.clear() });
+      if (needsResync(usedOnline, onlineRef.current)) {
+        await runSync({ life, client: clientRef.current, online: true, hasSession, onUnauthorized: () => tokenStore.clear() });
+      }
     } finally {
       await refresh();
     }
     return read.message;
-  }, [client, life, online, refresh]);
+  }, [life, refresh]);
 
   // Dos disparos concurrentes (efecto de red + botón) comparten una sola ejecución.
   const syncImplRef = useRef(syncHealthOnce);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PASSWORD_RECOVERY_MESSAGE, type FieldErrors } from '../domain/auth';
 import { Banner } from '../../../shared/ui/Banner';
@@ -8,13 +8,23 @@ import { aire, font } from '../../../shared/theme/tokens';
 
 type Mode = 'login' | 'register';
 
+export type AuthOutcome = { errors: FieldErrors; notices?: string[] };
+
+export const LOCAL_ONLY_BANNER = 'Cuenta solo en este teléfono';
+
 export function AuthForm({
   onLogin,
   onRegister,
+  onDone,
+  localOnly = false,
   initialMode = 'login',
 }: {
-  onLogin: (email: string, password: string) => FieldErrors | Promise<FieldErrors>;
-  onRegister: (input: { name: string; email: string; password: string; confirm: string }) => FieldErrors | Promise<FieldErrors>;
+  onLogin: (email: string, password: string) => AuthOutcome | Promise<AuthOutcome>;
+  onRegister: (input: { name: string; email: string; password: string; confirm: string }) => AuthOutcome | Promise<AuthOutcome>;
+  /** Se llama al terminar con éxito (tras mostrar los avisos, si los hay). */
+  onDone?: () => void;
+  /** Sin servidor configurado: la cuenta vive solo en este teléfono. */
+  localOnly?: boolean;
   initialMode?: Mode;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -24,25 +34,60 @@ export function AuthForm({
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [recovery, setRecovery] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [notices, setNotices] = useState<string[]>([]);
+  const busy = useRef(false);
 
-  function submit() {
-    const pending = mode === 'login' ? onLogin(email, password) : onRegister({ name, email, password, confirm });
-    if (pending instanceof Promise) {
-      void pending.then(setErrors);
+  async function submit() {
+    if (busy.current) {
       return;
     }
-    setErrors(pending);
+    busy.current = true;
+    setLoading(true);
+    setErrors({});
+    try {
+      const outcome = await (mode === 'login' ? onLogin(email, password) : onRegister({ name, email, password, confirm }));
+      setErrors(outcome.errors);
+      if (Object.keys(outcome.errors).length > 0) {
+        return;
+      }
+      if (outcome.notices && outcome.notices.length > 0) {
+        setNotices(outcome.notices);
+        return;
+      }
+      onDone?.();
+    } catch {
+      setErrors({ form: 'No pudimos completar la solicitud. Inténtalo de nuevo.' });
+    } finally {
+      busy.current = false;
+      setLoading(false);
+    }
   }
+
+  if (notices.length > 0) {
+    return (
+      <View style={styles.wrap}>
+        <Text style={styles.title}>Sesión iniciada</Text>
+        {notices.map((notice) => (
+          <Banner key={notice} message={notice} palette={aire} tone="warning" />
+        ))}
+        <Button label="Continuar" onPress={() => onDone?.()} palette={aire} />
+      </View>
+    );
+  }
+
+  const label = mode === 'login' ? (loading ? 'Iniciando sesión…' : 'Iniciar sesión') : loading ? 'Creando cuenta…' : 'Crear cuenta';
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Tu ritmo, en calma</Text>
       <Text style={styles.lead}>Información preventiva sobre tu línea de base. No es un diagnóstico.</Text>
+      {localOnly ? <Banner message={LOCAL_ONLY_BANNER} palette={aire} tone="info" /> : null}
       <View style={styles.switch}>
-        <Pressable onPress={() => setMode('login')} style={[styles.tab, mode === 'login' && styles.tabOn]}>
+        <Pressable accessibilityRole="button" onPress={() => setMode('login')} style={[styles.tab, mode === 'login' && styles.tabOn]}>
           <Text style={[styles.tabText, mode === 'login' && styles.tabTextOn]}>Entrar</Text>
         </Pressable>
-        <Pressable onPress={() => setMode('register')} style={[styles.tab, mode === 'register' && styles.tabOn]}>
+        <Pressable accessibilityRole="button" onPress={() => setMode('register')} style={[styles.tab, mode === 'register' && styles.tabOn]}>
           <Text style={[styles.tabText, mode === 'register' && styles.tabTextOn]}>Registro</Text>
         </Pressable>
       </View>
@@ -51,14 +96,14 @@ export function AuthForm({
       <Field error={errors.password} label="Contraseña" onChangeText={setPassword} palette={aire} revealable value={password} />
       {mode === 'register' ? (
         <Field error={errors.confirm} label="Confirmar contraseña" onChangeText={setConfirm} palette={aire} revealable value={confirm} />
-      ) : (
-        <Pressable onPress={() => setRecovery(true)}>
+      ) : localOnly ? (
+        <Pressable accessibilityRole="button" onPress={() => setRecovery(true)}>
           <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
         </Pressable>
-      )}
-      {recovery ? <Banner message={PASSWORD_RECOVERY_MESSAGE} palette={aire} tone="warning" /> : null}
+      ) : null}
+      {localOnly && recovery ? <Banner message={PASSWORD_RECOVERY_MESSAGE} palette={aire} tone="warning" /> : null}
       {errors.form ? <Banner message={errors.form} palette={aire} tone="danger" /> : null}
-      <Button label={mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'} onPress={submit} palette={aire} />
+      <Button label={label} loading={loading} onPress={() => void submit()} palette={aire} />
     </View>
   );
 }

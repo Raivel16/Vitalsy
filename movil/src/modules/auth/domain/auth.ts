@@ -2,8 +2,9 @@ export type Account = {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
-  salt: string;
+  /** Solo en cuentas locales; las cuentas del servidor no guardan contraseña ni hash. */
+  passwordHash?: string;
+  salt?: string;
 };
 
 export type FieldErrors = Record<string, string>;
@@ -31,8 +32,10 @@ export function validateRegister(input: { name: string; email: string; password:
   if (!input.name.trim()) {
     errors.name = 'Escribe tu nombre.';
   }
-  if (input.password && input.password.length < 8) {
-    errors.password = 'Usa al menos 8 caracteres.';
+  if (input.password && input.password.length < 10) {
+    errors.password = 'Usa al menos 10 caracteres.';
+  } else if (input.password && !(/[A-Za-z]/.test(input.password) && /\d/.test(input.password))) {
+    errors.password = 'Usa letras y números.';
   }
   if (input.password !== input.confirm) {
     errors.confirm = 'Las contraseñas no coinciden.';
@@ -79,7 +82,7 @@ export function authenticate(
     return { errors };
   }
   const account = accounts.find((item) => item.email === email.trim().toLowerCase());
-  if (!account || account.passwordHash !== hashPassword(password, account.salt, digest)) {
+  if (!account || !account.salt || !account.passwordHash || account.passwordHash !== hashPassword(password, account.salt, digest)) {
     return { errors: { form: 'Correo o contraseña incorrectos.' } };
   }
   return { account, errors: {} };

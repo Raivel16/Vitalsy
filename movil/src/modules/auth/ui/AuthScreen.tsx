@@ -3,12 +3,13 @@ import { Screen } from '../../../shared/ui/Screen';
 import { Wordmark } from '../../../shared/ui/Wordmark';
 import { aire } from '../../../shared/theme/tokens';
 import { useLife } from '../../life/LifeProvider';
+import { loginAccount, registerCitizen } from '../../life/sessionAuth';
 import { AuthForm } from './AuthForm';
 
 export function AuthScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ next?: string; mode?: string }>();
-  const { life, refresh } = useLife();
+  const { life, refresh, client, tokenStore } = useLife();
 
   function goNext() {
     if (params.next === 'activar') {
@@ -23,19 +24,21 @@ export function AuthScreen() {
       <Wordmark />
       <AuthForm
         initialMode={params.mode === 'register' ? 'register' : 'login'}
-        onLogin={(email, password) => {
-          const result = life.login(email, password);
-          if (result.ok) {
-            void refresh().then(goNext);
+        localOnly={!client}
+        onDone={goNext}
+        onLogin={async (email, password) => {
+          const outcome = await loginAccount({ life, client, tokenStore }, email, password);
+          if (Object.keys(outcome.errors).length === 0) {
+            await refresh();
           }
-          return result.errors;
+          return outcome;
         }}
-        onRegister={(input) => {
-          const result = life.register(input);
-          if (result.ok) {
-            void refresh().then(goNext);
+        onRegister={async (input) => {
+          const outcome = await registerCitizen({ life, client, tokenStore }, input);
+          if (Object.keys(outcome.errors).length === 0) {
+            await refresh();
           }
-          return result.errors;
+          return outcome;
         }}
       />
     </Screen>

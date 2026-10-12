@@ -1,7 +1,9 @@
 import type { SyncItem } from '../../modules/health-sync/domain/syncQueue';
 import { lifeErrorMessage } from './lifeClient.errors';
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string; message: string };
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number; code?: string; message: string; errors?: Record<string, string> };
 
 export type LifeAccount = { id: number; name: string; email: string };
 export type AuthPayload = { token: string; account: LifeAccount };
@@ -34,6 +36,20 @@ function normaliseSync(data: unknown): SyncResponse | null {
         .map((entry) => ({ id: String(entry.id), reason: typeof entry.reason === 'string' ? entry.reason : 'rejected' }))
     : [];
   return { accepted, rejected };
+}
+
+function fieldErrors(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const out: Record<string, string> = {};
+  for (const [field, raw] of Object.entries(value as Record<string, unknown>)) {
+    const first = Array.isArray(raw) ? raw.find((item) => typeof item === 'string') : raw;
+    if (typeof first === 'string') {
+      out[field] = first;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function parseJson(text: string): Record<string, unknown> | null {
@@ -76,7 +92,14 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
       if (!options.auth && response.status === 401 && !code) {
         return { ok: false, status: 401, message: 'Correo o contraseña incorrectos.' };
       }
-      return { ok: false, status: response.status, code, message: lifeErrorMessage(response.status, code, serverMessage) };
+      const errors = response.status === 422 ? fieldErrors(parsed?.errors) : undefined;
+      return {
+        ok: false,
+        status: response.status,
+        code,
+        message: lifeErrorMessage(response.status, code, serverMessage),
+        ...(errors ? { errors } : {}),
+      };
     }
     if (options.raw) {
       return { ok: true, data: text as unknown as T };

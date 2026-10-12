@@ -11,6 +11,11 @@ type Deps = {
   now?: () => string;
 };
 
+/** Si arrancó sin red y la red volvió durante la ejecución, hay que reintentar una vez. */
+export function needsResync(onlineUsed: boolean, onlineNow: boolean): boolean {
+  return !onlineUsed && onlineNow;
+}
+
 /**
  * Envía la cola pendiente por lotes. Nunca lanza: un lote fallido (red, 401, 422,
  * respuesta inválida o excepción) deja sus items pendientes y corta el envío; los
