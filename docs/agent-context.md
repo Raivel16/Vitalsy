@@ -122,3 +122,12 @@ Registrado para una iteración aparte. No se implementa junto con el ajuste visu
   - Pacientes/ficha: pastillas, prioridad, entregables en grilla.
   - Egreso/alertas/camas: filtros, cards, KPIs; mismos handlers.
 - Formularios M1/M2 restantes: Sheet/`form-grid`; pulido fino pendiente.
+
+## 2026-10-11 — Integración Vitalsy Life ↔ Clinical (rama feature/RF-89-integracion-vitalsy-life)
+
+- Contrato nuevo: `docs/architecture/contrato-clinical-life.md`. Namespace ciudadano `/api/v1/life/*` (la app hoy usa `/api/life/*` y debe migrar).
+- Cuentas ciudadanas (`LifeAccount`, habilidad Sanctum `life`) separadas del personal; 403 cruzado en ambos sentidos.
+- Tablas previstas: `life_accounts`, `life_biometric_samples`, `life_consents`, `life_link_codes`, `life_baseline_imports`, `life_discharge_plans` (ver `modelo-datos.md`).
+- Código de vinculación `VL-XXXX-XXXX`: 30 min, un solo uso, solo con compartición activa.
+- Plan de alta: `id` estable = código, `medications`, `comfortSigns`, `homeCare`, `validUntil` `YYYY-MM-DD`. La app (`plan.ts`) hoy ignora `id` y genera su propio id; se corrige en la tarea de la app.
+- `CLAUDE.md` corregido: son 15 roles (se añade `administrador_accesos`).

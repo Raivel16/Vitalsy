@@ -1,6 +1,6 @@
 # Módulo 7 — Vitalsy Life (app móvil)
 
-Cliente ciudadano en `movil`. Vitalsy Clinical no se modifica en este corte. Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
+Cliente ciudadano en `movil`. La integración con Vitalsy Clinical (backend Laravel y web) está definida en [contrato-clinical-life.md](contrato-clinical-life.md). Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
 
 ## Flujo
 
@@ -16,14 +16,14 @@ Cliente ciudadano en `movil`. Vitalsy Clinical no se modifica en este corte. Lif
 
 ## Contrato con Clinical
 
-Life emite el código de vinculación (RF-94). Clinical lo consume en admisión (RF-95); esa lectura no está en la app.
+Life emite el código de vinculación (RF-94). Clinical lo consume en admisión (RF-95); esa lectura no está en la app. El detalle de endpoints, errores y TTL está en [contrato-clinical-life.md](contrato-clinical-life.md).
 
 Clinical emite el QR de alta (RF-96). Life lo acepta así:
 
 - JSON con `medications` (`name`, `dose`, `schedule` `HH:mm`), `comfortSigns`, `homeCare` y `validUntil`, o
-- un código opaco que el servidor resuelve en `GET {EXPO_PUBLIC_API_URL}/api/life/discharge-plans/{code}`.
+- un código opaco que el servidor resuelve en `GET {EXPO_PUBLIC_API_URL}/api/v1/life/discharge-plans/{code}`.
 
-La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/life/sync` con `{ items: [{ id, kind, body, status }] }`. Esos endpoints todavía no existen en Laravel. La app no simula una respuesta correcta.
+La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/v1/life/sync` con `{ items: [{ id, kind, body, status }] }`. Estos endpoints se implementan en Laravel según el contrato (RF-89 a RF-98); la app migra del prefijo `/api/life/*` a `/api/v1/life/*`. Mientras no haya servidor, la app no simula una respuesta correcta.
 
 ## Salud
 
