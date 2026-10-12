@@ -9,6 +9,7 @@ use App\Models\LifeBiometricSample;
 use App\Models\LifeConsent;
 use App\Models\LifeLinkCode;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,7 +26,8 @@ class LifeLinking
     public function link(string $encounterId, string $code, User $by): array
     {
         return DB::transaction(function () use ($encounterId, $code, $by) {
-            if (! AdmissionEncounter::query()->where('encounter_id', $encounterId)->exists()) {
+            // Serializa vinculaciones concurrentes sobre el mismo ingreso.
+            if (! AdmissionEncounter::query()->where('encounter_id', $encounterId)->lockForUpdate()->exists()) {
                 abort(404, 'No se encontró el ingreso.');
             }
 
@@ -52,13 +54,17 @@ class LifeLinking
             $samples = LifeBiometricSample::query()->where('life_account_id', $link->life_account_id)->get();
             $metrics = $this->calculator->summarize($samples);
 
-            $import = LifeBaselineImport::query()->create([
-                'encounter_id' => $encounterId,
-                'life_account_id' => $link->life_account_id,
-                'baseline' => $metrics,
-                'imported_by' => $by->id,
-                'imported_at' => now(),
-            ]);
+            try {
+                $import = LifeBaselineImport::query()->create([
+                    'encounter_id' => $encounterId,
+                    'life_account_id' => $link->life_account_id,
+                    'baseline' => $metrics,
+                    'imported_by' => $by->id,
+                    'imported_at' => now(),
+                ]);
+            } catch (UniqueConstraintViolationException) {
+                throw new ClinicalRuleException('Este ingreso ya tiene una línea de base importada.', 'already_linked');
+            }
 
             $link->forceFill(['consumed_at' => now(), 'consumed_encounter_id' => $encounterId])->save();
 

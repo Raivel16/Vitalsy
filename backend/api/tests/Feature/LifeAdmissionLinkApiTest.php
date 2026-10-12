@@ -4,11 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
 use App\Models\LifeAccount;
+use App\Models\LifeBaselineImport;
 use App\Models\LifeBiometricSample;
 use App\Models\LifeConsent;
 use App\Models\LifeLinkCode;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class LifeAdmissionLinkApiTest extends TestCase
@@ -69,7 +72,7 @@ class LifeAdmissionLinkApiTest extends TestCase
 
     public function test_admission_imports_baseline_with_valid_code(): void
     {
-        [$account, $code] = $this->citizenWithCodeAndHistory();
+        [, $code] = $this->citizenWithCodeAndHistory();
         $this->encounter('ENC-LIFE-1');
         $this->asRole('admision');
 
@@ -97,7 +100,7 @@ class LifeAdmissionLinkApiTest extends TestCase
 
     public function test_consumed_or_unknown_code_is_rejected(): void
     {
-        [$account, $code] = $this->citizenWithCodeAndHistory();
+        [, $code] = $this->citizenWithCodeAndHistory();
         $this->encounter('ENC-LIFE-1');
         $this->encounter('ENC-LIFE-2');
         $this->asRole('admision');
@@ -112,7 +115,7 @@ class LifeAdmissionLinkApiTest extends TestCase
 
     public function test_expired_code_is_rejected_with_code_expired(): void
     {
-        [$account, $code] = $this->citizenWithCodeAndHistory();
+        [, $code] = $this->citizenWithCodeAndHistory();
         $this->encounter('ENC-LIFE-1');
         $this->asRole('admision');
         $this->travel(31)->minutes();
@@ -138,7 +141,7 @@ class LifeAdmissionLinkApiTest extends TestCase
 
     public function test_unknown_encounter_is_not_found_and_keeps_code_usable(): void
     {
-        [$account, $code] = $this->citizenWithCodeAndHistory();
+        [, $code] = $this->citizenWithCodeAndHistory();
         $this->asRole('admision');
 
         $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-NOPE', 'code' => $code])
@@ -164,9 +167,63 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->assertNull(LifeLinkCode::query()->where('code', 'VL-WXYZ-6789')->first()->consumed_at);
     }
 
-    public function test_roles_are_enforced(): void
+    public function test_citizen_token_cannot_use_hospital_routes(): void
     {
         [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        Sanctum::actingAs($account, ['life']);
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertForbidden();
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertForbidden();
+    }
+
+    public function test_baseline_is_readable_by_admission_and_clinical_roles(): void
+    {
+        $this->encounter('ENC-LIFE-1');
+        foreach (['admision', 'medico_residente', 'medico_tratante', 'enfermera_piso'] as $role) {
+            $this->asRole($role);
+            $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertOk();
+        }
+    }
+
+    public function test_import_records_acting_user(): void
+    {
+        [, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        $user = User::factory()->create(['role' => 'admision']);
+        $this->actingAs($user);
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+
+        $this->assertSame($user->id, LifeBaselineImport::query()->first()->imported_by);
+    }
+
+    public function test_unique_violation_maps_to_already_linked_without_consuming_code(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('admision');
+        // Simula la carrera: otro proceso inserta el import justo antes de nuestro INSERT.
+        LifeBaselineImport::creating(function () use ($account) {
+            DB::table('life_baseline_imports')->insert([
+                'encounter_id' => 'ENC-LIFE-1',
+                'life_account_id' => $account->id,
+                'baseline' => '[]',
+                'imported_at' => now(),
+            ]);
+        });
+
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+            ->assertStatus(422)->assertJsonPath('code', 'already_linked');
+        $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
+        // El INSERT simulado ocurre dentro de la misma transacción, que se revierte completa.
+        $this->assertDatabaseCount('life_baseline_imports', 0);
+    }
+
+    public function test_roles_are_enforced(): void
+    {
+        [, $code] = $this->citizenWithCodeAndHistory();
         $this->encounter('ENC-LIFE-1');
 
         $this->asRole('enfermera_piso');
