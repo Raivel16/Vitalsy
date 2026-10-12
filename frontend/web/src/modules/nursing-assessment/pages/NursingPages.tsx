@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconDeviceHeartMonitor, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -14,6 +14,9 @@ import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/news2";
 import { validateVitalSigns } from "../domain/vitalSigns";
 import { requiredText } from "../../../shared/validation/inputRules";
+import { LifeBaselineMetrics } from "../../admission/components/LifeBaselineMetrics";
+import type { LifeBaseline } from "../../admission/domain/lifeBaseline";
+import { formatDateTime } from "../../../shared/datetime/format";
 
 function draftKey(encounterId: string, step: string) {
   return `vitalsy-draft-${step}-${encounterId}`;
@@ -35,6 +38,25 @@ export function NursingAssessmentPage() {
   const [draftNotice, setDraftNotice] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [baseline, setBaseline] = useState<LifeBaseline | null>(null);
+  const encounterId = encounter?.encounterId;
+
+  useEffect(() => {
+    if (!encounterId) return;
+    let active = true;
+    api<{ baseline: LifeBaseline | null }>(
+      `/api/v1/hospital-admission/encounters/${encodeURIComponent(encounterId)}/life-baseline`,
+    )
+      .then((payload) => {
+        if (active) setBaseline(payload?.baseline ?? null);
+      })
+      .catch(() => {
+        if (active) setBaseline(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [encounterId]);
 
   if (!encounter) {
     return (
@@ -106,7 +128,14 @@ export function NursingAssessmentPage() {
         <IconDeviceHeartMonitor size={20} aria-hidden />
         <div>
           <strong>Línea de base Vitalsy Life</strong>
-          <p>Sin datos sincronizados desde la app domiciliaria para este ingreso.</p>
+          {baseline && baseline.metrics.length > 0 ? (
+            <>
+              <LifeBaselineMetrics metrics={baseline.metrics} />
+              {baseline.importedAt ? <p className="hint">Importada el {formatDateTime(baseline.importedAt)}</p> : null}
+            </>
+          ) : (
+            <p>Sin datos sincronizados desde la app domiciliaria para este ingreso.</p>
+          )}
         </div>
       </div>
       <form className="stack nursing-form" onSubmit={onSubmit} noValidate>

@@ -43,6 +43,7 @@ describe("valoración inicial de enfermería", () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse(200, { encounter: nursing }))
+      .mockResolvedValueOnce(jsonResponse(200, { baseline: null }))
       .mockResolvedValueOnce(jsonResponse(201, { assessment: { status: "registrada" } }))
       .mockResolvedValueOnce(jsonResponse(200, {
         encounter: { ...nursing, currentStep: "constantes", nextRole: "enfermera_piso", statusLabel: "Constantes por registrar" },

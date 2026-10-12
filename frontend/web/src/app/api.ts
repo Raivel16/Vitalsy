@@ -17,6 +17,18 @@ function fallbackFor(status: number): string {
   return "No se pudo completar la operación. Intente de nuevo.";
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -40,10 +52,15 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   const data = (await response.json().catch(() => ({}))) as {
     message?: string;
+    code?: string;
     errors?: Record<string, string[] | string>;
   };
   if (!response.ok) {
-    throw new Error(apiErrorMessage(data, fallbackFor(response.status)));
+    throw new ApiError(
+      apiErrorMessage(data, fallbackFor(response.status)),
+      response.status,
+      typeof data.code === "string" ? data.code : undefined,
+    );
   }
   return data as T;
 }
