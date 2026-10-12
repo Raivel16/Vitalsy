@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveAccount;
+use App\Http\Middleware\EnsureLifeAccount;
 use App\Http\Middleware\EnsurePasswordRotated;
 use App\Http\Middleware\EnsureRequestOrigin;
 use App\Http\Middleware\EnsureUserRole;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserRole::class,
             'active' => EnsureActiveAccount::class,
             'password.rotated' => EnsurePasswordRotated::class,
+            'life' => EnsureLifeAccount::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

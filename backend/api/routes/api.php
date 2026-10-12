@@ -11,6 +11,11 @@ use App\Http\Controllers\Api\EmarCareController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
+use App\Http\Controllers\Api\Life\LifeAuthController;
+use App\Http\Controllers\Api\Life\LifeConsentController;
+use App\Http\Controllers\Api\Life\LifeDischargePlanController;
+use App\Http\Controllers\Api\Life\LifeLinkCodeController;
+use App\Http\Controllers\Api\Life\LifeSyncController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\MonitoringControlsController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
@@ -21,6 +26,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+    // Vitalsy Life: cuentas ciudadanas (RF-89); el middleware `life` excluye al personal clínico.
+    Route::prefix('life')->group(function () {
+        Route::post('auth/register', [LifeAuthController::class, 'register'])->middleware('throttle:10,1');
+        Route::post('auth/login', [LifeAuthController::class, 'login'])->middleware('throttle:10,1');
+
+        Route::middleware(['auth:sanctum', 'life'])->group(function () {
+            Route::post('sync', [LifeSyncController::class, 'store']);
+            Route::put('consent', [LifeConsentController::class, 'update']);
+            Route::post('link-codes', [LifeLinkCodeController::class, 'store']);
+            Route::get('discharge-plans/{code}', [LifeDischargePlanController::class, 'show']);
+        });
+    });
 
     // Rutas permitidas aun con contraseña temporal (RF-102).
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
