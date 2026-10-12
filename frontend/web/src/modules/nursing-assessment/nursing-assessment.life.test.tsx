@@ -51,12 +51,12 @@ describe("valoración con línea de base de Vitalsy Life (RF-18)", () => {
     expect(screen.getByText("58–92 lpm")).toBeInTheDocument();
     expect(screen.getByText("SpO₂")).toBeInTheDocument();
     expect(screen.getByText("95–99 %")).toBeInTheDocument();
-    expect(screen.queryByText(/sin datos sincronizados/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/aún no hay línea de base importada/i)).not.toBeInTheDocument();
   });
 
   it("mantiene el texto de respaldo cuando no hay línea de base", async () => {
     stubFetch(null);
     renderApp("/enfermeria/valoracion?ingreso=ENC-0001");
-    expect(await screen.findByText(/sin datos sincronizados desde la app domiciliaria/i)).toBeInTheDocument();
+    expect(await screen.findByText("Aún no hay línea de base importada de Vitalsy Life.")).toBeInTheDocument();
   });
 });

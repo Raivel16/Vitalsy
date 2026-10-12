@@ -135,7 +135,7 @@ export function NursingAssessmentPage() {
               {baseline.importedAt ? <p className="hint">Importada el {formatDateTime(baseline.importedAt)}</p> : null}
             </>
           ) : (
-            <p>Sin datos sincronizados desde la app domiciliaria para este ingreso.</p>
+            <p>Aún no hay línea de base importada de Vitalsy Life.</p>
           )}
         </div>
       </div>

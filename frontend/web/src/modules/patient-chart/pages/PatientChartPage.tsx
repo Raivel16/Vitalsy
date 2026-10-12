@@ -241,7 +241,9 @@ export function PatientChartPage() {
                     <p className="hint">Importada el {formatDateTime(data.lifeBaseline.importedAt)}</p>
                   ) : null}
                 </div>
-              ) : null}
+              ) : (
+                <p className="hint">Aún no hay línea de base importada de Vitalsy Life.</p>
+              )}
               {admission?.assessment ? (
                 <dl className="facts">
                   <div><dt>Motivo / valoración</dt><dd>{admission.assessment.chiefComplaint ?? "—"}</dd></div>

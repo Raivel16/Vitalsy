@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { IconHeartbeat, IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
+import { IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
 import { api, ApiError } from "../../../app/api";
 import { printClinicalDocument } from "../../../shared/print/printDocument";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
@@ -10,6 +10,7 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { LifeWordmark } from "../../../shared/ui/LifeWordmark";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
@@ -366,11 +367,8 @@ export function ConsentPage() {
         <section className="life-panel" aria-labelledby="vitalsy-life-title">
           <header className="life-panel-head">
             <div>
-              <p className="life-panel-icon" aria-hidden><IconHeartbeat size={20} /></p>
-              <div>
-                <h3 id="vitalsy-life-title">Vitalsy Life</h3>
-                <p>Vincular registros biométricos del paciente</p>
-              </div>
+              <h3 id="vitalsy-life-title"><LifeWordmark /></h3>
+              <p>Vincular registros biométricos del paciente</p>
             </div>
             <span className="sheet-badge">Ecosistema conectado</span>
           </header>
