@@ -33,7 +33,7 @@
 
 ## Fase 0 — Contrato y documentación (sin código funcional)
 
-### Tarea 0: Contrato Clinical ↔ Life
+### Task 0: Contrato Clinical ↔ Life
 
 **Archivos**
 - Crear: `docs/architecture/contrato-clinical-life.md`
@@ -68,7 +68,7 @@ git commit -m "docs(life): RF-94 contrato Clinical-Life y roles reales"
 
 Rama: `feature/RF-89-backend-vitalsy-life`
 
-### Tarea 1: Cuentas ciudadanas y autenticación
+### Task 1: Cuentas ciudadanas y autenticación
 
 **Archivos**
 - Crear: `backend/api/database/migrations/2026_10_12_100000_create_life_tables.php`
@@ -234,7 +234,7 @@ git add backend/api
 git commit -m "feat(life): RF-89 cuentas ciudadanas y autenticacion con Sanctum"
 ```
 
-### Tarea 2: Ingesta idempotente y consentimiento (RF-89, 92, 93)
+### Task 2: Ingesta idempotente y consentimiento (RF-89, 92, 93)
 
 **Archivos**
 - Crear: `Api/Life/LifeSyncController.php`, `Api/Life/LifeConsentController.php`, `app/Services/Life/LifeSync.php`, modelos `LifeBiometricSample`, `LifeConsent`
@@ -288,7 +288,7 @@ public function test_revoking_consent_closes_sharing(): void
 - [ ] **Paso 3:** implementar. Reglas de `LifeSync`: tipos válidos = `BIOMETRIC_KINDS` de `movil/src/modules/health-sync/domain/types.ts` (heart_rate, resting_heart_rate, hrv, spo2, sleep, steps, skin_temperature, body_temperature); rango de `spo2` 50–100, pulso 20–250 (misma regla que `validateManual`); `firstOrCreate` por `(life_account_id, client_id)`; `kind: consent` y `kind: plan` se aceptan y se registran sin efecto clínico (el servidor es la fuente para consentimiento vía `PUT /consent`).
 - [ ] **Paso 4:** PASS + commit `feat(life): RF-89 ingesta idempotente y consentimiento revocable`.
 
-### Tarea 3: Línea de base en servidor (RF-90) y código de vinculación (RF-94)
+### Task 3: Línea de base en servidor (RF-90) y código de vinculación (RF-94)
 
 **Archivos**
 - Crear: `app/Services/Life/BaselineCalculator.php`, `Api/Life/LifeLinkCodeController.php`
@@ -332,7 +332,7 @@ public function test_link_code_has_expected_format_and_expiry(): void
 
 - [ ] **Paso 2:** FAIL → **Paso 3:** implementar (código con `Str::upper(Str::random(8))`, TTL 30 min, un código activo por cuenta: emitir uno nuevo invalida los anteriores no consumidos) → **Paso 4:** PASS → commit `feat(life): RF-90 linea de base y RF-94 codigo de vinculacion en servidor`.
 
-### Tarea 4: Nudges del sistema (RF-91)
+### Task 4: Nudges del sistema (RF-91)
 
 **Archivos:** `app/Services/Life/NudgeEngine.php`, `Api/Life/LifeNoticesController.php` (`GET /api/v1/life/notices`), test `LifeNoticesApiTest.php`.
 
@@ -345,7 +345,7 @@ public function test_link_code_has_expected_format_and_expiry(): void
 
 Rama: `feature/RF-95-admision-vincula-life`
 
-### Tarea 5: Backend — importar línea de base
+### Task 5: Backend — importar línea de base
 
 **Archivos**
 - Modificar: `HospitalAdmissionController.php` (nuevos `linkLife`, `showLifeBaseline`), `routes/api.php`, `AdmissionBoard.php` (`storeConsent` guarda `lifeUser`), `PatientClinicalChart.php` (incluir `lifeBaseline`)
@@ -395,7 +395,7 @@ public function test_revoked_sharing_blocks_import(): void { /* revocar y espera
 - [ ] **Paso 5:** `storeConsent` acepta `lifeUser` (bool) y lo guarda en `clinical_payload['consent']['lifeUser']`; test que lo verifica en `AdmissionCensusApiTest`.
 - [ ] **Paso 6:** commit `feat(admision): RF-95 importa linea de base de Vitalsy Life con codigo de vinculacion`.
 
-### Tarea 6: Frontend — consentimiento y valoración con datos reales
+### Task 6: Frontend — consentimiento y valoración con datos reales
 
 **Archivos**
 - Modificar: `frontend/web/src/modules/admission/pages/IdentityPages.tsx` (líneas ~296–346), `frontend/web/src/modules/nursing-assessment/pages/NursingPages.tsx` (~106–110), `frontend/web/src/modules/patient-chart/**` (pestaña Admisión)
@@ -412,7 +412,7 @@ public function test_revoked_sharing_blocks_import(): void { /* revocar y espera
 
 Rama: `feature/RF-96-alta-qr-life`
 
-### Tarea 7: Backend — plan de seguimiento y QR patrocinado
+### Task 7: Backend — plan de seguimiento y QR patrocinado
 
 **Archivos**
 - Crear: `app/Services/Life/DischargeLifePlan.php`, `Api/Life/LifeDischargePlanController.php`, modelo `LifeDischargePlan`
@@ -468,7 +468,7 @@ public function test_exit_transfers_custody_and_activates_plan(): void
 - [ ] **Paso 4:** nuevo listener `ActivateLifePlanOnExit` (RF-98) escuchando `PatientExited`: `status = 'activo'`, `custody_transferred_at = now()`. Registrar junto a `DispatchCleaningOnPatientExit` en `AppServiceProvider`.
 - [ ] **Paso 5:** PASS + `./vendor/bin/pint --test`. Commit `feat(alta): RF-96 plan y codigo de invitacion estructurados para Vitalsy Life`.
 
-### Tarea 8: Frontend — ficha de egreso con QR real
+### Task 8: Frontend — ficha de egreso con QR real
 
 **Archivos:** `frontend/web/src/modules/discharge/pages/DischargeCasePage.tsx` (`LifeQr` en ~329, selector ~288–326), `discharge/hooks` o `api` del módulo, test `discharge-life-qr.test.tsx`.
 
@@ -482,7 +482,7 @@ public function test_exit_transfers_custody_and_activates_plan(): void
 
 Rama: `feature/RF-92-movil-api-real`
 
-### Tarea 9: Cliente API autenticado
+### Task 9: Cliente API autenticado
 
 **Archivos**
 - Modificar: `movil/src/shared/api/lifeClient.ts`, `lifeClient.test.ts`, `movil/src/modules/life/LifeProvider.tsx`
@@ -506,7 +506,7 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
 - [ ] **Paso 2–4:** implementar; sustituir `postLifeBatch`/`fetchDischargeBody` (que usan `/api/life/...` sin token) por el cliente; **el item solo pasa a `synced` si su `id` está en `accepted`** (hoy se marca todo el lote con un `response.ok`).
 - [ ] **Paso 5:** `npm test` en `movil/` → PASS. Commit `feat(movil): RF-89 cliente API autenticado con v1/life`.
 
-### Tarea 10: Login y registro reales
+### Task 10: Login y registro reales
 
 **Archivos:** `movil/src/modules/auth/domain/auth.ts` (+ test), `AuthScreen.tsx`, `LifeProvider.tsx`.
 
@@ -514,7 +514,7 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
 - [ ] **Paso 2–4:** mantener `validateRegister`/`validateLogin` como validación previa; eliminar el mensaje `PASSWORD_RECOVERY_MESSAGE` cuando hay servidor (RF-99 equivalente móvil). Cerrar sesión borra token y cola sensible.
 - [ ] **Paso 5:** commit `feat(movil): RF-99 inicio de sesion de ciudadano contra el servidor`.
 
-### Tarea 11: Privacidad, código y plan desde servidor
+### Task 11: Privacidad, código y plan desde servidor
 
 **Archivos:** `consent.ts`, `PrivacyScreens.tsx`, `plan.ts`, `PlanScreens.tsx`, `lifeApp.ts`.
 
@@ -522,7 +522,7 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
 - [ ] **Paso 2–4:** implementar; revocar llama `setConsent(false)`; encolar `consent` solo como respaldo offline.
 - [ ] **Paso 5:** commit `feat(movil): RF-93 RF-94 RF-97 privacidad y plan post-alta desde el servidor`.
 
-### Tarea 12: Apple HealthKit (RNF-19) y ejecución en segundo plano (RF-89)
+### Task 12: Apple HealthKit (RNF-19) y ejecución en segundo plano (RF-89)
 
 **Archivos:** `movil/src/modules/health-sync/HealthKitSource.ts`, `HealthDataSource.ts` (fábrica `createHealthSource`), `app.json` (plugin + `NSHealthShareUsageDescription`), tests de mapeo `mapHealthKitRecords.test.ts`.
 
@@ -536,7 +536,7 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
 
 Rama: `chore/marca-vitalsy-life`
 
-### Tarea 13: Ícono, splash y wordmark de la app
+### Task 13: Ícono, splash y wordmark de la app
 
 **Archivos:** `movil/assets/icon.png`, `splash-icon.png`, `android-icon-{foreground,background,monochrome}.png`, `favicon.png`, `movil/src/shared/ui/Wordmark.tsx`, `movil/src/shared/theme/tokens.ts`, `movil/app.json`.
 
@@ -547,7 +547,7 @@ Rama: `chore/marca-vitalsy-life`
 - [ ] **Paso 3:** alinear `Wordmark.tsx` y `tokens.ts` con el kit; test de snapshot de `Wordmark` y verificación de contraste AA en `tokens.test.ts` (nuevo).
 - [ ] **Paso 4:** verificar que los assets generados coinciden con el wordmark en pantalla. Commit `fix(movil): marca e iconografia oficial de Vitalsy Life`.
 
-### Tarea 14: Marca web y pantallas de integración
+### Task 14: Marca web y pantallas de integración
 
 **Archivos:** `frontend/web/public/favicon.svg`, `frontend/web/src/shared/ui/Icons.tsx` (`SealIcon`), `clinical.css` (`.life-panel`, `.ops-life-card`).
 
@@ -560,7 +560,7 @@ Rama: `chore/marca-vitalsy-life`
 
 Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 
-### Tarea 15: Alertas por WebSocket (RNF-01, RNF-12, RF-53)
+### Task 15: Alertas por WebSocket (RNF-01, RNF-12, RF-53)
 
 **Archivos:** `backend/api/composer.json` (`laravel/reverb`), `config/reverb.php`, `app/Events/ClinicalAlertRaised.php` (`ShouldBroadcast`, canal privado `alerts.{userId}`), `routes/channels.php`, `AlertRecorder.php` (disparar evento), `frontend/web/src/modules/clinical-alerts/hooks/useAlertInbox.ts` (reemplazar `setInterval` por suscripción con *fallback* a polling), `docker-compose*.yml` (servicio `reverb`), nginx (`/app` upgrade).
 
@@ -568,7 +568,7 @@ Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 - [ ] **Paso 2: prueba que falla (frontend):** con un cliente Echo falso, `useAlertInbox` actualiza el contador sin esperar al temporizador y, tras desconexión, reintenta en ≤ 5 s y hace un refresh completo al reconectar.
 - [ ] **Paso 3–5:** implementar y medir con script `scripts/measure-alert-latency.php` (RNF-01 ≤ 2 s) registrando p95. Commit `feat(alertas): RNF-01 despacho por WebSocket con reconexion`.
 
-### Tarea 16: Cifrado en reposo e inmutabilidad (RNF-06, RNF-07)
+### Task 16: Cifrado en reposo e inmutabilidad (RNF-06, RNF-07)
 
 **Archivos:** modelos clínicos con texto sensible (`NursingEvolutionNote`, `MedicalEvolutionNote`, `PatientAllergy`, `EpicrisisDocument`, `SocialAssessment`, `Prescription*`, `LifeBiometricSample`), migraciones de columnas a `text`, `AlertEvent`, `AlertAcknowledgement`, `AlertEscalation`, `MedicationAdministration`.
 
@@ -576,7 +576,7 @@ Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 - [ ] **Paso 2–4:** casts `encrypted` / `encrypted:array`, `APP_KEY` rotación documentada, comando `php artisan vitalsy:encrypt-existing` idempotente para datos previos (con `--dry-run`). **Riesgo alto: probar en copia de BD antes de producción.**
 - [ ] **Paso 5:** commit `feat(seguridad): RNF-06 RNF-07 cifrado en reposo e inmutabilidad de trazabilidad`.
 
-### Tarea 17: TLS 1.3 y datos entre Clinical y Life (RNF-05, RNF-10)
+### Task 17: TLS 1.3 y datos entre Clinical y Life (RNF-05, RNF-10)
 
 **Archivos:** `docker/nginx/prod.conf` (o equivalente), `docker-compose.prod.yml`, `AppServiceProvider` (`URL::forceHttps` en producción).
 
@@ -584,7 +584,7 @@ Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 - [ ] **Paso 2:** `ssl_protocols TLSv1.3;`, HSTS, redirección 80→443; la app móvil rechaza `http://` fuera de `__DEV__`.
 - [ ] **Paso 3:** commit `chore(seguridad): RNF-05 solo TLS 1.3 en produccion`.
 
-### Tarea 18: Interoperabilidad real LIS/PACS (RNF-17)
+### Task 18: Interoperabilidad real LIS/PACS (RNF-17)
 
 **Archivos:** `app/Services/Interoperability/FhirLisClient.php`, `FhirPacsClient.php`, `config/interop.php`, binding por entorno en `AppServiceProvider`, tests con `Http::fake()`.
 
@@ -592,7 +592,7 @@ Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 - [ ] **Paso 2–4:** mantener los `Stub*` como valor por defecto en `local/testing`; cliente real activado por `INTEROP_DRIVER=fhir`. **Depende de que el cliente entregue endpoint y credenciales del HIS/LIS/PACS.**
 - [ ] **Paso 5:** commit `feat(interop): RNF-17 clientes FHIR para LIS y PACS`.
 
-### Tarea 19: Disponibilidad, respaldos y carga (RNF-02, 03, 04, 11, 13)
+### Task 19: Disponibilidad, respaldos y carga (RNF-02, 03, 04, 11, 13)
 
 **Archivos:** `scripts/backup-db.sh`, `docs/operacion/recuperacion-ante-desastres.md`, `scripts/load/k6-alertas.js`, `backend/api/tests/Feature/Nfr/Rnf02TimingTest.php`.
 
@@ -606,7 +606,7 @@ Cada tarea es una rama propia; ninguna depende de las fases 1–5 salvo la 17.
 
 ## Fase 7 — Cierre
 
-### Tarea 20: Documentación, grafo y pruebas de punta a punta
+### Task 20: Documentación, grafo y pruebas de punta a punta
 
 - [ ] **Paso 1:** prueba de extremo a extremo `LifeEndToEndTest` (backend): registro ciudadano → consentimiento → código → admisión importa → alta emite plan → salida activa custodia → ciudadano reclama el plan.
 - [ ] **Paso 2:** actualizar `modulo-1-admision.md`, `modulo-4-alta.md`, `modulo-7-vitalsy-life.md`, `modelo-datos.md`, colección Yaak para `life/*` y admisión/alta.
