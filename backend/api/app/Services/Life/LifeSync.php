@@ -18,6 +18,8 @@ class LifeSync
 
     private const MAX_SAMPLES_PER_ITEM = 500;
 
+    private const MAX_SAMPLES_PER_REQUEST = 2000;
+
     private const FUTURE_TOLERANCE_MINUTES = 5;
 
     private const ORIGINS = ['health_connect', 'health_kit', 'manual'];
@@ -49,6 +51,24 @@ class LifeSync
         $accepted = [];
         $rejected = [];
 
+        // Pasada previa: decodifica cada cuerpo una sola vez y aplica el tope agregado
+        // antes de almacenar nada (todo-o-nada a nivel de petición).
+        $decodedBodies = [];
+        $total = 0;
+        foreach ($items as $index => $item) {
+            if (($item['kind'] ?? null) !== 'biometrics') {
+                continue;
+            }
+            $decoded = $this->decodeBody($item['body'] ?? null);
+            if (is_array($decoded)) {
+                $total += count($decoded);
+                if ($total > self::MAX_SAMPLES_PER_REQUEST) {
+                    throw new LifeSyncLimitExceeded('El lote excede el máximo de muestras permitido por petición.');
+                }
+            }
+            $decodedBodies[$index] = $decoded;
+        }
+
         foreach ($items as $index => $item) {
             $id = $item['id'] ?? null;
             $kind = $item['kind'] ?? null;
@@ -72,7 +92,7 @@ class LifeSync
                 continue;
             }
 
-            $samples = $this->parseSamples($item['body'] ?? null);
+            $samples = $this->parseSamples($decodedBodies[$index]);
             if (is_string($samples)) {
                 $rejected[] = ['id' => $id, 'reason' => $samples];
 
@@ -87,11 +107,11 @@ class LifeSync
     }
 
     /**
-     * Devuelve las muestras normalizadas o un motivo de rechazo (todo-o-nada por ítem).
+     * Decodifica el cuerpo de un ítem; devuelve la lista cruda o un motivo de rechazo.
      *
-     * @return list<array<string, mixed>>|string
+     * @return list<mixed>|string
      */
-    private function parseSamples(mixed $body): array|string
+    private function decodeBody(mixed $body): array|string
     {
         if (is_string($body) && strlen($body) > self::MAX_BODY_CHARS) {
             return 'El cuerpo del ítem excede el tamaño permitido.';
@@ -102,6 +122,21 @@ class LifeSync
         }
         if (count($decoded) > self::MAX_SAMPLES_PER_ITEM) {
             return 'El ítem contiene demasiadas muestras.';
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Devuelve las muestras normalizadas o un motivo de rechazo (todo-o-nada por ítem).
+     *
+     * @param  list<mixed>|string  $decoded
+     * @return list<array<string, mixed>>|string
+     */
+    private function parseSamples(array|string $decoded): array|string
+    {
+        if (is_string($decoded)) {
+            return $decoded;
         }
 
         $samples = [];

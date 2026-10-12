@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\LifeAccount;
 use App\Models\LifeLinkCode;
+use App\Services\Life\LifeLinkCodeGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
@@ -75,5 +76,48 @@ class LifeLinkCodeApiTest extends TestCase
         $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])->assertOk();
 
         $this->assertFalse(LifeLinkCode::query()->where('code', $code)->first()->isUsable());
+    }
+
+    public function test_repeated_issues_leave_exactly_one_usable_code(): void
+    {
+        $account = $this->asCitizen();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true]);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->postJson('/api/v1/life/link-codes')->assertCreated();
+        }
+
+        $usable = LifeLinkCode::query()->where('life_account_id', $account->id)->get()
+            ->filter(fn ($c) => $c->isUsable());
+        $this->assertCount(1, $usable);
+        $this->assertDatabaseCount('life_link_codes', 3);
+    }
+
+    public function test_code_uses_unambiguous_alphabet(): void
+    {
+        $this->asCitizen();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true]);
+
+        for ($i = 0; $i < 20; $i++) {
+            $code = $this->postJson('/api/v1/life/link-codes')->assertCreated()->json('code');
+            $this->assertMatchesRegularExpression('/^VL-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/', $code);
+        }
+    }
+
+    public function test_exhausted_collisions_respond_503(): void
+    {
+        $this->asCitizen();
+        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true]);
+        $this->app->bind(LifeLinkCodeGenerator::class, fn () => new class extends LifeLinkCodeGenerator
+        {
+            public function generate(): string
+            {
+                return 'VL-AAAA-AAAA';
+            }
+        });
+
+        $this->postJson('/api/v1/life/link-codes')->assertCreated();
+        $this->postJson('/api/v1/life/link-codes')->assertStatus(503)->assertJsonPath('code', 'code_unavailable');
+        $this->assertDatabaseCount('life_link_codes', 1);
     }
 }

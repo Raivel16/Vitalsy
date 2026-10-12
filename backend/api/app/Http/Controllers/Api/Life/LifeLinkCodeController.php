@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\LifeAccount;
 use App\Models\LifeConsent;
 use App\Models\LifeLinkCode;
+use App\Services\Life\LifeLinkCodeGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class LifeLinkCodeController extends Controller
 {
     private const TTL_MINUTES = 30;
+
+    private const MAX_ATTEMPTS = 5;
 
     /** Emite un código de vinculación (RF-94); invalida los anteriores sin consumir. */
     public function store(Request $request): JsonResponse
@@ -31,17 +34,34 @@ class LifeLinkCodeController extends Controller
             ], 409);
         }
 
-        LifeLinkCode::query()
-            ->where('life_account_id', $account->id)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', now())
-            ->update(['expires_at' => now()]);
+        $link = DB::transaction(function () use ($account): ?LifeLinkCode {
+            // Serializa emisiones concurrentes de la misma cuenta.
+            LifeConsent::query()->where('life_account_id', $account->id)->lockForUpdate()->first();
 
-        $link = LifeLinkCode::query()->create([
-            'life_account_id' => $account->id,
-            'code' => $this->uniqueCode(),
-            'expires_at' => now()->addMinutes(self::TTL_MINUTES),
-        ]);
+            LifeLinkCode::query()
+                ->where('life_account_id', $account->id)
+                ->whereNull('consumed_at')
+                ->where('expires_at', '>', now())
+                ->update(['expires_at' => now()]);
+
+            $code = $this->uniqueCode();
+            if ($code === null) {
+                return null;
+            }
+
+            return LifeLinkCode::query()->create([
+                'life_account_id' => $account->id,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(self::TTL_MINUTES),
+            ]);
+        });
+
+        if ($link === null) {
+            return response()->json([
+                'code' => 'code_unavailable',
+                'message' => 'No se pudo generar un código de vinculación. Intente nuevamente en unos instantes.',
+            ], 503);
+        }
 
         return response()->json([
             'code' => $link->code,
@@ -49,13 +69,16 @@ class LifeLinkCodeController extends Controller
         ], 201);
     }
 
-    private function uniqueCode(): string
+    private function uniqueCode(): ?string
     {
-        do {
-            $raw = Str::upper(Str::random(8));
-            $code = 'VL-'.substr($raw, 0, 4).'-'.substr($raw, 4, 4);
-        } while (LifeLinkCode::query()->where('code', $code)->exists());
+        $generator = app(LifeLinkCodeGenerator::class);
+        for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {
+            $code = $generator->generate();
+            if (! LifeLinkCode::query()->where('code', $code)->exists()) {
+                return $code;
+            }
+        }
 
-        return $code;
+        return null;
     }
 }

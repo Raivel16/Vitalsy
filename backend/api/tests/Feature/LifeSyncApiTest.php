@@ -249,4 +249,48 @@ class LifeSyncApiTest extends TestCase
 
         $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true])->assertForbidden();
     }
+
+    public function test_request_over_total_body_cap_is_rejected_whole(): void
+    {
+        $this->asCitizen();
+        $items = [$this->bioItem('ok', [$this->sample('s1', 'heart_rate', 72, 'bpm')])];
+        for ($i = 0; $i < 6; $i++) {
+            $items[] = ['id' => "pad{$i}", 'kind' => 'plan', 'status' => 'pending', 'body' => str_repeat('a', 190000)];
+        }
+
+        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertStatus(422);
+        $this->assertDatabaseCount('life_biometric_samples', 0);
+    }
+
+    public function test_request_over_total_sample_cap_is_rejected_whole(): void
+    {
+        $this->asCitizen();
+        $items = [];
+        for ($i = 0; $i < 5; $i++) {
+            $samples = [];
+            for ($j = 0; $j < 500; $j++) {
+                $samples[] = $this->sample("s{$i}-{$j}", 'heart_rate', 72, 'bpm');
+            }
+            $items[] = $this->bioItem("item{$i}", $samples);
+        }
+
+        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertStatus(422);
+        $this->assertDatabaseCount('life_biometric_samples', 0);
+    }
+
+    public function test_request_within_total_caps_still_works(): void
+    {
+        $this->asCitizen();
+        $items = [];
+        for ($i = 0; $i < 4; $i++) {
+            $samples = [];
+            for ($j = 0; $j < 500; $j++) {
+                $samples[] = $this->sample("s{$i}-{$j}", 'heart_rate', 72, 'bpm');
+            }
+            $items[] = $this->bioItem("item{$i}", $samples);
+        }
+
+        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertOk()->assertJsonCount(4, 'accepted');
+        $this->assertDatabaseCount('life_biometric_samples', 2000);
+    }
 }
