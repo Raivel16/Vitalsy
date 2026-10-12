@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Life;
 use App\Http\Controllers\Controller;
 use App\Models\LifeAccount;
 use App\Models\LifeConsent;
+use App\Models\LifeLinkCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,6 +32,15 @@ class LifeConsentController extends Controller
             ['life_account_id' => $account->id],
             ['sharing_enabled' => $enabled, 'revoked_at' => $revokedAt],
         );
+
+        if (! $enabled) {
+            // Revocar invalida los códigos pendientes (contrato RF-94).
+            LifeLinkCode::query()
+                ->where('life_account_id', $account->id)
+                ->whereNull('consumed_at')
+                ->where('expires_at', '>', now())
+                ->update(['expires_at' => now()]);
+        }
 
         return response()->json([
             'sharingEnabled' => $consent->sharing_enabled,
