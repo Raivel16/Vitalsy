@@ -62,15 +62,25 @@ export function ActivatePlanScreen() {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
   async function submit(raw: string) {
-    const result = await activateFromCode(raw);
-    if (!result.ok) {
-      setMessage(result.message);
+    if (busy) {
       return;
     }
-    router.replace('/plan');
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await activateFromCode(raw);
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
+      router.replace('/plan');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -108,7 +118,7 @@ export function ActivatePlanScreen() {
         palette={aire}
       />
       <Field label="Código de alta" onChangeText={setCode} palette={aire} value={code} />
-      <Button label="Activar plan" onPress={() => void submit(code)} palette={aire} tone="soft" />
+      <Button disabled={busy} label="Activar plan" loading={busy} onPress={() => void submit(code)} palette={aire} tone="soft" />
     </Screen>
   );
 }

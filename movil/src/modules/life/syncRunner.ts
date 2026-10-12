@@ -1,5 +1,6 @@
 import type { LifeClient } from '../../shared/api/lifeClient';
 import { chunkForSend } from '../health-sync/domain/syncQueue';
+import { retryPendingConsent } from './consentSync';
 import type { LifeApp } from './lifeApp';
 
 type Deps = {
@@ -16,15 +17,11 @@ export function needsResync(onlineUsed: boolean, onlineNow: boolean): boolean {
   return !onlineUsed && onlineNow;
 }
 
-/**
- * Envía la cola pendiente por lotes. Nunca lanza: un lote fallido (red, 401, 422,
- * respuesta inválida o excepción) deja sus items pendientes y corta el envío; los
- * lotes ya aplicados se conservan.
- */
-export async function runSync({ life, client, online, hasSession, onUnauthorized, now = () => new Date().toISOString() }: Deps): Promise<void> {
+/** Envía la cola por lotes. Devuelve true si el servidor respondió 401 (la sesión se limpió). */
+async function flushQueue({ life, client, online, hasSession, onUnauthorized, now }: Required<Deps>): Promise<boolean> {
   const decision = life.flushDecision(online, Boolean(client), hasSession);
   if (!client || decision.send.length === 0) {
-    return;
+    return false;
   }
   for (const chunk of chunkForSend(decision.send)) {
     try {
@@ -32,12 +29,53 @@ export async function runSync({ life, client, online, hasSession, onUnauthorized
       if (!result.ok) {
         if (result.status === 401) {
           await onUnauthorized();
+          return true;
         }
-        return;
+        return false;
       }
       life.applySyncResult(result.data.accepted, result.data.rejected, now());
     } catch {
-      return;
+      return false;
     }
+  }
+  return false;
+}
+
+async function pullNotices({ life, client, onUnauthorized }: Required<Deps>): Promise<void> {
+  if (!client || typeof client.getNotices !== 'function') {
+    return;
+  }
+  try {
+    const result = await client.getNotices();
+    if (result.ok) {
+      life.mergeServerNotices(result.data.notices);
+    } else if (result.status === 401) {
+      await onUnauthorized();
+    }
+  } catch {
+    // Los avisos locales siguen funcionando sin servidor.
+  }
+}
+
+/**
+ * Sincroniza con el servidor: reintenta una revocación pendiente, envía la cola pendiente
+ * por lotes y trae los avisos. Nunca lanza: un paso fallido (red, 401, 422, respuesta
+ * inválida o excepción) deja sus datos pendientes; lo ya aplicado se conserva.
+ */
+export async function runSync({ life, client, online, hasSession, onUnauthorized, now = () => new Date().toISOString() }: Deps): Promise<void> {
+  if (!client || !online || !hasSession) {
+    // Sin servidor/red/sesión nada se envía; la cola y la revocación pendiente se conservan.
+    return;
+  }
+  const deps = { life, client, online, hasSession, onUnauthorized, now };
+  // La revocación va primero: es la que protege la privacidad de la persona.
+  try {
+    await retryPendingConsent({ life, client, online, hasSession, onUnauthorized });
+  } catch {
+    // Se reintentará en la siguiente sincronización.
+  }
+  const unauthorized = await flushQueue(deps);
+  if (!unauthorized) {
+    await pullNotices(deps);
   }
 }

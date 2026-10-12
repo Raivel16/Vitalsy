@@ -1,3 +1,4 @@
+import type { ServerNotice } from '../../shared/api/lifeClient';
 import { authenticate, registerAccount, type Account, type Digest, type FieldErrors } from '../auth/domain/auth';
 import { buildBaselines } from '../health-sync/domain/baseline';
 import { applySyncResult, decideFlush, enqueueSync, pendingCount, type SyncItem } from '../health-sync/domain/syncQueue';
@@ -30,6 +31,8 @@ export type LifeSnapshot = {
   lastLocalReadAt: string | null;
   lastServerSyncAt: string | null;
   dismissedNoticeIds: string[];
+  /** Revocación hecha en el teléfono que el servidor aún no confirmó. Se reintenta hasta confirmar. */
+  consentRevokePending: boolean;
 };
 
 function isServerAccount(account: Account): boolean {
@@ -49,6 +52,7 @@ export function emptySnapshot(): LifeSnapshot {
     lastLocalReadAt: null,
     lastServerSyncAt: null,
     dismissedNoticeIds: [],
+    consentRevokePending: false,
   };
 }
 
@@ -60,12 +64,19 @@ type Clock = {
 
 export class LifeApp {
   private snapshot: LifeSnapshot;
+  private consentRevision = 0;
 
   constructor(
     snapshot: LifeSnapshot,
     private clock: Clock,
   ) {
-    this.snapshot = { ...emptySnapshot(), ...snapshot, dismissedNoticeIds: snapshot.dismissedNoticeIds ?? [] };
+    this.snapshot = {
+      ...emptySnapshot(),
+      ...snapshot,
+      consent: { ...CLOSED_CONSENT, ...snapshot.consent },
+      consentRevokePending: snapshot.consentRevokePending ?? false,
+      dismissedNoticeIds: snapshot.dismissedNoticeIds ?? [],
+    };
   }
 
   get state(): LifeSnapshot {
@@ -174,25 +185,92 @@ export class LifeApp {
     return view;
   }
 
+  /** Cambia el consentimiento solo en el teléfono (modo sin servidor). El servidor se avisa en consentSync. */
   setSharing(enabled: boolean): void {
     const consent = setSharing(this.snapshot.consent, enabled, this.clock.now());
+    if (!enabled) {
+      this.consentRevision += 1;
+    }
     this.snapshot = { ...this.snapshot, consent };
-    this.enqueueConsent();
   }
 
+  /** Contador que cambia con cada revocación: permite descartar respuestas tardías del servidor. */
+  get consentVersion(): number {
+    return this.consentRevision;
+  }
+
+  /** El servidor confirmó que la compartición está activa. */
+  confirmSharing(): void {
+    this.snapshot = {
+      ...this.snapshot,
+      consent: setSharing(this.snapshot.consent, true, this.clock.now()),
+      consentRevokePending: false,
+    };
+  }
+
+  /** El servidor confirmó la revocación: ya no hay nada pendiente. */
+  confirmRevoke(): void {
+    this.snapshot = { ...this.snapshot, consentRevokePending: false };
+  }
+
+  /** Solo modo local (sin servidor configurado): no hay código oficial que emitir en la app. */
   issueLinkingCode(): { ok: true; code: string } | { ok: false; message: string } {
     const result = issueLinkingCode(this.snapshot.consent, this.clock.now(), this.clock.random());
     this.snapshot = { ...this.snapshot, consent: result.state };
     if (!result.code) {
       return { ok: false, message: result.message ?? 'No se pudo generar el código.' };
     }
-    this.enqueueConsent();
     return { ok: true, code: result.code };
   }
 
-  revokeSharing(): void {
-    this.snapshot = { ...this.snapshot, consent: revokeAll(this.snapshot.consent, this.clock.now()) };
-    this.enqueueConsent();
+  /** Guarda el código emitido por el servidor, solo si la compartición sigue confirmada. */
+  setServerLinkCode(code: string, expiresAt: string): boolean {
+    if (!this.snapshot.consent.sharingEnabled || this.snapshot.consentRevokePending) {
+      return false;
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      consent: { ...this.snapshot.consent, linkingCode: code, linkingIssuedAt: this.clock.now().toISOString(), linkingExpiresAt: expiresAt },
+    };
+    return true;
+  }
+
+  /**
+   * Cierra todo en el teléfono de inmediato. Con `awaitServer` queda un pendiente
+   * durable hasta que el servidor confirme la revocación.
+   */
+  revokeSharing(awaitServer = false): void {
+    this.consentRevision += 1;
+    this.snapshot = {
+      ...this.snapshot,
+      consent: revokeAll(this.snapshot.consent, this.clock.now()),
+      consentRevokePending: awaitServer,
+    };
+  }
+
+  /** Une los avisos del servidor con los locales sin duplicar por id. Devuelve cuántos agregó. */
+  mergeServerNotices(incoming: ServerNotice[]): number {
+    const known = new Set([...this.snapshot.notices.map((notice) => notice.id), ...this.snapshot.dismissedNoticeIds]);
+    const fresh: Notice[] = [];
+    for (const item of incoming) {
+      if (known.has(item.id)) {
+        continue;
+      }
+      known.add(item.id);
+      fresh.push({
+        id: item.id,
+        kind: item.kind === 'habito' ? 'habit' : 'stability',
+        title: item.title,
+        body: item.body,
+        createdAt: item.createdAt,
+        readAt: null,
+        snoozedUntil: null,
+      });
+    }
+    if (fresh.length > 0) {
+      this.snapshot = { ...this.snapshot, notices: [...fresh, ...this.snapshot.notices] };
+    }
+    return fresh.length;
   }
 
   grantInstitution(name: string): void {
@@ -319,16 +397,5 @@ export class LifeApp {
     }
     const notice: Notice = { ...draft, readAt: null, snoozedUntil: null };
     this.snapshot = { ...this.snapshot, notices: [notice, ...this.snapshot.notices] };
-  }
-
-  private enqueueConsent(): void {
-    this.snapshot = {
-      ...this.snapshot,
-      queue: enqueueSync(this.snapshot.queue, {
-        id: `consent-${this.clock.now().getTime()}`,
-        kind: 'consent',
-        body: JSON.stringify(this.snapshot.consent),
-      }),
-    };
   }
 }

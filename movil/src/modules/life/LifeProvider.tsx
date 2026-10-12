@@ -6,7 +6,9 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
 import { singleFlight } from '../../shared/async/singleFlight';
+import { AppState } from 'react-native';
 import { activatePlan } from './activatePlan';
+import { changeSharing, issueServerLinkCode, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
 import { needsResync, runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
 import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
@@ -32,6 +34,10 @@ type LifeContextValue = {
   refresh: () => Promise<void>;
   syncHealth: () => Promise<string | null>;
   activateFromCode: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  /** Activa/revoca la compartición; la revocación llega al servidor o queda pendiente de forma honesta. */
+  changeSharing: (enabled: boolean) => Promise<SharingOutcome>;
+  /** Pide el código de vinculación al servidor (nunca lo genera localmente). */
+  issueLinkCode: () => Promise<LinkCodeOutcome>;
   /** Cliente autenticado de /api/v1/life (null si la API no está configurada o no es https). */
   client: LifeClient | null;
   tokenStore: TokenStore;
@@ -152,6 +158,16 @@ export function LifeProvider({
     life.addSamples(read.samples);
     setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
     try {
+      await serverSyncRef.current();
+    } finally {
+      await refresh();
+    }
+    return read.message;
+  }, [life, refresh]);
+
+  // Envío de cola, reintento de revocación y avisos del servidor. Una sola ejecución a la vez.
+  const serverSyncOnce = useCallback(async () => {
+    try {
       const hasSession = Boolean(await tokenStore.get().catch(() => null));
       const usedOnline = onlineRef.current;
       await runSync({ life, client: clientRef.current, online: usedOnline, hasSession, onUnauthorized: () => tokenStore.clear() });
@@ -161,8 +177,16 @@ export function LifeProvider({
     } finally {
       await refresh();
     }
-    return read.message;
   }, [life, refresh]);
+  const serverSyncImplRef = useRef(serverSyncOnce);
+  useLayoutEffect(() => {
+    serverSyncImplRef.current = serverSyncOnce;
+  }, [serverSyncOnce]);
+  const serverSync = useMemo(() => singleFlight(() => serverSyncImplRef.current()), []);
+  const serverSyncRef = useRef(serverSync);
+  useLayoutEffect(() => {
+    serverSyncRef.current = serverSync;
+  }, [serverSync]);
 
   // Dos disparos concurrentes (efecto de red + botón) comparten una sola ejecución.
   const syncImplRef = useRef(syncHealthOnce);
@@ -178,9 +202,44 @@ export function LifeProvider({
     }
     if (!wasOnline.current && online) {
       void syncHealth();
+      void serverSync();
     }
     wasOnline.current = online;
-  }, [online, ready, syncHealth]);
+  }, [online, ready, syncHealth, serverSync]);
+
+  // Al abrir la app y al volver a primer plano: revocación pendiente, cola y avisos del servidor.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    void serverSync();
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        void serverSync();
+      }
+    });
+    return () => subscription.remove();
+  }, [ready, serverSync]);
+
+  const consentDeps = useCallback(async () => {
+    const session = Boolean(await tokenStore.get().catch(() => null));
+    return { life, client, hasSession: session, online: onlineRef.current, onUnauthorized: () => tokenStore.clear() };
+  }, [client, life]);
+
+  const changeSharingNow = useCallback(
+    async (enabled: boolean) => {
+      const result = await changeSharing(enabled, await consentDeps());
+      await refresh();
+      return result;
+    },
+    [consentDeps, refresh],
+  );
+
+  const issueLinkCodeNow = useCallback(async () => {
+    const result = await issueServerLinkCode(await consentDeps());
+    await refresh();
+    return result;
+  }, [consentDeps, refresh]);
 
   const activateFromCode = useCallback(
     async (raw: string) => {
@@ -193,8 +252,21 @@ export function LifeProvider({
   );
 
   const value = useMemo(
-    () => ({ ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, client, tokenStore }),
-    [ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, client, tick],
+    () => ({
+      ready,
+      life,
+      online,
+      hasSession,
+      health,
+      refresh,
+      syncHealth,
+      activateFromCode,
+      changeSharing: changeSharingNow,
+      issueLinkCode: issueLinkCodeNow,
+      client,
+      tokenStore,
+    }),
+    [ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, changeSharingNow, issueLinkCodeNow, client, tick],
   );
 
   return <LifeContext.Provider value={value}>{children}</LifeContext.Provider>;

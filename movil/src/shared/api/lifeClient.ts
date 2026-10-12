@@ -5,7 +5,48 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; code?: string; message: string; errors?: Record<string, string> };
 
-export type LifeAccount = { id: number; name: string; email: string };
+export type ServerNotice = {
+  id: string;
+  kind: 'preventivo' | 'habito';
+  title: string;
+  body: string;
+  metric: string | null;
+  createdAt: string;
+};
+
+function normaliseNotices(data: unknown): { notices: ServerNotice[] } | null {
+  const record = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+  if (!record || !Array.isArray(record.notices)) {
+    return null;
+  }
+  const notices: ServerNotice[] = [];
+  for (const entry of record.notices) {
+    if (!entry || typeof entry !== 'object') {
+      continue;
+    }
+    const item = entry as Record<string, unknown>;
+    if (
+      typeof item.id !== 'string' ||
+      (item.kind !== 'preventivo' && item.kind !== 'habito') ||
+      typeof item.title !== 'string' ||
+      typeof item.body !== 'string' ||
+      typeof item.createdAt !== 'string'
+    ) {
+      continue;
+    }
+    notices.push({
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      body: item.body,
+      metric: typeof item.metric === 'string' ? item.metric : null,
+      createdAt: item.createdAt,
+    });
+  }
+  return { notices };
+}
+
+export type LifeAccount ={ id: number; name: string; email: string };
 export type AuthPayload = { token: string; account: LifeAccount };
 
 export function apiBaseUrl(): string | undefined {
@@ -133,6 +174,17 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
     setConsent: (sharingEnabled: boolean) =>
       request<{ sharingEnabled: boolean; revokedAt: string | null }>('consent', { method: 'PUT', body: { sharingEnabled }, auth: true }),
     issueLinkCode: () => request<{ code: string; expiresAt: string }>('link-codes', { method: 'POST', auth: true }),
+    getNotices: async (): Promise<ApiResult<{ notices: ServerNotice[] }>> => {
+      const result = await request<Record<string, unknown>>('notices', { method: 'GET', auth: true });
+      if (!result.ok) {
+        return result;
+      }
+      const normalised = normaliseNotices(result.data);
+      if (!normalised) {
+        return { ok: false, status: 200, code: 'invalid_response', message: 'La respuesta del servidor no es válida. Reintentaremos más tarde.' };
+      }
+      return { ok: true, data: normalised };
+    },
     fetchDischargePlan: (code: string) =>
       request<string>(`discharge-plans/${encodeURIComponent(code)}`, { method: 'GET', auth: true, raw: true }),
   };

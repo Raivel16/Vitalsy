@@ -55,6 +55,51 @@ describe('runSync', () => {
   });
 });
 
+describe('runSync consent and notices', () => {
+  const okSync = jest.fn(async (chunk: { id: string }[]) => ({ ok: true, data: { accepted: chunk.map((i) => i.id), rejected: [] } }));
+
+  it('retries a pending revoke even when the queue is empty', async () => {
+    const life = app();
+    life.confirmSharing();
+    life.revokeSharing(true);
+    const setConsent = jest.fn(async () => ({ ok: true, data: { sharingEnabled: false, revokedAt: 'x' } }));
+    await runSync({ life, client: { sync: okSync, setConsent } as unknown as LifeClient, online: true, hasSession: true, onUnauthorized: noop });
+    expect(setConsent).toHaveBeenCalledWith(false);
+    expect(life.state.consentRevokePending).toBe(false);
+  });
+
+  it('keeps the revoke pending when offline', async () => {
+    const life = app();
+    life.confirmSharing();
+    life.revokeSharing(true);
+    const setConsent = jest.fn();
+    await runSync({ life, client: { sync: okSync, setConsent } as unknown as LifeClient, online: false, hasSession: true, onUnauthorized: noop });
+    expect(setConsent).not.toHaveBeenCalled();
+    expect(life.state.consentRevokePending).toBe(true);
+  });
+
+  it('pulls server notices and merges them without duplicating', async () => {
+    const life = app();
+    const notice = { id: 's1', kind: 'habito', title: 'Camina', body: 'Un paseo corto', metric: null, createdAt: '2026-10-03T08:00:00.000Z' };
+    const getNotices = jest.fn(async () => ({ ok: true, data: { notices: [notice] } }));
+    const client = { sync: okSync, getNotices } as unknown as LifeClient;
+    await runSync({ life, client, online: true, hasSession: true, onUnauthorized: noop });
+    await runSync({ life, client, online: true, hasSession: true, onUnauthorized: noop });
+    expect(life.state.notices.map((n) => n.id)).toEqual(['s1']);
+  });
+
+  it('does not pull notices without a session and survives a failing pull', async () => {
+    const life = app();
+    const getNotices = jest.fn(async () => {
+      throw new Error('boom');
+    });
+    const client = { sync: okSync, getNotices } as unknown as LifeClient;
+    await runSync({ life, client, online: true, hasSession: false, onUnauthorized: noop });
+    expect(getNotices).not.toHaveBeenCalled();
+    await expect(runSync({ life, client, online: true, hasSession: true, onUnauthorized: noop })).resolves.toBeUndefined();
+  });
+});
+
 describe('activatePlan', () => {
   const plan = JSON.stringify({ medications: [{ name: 'Paracetamol', dose: '1 g', schedule: '08:00' }], homeCare: ['Reposo'] });
   const clientWith = (fetchDischargePlan: jest.Mock) => ({ fetchDischargePlan }) as unknown as LifeClient;

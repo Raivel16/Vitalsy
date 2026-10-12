@@ -162,6 +162,49 @@ describe('LifeApp', () => {
     expect(life.state.dismissedNoticeIds).toEqual(['n1']);
   });
 
+  it('keeps a revoke pending until the server confirms it and never queues consent items', () => {
+    const life = app();
+    life.confirmSharing();
+    expect(life.state.consent.sharingEnabled).toBe(true);
+    expect(life.state.consentRevokePending).toBe(false);
+    life.revokeSharing(true);
+    expect(life.state.consent.sharingEnabled).toBe(false);
+    expect(life.state.consentRevokePending).toBe(true);
+    expect(life.state.queue.some((item) => item.kind === 'consent')).toBe(false);
+    life.confirmRevoke();
+    expect(life.state.consentRevokePending).toBe(false);
+  });
+
+  it('stores the server code only while sharing is confirmed and not being revoked', () => {
+    const life = app();
+    const expiresAt = '2026-10-03T12:30:00.000Z';
+    expect(life.setServerLinkCode('K7QX-93MP', expiresAt)).toBe(false);
+    life.confirmSharing();
+    expect(life.setServerLinkCode('K7QX-93MP', expiresAt)).toBe(true);
+    expect(life.state.consent).toMatchObject({ linkingCode: 'K7QX-93MP', linkingExpiresAt: expiresAt });
+    life.revokeSharing(true);
+    expect(life.state.consent.linkingCode).toBeNull();
+    expect(life.setServerLinkCode('K7QX-93MP', expiresAt)).toBe(false);
+  });
+
+  it('merges server notices deduplicating by id and keeping read state', () => {
+    const life = app();
+    const server = [
+      { id: 's1', kind: 'habito' as const, title: 'Camina', body: 'Un paseo corto', metric: 'steps', createdAt: '2026-10-03T08:00:00.000Z' },
+      { id: 's2', kind: 'preventivo' as const, title: 'Hidrátate', body: 'Toma agua', metric: null, createdAt: '2026-10-03T09:00:00.000Z' },
+    ];
+    expect(life.mergeServerNotices(server)).toBe(2);
+    life.markNoticeRead('s1');
+    expect(life.mergeServerNotices(server)).toBe(0);
+    expect(life.state.notices.map((n) => n.id).sort()).toEqual(['s1', 's2']);
+    expect(life.state.notices.find((n) => n.id === 's1')?.readAt).not.toBeNull();
+    expect(life.state.notices.find((n) => n.id === 's1')?.kind).toBe('habit');
+    expect(life.state.notices.find((n) => n.id === 's2')?.kind).toBe('stability');
+    life.dismissNotice('s2');
+    expect(life.mergeServerNotices(server)).toBe(0);
+    expect(life.state.notices.map((n) => n.id)).toEqual(['s1']);
+  });
+
   it('marks only accepted items as synced and advances the server time', () => {
     const life = app();
     life.addManual('heart_rate', '64');

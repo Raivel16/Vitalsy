@@ -74,6 +74,24 @@ describe('life client', () => {
     expect(big).toMatchObject({ ok: false, status: 422, code: 'batch_too_large' });
   });
 
+  it('fetches notices from /life/notices and keeps only well-formed entries', async () => {
+    const body = JSON.stringify({
+      notices: [
+        { id: 'n1', kind: 'habito', title: 'Camina', body: 'Un paseo corto', metric: 'steps', createdAt: '2026-10-03T08:00:00.000Z' },
+        { id: 'n2', kind: 'otro', title: 'x', body: 'y', metric: null, createdAt: '2026-10-03T08:00:00.000Z' },
+        { id: 7, kind: 'preventivo', title: 'x', body: 'y' },
+      ],
+    });
+    const fetchMock = mockFetch({ status: 200, body });
+    const result = await createLifeClient('https://api.test', token).getNotices();
+    expect(result.ok && result.data.notices.map((n) => n.id)).toEqual(['n1']);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.test/api/v1/life/notices');
+    expect(init.method).toBe('GET');
+    mockFetch({ status: 200, body: '{"items":[]}' });
+    await expect(createLifeClient('https://api.test', token).getNotices()).resolves.toMatchObject({ ok: false, code: 'invalid_response' });
+  });
+
   it('validates the sync response shape', async () => {
     const client = createLifeClient('https://api.test', token);
     mockFetch({ status: 200, body: '{"rejected":[]}' });
