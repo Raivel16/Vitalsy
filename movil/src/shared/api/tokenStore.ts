@@ -1,4 +1,6 @@
 export type TokenStore = {
+  /** false cuando el token solo vive en memoria (SecureStore no disponible). */
+  readonly persistent: boolean;
   get: () => Promise<string | null>;
   set: (token: string) => Promise<void>;
   clear: () => Promise<void>;
@@ -16,6 +18,9 @@ export function createTokenStore(backend?: SecureBackend | null): TokenStore {
   let memory: string | null = null;
   let secure = backend ?? null;
   return {
+    get persistent() {
+      return secure !== null;
+    },
     async get() {
       if (secure) {
         try {

@@ -9,6 +9,7 @@ describe('token store', () => {
       deleteItemAsync: async (key) => void data.delete(key),
     };
     const store = createTokenStore(backend);
+    expect(store.persistent).toBe(true);
     await store.set('abc');
     expect(await store.get()).toBe('abc');
     await store.clear();
@@ -17,6 +18,7 @@ describe('token store', () => {
 
   it('falls back to memory when the backend is missing or throws', async () => {
     const memoryOnly = createTokenStore(null);
+    expect(memoryOnly.persistent).toBe(false);
     await memoryOnly.set('m');
     expect(await memoryOnly.get()).toBe('m');
     const broken: SecureBackend = {
@@ -31,7 +33,9 @@ describe('token store', () => {
       },
     };
     const store = createTokenStore(broken);
+    expect(store.persistent).toBe(true);
     await store.set('t');
+    expect(store.persistent).toBe(false);
     expect(await store.get()).toBe('t');
     await store.clear();
     expect(await store.get()).toBeNull();

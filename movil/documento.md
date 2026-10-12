@@ -100,9 +100,16 @@ npm test
 
 Cubren línea de base, avisos, cola offline, consentimiento, plan, mapeo de Health Connect, cifrado y alertas de formularios. No sustituyen el development build: el teléfono real no entra en esas pruebas.
 
+## Servidor en LAN durante desarrollo
+
+- `http://` solo se acepta en un development build (`__DEV__`); en una build de producción `apiBaseUrl()` rechaza cualquier URL que no sea `https://`.
+- Para probar contra el backend local, define `EXPO_PUBLIC_API_URL=http://<ip-lan>:8080` (Nginx del docker compose).
+- Por verificar: Android bloquea tráfico HTTP en claro por defecto y `app.json` solo configura `minSdkVersion` en `expo-build-properties`. Es probable que el dev client necesite `android.usesCleartextTraffic: true` en ese plugin (solo para desarrollo); confirmarlo en un dispositivo antes de documentarlo como requisito.
+- Si `expo-secure-store` no está disponible, el token solo vive en memoria (`tokenStore.persistent === false`) y se pierde al cerrar la app.
+
 ## Limitaciones
 
-- La nube usa `/api/v1/life/*` con token Sanctum (cuenta Life, guardado en `expo-secure-store`). Sin token o sin https (fuera de desarrollo) la cola se queda pendiente. La sincronización marca `synced` solo los ids de `accepted`; los de `rejected` pasan a `rejected` y no se reintentan; un 422 o un fallo de red los deja pendientes. El envío se parte en lotes de hasta 100 items y 1 000 000 de caracteres.
+- La nube usa `/api/v1/life/*` con token Sanctum (cuenta Life, guardado en `expo-secure-store`). Sin token o sin https (fuera de desarrollo) la cola se queda pendiente. La sincronización marca `synced` solo los ids de `accepted` (y «Sincronizado» solo aparece si el servidor aceptó al menos un item); los de `rejected` pasan a `rejected` y no se reintentan; un 422 o un fallo de red los deja pendientes. El envío se parte en lotes de hasta 100 items y 1 000 000 de caracteres.
 - Apple Health queda detrás del mismo puerto, sin lector en este corte.
 - El aviso al cuidador abre el SMS; no se envía oculto.
 - La lectura de Health Connect ocurre al abrir Hoy, al pulsar sincronizar y al recuperar la red. No hay un sondeo continuo.

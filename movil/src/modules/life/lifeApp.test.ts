@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { syncStatusLabel } from '../health-sync/domain/syncQueue';
 import { emptySnapshot, LifeApp } from './lifeApp';
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -38,7 +39,7 @@ describe('LifeApp', () => {
     const life = app();
     life.addManual('heart_rate', '64');
     expect(life.today().empty).toBe(false);
-    const decision = life.flushDecision(true, false);
+    const decision = life.flushDecision(true, false, true);
     expect(decision.pendingReason).toBe('no_api');
     expect(life.pendingSyncCount()).toBe(1);
   });
@@ -161,15 +162,27 @@ describe('LifeApp', () => {
     expect(life.state.dismissedNoticeIds).toEqual(['n1']);
   });
 
-  it('marks queued items as synced and remembers the server time', () => {
+  it('marks only accepted items as synced and advances the server time', () => {
     const life = app();
     life.addManual('heart_rate', '64');
     const ids = life.state.queue.map((item) => item.id);
     expect(life.pendingSyncCount()).toBe(1);
-    life.markQueueSynced(ids, '2026-10-03T12:05:00.000Z');
+    life.applySyncResult(ids, [], '2026-10-03T12:05:00.000Z');
     expect(life.pendingSyncCount()).toBe(0);
     expect(life.state.lastServerSyncAt).toBe('2026-10-03T12:05:00.000Z');
-    life.markQueueSynced([], null);
-    expect(life.state.lastServerSyncAt).toBe('2026-10-03T12:05:00.000Z');
+  });
+
+  it('does not claim a server sync when nothing was accepted', () => {
+    const life = app();
+    life.addManual('heart_rate', '64');
+    const ids = life.state.queue.map((item) => item.id);
+    life.applySyncResult([], [], '2026-10-03T12:05:00.000Z');
+    expect(life.state.lastServerSyncAt).toBeNull();
+    expect(life.pendingSyncCount()).toBe(1);
+    life.applySyncResult([], ids.map((id) => ({ id, reason: 'invalid' })), '2026-10-03T12:06:00.000Z');
+    expect(life.state.lastServerSyncAt).toBeNull();
+    expect(life.pendingSyncCount()).toBe(0);
+    const label = syncStatusLabel(true, life.pendingSyncCount(), true, life.state.lastServerSyncAt);
+    expect(label).not.toBe('Sincronizado');
   });
 });

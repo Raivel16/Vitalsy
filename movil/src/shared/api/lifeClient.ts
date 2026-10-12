@@ -19,6 +19,23 @@ export function apiBaseUrl(): string | undefined {
 
 type Options = { method: 'GET' | 'POST' | 'PUT'; body?: unknown; auth: boolean; raw?: boolean };
 
+export type SyncResponse = { accepted: string[]; rejected: { id: string; reason: string }[] };
+
+function normaliseSync(data: unknown): SyncResponse | null {
+  const record = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+  if (!record || !Array.isArray(record.accepted)) {
+    return null;
+  }
+  const accepted = record.accepted.filter((id) => typeof id === 'string' || typeof id === 'number').map(String);
+  const rejected = Array.isArray(record.rejected)
+    ? record.rejected
+        .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
+        .filter((entry) => typeof entry.id === 'string' || typeof entry.id === 'number')
+        .map((entry) => ({ id: String(entry.id), reason: typeof entry.reason === 'string' ? entry.reason : 'rejected' }))
+    : [];
+  return { accepted, rejected };
+}
+
 function parseJson(text: string): Record<string, unknown> | null {
   try {
     const value: unknown = JSON.parse(text);
@@ -56,6 +73,9 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
       const parsed = parseJson(text);
       const code = typeof parsed?.code === 'string' ? parsed.code : undefined;
       const serverMessage = typeof parsed?.message === 'string' ? parsed.message : undefined;
+      if (!options.auth && response.status === 401 && !code) {
+        return { ok: false, status: 401, message: 'Correo o contraseña incorrectos.' };
+      }
       return { ok: false, status: response.status, code, message: lifeErrorMessage(response.status, code, serverMessage) };
     }
     if (options.raw) {
@@ -76,8 +96,17 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
       request<AuthPayload>('auth/register', { method: 'POST', body: input, auth: false }),
     login: (input: { email: string; password: string }) => request<AuthPayload>('auth/login', { method: 'POST', body: input, auth: false }),
     logout: () => request<undefined>('auth/logout', { method: 'POST', auth: true }),
-    sync: (items: SyncItem[]) =>
-      request<{ accepted: string[]; rejected: { id: string; reason: string }[] }>('sync', { method: 'POST', body: { items }, auth: true }),
+    sync: async (items: SyncItem[]): Promise<ApiResult<SyncResponse>> => {
+      const result = await request<Record<string, unknown>>('sync', { method: 'POST', body: { items }, auth: true });
+      if (!result.ok) {
+        return result;
+      }
+      const normalised = normaliseSync(result.data);
+      if (!normalised) {
+        return { ok: false, status: 200, code: 'invalid_response', message: 'La respuesta del servidor no es válida. Reintentaremos más tarde.' };
+      }
+      return { ok: true, data: normalised };
+    },
     setConsent: (sharingEnabled: boolean) =>
       request<{ sharingEnabled: boolean; revokedAt: string | null }>('consent', { method: 'PUT', body: { sharingEnabled }, auth: true }),
     issueLinkCode: () => request<{ code: string; expiresAt: string }>('link-codes', { method: 'POST', auth: true }),

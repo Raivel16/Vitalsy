@@ -5,7 +5,9 @@ import * as SQLite from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
-import { chunkForSend } from '../health-sync/domain/syncQueue';
+import { singleFlight } from '../../shared/async/singleFlight';
+import { activatePlan } from './activatePlan';
+import { runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
 import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
@@ -106,7 +108,7 @@ export function LifeProvider({
     }
   }, [life, store]);
 
-  const syncHealth = useCallback(async () => {
+  const syncHealthOnce = useCallback(async () => {
     const source = createHealthSource();
     const status = await source.availability();
     if (status.state !== 'available') {
@@ -126,27 +128,19 @@ export function LifeProvider({
     const read = await reader(from, to);
     life.addSamples(read.samples);
     setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
-    const baseUrl = apiBaseUrl();
-    const hasSession = Boolean(await tokenStore.get().catch(() => null));
-    const decision = life.flushDecision(online, Boolean(baseUrl), hasSession);
-    if (client && decision.send.length > 0) {
-      for (const chunk of chunkForSend(decision.send)) {
-        const result = await client.sync(chunk);
-        if (result.ok) {
-          // Solo los ids aceptados pasan a synced; los rechazados quedan en estado terminal.
-          life.applySyncResult(result.data.accepted, result.data.rejected, new Date().toISOString());
-          continue;
-        }
-        if (result.status === 401) {
-          await tokenStore.clear();
-        }
-        // Cualquier otro fallo (red, 422 batch_too_large, 5xx) deja los items pendientes para reintentar.
-        break;
-      }
+    try {
+      const hasSession = Boolean(await tokenStore.get().catch(() => null));
+      await runSync({ life, client, online, hasSession, onUnauthorized: () => tokenStore.clear() });
+    } finally {
+      await refresh();
     }
-    await refresh();
     return read.message;
   }, [client, life, online, refresh]);
+
+  // Dos disparos concurrentes (efecto de red + botón) comparten una sola ejecución.
+  const syncImplRef = useRef(syncHealthOnce);
+  syncImplRef.current = syncHealthOnce;
+  const syncHealth = useMemo(() => singleFlight(() => syncImplRef.current()), []);
 
   const wasOnline = useRef(true);
   useEffect(() => {
@@ -161,16 +155,8 @@ export function LifeProvider({
 
   const activateFromCode = useCallback(
     async (raw: string) => {
-      let remote: string | null = null;
-      if (client) {
-        const plan = await client.fetchDischargePlan(raw.trim());
-        if (plan.ok) {
-          remote = plan.data;
-        } else if (plan.status === 401) {
-          await tokenStore.clear();
-        }
-      }
-      const result = life.activateDischarge(raw, remote);
+      const hasSession = Boolean(await tokenStore.get().catch(() => null));
+      const result = await activatePlan(raw, { life, client, hasSession, onUnauthorized: () => tokenStore.clear() });
       await refresh();
       return result;
     },

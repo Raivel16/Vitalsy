@@ -74,6 +74,22 @@ describe('life client', () => {
     expect(big).toMatchObject({ ok: false, status: 422, code: 'batch_too_large' });
   });
 
+  it('validates the sync response shape', async () => {
+    const client = createLifeClient('https://api.test', token);
+    mockFetch({ status: 200, body: '{"rejected":[]}' });
+    await expect(client.sync([item])).resolves.toMatchObject({ ok: false, code: 'invalid_response' });
+    mockFetch({ status: 200, body: '{"accepted":["b1",7],"rejected":"nope"}' });
+    await expect(client.sync([item])).resolves.toEqual({ ok: true, data: { accepted: ['b1', '7'], rejected: [] } });
+    mockFetch({ status: 200, body: '{"accepted":[],"rejected":[{"id":3,"reason":"bad"},null]}' });
+    await expect(client.sync([item])).resolves.toEqual({ ok: true, data: { accepted: [], rejected: [{ id: '3', reason: 'bad' }] } });
+  });
+
+  it('maps a 401 on login to a credentials message', async () => {
+    mockFetch({ status: 401, body: '{"message":"Unauthenticated."}' });
+    const result = await createLifeClient('https://api.test', async () => null).login({ email: 'a@b.c', password: 'x' });
+    expect(result).toEqual({ ok: false, status: 401, message: 'Correo o contraseña incorrectos.' });
+  });
+
   it('logs in without a token and registers with the account payload', async () => {
     const fetchMock = mockFetch({ status: 200, body: '{"token":"t","account":{"id":1,"name":"A","email":"a@b.c"}}' });
     const client = createLifeClient('https://api.test', async () => null);

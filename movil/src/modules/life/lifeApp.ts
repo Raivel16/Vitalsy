@@ -1,6 +1,6 @@
 import { authenticate, registerAccount, type Account, type Digest, type FieldErrors } from '../auth/domain/auth';
 import { buildBaselines } from '../health-sync/domain/baseline';
-import { applySyncResult, decideFlush, enqueueSync, markSynced, pendingCount, type SyncItem } from '../health-sync/domain/syncQueue';
+import { applySyncResult, decideFlush, enqueueSync, pendingCount, type SyncItem } from '../health-sync/domain/syncQueue';
 import type { BiometricSample } from '../health-sync/domain/types';
 import { draftNudge } from '../notices/domain/nudges';
 import { confirmDose, postponeDose, resolveDischarge, toggleReminder, type FollowUpPlan } from '../plan/domain/plan';
@@ -248,7 +248,7 @@ export class LifeApp {
     return this.snapshot.notices.filter((notice) => !notice.snoozedUntil || Date.parse(notice.snoozedUntil) <= now);
   }
 
-  flushDecision(online: boolean, apiConfigured: boolean, hasSession = true) {
+  flushDecision(online: boolean, apiConfigured: boolean, hasSession: boolean) {
     return decideFlush(this.snapshot.queue, online, apiConfigured, hasSession);
   }
 
@@ -256,15 +256,8 @@ export class LifeApp {
     this.snapshot = {
       ...this.snapshot,
       queue: applySyncResult(this.snapshot.queue, accepted, rejected),
-      lastServerSyncAt: syncedAt ?? this.snapshot.lastServerSyncAt,
-    };
-  }
-
-  markQueueSynced(ids: string[], syncedAt: string | null): void {
-    this.snapshot = {
-      ...this.snapshot,
-      queue: markSynced(this.snapshot.queue, ids),
-      lastServerSyncAt: syncedAt ?? this.snapshot.lastServerSyncAt,
+      // Solo se afirma contacto con el servidor si aceptó al menos un item.
+      lastServerSyncAt: accepted.length > 0 && syncedAt ? syncedAt : this.snapshot.lastServerSyncAt,
     };
   }
 

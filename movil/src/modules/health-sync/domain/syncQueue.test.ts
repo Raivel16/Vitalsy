@@ -1,9 +1,9 @@
-import { applySyncResult, chunkForSend, decideFlush, enqueueSync, markSynced, pendingCount, syncStatusLabel } from './syncQueue';
+import { applySyncResult, chunkForSend, decideFlush, enqueueSync, pendingCount, syncStatusLabel } from './syncQueue';
 
 describe('sync queue', () => {
   it('keeps samples pending while the device is offline', () => {
     const queue = enqueueSync([], { id: 'b1', kind: 'biometrics', body: '[]' });
-    const decision = decideFlush(queue, false, true);
+    const decision = decideFlush(queue, false, true, true);
     expect(decision.send).toEqual([]);
     expect(decision.pendingReason).toBe('offline');
     expect(pendingCount(queue)).toBe(1);
@@ -11,16 +11,16 @@ describe('sync queue', () => {
 
   it('does not pretend a cloud sync when no API is configured', () => {
     const queue = enqueueSync([], { id: 'b1', kind: 'biometrics', body: '[]' });
-    const decision = decideFlush(queue, true, false);
+    const decision = decideFlush(queue, true, false, true);
     expect(decision.send).toEqual([]);
     expect(decision.pendingReason).toBe('no_api');
   });
 
   it('sends pending items only when online and the API is configured', () => {
     const queue = enqueueSync([], { id: 'b1', kind: 'biometrics', body: '[]' });
-    const decision = decideFlush(queue, true, true);
+    const decision = decideFlush(queue, true, true, true);
     expect(decision.send.map((item) => item.id)).toEqual(['b1']);
-    expect(markSynced(queue, ['b1']).every((item) => item.status === 'synced')).toBe(true);
+    expect(applySyncResult(queue, ['b1'], []).every((item) => item.status === 'synced')).toBe(true);
   });
 
   it('never labels a local-only queue as synced to the cloud', () => {
@@ -37,7 +37,7 @@ describe('sync queue', () => {
     expect(next.map((item) => item.status)).toEqual(['synced', 'rejected', 'pending']);
     expect(next[1].rejectedReason).toBe('invalid');
     expect(pendingCount(next)).toBe(1);
-    expect(decideFlush(next, true, true).send.map((item) => item.id)).toEqual(['c']);
+    expect(decideFlush(next, true, true, true).send.map((item) => item.id)).toEqual(['c']);
   });
 
   it('reports no_session without sending when there is no token', () => {

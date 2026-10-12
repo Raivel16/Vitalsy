@@ -58,7 +58,7 @@ export function enqueueSync(queue: SyncItem[], item: Omit<SyncItem, 'status'>): 
   return [...queue, { ...item, status: 'pending' }];
 }
 
-export function decideFlush(queue: SyncItem[], online: boolean, apiConfigured: boolean, hasSession = true): FlushDecision {
+export function decideFlush(queue: SyncItem[], online: boolean, apiConfigured: boolean, hasSession: boolean): FlushDecision {
   const pending = queue.filter((item) => item.status === 'pending');
   if (!online) {
     return { send: [], pendingReason: pending.length > 0 ? 'offline' : null };
@@ -70,11 +70,6 @@ export function decideFlush(queue: SyncItem[], online: boolean, apiConfigured: b
     return { send: [], pendingReason: pending.length > 0 ? 'no_session' : null };
   }
   return { send: pending, pendingReason: null };
-}
-
-export function markSynced(queue: SyncItem[], ids: string[]): SyncItem[] {
-  const sent = new Set(ids);
-  return queue.map((item) => (sent.has(item.id) ? { ...item, status: 'synced' } : item));
 }
 
 export function pendingCount(queue: SyncItem[]): number {
