@@ -8,7 +8,13 @@ import { aire, font } from '../../../shared/theme/tokens';
 
 type Mode = 'login' | 'register';
 
-export type AuthOutcome = { errors: FieldErrors; notices?: string[] };
+export type Confirmation = {
+  pendingCount: number;
+  confirm: () => Promise<AuthOutcome>;
+  cancel: () => Promise<void>;
+};
+
+export type AuthOutcome = { errors: FieldErrors; notices?: string[]; confirmation?: Confirmation };
 
 export const LOCAL_ONLY_BANNER = 'Cuenta solo en este teléfono';
 
@@ -36,9 +42,10 @@ export function AuthForm({
   const [recovery, setRecovery] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notices, setNotices] = useState<string[]>([]);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const busy = useRef(false);
 
-  async function submit() {
+  async function submit(action?: () => Promise<AuthOutcome>) {
     if (busy.current) {
       return;
     }
@@ -46,8 +53,13 @@ export function AuthForm({
     setLoading(true);
     setErrors({});
     try {
-      const outcome = await (mode === 'login' ? onLogin(email, password) : onRegister({ name, email, password, confirm }));
+      const outcome = await (action ? action() : mode === 'login' ? onLogin(email, password) : onRegister({ name, email, password, confirm }));
       setErrors(outcome.errors);
+      if (outcome.confirmation) {
+        setConfirmation(outcome.confirmation);
+        return;
+      }
+      setConfirmation(null);
       if (Object.keys(outcome.errors).length > 0) {
         return;
       }
@@ -62,6 +74,35 @@ export function AuthForm({
       busy.current = false;
       setLoading(false);
     }
+  }
+
+  if (confirmation) {
+    const count = confirmation.pendingCount;
+    const subject = count === 1 ? 'lectura sin enviar' : 'lecturas sin enviar';
+    return (
+      <View style={styles.wrap}>
+        <Text style={styles.title}>Cambio de cuenta</Text>
+        <Banner
+          message={`Hay ${count} ${subject} de la otra cuenta. Si continúas, se borrarán de este teléfono.`}
+          palette={aire}
+          tone="warning"
+        />
+        {errors.form ? <Banner message={errors.form} palette={aire} tone="danger" /> : null}
+        <Button label="Continuar y borrar" loading={loading} onPress={() => void submit(confirmation.confirm)} palette={aire} />
+        <Button
+          disabled={loading}
+          label="Cancelar"
+          onPress={() => {
+            const pending = confirmation;
+            setConfirmation(null);
+            setPassword('');
+            void pending.cancel();
+          }}
+          palette={aire}
+          tone="ghost"
+        />
+      </View>
+    );
   }
 
   if (notices.length > 0) {

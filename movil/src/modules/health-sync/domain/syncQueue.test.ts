@@ -29,6 +29,13 @@ describe('sync queue', () => {
     expect(syncStatusLabel(true, 0, true, '2026-10-03T12:00:00.000Z')).toBe('Sincronizado');
   });
 
+  it('tells the user to sign in when the queue cannot be sent without a session', () => {
+    expect(syncStatusLabel(true, 2, true, null, false)).toBe('Inicia sesión para sincronizar');
+    expect(syncStatusLabel(false, 2, true, null, false)).toBe('Sin conexión');
+    expect(syncStatusLabel(true, 0, true, null, false)).toBe('En el teléfono');
+    expect(syncStatusLabel(true, 2, true, null, true)).toBe('Pendiente');
+  });
+
   it('marks synced only the accepted ids and rejected ones terminally', () => {
     let queue = enqueueSync([], { id: 'a', kind: 'biometrics', body: '[]' });
     queue = enqueueSync(queue, { id: 'b', kind: 'biometrics', body: '[]' });

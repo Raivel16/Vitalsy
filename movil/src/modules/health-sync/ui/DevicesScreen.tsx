@@ -10,7 +10,7 @@ import { DevicesBody } from './DevicesBody';
 
 export function DevicesScreen() {
   const router = useRouter();
-  const { life, online, health, syncHealth } = useLife();
+  const { life, online, health, syncHealth, hasSession } = useLife();
   const [message, setMessage] = useState<string | null>(health.status.message);
 
   return (
@@ -24,7 +24,7 @@ export function DevicesScreen() {
         pending={life.pendingSyncCount()}
         permission={health.permission}
         status={health.status}
-        syncLabel={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt)}
+        syncLabel={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt, hasSession)}
       />
     </Screen>
   );

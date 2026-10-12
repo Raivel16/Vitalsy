@@ -32,6 +32,10 @@ export type LifeSnapshot = {
   dismissedNoticeIds: string[];
 };
 
+function isServerAccount(account: Account): boolean {
+  return account.origin === 'server' || (!account.passwordHash && !account.salt);
+}
+
 export function emptySnapshot(): LifeSnapshot {
   return {
     accounts: [],
@@ -92,29 +96,28 @@ export class LifeApp {
 
   /**
    * Abre la sesión de una cuenta del servidor. No se guarda contraseña ni hash.
-   * Si el id difiere del de la cuenta anterior, los datos locales se descartan
-   * para no adjuntarlos a otra persona.
+   * - Cuenta previa local (o ninguna): los datos locales se adoptan para la cuenta del servidor.
+   * - Cuenta previa del servidor con otro id: los datos locales se descartan, y si hay lecturas
+   *   sin enviar se pide confirmación antes (no se modifica nada hasta `confirmed`).
    */
-  openServerSession(account: { id: number | string; name: string; email: string }): { switched: boolean } {
+  openServerSession(
+    account: { id: number | string; name: string; email: string },
+    options: { confirmed?: boolean } = {},
+  ): { status: 'ok'; switched: boolean } | { status: 'needs_confirmation'; pendingCount: number } {
     const id = String(account.id);
-    const switched = this.snapshot.accounts.some((existing) => existing.id !== id);
+    const previous = this.snapshot.accounts.find((existing) => isServerAccount(existing));
+    const switched = Boolean(previous && previous.id !== id);
+    const unsent = pendingCount(this.snapshot.queue);
+    if (switched && unsent > 0 && !options.confirmed) {
+      return { status: 'needs_confirmation', pendingCount: unsent };
+    }
     const base = switched ? emptySnapshot() : this.snapshot;
     this.snapshot = {
       ...base,
-      accounts: [{ id, name: account.name, email: account.email.trim().toLowerCase() }],
+      accounts: [{ id, name: account.name, email: account.email.trim().toLowerCase(), origin: 'server' }],
       sessionUserId: id,
     };
-    return { switched };
-  }
-
-  /** Reanuda la sesión de una cuenta ya conocida (token guardado, sin red). */
-  resumeSession(email: string): boolean {
-    const account = this.snapshot.accounts.find((item) => item.email === email.trim().toLowerCase());
-    if (!account) {
-      return false;
-    }
-    this.snapshot = { ...this.snapshot, sessionUserId: account.id };
-    return true;
+    return { status: 'ok', switched };
   }
 
   logout(): void {

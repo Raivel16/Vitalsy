@@ -3,6 +3,8 @@ export type Account = {
   name: string;
   email: string;
   /** Solo en cuentas locales; las cuentas del servidor no guardan contraseña ni hash. */
+  /** 'server' para cuentas del servidor; las cuentas locales antiguas no lo traen. */
+  origin?: 'server' | 'local';
   passwordHash?: string;
   salt?: string;
 };

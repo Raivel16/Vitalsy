@@ -76,9 +76,18 @@ export function pendingCount(queue: SyncItem[]): number {
   return queue.filter((item) => item.status === 'pending').length;
 }
 
-export function syncStatusLabel(online: boolean, pending: number, apiConfigured: boolean, lastServerSyncAt: string | null): string {
+export function syncStatusLabel(
+  online: boolean,
+  pending: number,
+  apiConfigured: boolean,
+  lastServerSyncAt: string | null,
+  hasSession = true,
+): string {
   if (!online) {
     return 'Sin conexión';
+  }
+  if (apiConfigured && !hasSession && pending > 0) {
+    return 'Inicia sesión para sincronizar';
   }
   if (apiConfigured && pending > 0) {
     return 'Pendiente';

@@ -14,6 +14,7 @@ import { logoutSession } from '../../life/sessionAuth';
 export function ProfileScreen() {
   const router = useRouter();
   const { life, refresh, client, tokenStore } = useLife();
+  const [signingOut, setSigningOut] = useState(false);
   const user = life.currentUser();
   const contact = life.state.contact;
   const baseline = life.today();
@@ -49,10 +50,16 @@ export function ProfileScreen() {
       ))}
       <Button
         label="Cerrar sesión"
+        loading={signingOut}
         onPress={() => {
+          if (signingOut) {
+            return;
+          }
+          setSigningOut(true);
           void logoutSession({ life, client, tokenStore })
             .then(() => refresh())
-            .then(() => router.replace('/'));
+            .then(() => router.replace('/'))
+            .finally(() => setSigningOut(false));
         }}
         palette={chalk}
         tone="ghost"

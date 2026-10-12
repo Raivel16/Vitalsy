@@ -2,7 +2,7 @@ import * as Crypto from 'expo-crypto';
 import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
 import { singleFlight } from '../../shared/async/singleFlight';
@@ -26,6 +26,8 @@ type LifeContextValue = {
   ready: boolean;
   life: LifeApp;
   online: boolean;
+  /** Hay un token guardado (la cola puede enviarse). */
+  hasSession: boolean;
   health: HealthFeedback;
   refresh: () => Promise<void>;
   syncHealth: () => Promise<string | null>;
@@ -67,14 +69,19 @@ export function LifeProvider({
   const [tick, setTick] = useState(0);
   // La red puede volver mientras una sincronización está en curso: se lee al usarla, no al arrancar.
   const onlineRef = useRef(online);
-  onlineRef.current = online;
+  useLayoutEffect(() => {
+    onlineRef.current = online;
+  }, [online]);
+  const [hasSession, setHasSession] = useState(false);
   const client = useMemo(() => {
     const baseUrl = apiBaseUrl();
     return baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null;
   }, []);
 
   const clientRef = useRef(client);
-  clientRef.current = client;
+  useLayoutEffect(() => {
+    clientRef.current = client;
+  }, [client]);
 
   useEffect(() => {
     let active = true;
@@ -105,11 +112,20 @@ export function LifeProvider({
     };
   }, [initial, persistence]);
 
+  useEffect(() => {
+    let active = true;
+    void tokenStore.get().then((token) => active && setHasSession(Boolean(token)), () => undefined);
+    return () => {
+      active = false;
+    };
+  }, [ready]);
+
   const refresh = useCallback(async () => {
     setTick((value) => value + 1);
     const network = await Network.getNetworkStateAsync().catch(() => null);
     onlineRef.current = Boolean(network?.isConnected);
     setOnline(onlineRef.current);
+    setHasSession(Boolean(await tokenStore.get().catch(() => null)));
     if (store) {
       await store.save(life.state);
     }
@@ -150,7 +166,9 @@ export function LifeProvider({
 
   // Dos disparos concurrentes (efecto de red + botón) comparten una sola ejecución.
   const syncImplRef = useRef(syncHealthOnce);
-  syncImplRef.current = syncHealthOnce;
+  useLayoutEffect(() => {
+    syncImplRef.current = syncHealthOnce;
+  }, [syncHealthOnce]);
   const syncHealth = useMemo(() => singleFlight(() => syncImplRef.current()), []);
 
   const wasOnline = useRef(true);
@@ -175,8 +193,8 @@ export function LifeProvider({
   );
 
   const value = useMemo(
-    () => ({ ready, life, online, health, refresh, syncHealth, activateFromCode, client, tokenStore }),
-    [ready, life, online, health, refresh, syncHealth, activateFromCode, client, tick],
+    () => ({ ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, client, tokenStore }),
+    [ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, client, tick],
   );
 
   return <LifeContext.Provider value={value}>{children}</LifeContext.Provider>;
