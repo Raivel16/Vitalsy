@@ -23,9 +23,13 @@ class LifeConsentController extends Controller
         $account = $request->user();
         $enabled = (bool) $data['sharingEnabled'];
 
+        $existing = LifeConsent::query()->where('life_account_id', $account->id)->first();
+        // Reenviar `false` con la revocación ya registrada conserva la fecha original.
+        $revokedAt = $enabled ? null : ($existing?->revoked_at ?? now());
+
         $consent = LifeConsent::query()->updateOrCreate(
             ['life_account_id' => $account->id],
-            ['sharing_enabled' => $enabled, 'revoked_at' => $enabled ? null : now()],
+            ['sharing_enabled' => $enabled, 'revoked_at' => $revokedAt],
         );
 
         return response()->json([

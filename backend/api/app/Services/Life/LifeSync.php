@@ -14,6 +14,12 @@ use Throwable;
  */
 class LifeSync
 {
+    private const MAX_BODY_CHARS = 200000;
+
+    private const MAX_SAMPLES_PER_ITEM = 500;
+
+    private const FUTURE_TOLERANCE_MINUTES = 5;
+
     private const ORIGINS = ['health_connect', 'health_kit', 'manual'];
 
     /**
@@ -43,12 +49,12 @@ class LifeSync
         $accepted = [];
         $rejected = [];
 
-        foreach ($items as $item) {
-            $id = (string) ($item['id'] ?? '');
+        foreach ($items as $index => $item) {
+            $id = $item['id'] ?? null;
             $kind = $item['kind'] ?? null;
 
-            if ($id === '') {
-                $rejected[] = ['id' => '', 'reason' => 'Falta el identificador del ítem.'];
+            if (! is_string($id) || $id === '' || strlen($id) > 64) {
+                $rejected[] = ['id' => (string) $index, 'reason' => 'Identificador de ítem inválido (1 a 64 caracteres).'];
 
                 continue;
             }
@@ -87,9 +93,15 @@ class LifeSync
      */
     private function parseSamples(mixed $body): array|string
     {
+        if (is_string($body) && strlen($body) > self::MAX_BODY_CHARS) {
+            return 'El cuerpo del ítem excede el tamaño permitido.';
+        }
         $decoded = is_string($body) ? json_decode($body, true) : null;
         if (! is_array($decoded) || ! array_is_list($decoded)) {
             return 'El cuerpo del ítem no es una lista JSON válida.';
+        }
+        if (count($decoded) > self::MAX_SAMPLES_PER_ITEM) {
+            return 'El ítem contiene demasiadas muestras.';
         }
 
         $samples = [];
@@ -138,6 +150,9 @@ class LifeSync
         if ($start === null || $end === null || $end->lt($start)) {
             return 'Fechas de la muestra inválidas.';
         }
+        if ($start->gt(now()->addMinutes(self::FUTURE_TOLERANCE_MINUTES))) {
+            return 'La muestra tiene una fecha futura.';
+        }
 
         return [
             'client_id' => $clientId, 'kind' => $kind, 'value' => $value, 'unit' => $unit,
@@ -148,6 +163,11 @@ class LifeSync
     private function parseDate(mixed $value): ?Carbon
     {
         if (! is_string($value) || $value === '') {
+            return null;
+        }
+        // Solo ISO-8601 con fecha y hora; se rechazan textos relativos como "now".
+        $iso = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/';
+        if (preg_match($iso, $value) !== 1) {
             return null;
         }
         try {
