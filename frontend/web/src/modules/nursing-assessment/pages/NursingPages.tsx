@@ -15,7 +15,7 @@ import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/ne
 import { validateVitalSigns } from "../domain/vitalSigns";
 import { requiredText } from "../../../shared/validation/inputRules";
 import { LifeBaselineMetrics } from "../../admission/components/LifeBaselineMetrics";
-import type { LifeBaseline } from "../../admission/domain/lifeBaseline";
+import { canReadLifeBaseline, type LifeBaseline } from "../../admission/domain/lifeBaseline";
 import { formatDateTime } from "../../../shared/datetime/format";
 
 function draftKey(encounterId: string, step: string) {
@@ -40,9 +40,10 @@ export function NursingAssessmentPage() {
   const [advanced, setAdvanced] = useState(false);
   const [baseline, setBaseline] = useState<LifeBaseline | null>(null);
   const encounterId = encounter?.encounterId;
+  const canReadBaseline = canReadLifeBaseline(role);
 
   useEffect(() => {
-    if (!encounterId) return;
+    if (!encounterId || !canReadBaseline) return;
     let active = true;
     api<{ baseline: LifeBaseline | null }>(
       `/api/v1/hospital-admission/encounters/${encodeURIComponent(encounterId)}/life-baseline`,
@@ -56,7 +57,7 @@ export function NursingAssessmentPage() {
     return () => {
       active = false;
     };
-  }, [encounterId]);
+  }, [encounterId, canReadBaseline]);
 
   if (!encounter) {
     return (

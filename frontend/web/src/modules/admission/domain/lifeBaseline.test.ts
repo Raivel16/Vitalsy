@@ -1,4 +1,4 @@
-import { lifeKindLabel, lifeLinkErrorMessage, lifeMetricRange } from "./lifeBaseline";
+import { canReadLifeBaseline, lifeKindLabel, lifeLinkErrorMessage, lifeMetricRange } from "./lifeBaseline";
 
 describe("línea de base de Vitalsy Life", () => {
   it("traduce cada tipo de métrica y conserva los desconocidos", () => {
@@ -21,5 +21,15 @@ describe("línea de base de Vitalsy Life", () => {
     expect(lifeLinkErrorMessage("code_expired")).toMatch(/venció/);
     expect(lifeLinkErrorMessage("desconocido")).toBeUndefined();
     expect(lifeLinkErrorMessage(undefined)).toBeUndefined();
+  });
+});
+
+describe("lectura de la línea de base por rol", () => {
+  it("solo admisión, enfermera de piso y médicos pueden leerla", () => {
+    for (const role of ["admision", "enfermera_piso", "medico_residente", "medico_tratante"]) {
+      expect(canReadLifeBaseline(role)).toBe(true);
+    }
+    expect(canReadLifeBaseline("auxiliar_enfermeria")).toBe(false);
+    expect(canReadLifeBaseline(undefined)).toBe(false);
   });
 });

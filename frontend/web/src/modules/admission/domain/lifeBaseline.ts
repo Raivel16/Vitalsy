@@ -40,3 +40,10 @@ export function lifeMetricRange(metric: LifeMetric): string {
 export function lifeLinkErrorMessage(code: string | undefined): string | undefined {
   return code ? LINK_ERROR_MESSAGE[code] : undefined;
 }
+
+const BASELINE_READER_ROLES: readonly string[] = ["admision", "enfermera_piso", "medico_residente", "medico_tratante"];
+
+/** Roles que el backend autoriza a leer la línea de base domiciliaria. */
+export function canReadLifeBaseline(role: string | null | undefined): boolean {
+  return Boolean(role) && BASELINE_READER_ROLES.includes(role as string);
+}

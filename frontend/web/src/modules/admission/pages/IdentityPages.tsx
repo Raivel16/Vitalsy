@@ -249,6 +249,16 @@ export function ConsentPage() {
   const activeEncounter = encounter;
 
   async function linkLife(): Promise<void> {
+    const codeIssue = validateLinkCode(lifeCode);
+    if (codeIssue) {
+      setErrors((current) => ({ ...current, lifeCode: codeIssue }));
+      return;
+    }
+    setErrors((current) => {
+      const rest = { ...current };
+      delete rest.lifeCode;
+      return rest;
+    });
     setLifePending(true);
     try {
       const data = await api<{ link: { baselineSummary?: { metrics?: LifeMetric[] } } }>(
@@ -265,11 +275,17 @@ export function ConsentPage() {
       setLifeStatus("linked");
       setLifeMessage("");
     } catch (caught) {
-      const code = caught instanceof ApiError ? caught.code : undefined;
+      const generic = "No se pudo vincular Vitalsy Life. Intente de nuevo.";
+      let message: string;
+      if (caught instanceof ApiError) {
+        message = caught.status === 429
+          ? "Demasiados intentos. Espere un minuto e intente de nuevo."
+          : lifeLinkErrorMessage(caught.code) ?? generic;
+      } else {
+        message = errorText(caught, generic);
+      }
       setLifeStatus("failed");
-      setLifeMessage(
-        lifeLinkErrorMessage(code) ?? errorText(caught, "No se pudo vincular Vitalsy Life. Intente de nuevo."),
-      );
+      setLifeMessage(message);
     } finally {
       setLifePending(false);
     }
@@ -364,7 +380,13 @@ export function ConsentPage() {
             label="El paciente es usuario de la app Vitalsy Life"
             description="Permite la importación continua del historial ambulatorio previo a la cama hospitalaria."
             checked={lifeUser}
-            onChange={(event) => setLifeUser(event.target.checked)}
+            onChange={(event) => {
+              setLifeUser(event.target.checked);
+              if (!event.target.checked) {
+                setLifeStatus("idle");
+                setLifeMessage("");
+              }
+            }}
           />
           {lifeUser ? (
             <div className="form-grid">

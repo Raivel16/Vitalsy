@@ -113,4 +113,70 @@ describe("consentimiento con Vitalsy Life (RF-06, RF-95)", () => {
     expect(screen.getByLabelText(/código o qr/i)).toHaveAttribute("aria-invalid", "true");
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/informed-consents"))).toBe(false);
   });
+
+  async function failedLink(response: () => ReturnType<typeof jsonResponse>) {
+    const user = userEvent.setup();
+    stubFetch(response);
+    renderApp("/admision/consentimiento?ingreso=ENC-0001");
+    await fillConsent(user);
+    await user.click(screen.getByLabelText(/el paciente es usuario de la app vitalsy life/i));
+    await user.type(screen.getByLabelText(/código o qr/i), "VL-AB12-CD34");
+    await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
+    return user;
+  }
+
+  it("traduce el 429 del límite de intentos y el ingreso continúa", async () => {
+    await failedLink(() => jsonResponse(429, { message: "Too Many Attempts." }));
+    expect(await screen.findByText(/demasiados intentos\. espere un minuto/i)).toBeInTheDocument();
+    expect(screen.queryByText(/too many attempts/i)).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /continuar al siguiente paso/i })).toBeInTheDocument();
+  });
+
+  it("usa un mensaje genérico en español para un código de error no mapeado", async () => {
+    await failedLink(() => jsonResponse(422, { message: "Something odd happened", code: "weird_code" }));
+    expect(await screen.findByText(/no se pudo vincular vitalsy life\. intente de nuevo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/something odd/i)).not.toBeInTheDocument();
+  });
+
+  it("ante un fallo de conexión muestra el aviso y permite reintentar", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/informed-consents") && init?.method === "POST") {
+        return jsonResponse(201, { consent: { status: "firmado" } });
+      }
+      if (url.includes("/life-links")) throw new TypeError("Failed to fetch");
+      if (url.includes("/advance")) return jsonResponse(200, { encounter: { ...atConsent, currentStep: "traslado" } });
+      return jsonResponse(200, { encounter: atConsent });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/admision/consentimiento?ingreso=ENC-0001");
+    await fillConsent(user);
+    await user.click(screen.getByLabelText(/el paciente es usuario de la app vitalsy life/i));
+    await user.type(screen.getByLabelText(/código o qr/i), "VL-AB12-CD34");
+    await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
+    expect(await screen.findByText(/no hay conexión con el servidor/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /reintentar vinculación/i })).toBeInTheDocument();
+  });
+
+  it("al reintentar revalida el código actual antes de enviar", async () => {
+    const user = await failedLink(() => jsonResponse(422, { message: "x", code: "code_expired" }));
+    await screen.findByRole("button", { name: /reintentar vinculación/i });
+    const field = screen.getByLabelText(/código o qr/i);
+    await user.clear(field);
+    await user.type(field, "ABC");
+    const fetchFn = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    const before = fetchFn.mock.calls.length;
+    await user.click(screen.getByRole("button", { name: /reintentar vinculación/i }));
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(fetchFn.mock.calls.length).toBe(before);
+  });
+
+  it("limpia el estado de vinculación al desmarcar la opción", async () => {
+    const user = await failedLink(() => jsonResponse(422, { message: "x", code: "code_expired" }));
+    expect(await screen.findByText(/el código venció/i)).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/el paciente es usuario de la app vitalsy life/i));
+    expect(screen.queryByText(/el código venció/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reintentar vinculación/i })).not.toBeInTheDocument();
+  });
 });
