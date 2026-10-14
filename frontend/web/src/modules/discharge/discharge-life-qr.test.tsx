@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import QRCode from "qrcode";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
 import type { DischargeCase } from "./domain/discharge";
@@ -45,6 +46,7 @@ const invitationPlan = {
 function stub(options: {
   initial?: DischargeCase;
   lifeResponse?: () => unknown;
+  receiptLifePlanNull?: boolean;
 }) {
   const calls: Array<{ url: string; method: string; body: unknown }> = [];
   vi.stubGlobal(
@@ -62,7 +64,7 @@ function stub(options: {
           case: {
             ...reportedCase,
             indicationReceipt: { receivedByName: "Ana", receivedAt: null },
-            lifePlan: { mode: "invitacion", status: "emitido", validUntil: "2026-10-30" },
+            lifePlan: options.receiptLifePlanNull ? null : { mode: "invitacion", status: "emitido", validUntil: "2026-10-30" },
           },
         });
       }
@@ -181,6 +183,54 @@ describe("QR de Vitalsy Life emitido por el servidor (RF-61, RF-96)", () => {
     expect(screen.queryByText(/Código: /)).not.toBeInTheDocument();
   });
 
+  it.each(["altas_caja", "medico_tratante"] as const)("el rol %s no ve QR, código ni botón de impresión aunque la respuesta traiga códigos", async (role) => {
+    stub({ initial: { ...reportedCase, lifePlan: invitationPlan as DischargeCase["lifePlan"] } });
+    renderApp("/egreso/ENC-ALTA-0001", { role });
+
+    expect(await screen.findByText(/invitación generada/i)).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /Código QR/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Código: /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/VLI-BBB222/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /imprimir ficha/i })).not.toBeInTheDocument();
+  });
+
+  it("al recargar, la enfermera ve el QR y el código sin nuevo POST; sin cambio de modo", async () => {
+    const calls = stub({ initial: { ...reportedCase, lifePlan: invitationPlan as DischargeCase["lifePlan"] } });
+    renderApp("/egreso/ENC-ALTA-0001", { role: "enfermera_piso" });
+
+    expect(await screen.findByRole("img", { name: "Código QR VLI-BBB222" })).toBeInTheDocument();
+    expect(screen.getByText(/Código: VLI-BBB222/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /imprimir ficha de alta/i })).toBeInTheDocument();
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar seguimiento en vitalsy life/i })).not.toBeInTheDocument();
+  });
+
+  it("mantiene el plan emitido si una mutación devuelve lifePlan nulo", async () => {
+    stub({ receiptLifePlanNull: true });
+    const user = userEvent.setup();
+    renderApp("/egreso/ENC-ALTA-0001", { role: "enfermera_piso" });
+
+    await fillReport(user, /generar invitación/i);
+    expect(await screen.findByRole("img", { name: "Código QR VLI-BBB222" })).toBeInTheDocument();
+    await user.type(await screen.findByLabelText(/nombre de quien recibe/i), "Ana");
+    await user.click(screen.getByRole("button", { name: /confirmar recepción/i }));
+
+    expect(await screen.findByText(/recepción de indicaciones confirmada/i)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Código QR VLI-BBB222" })).toBeInTheDocument();
+  });
+
+  it("oculta imprimir si no se emitió el plan (falló el POST)", async () => {
+    stub({ lifeResponse: () => jsonResponse(500, { message: "Server Error" }) });
+    const user = userEvent.setup();
+    renderApp("/egreso/ENC-ALTA-0001", { role: "enfermera_piso" });
+
+    await fillReport(user, /generar invitación/i);
+
+    expect(await screen.findByRole("button", { name: /reintentar/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /imprimir ficha/i })).not.toBeInTheDocument();
+  });
+
   it("sin plan definido y con informe indica que falta el seguimiento", async () => {
     stub({ initial: reportedCase });
     renderApp("/egreso/ENC-ALTA-0001", { role: "altas_caja" });
@@ -194,7 +244,7 @@ describe("ficha de alta imprimible", () => {
     const html = await lifeSheetHtml({
       ...reportedCase,
       lifePlan: invitationPlan as DischargeCase["lifePlan"],
-    });
+    }, "enfermera_piso");
 
     expect(html).toContain("<svg");
     expect(html).toContain("Escanee con la app Vitalsy Life para activar su seguimiento");
@@ -202,9 +252,25 @@ describe("ficha de alta imprimible", () => {
     expect(html).toContain("Código: VLI-BBB222");
   });
 
+  it("codifica en el SVG el código del plan y nunca el encounterId", async () => {
+    const spy = vi.spyOn(QRCode, "toString");
+    await lifeSheetHtml({ ...reportedCase, lifePlan: invitationPlan as DischargeCase["lifePlan"] }, "enfermera_piso");
+
+    expect(spy).toHaveBeenCalledWith("VLI-BBB222", expect.anything());
+    expect(spy.mock.calls.some((call) => call[0] === "ENC-ALTA-0001")).toBe(false);
+    spy.mockRestore();
+  });
+
+  it("no emite QR ni código para roles distintos de enfermería de piso", async () => {
+    const html = await lifeSheetHtml({ ...reportedCase, lifePlan: invitationPlan as DischargeCase["lifePlan"] }, "altas_caja");
+
+    expect(html).not.toContain("<svg");
+    expect(html).not.toContain("VLI-BBB222");
+  });
+
   it("no incluye QR cuando rechaza o no hay plan", async () => {
-    const rejected = await lifeSheetHtml({ ...reportedCase, lifePlan: { mode: "rechaza" } });
-    const none = await lifeSheetHtml(reportedCase);
+    const rejected = await lifeSheetHtml({ ...reportedCase, lifePlan: { mode: "rechaza" } }, "enfermera_piso");
+    const none = await lifeSheetHtml(reportedCase, "enfermera_piso");
 
     for (const html of [rejected, none]) {
       expect(html).not.toContain("<svg");

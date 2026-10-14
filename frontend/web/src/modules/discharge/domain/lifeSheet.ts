@@ -6,7 +6,7 @@ function esc(value: string): string {
 }
 
 /** Cuerpo HTML de la ficha de alta imprimible; incluye el QR de Vitalsy Life solo si el servidor emitió un código. */
-export async function lifeSheetHtml(item: DischargeCase): Promise<string> {
+export async function lifeSheetHtml(item: DischargeCase, role: string): Promise<string> {
   const report = item.nursingReport;
   const rows: string[] = [`<dl><dt>Paciente</dt><dd>${esc(item.patientName)}</dd>`];
   if (report) {
@@ -16,7 +16,7 @@ export async function lifeSheetHtml(item: DischargeCase): Promise<string> {
   }
   rows.push("</dl>");
 
-  const code = lifePlanCode(item.lifePlan);
+  const code = lifePlanCode(item.lifePlan, role);
   if (code) {
     const svg = await QRCode.toString(code, {
       type: "svg",

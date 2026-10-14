@@ -113,7 +113,7 @@ export function DischargeCasePage() {
 
   async function printSheet(current: DischargeCase) {
     try {
-      printClinicalDocument("Ficha de alta", await lifeSheetHtml(current));
+      printClinicalDocument("Ficha de alta", await lifeSheetHtml(current, role));
     } catch {
       setError("No se pudo preparar la ficha de alta para imprimir.");
     }
@@ -128,6 +128,13 @@ export function DischargeCasePage() {
 
   const done = item.deliverables.filter((deliverable) => deliverable.done).length;
   const next = handoffLines(item);
+  // Solo la enfermera de piso ve códigos; los demás roles reciben el plan reducido al modo.
+  const viewPlan: LifePlan | null = item.lifePlan && role !== "enfermera_piso"
+    ? { mode: item.lifePlan.mode, status: item.lifePlan.status, validUntil: item.lifePlan.validUntil }
+    : item.lifePlan ?? null;
+  const printable = role === "enfermera_piso" && Boolean(item.nursingReport)
+    && (Boolean(lifePlanCode(item.lifePlan, role)) || item.lifePlan?.mode === "rechaza");
+  // Con plan emitido no se ofrece cambiar el modo en la UI; la API permite reemitir hasta que el paciente egrese.
   const canIssueLife = role === "enfermera_piso" && !item.lifePlan && !item.exit;
 
   return (
@@ -257,7 +264,8 @@ export function DischargeCasePage() {
 
       {item.nursingReport ? (
         <VitalsyLifeCard
-          plan={item.lifePlan ?? null}
+          plan={viewPlan}
+          role={role}
           life={life}
           onChange={canIssueLife ? setLife : undefined}
           onGenerate={canIssueLife ? () => void retryLifePlan() : undefined}
@@ -266,7 +274,7 @@ export function DischargeCasePage() {
         />
       ) : null}
 
-      {role === "enfermera_piso" && item.nursingReport ? (
+      {printable ? (
         <div className="stack ops-form">
           <Button type="button" onClick={() => void printSheet(item)}>Imprimir ficha de alta</Button>
         </div>
@@ -323,8 +331,9 @@ export function DischargeCasePage() {
   );
 }
 
-function keepIssuedCodes(current: LifePlan | null, incoming: LifePlan | null): LifePlan | null {
-  if (!incoming || !current || current.mode !== incoming.mode) return incoming;
+function keepIssuedCodes(current: LifePlan | null, incoming: LifePlan | null | undefined): LifePlan | null {
+  if (!incoming) return current;
+  if (!current || current.mode !== incoming.mode) return incoming;
   return {
     ...incoming,
     code: incoming.code ?? current.code,
@@ -344,6 +353,7 @@ function VitalsyLifeCard({
   onChange,
   onGenerate,
   plan = null,
+  role = "",
   failed = false,
   pending = false,
 }: {
@@ -351,10 +361,11 @@ function VitalsyLifeCard({
   onChange?: (value: string) => void;
   onGenerate?: () => void;
   plan?: LifePlan | null;
+  role?: string;
   failed?: boolean;
   pending?: boolean;
 }) {
-  const code = lifePlanCode(plan);
+  const code = lifePlanCode(plan, role);
   const validUntil = lifePlanValidUntil(plan);
 
   return (

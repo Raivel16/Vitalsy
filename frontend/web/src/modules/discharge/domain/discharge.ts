@@ -23,8 +23,8 @@ export type LifePlan = {
 };
 
 /** Código que codifica el QR: invitación para quien no es usuario, código de activación para quien ya lo es. */
-export function lifePlanCode(plan: LifePlan | null | undefined): string | null {
-  if (!plan || plan.mode === "rechaza") return null;
+export function lifePlanCode(plan: LifePlan | null | undefined, role: string): string | null {
+  if (role !== "enfermera_piso" || !plan || plan.mode === "rechaza") return null;
   const value = plan.mode === "invitacion" ? plan.invitationCode : plan.code;
   return value ? value : null;
 }
