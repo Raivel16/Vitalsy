@@ -35,6 +35,13 @@ services:
         VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
     environment:
       PORT: "4200"
+    # RNF-11: reinicio automatico y sonda de salud.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4200/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     # Sin puertos publicados: solo el proxy TLS (443) es accesible desde fuera (RNF-05).
     depends_on:
       - backend
@@ -70,6 +77,13 @@ services:
       APP_URL: ${APP_URL:?defina APP_URL con https://<dominio>}
       SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:?defina SANCTUM_STATEFUL_DOMAINS con el dominio publico}
       SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+    # RNF-11: /api/health valida el proceso y la conexion a PostgreSQL.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
       - postgres
       - reverb
@@ -92,6 +106,12 @@ services:
       # Origenes permitidos del navegador (dominio publico con HTTPS).
       REVERB_ALLOWED_ORIGINS: ${REVERB_ALLOWED_ORIGINS:?defina REVERB_ALLOWED_ORIGINS con el dominio https publico}
     # Sin puerto publicado: solo el proxy TLS (wss://<dominio>/app) llega a este servicio.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine
@@ -102,6 +122,33 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mi_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RNF-13: respaldo automatico cada BACKUP_INTERVAL_HOURS (RPO <= 24 h; defecto 6 h).
+  # Ver docs/operacion/recuperacion-ante-desastres.md (cifrado en reposo y copia fuera del servidor).
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-mi_db}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-6}
+    volumes:
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+      - backup_data:/backups
+    entrypoint: ["sh", "-c", "while true; do /usr/local/bin/backup-db.sh || echo 'backup fallo' >&2; sleep $$((BACKUP_INTERVAL_HOURS * 3600)); done"]
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  backup_data:
