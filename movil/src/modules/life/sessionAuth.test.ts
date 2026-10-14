@@ -21,17 +21,13 @@ function app() {
 }
 
 function memoryStore(persistent = true) {
-  let token: string | null = null;
+  const data = new Map<string, string>();
   return createTokenStore(
     persistent
       ? {
-          getItemAsync: async () => token,
-          setItemAsync: async (_k, v) => {
-            token = v;
-          },
-          deleteItemAsync: async () => {
-            token = null;
-          },
+          getItemAsync: async (key) => data.get(key) ?? null,
+          setItemAsync: async (key, value) => void data.set(key, value),
+          deleteItemAsync: async (key) => void data.delete(key),
         }
       : null,
   );

@@ -12,15 +12,24 @@ function sample(id: string): BiometricSample {
 }
 
 function snapshot(patch: Partial<LifeSnapshot> = {}): LifeSnapshot {
-  return { ...emptySnapshot(), sessionUserId: '7', healthSync: { accessGranted: true, lastReadAt: null }, ...patch };
+  return {
+    ...emptySnapshot(),
+    sessionUserId: '7',
+    healthSync: { accessGranted: true, lastReadAt: null, backgroundAccessRequested: false },
+    ...patch,
+  };
 }
 
 function setup(options: {
   snapshot?: LifeSnapshot | null;
   token?: string | null;
+  accountId?: string | null;
+  transitioning?: boolean;
   client?: LifeClient | null;
   samples?: BiometricSample[];
   online?: boolean;
+  /** Se ejecuta entre la lectura y la escritura de la tarea: simula a la app guardando a la vez. */
+  concurrentWrite?: (current: LifeSnapshot) => LifeSnapshot;
 }) {
   const reads: Array<[Date, Date]> = [];
   const source: HealthDataSource = {
@@ -36,21 +45,45 @@ function setup(options: {
     },
   };
   let stored: LifeSnapshot | null = options.snapshot === undefined ? snapshot() : options.snapshot;
-  const persistence: LifePersistence & { saves: number } = {
+  let injected = false;
+  const persistence: LifePersistence & { saves: number; updates: number } = {
     saves: 0,
+    updates: 0,
     load: async () => stored,
     save: async (next) => {
       persistence.saves += 1;
       stored = next;
     },
+    update: async (mutate) => {
+      persistence.updates += 1;
+      if (options.concurrentWrite && !injected && stored) {
+        // La app escribe justo antes de que la tarea confirme: la tarea debe ver ese cambio.
+        injected = true;
+        stored = options.concurrentWrite(stored);
+      }
+      const next = mutate(stored);
+      if (next) {
+        stored = next;
+      }
+    },
   };
-  const sync = jest.fn(async () => ({ ok: true, status: 200, data: { accepted: [] as string[], rejected: [] } }));
+  const sync = jest.fn(async (items: Array<{ id: string }>) => ({
+    ok: true,
+    status: 200,
+    data: { accepted: items.map((item) => item.id), rejected: [] as Array<{ id: string; reason: string }> },
+  }));
   const client = (options.client === undefined ? { sync, getNotices: jest.fn(async () => ({ ok: false, status: 500 })) } : options.client) as never;
   const cleared = jest.fn(async () => undefined);
+  const token = options.token === undefined ? 'tok' : options.token;
+  const accountId = options.accountId === undefined ? '7' : options.accountId;
   const deps: BackgroundSyncDeps = {
     source,
     persistence,
-    tokenStore: { get: async () => (options.token === undefined ? 'tok' : options.token), clear: cleared },
+    tokenStore: {
+      getBinding: async () => (token ? { token, accountId } : null),
+      isTransitioning: async () => options.transitioning ?? false,
+      clear: cleared,
+    },
     client,
     now: () => NOW,
     isOnline: async () => options.online ?? true,
@@ -76,10 +109,12 @@ describe('runBackgroundHealthSync', () => {
   });
 
   it('is a no-op without health permission', async () => {
-    const { deps, reads, persistence } = setup({ snapshot: snapshot({ healthSync: { accessGranted: false, lastReadAt: null } }) });
+    const { deps, reads, persistence } = setup({
+      snapshot: snapshot({ healthSync: { accessGranted: false, lastReadAt: null, backgroundAccessRequested: false } }),
+    });
     await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
     expect(reads).toHaveLength(0);
-    expect(persistence.saves).toBe(0);
+    expect(persistence.saves + persistence.updates).toBe(0);
   });
 
   it('is a no-op when nothing was ever persisted', async () => {
@@ -92,20 +127,49 @@ describe('runBackgroundHealthSync', () => {
     await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
   });
 
+  it('cold run with a token of another account than the snapshot reads, enqueues and sends nothing', async () => {
+    const { deps, reads, sync, persistence, getStored } = setup({ accountId: '9', samples: [sample('a')] });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
+    expect(reads).toHaveLength(0);
+    expect(sync).not.toHaveBeenCalled();
+    expect(persistence.updates + persistence.saves).toBe(0);
+    expect(getStored()?.samples).toEqual([]);
+  });
+
+  it('is a no-op for a legacy token without a bound account', async () => {
+    const { deps, reads, sync } = setup({ accountId: null, samples: [sample('a')] });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
+    expect(reads).toHaveLength(0);
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op while a session change is marked as in progress (app killed mid-switch)', async () => {
+    const { deps, reads, sync } = setup({ transitioning: true, samples: [sample('a')] });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
+    expect(reads).toHaveLength(0);
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it('works when token account, snapshot account and no transition all agree', async () => {
+    const { deps, sync } = setup({ samples: [sample('a')] });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('success');
+    expect(sync).toHaveBeenCalledTimes(1);
+  });
+
   it('reads the first window capped to 14 days, enqueues, persists and syncs', async () => {
-    const { deps, reads, persistence, sync, getStored } = setup({ samples: [sample('a')] });
+    const { deps, reads, sync, getStored } = setup({ samples: [sample('a')] });
     await expect(runBackgroundHealthSync(deps)).resolves.toBe('success');
 
     expect(NOW.getTime() - reads[0][0].getTime()).toBe(14 * 24 * 60 * 60 * 1000);
-    expect(persistence.saves).toBeGreaterThan(0);
     expect(getStored()?.samples.map((item) => item.id)).toContain('a');
     expect(getStored()?.healthSync.lastReadAt).toBe(NOW.toISOString());
     expect(sync).toHaveBeenCalledTimes(1);
+    expect(getStored()?.queue.every((item) => item.status === 'synced')).toBe(true);
   });
 
   it('reads only deltas on the next run', async () => {
     const { deps, reads } = setup({
-      snapshot: snapshot({ healthSync: { accessGranted: true, lastReadAt: '2026-10-12T11:30:00.000Z' } }),
+      snapshot: snapshot({ healthSync: { accessGranted: true, lastReadAt: '2026-10-12T11:30:00.000Z', backgroundAccessRequested: false } }),
     });
     await runBackgroundHealthSync(deps);
     expect(reads[0][0].getTime()).toBeGreaterThan(Date.parse('2026-10-12T05:00:00.000Z'));
@@ -117,6 +181,35 @@ describe('runBackgroundHealthSync', () => {
     await expect(runBackgroundHealthSync(deps)).resolves.toBe('success');
     expect(sync).not.toHaveBeenCalled();
     expect(getStored()?.queue.some((item) => item.status === 'pending')).toBe(true);
+  });
+
+  it('does not overwrite a newer snapshot: a queue item and a pending revoke written by the app meanwhile survive', async () => {
+    const appItem = { id: 'plan-1', kind: 'plan' as const, body: '{}', status: 'pending' as const, attempts: 0 };
+    const { deps, getStored } = setup({
+      samples: [sample('a')],
+      online: false,
+      concurrentWrite: (current) => ({
+        ...current,
+        queue: [...current.queue, appItem as never],
+        pendingRevokes: [{ accountId: '7', pendingSince: NOW.toISOString() }],
+        consentRevokePending: true,
+      }),
+    });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('success');
+    const result = getStored()!;
+    expect(result.queue.map((item) => item.id)).toContain('plan-1');
+    expect(result.pendingRevokes).toEqual([{ accountId: '7', pendingSince: NOW.toISOString() }]);
+    expect(result.consentRevokePending).toBe(true);
+    expect(result.samples.map((item) => item.id)).toContain('a');
+  });
+
+  it('does not send biometrics while a revocation is pending', async () => {
+    const { deps, sync } = setup({
+      snapshot: snapshot({ consentRevokePending: true }),
+      samples: [sample('a')],
+    });
+    await runBackgroundHealthSync(deps);
+    expect(sync).not.toHaveBeenCalled();
   });
 
   it('reuses the in-memory app when the UI runtime is alive instead of overwriting it from disk', async () => {
@@ -131,7 +224,15 @@ describe('runBackgroundHealthSync', () => {
     expect(life.state.samples.map((item) => item.id)).toContain('live');
     expect(persist).toHaveBeenCalled();
     expect(notify).toHaveBeenCalled();
-    expect(persistence.saves).toBe(0);
+    expect(persistence.saves + persistence.updates).toBe(0);
+  });
+
+  it('in the live runtime also refuses a token that belongs to another account', async () => {
+    const { deps, reads } = setup({ accountId: '9', samples: [sample('live')] });
+    const life = deps.createLife(snapshot());
+    setForegroundRuntime({ life, persist: async () => undefined });
+    await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
+    expect(reads).toHaveLength(0);
   });
 
   it('never throws: a failing source ends as failed', async () => {

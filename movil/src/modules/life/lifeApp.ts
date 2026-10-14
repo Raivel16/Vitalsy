@@ -47,6 +47,8 @@ export type HealthSyncState = {
   accessGranted: boolean;
   /** Fin de la última lectura completa; la siguiente lee solo desde aquí. */
   lastReadAt: string | null;
+  /** Ya se pidió el permiso de lectura en segundo plano de Health Connect: no se vuelve a pedir en cada lectura. */
+  backgroundAccessRequested: boolean;
 };
 
 export type PendingRevoke = { accountId: string; pendingSince: string };
@@ -73,7 +75,7 @@ export function emptySnapshot(): LifeSnapshot {
     dismissedNoticeIds: [],
     consentRevokePending: false,
     pendingRevokes: [],
-    healthSync: { accessGranted: false, lastReadAt: null },
+    healthSync: { accessGranted: false, lastReadAt: null, backgroundAccessRequested: false },
   };
 }
 
@@ -197,6 +199,8 @@ export class LifeApp {
     this.snapshot = {
       ...this.snapshot,
       sessionUserId: null,
+      // El permiso y la ventana de lectura son de la cuenta que se va: la siguiente empieza limpia.
+      healthSync: emptySnapshot().healthSync,
       ...(departing
         ? { pendingRevokes: this.withRevoke(this.snapshot.pendingRevokes, departing), consentRevokePending: false }
         : {}),
@@ -252,29 +256,48 @@ export class LifeApp {
     this.snapshot = { ...this.snapshot, healthSync: { ...this.snapshot.healthSync, accessGranted: granted } };
   }
 
+  markBackgroundAccessRequested(): void {
+    if (!this.snapshot.healthSync.backgroundAccessRequested) {
+      this.snapshot = { ...this.snapshot, healthSync: { ...this.snapshot.healthSync, backgroundAccessRequested: true } };
+    }
+  }
+
   recordHealthRead(at: string): void {
     this.snapshot = { ...this.snapshot, healthSync: { ...this.snapshot.healthSync, lastReadAt: at } };
   }
 
+  /**
+   * Agrega muestras nuevas. Una muestra con un id ya conocido pero con otro valor (p. ej. una noche de
+   * sueño que creció) reemplaza a la anterior y se vuelve a encolar; si es idéntica se ignora.
+   */
   addSamples(samples: BiometricSample[]): number {
-    const known = new Set(this.snapshot.samples.map((sample) => sample.id));
-    const fresh = samples.filter((sample) => !known.has(sample.id));
-    if (fresh.length === 0) {
+    const known = new Map(this.snapshot.samples.map((sample) => [sample.id, sample]));
+    const changed: BiometricSample[] = [];
+    for (const sample of samples) {
+      const previous = known.get(sample.id);
+      if (!previous || previous.value !== sample.value || previous.endedAt !== sample.endedAt) {
+        known.set(sample.id, sample);
+        changed.push(sample);
+      }
+    }
+    if (changed.length === 0) {
       return 0;
     }
     const queue = enqueueSync(this.snapshot.queue, {
-      id: `bio-${this.clock.now().getTime()}-${fresh[0].id}`,
+      id: `bio-${this.clock.now().getTime()}-${changed[0].id}`,
       kind: 'biometrics',
-      body: JSON.stringify(fresh),
+      body: JSON.stringify(changed),
     });
+    const replaced = new Set(changed.map((sample) => sample.id));
+    const kept = this.snapshot.samples.filter((sample) => !replaced.has(sample.id));
     this.snapshot = {
       ...this.snapshot,
-      samples: [...this.snapshot.samples, ...fresh],
+      samples: [...kept, ...changed],
       queue,
       lastLocalReadAt: this.clock.now().toISOString(),
     };
     this.captureNudge();
-    return fresh.length;
+    return changed.length;
   }
 
   addManual(kind: 'heart_rate' | 'spo2', raw: string): { ok: true } | { ok: false; message: string } {

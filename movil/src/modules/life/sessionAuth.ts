@@ -103,6 +103,8 @@ async function openFromServer(
     await deliverPendingRevoke(deps);
   }
   // Mientras dura el cambio no se envía nada: la cola y el token no deben mezclar cuentas.
+  // La marca es durable: si el sistema mata la app a mitad, la tarea en segundo plano no la ignora.
+  await tokenStore.setTransition(true).catch(() => undefined);
   life.beginSessionChange();
   try {
     const opened = life.openServerSession(payload.account);
@@ -119,7 +121,7 @@ async function openFromServer(
             try {
               // Primero se borra y se abre la sesión; el token nuevo se guarda al final, aún bajo bloqueo.
               const result = life.openServerSession(payload.account, { confirmed: true });
-              await tokenStore.set(payload.token);
+              await tokenStore.set(payload.token, String(payload.account.id));
               const notices = sessionNotices(
                 tokenStore,
                 result.status === 'ok' && result.switched,
@@ -135,11 +137,12 @@ async function openFromServer(
       };
     }
     // Sesión abierta y token guardado como una sola operación, bajo bloqueo del envío.
-    await tokenStore.set(payload.token);
+    await tokenStore.set(payload.token, String(payload.account.id));
     const notices = sessionNotices(tokenStore, opened.switched, opened.undeliveredRevoke);
     return { errors: {}, ...(notices.length > 0 ? { notices } : {}) };
   } finally {
     life.endSessionChange();
+    await tokenStore.setTransition(false).catch(() => undefined);
   }
 }
 

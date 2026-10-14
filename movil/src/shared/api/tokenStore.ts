@@ -1,9 +1,20 @@
+export type SessionBinding = {
+  token: string;
+  /** Cuenta a la que pertenece el token. null: token anterior a este campo (sin vínculo conocido). */
+  accountId: string | null;
+};
+
 export type TokenStore = {
   /** false cuando el token solo vive en memoria (SecureStore no disponible). */
   readonly persistent: boolean;
   get: () => Promise<string | null>;
-  set: (token: string) => Promise<void>;
+  /** Token y cuenta a la que pertenece, leídos en una sola operación. */
+  getBinding: () => Promise<SessionBinding | null>;
+  set: (token: string, accountId?: string | null) => Promise<void>;
   clear: () => Promise<void>;
+  /** Marca durable de «cambio de cuenta en curso»: sobrevive a que el sistema mate la app a mitad. */
+  setTransition: (active: boolean) => Promise<void>;
+  isTransitioning: () => Promise<boolean>;
 };
 
 export type SecureBackend = {
@@ -13,29 +24,56 @@ export type SecureBackend = {
 };
 
 const KEY = 'vitalsy.life.token';
+const TRANSITION_KEY = 'vitalsy.life.session-transition';
+
+function parseBinding(raw: string | null): SessionBinding | null {
+  if (!raw) {
+    return null;
+  }
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw) as { token?: unknown; accountId?: unknown };
+      if (typeof parsed.token === 'string' && parsed.token) {
+        return { token: parsed.token, accountId: typeof parsed.accountId === 'string' && parsed.accountId ? parsed.accountId : null };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  // Formato anterior: el token solo, sin cuenta.
+  return { token: raw, accountId: null };
+}
 
 export function createTokenStore(backend?: SecureBackend | null): TokenStore {
-  let memory: string | null = null;
+  let memory: SessionBinding | null = null;
+  let memoryTransition = false;
   let secure = backend ?? null;
+
+  async function read(): Promise<SessionBinding | null> {
+    if (secure) {
+      try {
+        return parseBinding(await secure.getItemAsync(KEY));
+      } catch {
+        secure = null;
+      }
+    }
+    return memory;
+  }
+
   return {
     get persistent() {
       return secure !== null;
     },
     async get() {
-      if (secure) {
-        try {
-          return await secure.getItemAsync(KEY);
-        } catch {
-          secure = null;
-        }
-      }
-      return memory;
+      return (await read())?.token ?? null;
     },
-    async set(token) {
-      memory = token;
+    getBinding: read,
+    async set(token, accountId = null) {
+      memory = { token, accountId };
       if (secure) {
         try {
-          await secure.setItemAsync(KEY, token);
+          await secure.setItemAsync(KEY, JSON.stringify(memory));
         } catch {
           secure = null;
         }
@@ -50,6 +88,30 @@ export function createTokenStore(backend?: SecureBackend | null): TokenStore {
           secure = null;
         }
       }
+    },
+    async setTransition(active) {
+      memoryTransition = active;
+      if (secure) {
+        try {
+          if (active) {
+            await secure.setItemAsync(TRANSITION_KEY, '1');
+          } else {
+            await secure.deleteItemAsync(TRANSITION_KEY);
+          }
+        } catch {
+          secure = null;
+        }
+      }
+    },
+    async isTransitioning() {
+      if (secure) {
+        try {
+          return (await secure.getItemAsync(TRANSITION_KEY)) === '1';
+        } catch {
+          secure = null;
+        }
+      }
+      return memoryTransition;
     },
   };
 }

@@ -27,6 +27,19 @@ export class SqlitePersistence implements LifePersistence {
     return JSON.parse(openJson(row.payload, this.key)) as LifeSnapshot;
   }
 
+  async update(mutate: (current: LifeSnapshot | null) => LifeSnapshot | null): Promise<void> {
+    // Transacción exclusiva: otra conexión (la tarea en segundo plano) espera y luego ve lo ya escrito.
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      const row = await transaction.getFirstAsync<{ payload: string }>('SELECT payload FROM vault WHERE id = 1');
+      const current = row ? (JSON.parse(openJson(row.payload, this.key)) as LifeSnapshot) : null;
+      const next = mutate(current);
+      if (next) {
+        const payload = sealJson(JSON.stringify(next), this.key, this.nonce());
+        await transaction.runAsync('INSERT OR REPLACE INTO vault (id, payload) VALUES (1, ?)', payload);
+      }
+    });
+  }
+
   async save(snapshot: LifeSnapshot): Promise<void> {
     const payload = sealJson(JSON.stringify(snapshot), this.key, this.nonce());
     await this.database.runAsync('INSERT OR REPLACE INTO vault (id, payload) VALUES (1, ?)', payload);

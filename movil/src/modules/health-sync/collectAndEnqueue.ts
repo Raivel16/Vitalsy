@@ -17,7 +17,7 @@ export function readWindow(lastReadAt: string | null, now: Date): { from: Date; 
 
 type CollectLife = Pick<
   LifeApp,
-  'addSamples' | 'markHealthAccess' | 'recordHealthRead' | 'sessionChanging' | 'sessionEpoch' | 'state'
+  'addSamples' | 'markBackgroundAccessRequested' | 'markHealthAccess' | 'recordHealthRead' | 'sessionChanging' | 'sessionEpoch' | 'state'
 >;
 
 export type CollectDeps = {
@@ -59,8 +59,13 @@ export async function collectAndEnqueue({ source, life, now, interactive }: Coll
   let granted = life.state.healthSync.accessGranted;
   let accessMessage: string | null = null;
   if (interactive) {
-    const access = await source.requestAccess();
+    const askBackground = !life.state.healthSync.backgroundAccessRequested;
+    const access = await source.requestAccess({ includeBackground: askBackground });
     life.markHealthAccess(access.granted);
+    if (access.granted && askBackground) {
+      // Un solo diálogo extra por cuenta, no uno por cada lectura.
+      life.markBackgroundAccessRequested();
+    }
     if (!access.granted) {
       return result({ status: 'denied', health, permission: 'denied', message: access.message });
     }

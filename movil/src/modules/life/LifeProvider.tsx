@@ -68,6 +68,8 @@ export function LifeProvider({
     onlineRef.current = online;
   }, [online]);
   const [hasSession, setHasSession] = useState(false);
+  // Hasta leer el token no se sabe si hay sesión: no se da de baja la tarea por un alse que solo es «aún no cargó».
+  const [sessionKnown, setSessionKnown] = useState(false);
   const client = useMemo(() => {
     const baseUrl = apiBaseUrl();
     return baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null;
@@ -107,7 +109,15 @@ export function LifeProvider({
 
   useEffect(() => {
     let active = true;
-    void tokenStore.get().then((token) => active && setHasSession(Boolean(token)), () => undefined);
+    void tokenStore.get().then(
+      (token) => {
+        if (active) {
+          setHasSession(Boolean(token));
+          setSessionKnown(true);
+        }
+      },
+      () => undefined,
+    );
     return () => {
       active = false;
     };
@@ -119,6 +129,7 @@ export function LifeProvider({
     onlineRef.current = Boolean(network?.isConnected);
     setOnline(onlineRef.current);
     setHasSession(Boolean(await tokenStore.get().catch(() => null)));
+    setSessionKnown(true);
     if (store) {
       await store.save(life.state);
     }
@@ -221,11 +232,11 @@ export function LifeProvider({
   // Con sesión y permiso de lectura se programa la lectura periódica; al cerrar sesión se da de baja.
   const backgroundEnabled = hasSession && life.state.healthSync.accessGranted;
   useEffect(() => {
-    if (!ready) {
+    if (!ready || !sessionKnown) {
       return;
     }
     void setHealthBackgroundSync(backgroundEnabled);
-  }, [ready, backgroundEnabled]);
+  }, [ready, sessionKnown, backgroundEnabled]);
 
   const consentDeps = useCallback(async () => {
     const session = Boolean(await tokenStore.get().catch(() => null));

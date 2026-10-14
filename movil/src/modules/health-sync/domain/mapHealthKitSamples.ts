@@ -93,13 +93,16 @@ function nights(records: HealthKitSleep[] | undefined, settledBefore: number | n
     .map((group) => {
       const startedAt = new Date(group.start).toISOString();
       const value = round(group.minutes);
+      const endedAt = new Date(group.end).toISOString();
       return {
-        id: idFor('sleep', startedAt, value),
+        // Estable por noche (día en que termina) y origen: si la noche crece al llegar más segmentos,
+        // el id es el mismo y la muestra nueva reemplaza a la anterior en vez de duplicarla.
+        id: `hk:sleep:${endedAt.slice(0, 10)}`,
         kind: 'sleep' as const,
         value,
         unit: 'min',
         startedAt,
-        endedAt: new Date(group.end).toISOString(),
+        endedAt,
         origin: 'health_kit' as const,
       };
     });

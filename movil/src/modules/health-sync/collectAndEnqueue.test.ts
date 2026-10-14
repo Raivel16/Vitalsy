@@ -79,7 +79,7 @@ describe('collectAndEnqueue', () => {
     expect(source.requested).toBe(1);
     expect(life.state.samples.map((item) => item.id)).toEqual(['a', 'b']);
     expect(life.state.queue).toHaveLength(1);
-    expect(life.state.healthSync).toEqual({ accessGranted: true, lastReadAt: NOW.toISOString() });
+    expect(life.state.healthSync).toEqual({ accessGranted: true, lastReadAt: NOW.toISOString(), backgroundAccessRequested: true });
   });
 
   it('interactive: denied access is recorded and nothing is read', async () => {

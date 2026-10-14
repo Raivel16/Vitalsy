@@ -17,7 +17,8 @@ export type HealthReadResult = {
 export interface HealthDataSource {
   readonly name: string;
   availability(): Promise<HealthStatus>;
-  requestAccess(): Promise<{ granted: boolean; message: string }>;
+  /** `includeBackground`: pide además el permiso de lectura en segundo plano (solo una vez por cuenta; lo decide quien llama). */
+  requestAccess(options?: { includeBackground?: boolean }): Promise<{ granted: boolean; message: string }>;
   readRange(from: Date, to: Date): Promise<HealthReadResult>;
   /** Lee sin pedir permisos (apta para segundo plano, donde no se puede mostrar un diálogo). */
   readGranted?(from: Date, to: Date): Promise<HealthReadResult>;

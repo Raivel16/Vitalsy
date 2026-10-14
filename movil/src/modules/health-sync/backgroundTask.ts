@@ -20,6 +20,7 @@ async function runDefault(): Promise<BackgroundOutcome> {
       persistence: {
         load: async () => (await open()).load(),
         save: async (snapshot) => (await open()).save(snapshot),
+        update: async (mutate) => (await open()).update(mutate),
       },
       tokenStore,
       client: baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null,
