@@ -142,7 +142,7 @@ class DischargeController extends Controller
         return response()->json($this->discharge->confirmExit($encounterId, $request->user()), 201);
     }
 
-    /** RF-96: emite el plan estructurado para Vitalsy Life; «rechaza» no crea plan ni códigos. */
+    /** RF-96: emite el plan estructurado para Vitalsy Life; «rechaza» se persiste sin plan ni códigos. */
     public function storeLifePlan(Request $request, string $encounterId, DischargeLifePlan $lifePlans): JsonResponse
     {
         $data = $request->validate([
@@ -153,8 +153,8 @@ class DischargeController extends Controller
         ]);
 
         $plan = $lifePlans->issue($encounterId, $data['mode'], $request->user());
-        if (! $plan) {
-            return response()->json(['lifePlan' => ['mode' => 'rechaza']]);
+        if ($plan->mode === 'rechaza') {
+            return response()->json(['lifePlan' => $lifePlans->present($plan)]);
         }
 
         return response()->json(['lifePlan' => $lifePlans->present($plan)], 201);

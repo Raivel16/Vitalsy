@@ -49,7 +49,7 @@ Fuente de verdad para la integración entre Vitalsy Clinical (Laravel + React) y
 
 ## Plan de alta (RF-96, RF-97, RF-98)
 
-Modos de `life-plan`: `usuario` (el paciente ya tiene cuenta Life, el plan queda con `code`), `invitacion` (se emite `invitationCode` de onboarding patrocinado) y `rechaza` (no se genera plan activo; se registra la decisión).
+Modos de `life-plan`: `usuario` (el paciente ya tiene cuenta Life, el plan queda con `code`), `invitacion` (se emite `invitationCode` de onboarding patrocinado) y `rechaza` (no se genera plan activo ni códigos; la decisión se persiste con `status: rechazado` y `GET discharge/encounters/{id}` la sigue devolviendo como `lifePlan.mode = rechaza`). Cambiar de modalidad antes del egreso es válido: pasar de `invitacion` a `usuario` invalida el `invitationCode` emitido, y pasar a `rechaza` anula los códigos previos. No se emite un plan sin medicamentos con nombre y dosis (422).
 
 `payload` del plan (lo que sirve `GET /life/discharge-plans/{code}` y lo que el QR puede incluir en JSON):
 
@@ -91,6 +91,7 @@ Modos de `life-plan`: `usuario` (el paciente ya tiene cuenta Life, el plan queda
 | 503 | `code_unavailable` | No se pudo generar un código de vinculación único; reintentar. |
 | 404 | `plan_not_found` | El código de plan no existe. |
 | 409 | `plan_claimed` | El plan ya fue reclamado por otra cuenta. |
+| 410 | `plan_expired` | El plan no reclamado superó su `validUntil`; ya no puede reclamarse. |
 
 Cuerpo de error: `{message, code}`. Otros errores de validación siguen el formato 422 estándar de Laravel.
 

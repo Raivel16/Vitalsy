@@ -19,16 +19,16 @@ class DischargeLifePlan
 
     private const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-    /** Devuelve null cuando el paciente rechaza: no se crea plan ni códigos. */
-    public function issue(string $encounterId, string $mode, User $by): ?LifeDischargePlan
+    /** «rechaza» se registra como decisión (sin códigos ni payload) para que sobreviva a la recarga. */
+    public function issue(string $encounterId, string $mode, User $by): LifeDischargePlan
     {
         if (! in_array($mode, self::MODES, true)) {
             throw new ClinicalRuleException('Modalidad de plan Vitalsy Life no válida.');
         }
 
         $source = $this->source($encounterId);
-        if ($mode === 'rechaza') {
-            return null;
+        if ($mode !== 'rechaza' && $source['medications'] === []) {
+            throw new ClinicalRuleException('La receta no tiene medicamentos con nombre y dosis; complete la receta antes de emitir el plan.');
         }
 
         try {
@@ -51,25 +51,35 @@ class DischargeLifePlan
                 throw new ClinicalRuleException('El plan ya fue reclamado por el ciudadano y no puede reemitirse.');
             }
 
-            $code = $plan?->code ?? $this->newCode('VLA', 'code');
             $validUntil = now()->addDays(30)->toDateString();
-            $invitation = $plan?->invitation_code;
-            if ($mode === 'invitacion' && ! $invitation) {
-                $invitation = $this->newCode('VLI', 'invitation_code');
+            if ($mode === 'rechaza') {
+                // Decisión registrada sin códigos: cualquier código previo deja de ser reclamable.
+                $attributes = [
+                    'mode' => $mode, 'code' => null, 'invitation_code' => null, 'payload' => [],
+                    'valid_until' => $validUntil, 'status' => 'rechazado', 'created_by' => $by->id,
+                ];
+            } else {
+                $code = $plan?->code ?? $this->newCode('VLA', 'code');
+                // Al pasar de invitación a usuario la invitación emitida se invalida.
+                $invitation = null;
+                if ($mode === 'invitacion') {
+                    $invitation = $plan?->invitation_code ?? $this->newCode('VLI', 'invitation_code');
+                }
+                $attributes = [
+                    'mode' => $mode,
+                    'code' => $code,
+                    'invitation_code' => $invitation,
+                    'payload' => ['id' => $code] + $source + ['validUntil' => $validUntil],
+                    'valid_until' => $validUntil,
+                    'status' => 'pendiente',
+                    'created_by' => $by->id,
+                ];
             }
-            $attributes = [
-                'mode' => $mode,
-                'code' => $code,
-                'invitation_code' => $invitation,
-                'payload' => ['id' => $code] + $source + ['validUntil' => $validUntil],
-                'valid_until' => $validUntil,
-                'created_by' => $by->id,
-            ];
 
             if ($plan) {
                 $plan->update($attributes);
             } else {
-                $plan = LifeDischargePlan::query()->create($attributes + ['encounter_id' => $encounterId, 'status' => 'pendiente']);
+                $plan = LifeDischargePlan::query()->create($attributes + ['encounter_id' => $encounterId]);
             }
 
             return $plan->refresh();
@@ -81,6 +91,10 @@ class DischargeLifePlan
     {
         if (! $plan) {
             return null;
+        }
+
+        if ($plan->mode === 'rechaza') {
+            return ['mode' => 'rechaza', 'status' => $plan->status];
         }
 
         if (! $withSecrets) {

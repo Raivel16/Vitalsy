@@ -11,7 +11,7 @@ class ActivateLifePlanOnExit
     public function handle(PatientExited $event): void
     {
         $plan = LifeDischargePlan::query()->where('encounter_id', $event->encounterId)->first();
-        if (! $plan) {
+        if (! $plan || $plan->mode === 'rechaza') {
             return;
         }
 

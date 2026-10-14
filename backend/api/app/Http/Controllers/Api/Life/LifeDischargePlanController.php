@@ -29,6 +29,9 @@ class LifeDischargePlanController extends Controller
             }
 
             if ($plan->claimed_by_account_id === null) {
+                if ($plan->valid_until !== null && $plan->valid_until->lt(today())) {
+                    return response()->json(['code' => 'plan_expired', 'message' => 'Este plan venció. Solicite uno nuevo en el hospital.'], 410);
+                }
                 $plan->update(['status' => 'reclamado', 'claimed_by_account_id' => $accountId, 'claimed_at' => now()]);
             } elseif ((int) $plan->claimed_by_account_id !== (int) $accountId) {
                 return response()->json(['code' => 'plan_claimed', 'message' => 'Este plan ya fue reclamado por otra cuenta.'], 409);

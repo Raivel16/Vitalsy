@@ -133,7 +133,7 @@ class LifeDischargePlanApiTest extends TestCase
         $this->assertSame(1, LifeDischargePlan::query()->count());
     }
 
-    public function test_rechaza_mode_creates_no_plan(): void
+    public function test_rechaza_mode_is_persisted_without_codes_and_survives_reload(): void
     {
         $this->dischargeReady();
 
@@ -142,6 +142,48 @@ class LifeDischargePlanApiTest extends TestCase
             ->assertJsonPath('lifePlan.mode', 'rechaza')
             ->assertJsonMissingPath('lifePlan.code');
 
+        $plan = LifeDischargePlan::query()->firstOrFail();
+        $this->assertSame('rechaza', $plan->mode);
+        $this->assertNull($plan->code);
+        $this->assertNull($plan->invitation_code);
+
+        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)
+            ->assertOk()
+            ->assertJsonPath('case.lifePlan.mode', 'rechaza')
+            ->assertJsonMissingPath('case.lifePlan.code');
+
+        // El paciente puede cambiar de decisión antes del egreso.
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+            ->assertCreated()
+            ->assertJsonStructure(['lifePlan' => ['code']]);
+    }
+
+    public function test_exit_does_not_activate_a_rejected_plan(): void
+    {
+        $this->dischargeReady(self::ENC, true);
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'rechaza'])->assertOk();
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+
+        $this->assertSame('rechazado', LifeDischargePlan::query()->firstOrFail()->status);
+    }
+
+    public function test_expired_plan_cannot_be_claimed(): void
+    {
+        $code = $this->issuedPlanCode('usuario');
+        LifeDischargePlan::query()->update(['valid_until' => now()->subDay()->toDateString()]);
+
+        $this->asCitizen();
+        $this->claim($code)->assertStatus(410)->assertJsonPath('code', 'plan_expired');
+        $this->assertNull(LifeDischargePlan::query()->firstOrFail()->claimed_by_account_id);
+    }
+
+    public function test_plan_without_medications_is_not_issued(): void
+    {
+        $this->dischargeReady();
+        $rx = \App\Models\AmbulatoryPrescription::query()->where('encounter_id', self::ENC)->firstOrFail();
+        $rx->update(['content' => ['items' => [['drug' => 'Amoxicilina', 'dose' => '']]]]);
+
+        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])->assertStatus(422);
         $this->assertSame(0, LifeDischargePlan::query()->count());
     }
 
@@ -263,15 +305,18 @@ class LifeDischargePlanApiTest extends TestCase
             ->assertJsonPath('message', 'El paciente ya egresó; el plan no puede reemitirse.');
     }
 
-    public function test_switching_to_usuario_keeps_issued_invitation_code(): void
+    public function test_switching_to_usuario_invalidates_issued_invitation_code(): void
     {
         $this->issuedPlanCode('invitacion');
         $invitation = LifeDischargePlan::query()->firstOrFail()->invitation_code;
 
         $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
             ->assertStatus(201)
-            ->assertJsonPath('lifePlan.invitationCode', $invitation);
-        $this->assertSame($invitation, LifeDischargePlan::query()->firstOrFail()->invitation_code);
+            ->assertJsonPath('lifePlan.invitationCode', null);
+        $this->assertNull(LifeDischargePlan::query()->firstOrFail()->invitation_code);
+
+        $this->asCitizen();
+        $this->claim($invitation)->assertNotFound()->assertJsonPath('code', 'plan_not_found');
     }
 
     public function test_case_presentation_includes_life_plan(): void
