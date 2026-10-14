@@ -127,3 +127,13 @@ Procedimiento manual (development build, `eas build --profile development`):
 4. Umbrales esperados: ≤5 % del consumo total en 24 h; cada ejecución de la tarea de segundos y sin diálogos. Registra el resultado aquí cuando se mida.
 
 Notas de integridad (por verificar en dispositivo): una lectura fallida (permiso de segundo plano ausente, HealthKit con el teléfono bloqueado, más de 50 páginas) no avanza la ventana de lectura y se repite en la siguiente ejecución. El permiso de segundo plano de Health Connect se solicita una sola vez por cuenta. `movil/package-lock.json` se refrescó con `npm install --package-lock-only`; hay que correr `npm install` antes de un build de EAS para instalar los módulos nativos nuevos. `react-native-nitro-modules` queda fijado en 0.35.0 (el mínimo que exige la librería de HealthKit).
+
+## Regenerar íconos
+
+Los íconos (`icon.png`, `splash-icon.png`, `android-icon-*.png`, `favicon.png`) se generan desde el wordmark de la app («Vitalsy» + pastilla «Life», colores `brand` de `src/shared/theme/tokens.ts`, fuente Plus Jakarta Sans de `@expo-google-fonts`):
+
+```
+node scripts/generate-brand-assets.mjs
+```
+
+Requiere `npm install` (usa `@resvg/resvg-js`). El script valida que `icon.png` no tenga transparencia y que el primer plano adaptativo quede dentro de la zona segura del 66 %.
