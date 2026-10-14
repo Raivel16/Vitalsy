@@ -155,4 +155,33 @@ describe("expediente clínico (RF-38)", () => {
     expect(panel).toHaveTextContent(/pulso en reposo/i);
     expect(panel).toHaveTextContent(/55–70 lpm/);
   });
-});
+  it("muestra «No disponible» y no «Ninguna registrada» cuando el payload de admisión es ilegible (RNF-06)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+        if (url.includes("/clinical-chart")) {
+          return jsonResponse(200, {
+            encounter: {
+              patientName: "Paciente Chart Demo", documentType: "DNI", documentNumber: "11223344",
+              recordId: "EXP-CHART-0001", wristbandCode: "BRZ-CHART-0001", room: "401", bed: "A",
+              service: "Medicina", coveragePayer: "Essalud", coverageStatus: "aprobada", createdAt: null,
+            },
+            admission: { unreadable: true },
+            decryptError: true,
+            activePrescription: null,
+            vitalSigns: [], labResults: [], imagingReports: [],
+            medicalEvolutionNotes: [], nursingEvolutionNotes: [], careActivities: [], medicationAdministrations: [],
+          });
+        }
+        return jsonResponse(404, { message: "No se encontró lo solicitado." });
+      }),
+    );
+    renderApp("/atencion/chart?ingreso=ENC-HOSP-0001");
+    const panel = await screen.findByRole("tabpanel", { name: /^admisión$/i });
+    expect(panel).toHaveTextContent(/no disponible/i);
+    expect(panel).toHaveTextContent(/no asuma que el paciente no tiene alergias/i);
+    expect(panel).not.toHaveTextContent(/ninguna registrada/i);
+    expect(panel).not.toHaveTextContent(/aún no hay registros clínicos/i);
+  });});

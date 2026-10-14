@@ -37,6 +37,8 @@ type ChartPayload = {
     createdAt: string | null;
   };
   admission?: {
+    /** RNF-06: el payload clínico no se pudo descifrar; alergias y medicación no están disponibles. */
+    unreadable?: boolean;
     deliverables?: unknown;
     assessment?: { chiefComplaint?: string; allergies?: string[]; history?: string } | null;
     vitalsBasal?: { summary?: string; news2Label?: string; news2Total?: number } | null;
@@ -229,7 +231,9 @@ export function PatientChartPage() {
           aria-label="Admisión"
         >
           <h3>Admisión y recepción</h3>
-          {!hasAdmissionContent(admission, data.lifeBaseline) ? (
+          {admission?.unreadable ? (
+            <Feedback tone="error">No disponible: los datos clínicos de admisión (alergias, medicación y riesgos) no se pudieron leer. No asuma que el paciente no tiene alergias ni medicación; contacte a soporte.</Feedback>
+          ) : !hasAdmissionContent(admission, data.lifeBaseline) ? (
             <Feedback tone="info">Aún no hay registros clínicos de admisión en este expediente.</Feedback>
           ) : (
             <div className="stack">

@@ -172,7 +172,8 @@ class PatientClinicalChart
             ])
             ->all();
 
-        $payload = is_array($encounter->clinical_payload) ? $encounter->clinical_payload : [];
+        $unreadable = $encounter->payloadUnreadable();
+        $payload = $unreadable ? [] : (is_array($encounter->clinical_payload) ? $encounter->clinical_payload : []);
         $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
         $vitalsBasal = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : null;
         $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : null;
@@ -205,6 +206,7 @@ class PatientClinicalChart
                 'createdAt' => optional($encounter->created_at)?->toIso8601String(),
             ],
             'admission' => [
+                'unreadable' => $unreadable,
                 'deliverables' => $encounter->deliverables ?? [],
                 'assessment' => $assessment,
                 'vitalsBasal' => $vitalsBasal,

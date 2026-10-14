@@ -448,7 +448,7 @@ class HospitalAdmissionController extends Controller
         }
 
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
-        $reconciliation = $encounter?->clinical_payload['reconciliation'] ?? null;
+        $reconciliation = $encounter?->readablePayload()['reconciliation'] ?? null;
         if (! is_array($reconciliation) || ! empty($reconciliation['noHomeMedications'])) {
             return;
         }

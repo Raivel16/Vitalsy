@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Exceptions\UndecryptableFieldException;
+use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Models\AdmissionEncounter;
 use App\Models\Handover;
 use App\Models\User;
@@ -70,7 +71,7 @@ class DegradedReadAndSeederTest extends TestCase
 
         try {
             $e = AdmissionEncounter::query()->findOrFail($id);
-            $payload = $e->clinical_payload ?? [];
+            $payload = $e->readablePayload();
             $this->fail('lectura fuera de listado debía lanzar');
         } catch (UndecryptableFieldException) {
             $this->assertTrue(true);
@@ -125,5 +126,63 @@ class DegradedReadAndSeederTest extends TestCase
         $this->assertStringContainsString('FOR EACH ROW{$when} EXECUTE FUNCTION', $refined);
         // La comprobación de existencia vive en el cuerpo plpgsql, no en WHEN.
         $this->assertStringContainsString('EXISTS (SELECT 1 FROM {$ref} WHERE id = OLD.{$c})', $refined);
+    }
+
+    public function test_unreadable_row_never_reports_empty_allergies_or_medication(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admision']));
+        $this->insertEncounter('ENC-OK', json_encode(['assessment' => ['allergies' => ['Penicilina']], 'reconciliation' => ['medications' => [['name' => 'Metformina']]]]));
+        $this->insertEncounter('ENC-BAD', $this->foreign());
+
+        $response = $this->getJson('/api/v1/hospital-admission/encounters')->assertOk();
+        $rows = collect($response->json('encounters'))->keyBy('encounterId');
+
+        $bad = $rows['ENC-BAD'];
+        $this->assertTrue($bad['unreadable']);
+        $this->assertTrue($bad['clinical']['unreadable']);
+        $this->assertNull($bad['clinical']['allergies']);
+        $this->assertNull($bad['clinical']['medications']);
+        $this->assertNull($bad['clinical']['consent']);
+
+        $ok = $rows['ENC-OK'];
+        $this->assertFalse($ok['unreadable']);
+        $this->assertSame(['Penicilina'], $ok['clinical']['allergies']);
+        $this->assertSame(['Metformina'], $ok['clinical']['medications']);
+    }
+
+    public function test_clinical_chart_flags_unreadable_admission(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'medico_tratante']));
+        $this->insertEncounter('ENC-BAD', $this->foreign());
+
+        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-BAD/clinical-chart')->assertOk();
+        $response->assertJsonPath('admission.unreadable', true);
+        $response->assertJsonPath('admission.assessment', null);
+        $response->assertJsonPath('decryptError', true);
+    }
+
+    public function test_readable_payload_throws_instead_of_returning_empty_when_degrading(): void
+    {
+        $id = $this->insertEncounter('ENC-BAD', $this->foreign());
+
+        FieldCipher::degrading(function () use ($id) {
+            $e = AdmissionEncounter::query()->findOrFail($id);
+            $this->assertTrue($e->payloadUnreadable());
+            $this->expectException(UndecryptableFieldException::class);
+            $e->readablePayload();
+        });
+    }
+
+    public function test_basal_plan_from_bpmh_aborts_when_payload_is_unreadable(): void
+    {
+        $actor = User::factory()->create(['role' => 'medico_tratante']);
+        $this->insertEncounter('ENC-BAD', $this->foreign());
+        $controller = app(HospitalAdmissionController::class);
+        $method = new \ReflectionMethod($controller, 'openBasalPlanFromBpmh');
+
+        FieldCipher::degrading(function () use ($method, $controller, $actor) {
+            $this->expectException(UndecryptableFieldException::class);
+            $method->invoke($controller, 'ENC-BAD', $actor);
+        });
     }
 }

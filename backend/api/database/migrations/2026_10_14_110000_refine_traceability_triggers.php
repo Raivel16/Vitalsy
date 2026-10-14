@@ -70,14 +70,13 @@ return new class extends Migration
                 return "({$expr})";
             }, $columns);
 
-            $updateWhen = implode(' OR ', $changes);
-            if ($rule['when'] !== null) {
-                $updateWhen = "{$rule['when']} AND ({$updateWhen})";
-            }
-
             if ($driver === 'pgsql') {
                 $this->createPgUpdateGuard($table, $columns, $rule);
             } else {
+                $updateWhen = implode(' OR ', $changes);
+                if ($rule['when'] !== null) {
+                    $updateWhen = "{$rule['when']} AND ({$updateWhen})";
+                }
                 $this->createTrigger($driver, "trg_{$table}_no_update", $table, 'UPDATE', $updateWhen);
             }
             $this->createTrigger($driver, "trg_{$table}_no_delete", $table, 'DELETE', $rule['when'] ?? 'TRUE');
@@ -91,11 +90,14 @@ return new class extends Migration
             return;
         }
 
-        foreach (['medical_evolution_notes', 'handovers'] as $table) {
+        foreach (array_keys($this->rules()) as $table) {
             foreach (['no_update', 'no_delete'] as $kind) {
                 DB::unprepared($driver === 'pgsql'
                     ? "DROP TRIGGER IF EXISTS trg_{$table}_{$kind} ON {$table}"
                     : "DROP TRIGGER IF EXISTS trg_{$table}_{$kind}");
+            }
+            if ($driver === 'pgsql') {
+                DB::unprepared("DROP FUNCTION IF EXISTS vitalsy_guard_{$table}_update()");
             }
         }
     }

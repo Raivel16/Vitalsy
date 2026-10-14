@@ -25,6 +25,14 @@ class DatabaseSeeder extends Seeder
             'medication_administrations' => ['nurse_user_id'],
             'alert_events' => ['user_id'],
             'alert_acknowledgements' => ['user_id'],
+            // FK en cascada: borrar al usuario destruiria turnos, asignaciones, ausencias y confirmaciones.
+            'staff_shifts' => ['user_id'],
+            'daily_patient_assignments' => ['nurse_user_id'],
+            'staff_absences' => ['user_id'],
+            'retainer_confirmations' => ['user_id'],
+            'patient_exits' => ['confirmed_by'],
+            'discharge_orders' => ['ordered_by'],
+            'epicrisis_documents' => ['authored_by'],
         ];
 
         foreach (User::query()->whereIn('email', $emails)->get() as $user) {

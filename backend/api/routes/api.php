@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('health', function () {
     try {
         DB::select('select 1');
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return response()->json(['status' => 'degraded', 'db' => 'fail'], 503);
     }
 
