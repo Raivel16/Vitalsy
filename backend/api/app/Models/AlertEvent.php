@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Immutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AlertEvent extends Model
 {
+    use Immutable;
+
     protected $fillable = [
         'alert_id',
         'type',
@@ -27,15 +30,9 @@ class AlertEvent extends Model
         ];
     }
 
-    protected static function booted(): void
+    public function immutableNullableColumns(): array
     {
-        static::updating(function (): never {
-            throw new \RuntimeException('El historial de alertas no admite modificaciones.');
-        });
-
-        static::deleting(function (): never {
-            throw new \RuntimeException('El historial de alertas no admite eliminaciones.');
-        });
+        return ['user_id'];
     }
 
     public function alert(): BelongsTo

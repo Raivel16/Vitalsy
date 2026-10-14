@@ -187,7 +187,8 @@ class DischargeService
             throw new ClinicalRuleException('Genere primero el informe digital de alta de enfermería.');
         }
 
-        DischargeIndicationReceipt::query()->updateOrCreate(
+        // RNF-07: el acuse de recibo es inmutable; un reenvío conserva el primero.
+        DischargeIndicationReceipt::query()->firstOrCreate(
             ['encounter_id' => $encounterId],
             [
                 'received_by_name' => $data['receivedByName'],

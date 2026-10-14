@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Exceptions\ImmutableRecordException;
+use App\Models\Concerns\Immutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MedicationAdministration extends Model
 {
+    use Immutable;
+
     protected $fillable = [
         'encounter_id',
         'prescription_item_id',
@@ -24,6 +28,30 @@ class MedicationAdministration extends Model
             'administered_at' => 'datetime',
             'barcode_ok' => 'boolean',
         ];
+    }
+
+    /**
+     * RNF-07: la dosis es editable mientras no esté firmada (pendiente/cancelado);
+     * una vez `administrado` (firma digital) queda congelada.
+     */
+    public function isImmutableNow(): bool
+    {
+        return $this->getOriginal('status') === 'administrado';
+    }
+
+    public function immutableNullableColumns(): array
+    {
+        return ['nurse_user_id', 'prescription_item_id'];
+    }
+
+    /** Solo se admite la cancelación masiva de dosis pendientes (el trigger protege las firmadas). */
+    public function assertMassUpdateAllowed(array $values): void
+    {
+        if (array_keys($values) === ['status'] && $values['status'] === 'cancelado') {
+            return;
+        }
+
+        throw ImmutableRecordException::forAction('MedicationAdministration', 'modificación masiva');
     }
 
     public function prescriptionItem(): BelongsTo
