@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\DB;
  */
 class LifeLinking
 {
+    /** Misma ventana que BaselineCalculator (14 días): evita cargar todo el historial. */
+    private const WINDOW_DAYS = 14;
+
     public function __construct(private readonly BaselineCalculator $calculator) {}
 
     /**
@@ -51,7 +54,9 @@ class LifeLinking
                 throw new ClinicalRuleException('El paciente no tiene activado compartir datos con el hospital.', 'sharing_closed');
             }
 
-            $samples = LifeBiometricSample::query()->where('life_account_id', $link->life_account_id)->get();
+            $samples = LifeBiometricSample::query()->where('life_account_id', $link->life_account_id)
+                ->where('started_at', '>=', now()->subDays(self::WINDOW_DAYS))
+                ->get();
             $metrics = $this->calculator->summarize($samples);
 
             try {

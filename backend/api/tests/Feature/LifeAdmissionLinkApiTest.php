@@ -90,6 +90,23 @@ class LifeAdmissionLinkApiTest extends TestCase
             ->assertOk()->assertJsonPath('baseline.metrics.0.kind', 'heart_rate');
     }
 
+    public function test_only_samples_inside_the_baseline_window_are_loaded(): void
+    {
+        [$account, $code] = $this->citizenWithCodeAndHistory();
+        LifeBiometricSample::query()->create([
+            'life_account_id' => $account->id, 'client_id' => 'old', 'kind' => 'heart_rate', 'value' => 50,
+            'unit' => 'bpm', 'started_at' => now()->subDays(90), 'ended_at' => now()->subDays(90), 'origin' => 'health_connect',
+        ]);
+        $this->encounter('ENC-LIFE-1');
+        $this->asRole('admision');
+
+        DB::enableQueryLog();
+        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+
+        $selects = collect(DB::getQueryLog())->filter(fn ($q) => str_starts_with($q['query'], 'select') && str_contains($q['query'], 'life_biometric_samples'));
+        $this->assertTrue($selects->contains(fn ($q) => str_contains($q['query'], 'started_at')), 'La consulta de muestras debe acotar la ventana por started_at.');
+    }
+
     public function test_baseline_is_null_when_nothing_imported(): void
     {
         $this->encounter('ENC-LIFE-1');
