@@ -206,6 +206,18 @@ describe("QR de Vitalsy Life emitido por el servidor (RF-61, RF-96)", () => {
     expect(screen.queryByRole("button", { name: /guardar seguimiento en vitalsy life/i })).not.toBeInTheDocument();
   });
 
+  it("al recargar con rechazo persistido sigue mostrando rechaza, sin reofrecer la emisión y con ficha imprimible", async () => {
+    const calls = stub({ initial: { ...reportedCase, lifePlan: { mode: "rechaza", status: "rechazado" } } });
+    renderApp("/egreso/ENC-ALTA-0001", { role: "enfermera_piso" });
+
+    expect(await screen.findByText(/rechaza el seguimiento digital/i, { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /imprimir ficha de alta/i })).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar seguimiento en vitalsy life/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /Código QR/ })).not.toBeInTheDocument();
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
   it("mantiene el plan emitido si una mutación devuelve lifePlan nulo", async () => {
     stub({ receiptLifePlanNull: true });
     const user = userEvent.setup();
