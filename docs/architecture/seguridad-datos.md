@@ -53,7 +53,7 @@ php artisan vitalsy:encrypt-existing --chunk=500 # cifra por bloques, una transa
 ### Rotación de clave
 
 1. Generar nueva clave (`php artisan key:generate --show`).
-2. Poner la nueva en `APP_KEY` y la anterior en `APP_PREVIOUS_KEYS` (lista separada por comas). Laravel descifra con ambas y cifra con la actual.
+2. Poner la nueva en `APP_KEY` y la anterior en `APP_PREVIOUS_KEYS` (lista separada por comas). Laravel descifra con ambas y cifra con la actual. `docker-compose.prod.yml` exige `APP_KEY` (`:?`: el arranque falla si falta) y pasa `APP_PREVIOUS_KEYS` a los contenedores `backend` y `reverb`; defínalas en el `.env` del servidor antes de `docker compose up`.
 3. Ejecutar `vitalsy:encrypt-existing` **no re-cifra** valores ya válidos con una clave previa; para rotar de verdad, re-guardar los registros (o ampliar el comando con `--rotate`, pendiente). Mantener la clave previa en `APP_PREVIOUS_KEYS` hasta completar la re-escritura.
 4. Respaldar `APP_KEY` en un gestor de secretos distinto del respaldo de la BD.
 

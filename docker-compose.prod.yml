@@ -53,7 +53,9 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY}
+      # Sin APP_KEY los campos cifrados (RNF-06) serian ilegibles: el arranque debe fallar.
+      APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
+      APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
       PORT: "3000"
       DB_CONNECTION: pgsql
       DB_HOST: postgres
@@ -96,7 +98,9 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY}
+      # Sin APP_KEY los campos cifrados (RNF-06) serian ilegibles: el arranque debe fallar.
+      APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
+      APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
       BROADCAST_CONNECTION: reverb
       REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
       REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
