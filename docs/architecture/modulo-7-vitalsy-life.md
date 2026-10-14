@@ -56,3 +56,10 @@ La guía operativa está en `movil/documento.md`.
 - **Estado por cuenta:** `healthSync` (permiso, última lectura, permiso de fondo solicitado) se reinicia al cerrar sesión y al cambiar de cuenta.
 - **Sueño HealthKit:** el id es `hk:sleep:<día en que termina la noche>`; si la noche crece, la muestra nueva reemplaza a la anterior (local) y se reenvía con el mismo id. Por verificar: que el servidor trate el reenvío con el mismo id como reemplazo y no como duplicado.
 - La tarea en frío no reintenta revocaciones pendientes ni trae avisos: eso lo hace la sincronización del primer plano.
+
+
+## Cierre de la integración Clinical-Life (RF-89–98)
+
+El recorrido completo está cubierto por `backend/api/tests/Feature/LifeEndToEndTest.php`: registro ciudadano, consentimiento, sincronización de biometría, código de vinculación, importación en admisión, plan de alta, salida efectiva con custodia y reclamo del plan por el ciudadano. Las peticiones de API para `life/*`, admisión y alta están en `docs/api/yaak-vitalsy-life.postman_collection.json`.
+
+No verificado en ejecución: app móvil real contra un servidor desplegado, Reverb/wss y latencias en staging.

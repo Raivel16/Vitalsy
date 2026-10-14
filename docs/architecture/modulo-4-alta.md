@@ -35,3 +35,14 @@ Implementa el Proceso 4. La orden de alta abre en paralelo la valoración social
 |---|---|
 | `/egreso` | los seis perfiles del proceso. El médico inicia el alta desde hospitalizados (`cerrado`) o escaneando el brazalete |
 | `/egreso/:encounterId` | ficha con acciones filtradas por rol. El informe de enfermería puede registrar Vitalsy Life dentro de cuidados domiciliarios |
+
+
+## Plan post-alta para Vitalsy Life (RF-96–98)
+
+| RF | Estado | Interfaz / API |
+|---|---|---|
+| RF-96 | Hecho | `POST .../discharge/encounters/{id}/life-plan` (`enfermera_piso`, `mode`: `usuario` / `invitacion` / `rechaza`). Requiere orden de alta, receta y conciliación; construye el plan desde la receta y el informe de enfermería, con vigencia de 30 días y códigos `VLA-` / `VLI-` |
+| RF-97 | Hecho | `GET /api/v1/life/discharge-plans/{code}` (ciudadano): reclamo de un solo uso por cuenta, idempotente para la misma cuenta; 409 `plan_claimed` si lo tiene otra |
+| RF-98 | Hecho | La salida efectiva (`PatientExited`) transfiere la custodia (`custody_transferred_at`) y activa el plan; un plan ya reclamado conserva `reclamado`. Tras el egreso no puede reemitirse |
+
+Los demás roles ven el modo y el estado del plan, no los códigos ni el contenido. Contrato: [contrato-clinical-life.md](contrato-clinical-life.md).

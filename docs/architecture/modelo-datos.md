@@ -127,7 +127,7 @@ Contrato en [contrato-clinical-life.md](contrato-clinical-life.md). `life_accoun
 | `life_baseline_imports` | Línea de base importada: `encounter_id` indexado, `life_account_id` (FK), `baseline` json, `imported_by` (FK `users`, nullOnDelete), `imported_at` | RF-95 |
 | `life_discharge_plans` | Plan de alta: `encounter_id` único, `mode` (16), `code` (20) único null, `invitation_code` (20) único null, `payload` json, `valid_until` date, `status` (16, default `pendiente`: pendiente / activo / reclamado), `claimed_by_account_id` (FK `life_accounts`, nullOnDelete), `claimed_at`, `custody_transferred_at`, `created_by` (FK `users`, nullOnDelete) | RF-96–98 |
 
-Migración prevista: `2026_10_12_100000_create_life_tables.php`.
+Migraciones: `2026_10_12_100000_create_life_tables.php`, `2026_10_13_100000_unique_life_baseline_import_per_encounter.php` (una importación por ingreso) y `2026_10_14_100000_widen_clinical_columns_for_encryption.php` (campos cifrados en reposo).
 
 ---
 

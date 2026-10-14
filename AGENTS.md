@@ -204,4 +204,10 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `sonar-project.properties` excluye `movil/android/**`, `movil/ios/**`, `**/build/**` y `**/.expo/**`: son salidas de `expo prebuild`; analizadas con `-Dsonar.scm.disabled=true` (que no respeta `.gitignore`) sumaban 23 vulnerabilidades ajenas al código.
 - El reporte clover del backend generado en Docker trae rutas `/var/www/html/`; hay que reescribirlas a `backend/api/` antes de escanear o el backend cuenta como 0 % de cobertura.
 - Rama: `chore/calidad-sonarqube-2`.
+### 2026-10-14 — Cierre de la integración Clinical-Life (RF-89–98)
+
+- `LifeEndToEndTest` recorre el flujo completo (registro, consentimiento, sync, código, importación en admisión, plan de alta, salida con custodia, reclamo). La línea base exige al menos 7 días de historia.
+- Docs actualizados: `modulo-1-admision.md`, `modulo-4-alta.md`, `modulo-7-vitalsy-life.md`, `modelo-datos.md` y colección `docs/api/yaak-vitalsy-life.postman_collection.json`.
+- No verificado en ejecución: app móvil contra servidor real, Reverb/wss, pg_dump/k6/Playwright reales, servidor FHIR real.
+
 <!-- END AGENT ANNOTATIONS -->
