@@ -24,18 +24,26 @@ case "$HTTP_CODE:$HTTP_LOC" in
   *) fail "HTTP 80 debe responder 301 a https:// (codigo='$HTTP_CODE', location='$HTTP_LOC')" ;;
 esac
 
-# 2. TLS 1.3 debe negociar.
-if echo | openssl s_client -tls1_3 -connect "$HOST:$PORT" -servername "$HOST" >/dev/null 2>&1; then
+# 2. TLS 1.3 debe negociar (PASS solo con handshake completado en TLSv1.3).
+OUT13=$(echo | openssl s_client -tls1_3 -connect "$HOST:$PORT" -servername "$HOST" 2>&1 || true)
+if printf '%s
+' "$OUT13" | grep -q 'Protocol *: *TLSv1.3'; then
   pass "TLS 1.3 aceptado"
 else
-  fail "TLS 1.3 no se pudo negociar"
+  fail "TLS 1.3 no se pudo negociar (host inalcanzable o sin soporte)"
 fi
 
-# 3. TLS 1.2 debe ser rechazado.
-if echo | openssl s_client -tls1_2 -connect "$HOST:$PORT" -servername "$HOST" >/dev/null 2>&1; then
+# 3. TLS 1.2 debe ser rechazado: PASS solo si hay alerta/fallo de handshake explicito.
+#    Un host inalcanzable NO cuenta como rechazo.
+OUT12=$(echo | openssl s_client -tls1_2 -connect "$HOST:$PORT" -servername "$HOST" 2>&1 || true)
+if printf '%s
+' "$OUT12" | grep -q 'Protocol *: *TLSv1.2'; then
   fail "TLS 1.2 fue aceptado (debe rechazarse)"
-else
+elif printf '%s
+' "$OUT12" | grep -qiE 'alert protocol version|no protocols available|handshake failure|tlsv1 alert|wrong version number|unsupported protocol'; then
   pass "TLS 1.2 rechazado"
+else
+  fail "No se pudo confirmar el rechazo de TLS 1.2 (host inalcanzable o salida inesperada)"
 fi
 
 # 4. HSTS presente en la respuesta HTTPS.

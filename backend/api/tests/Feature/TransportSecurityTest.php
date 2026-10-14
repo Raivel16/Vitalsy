@@ -51,8 +51,11 @@ class TransportSecurityTest extends TestCase
 
     public function test_forwarded_proto_is_honored_only_from_trusted_proxy(): void
     {
-        TrustProxies::at(['10.0.0.0/8']);
-        Route::get('/__secure-probe', fn (Request $r) => response()->json(['secure' => $r->isSecure()]));
+        // Cableado real de bootstrap/app.php (TRUSTED_PROXIES por defecto: rangos privados).
+        Route::get('/__secure-probe', fn (Request $r) => response()->json([
+            'secure' => $r->isSecure(),
+            'host' => $r->getHost(),
+        ]));
 
         $headers = ['HTTP_X_FORWARDED_PROTO' => 'https'];
 
@@ -61,6 +64,35 @@ class TransportSecurityTest extends TestCase
 
         $this->withServerVariables($headers + ['REMOTE_ADDR' => '203.0.113.9'])
             ->getJson('http://localhost/__secure-probe')->assertJson(['secure' => false]);
+    }
+
+    public function test_forwarded_host_and_port_are_ignored_even_from_trusted_proxy(): void
+    {
+        Route::get('/__host-probe', fn (Request $r) => response()->json([
+            'host' => $r->getHost(),
+            'port' => $r->getPort(),
+        ]));
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '10.1.2.3',
+            'HTTP_X_FORWARDED_HOST' => 'evil.example',
+            'HTTP_X_FORWARDED_PORT' => '8443',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ])->getJson('http://localhost/__host-probe')
+            ->assertJson(['host' => 'localhost'])
+            ->assertJsonMissing(['port' => 8443]);
+    }
+
+    public function test_sanctum_stateful_domains_come_from_environment(): void
+    {
+        putenv('SANCTUM_STATEFUL_DOMAINS=vitalsy.example.org');
+        try {
+            $config = require config_path('sanctum.php');
+        } finally {
+            putenv('SANCTUM_STATEFUL_DOMAINS');
+        }
+
+        $this->assertSame(['vitalsy.example.org'], $config['stateful']);
     }
 
     public function test_default_trusted_proxies_are_private_ranges_not_wildcard(): void

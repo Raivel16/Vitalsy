@@ -28,10 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Nginx (HTTP/HTTPS) envía X-Forwarded-*; solo se confía en TRUSTED_PROXIES (RNF-05).
         $middleware->trustProxies(
             at: TrustedProxies::fromEnv(env('TRUSTED_PROXIES')),
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_HOST
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PROTO,
+            // Solo FOR y PROTO: Host/Port reenviados no se confian (evita envenenar URLs con X-Forwarded-Host).
+            headers: TrustedProxies::HEADERS,
         );
         $middleware->api(prepend: [
             EnsureRequestOrigin::class,

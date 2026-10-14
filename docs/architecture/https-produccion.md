@@ -11,6 +11,12 @@ El desarrollo en LAN esta en `https-dev-lan.md` (admite TLS 1.2+1.3 por compatib
 - Rutas: `/` frontend, `/api/` y `/sanctum/` backend, `/app/` Reverb (WebSocket, `wss://<dominio>/app`).
 - `frontend`, `backend` y `reverb` ya no publican puertos al host.
 
+## Cabeceras reenviadas y Host
+
+- `server_name ${PUBLIC_DOMAIN}` (plantilla `/etc/nginx/templates`, solo esa variable se sustituye): el 301 apunta siempre al dominio configurado; cualquier otro Host recibe `444` (default_server).
+- `docker/nginx/proxy-headers.conf` se incluye en cada `location` (nginx no hereda `proxy_set_header` si la location define el suyo) y fija `Host`, `X-Forwarded-For`, `X-Forwarded-Proto https`, `X-Forwarded-Host $host`, `X-Forwarded-Port 443`.
+- Decision: Laravel confia solo en `X-Forwarded-For` y `-Proto` (`TrustedProxies::HEADERS`); `X-Forwarded-Host/Port` se IGNORAN. Asi un cliente no puede envenenar URLs generadas ni enlaces de reinicio aunque llegue por un proxy de confianza. Cubierto por `TransportSecurityTest`.
+
 ## Laravel
 
 - `URL::forceScheme('https')` en `AppServiceProvider` cuando `APP_ENV=production`.
@@ -24,7 +30,7 @@ El desarrollo en LAN esta en `https-dev-lan.md` (admite TLS 1.2+1.3 por compatib
 1. Obtener certificado y colocar `fullchain.pem` y `privkey.pem` en `./certs` (o apuntar `TLS_CERTS_DIR` a otro directorio del host). No se versionan (`/certs/` esta en `.gitignore`).
    - Let's Encrypt: certbot (`--webroot`; el proxy sirve `/var/www/acme` si se monta ese volumen) o `--standalone` antes de levantar el proxy; renovar con un cron y `docker compose exec proxy nginx -s reload`.
    - CA institucional: emitir con el CN/SAN del dominio y entregar la cadena completa.
-2. Definir en `.env`: `APP_KEY`, `DB_PASSWORD`, `REVERB_*`, `REVERB_ALLOWED_ORIGINS=https://<dominio>`, opcional `TRUSTED_PROXIES`, `TLS_CERTS_DIR`.
+2. Definir en `.env` (el compose los pasa explicitamente): `PUBLIC_DOMAIN` (sin esquema), `APP_URL=https://<dominio>`, `SANCTUM_STATEFUL_DOMAINS=<dominio>` (obligatorios), `APP_KEY`, `DB_PASSWORD`, `REVERB_*`, `REVERB_ALLOWED_ORIGINS=https://<dominio>`, opcional `SESSION_DOMAIN`, `TRUSTED_PROXIES`, `TLS_CERTS_DIR`. `SESSION_SECURE_COOKIE=true` va fijado en el compose.
 3. `docker compose -f docker-compose.prod.yml up -d --build`.
 4. Verificar: `sh scripts/check-tls.sh <dominio>` (301 a https, TLS 1.3 acepta, TLS 1.2 rechaza, HSTS presente; sale != 0 si falla).
 
@@ -33,6 +39,8 @@ El desarrollo en LAN esta en `https-dev-lan.md` (admite TLS 1.2+1.3 por compatib
 - `prod.conf` y `check-tls.sh` no se ejecutaron contra un servidor real en el entorno de desarrollo (sin dominio ni certificados; Docker no estaba activo para `nginx -t`). Validar en el primer despliegue.
 - El trafico entre contenedores (proxy -> frontend/backend/reverb, backend -> postgres) es texto plano dentro de la red interna de Docker; mitigado por no publicar puertos, no cifrado.
 - TLS 1.3 solamente excluye clientes antiguos (p. ej. Android < 10, iOS < 12.2); es el requisito literal del RNF-05.
+- HSTS con `includeSubDomains`: obliga a HTTPS en todos los subdominios del dominio; verifique que ninguno depende de HTTP antes de desplegar.
+- `TRUSTED_PROXIES` por defecto cubre solo rangos privados: si la red de Compose o el balanceador queda fuera (p. ej. IP publica), la deteccion de esquema falla en silencio; defina `TRUSTED_PROXIES`.
 - HSTS sin `preload`: incluirlo en la lista de precarga es una decision deliberada y dificil de revertir.
 - La app movil rechaza URLs `http://` fuera de `__DEV__`; en desarrollo se permite http.
 - Detras de un balanceador/CDN externo, ajuste `TRUSTED_PROXIES` a sus rangos.

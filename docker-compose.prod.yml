@@ -7,11 +7,16 @@ services:
   proxy:
     image: nginx:1.27-alpine
     restart: always
+    environment:
+      # Solo ${PUBLIC_DOMAIN} se sustituye en la plantilla; $host, $remote_addr... quedan intactos.
+      NGINX_ENVSUBST_FILTER: PUBLIC_DOMAIN
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?defina PUBLIC_DOMAIN (dominio publico, sin esquema)}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/prod.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/nginx/proxy-headers.conf:/etc/nginx/snippets/proxy-headers.conf:ro
       - ${TLS_CERTS_DIR:-./certs}:/etc/nginx/certs:ro
     depends_on:
       - frontend
@@ -62,6 +67,9 @@ services:
       # RNF-05: confiar en X-Forwarded-* solo del proxy (red interna de Docker).
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
       SESSION_SECURE_COOKIE: "true"
+      APP_URL: ${APP_URL:?defina APP_URL con https://<dominio>}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:?defina SANCTUM_STATEFUL_DOMAINS con el dominio publico}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
     depends_on:
       - postgres
       - reverb
