@@ -5,6 +5,24 @@ import type { LifePersistence } from './persistence';
 
 type Database = Awaited<ReturnType<typeof SQLite.openDatabaseAsync>>;
 
+function isBusy(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /SQLITE_BUSY|database is locked/i.test(message);
+}
+
+/** Un solo reintento corto: el escritor concurrente (app o tarea) suele terminar en milisegundos. */
+async function withBusyRetry<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (!isBusy(error)) {
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return run();
+  }
+}
+
 export class SqlitePersistence implements LifePersistence {
   constructor(
     private readonly database: Database,
@@ -14,7 +32,7 @@ export class SqlitePersistence implements LifePersistence {
 
   static async open(database: Database, key: Uint8Array, nonce: () => Uint8Array): Promise<SqlitePersistence> {
     await database.execAsync(
-      'CREATE TABLE IF NOT EXISTS vault (id INTEGER PRIMARY KEY CHECK (id = 1), payload TEXT NOT NULL);',
+      'PRAGMA busy_timeout = 5000; CREATE TABLE IF NOT EXISTS vault (id INTEGER PRIMARY KEY CHECK (id = 1), payload TEXT NOT NULL);',
     );
     return new SqlitePersistence(database, key, nonce);
   }
@@ -29,7 +47,8 @@ export class SqlitePersistence implements LifePersistence {
 
   async update(mutate: (current: LifeSnapshot | null) => LifeSnapshot | null): Promise<void> {
     // Transacción exclusiva: otra conexión (la tarea en segundo plano) espera y luego ve lo ya escrito.
-    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+    await withBusyRetry(() =>
+      this.database.withExclusiveTransactionAsync(async (transaction) => {
       const row = await transaction.getFirstAsync<{ payload: string }>('SELECT payload FROM vault WHERE id = 1');
       const current = row ? (JSON.parse(openJson(row.payload, this.key)) as LifeSnapshot) : null;
       const next = mutate(current);
@@ -37,11 +56,12 @@ export class SqlitePersistence implements LifePersistence {
         const payload = sealJson(JSON.stringify(next), this.key, this.nonce());
         await transaction.runAsync('INSERT OR REPLACE INTO vault (id, payload) VALUES (1, ?)', payload);
       }
-    });
+      }),
+    );
   }
 
   async save(snapshot: LifeSnapshot): Promise<void> {
     const payload = sealJson(JSON.stringify(snapshot), this.key, this.nonce());
-    await this.database.runAsync('INSERT OR REPLACE INTO vault (id, payload) VALUES (1, ?)', payload);
+    await withBusyRetry(() => this.database.runAsync('INSERT OR REPLACE INTO vault (id, payload) VALUES (1, ?)', payload));
   }
 }

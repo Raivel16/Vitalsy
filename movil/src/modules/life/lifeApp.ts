@@ -119,6 +119,12 @@ export class LifeApp {
     return this.snapshot.accounts.find((account) => account.id === this.snapshot.sessionUserId) ?? null;
   }
 
+  /** Hay una cuenta del servidor con la sesión abierta (no una cuenta solo local). */
+  hasServerSession(): boolean {
+    const current = this.currentUser();
+    return Boolean(current && isServerAccount(current));
+  }
+
   register(input: { name: string; email: string; password: string; confirm: string }): { ok: boolean; errors: FieldErrors } {
     const result = registerAccount(this.snapshot.accounts, input, this.clock.random(), this.clock.digest);
     if (!result.account) {

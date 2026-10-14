@@ -95,9 +95,10 @@ function nights(records: HealthKitSleep[] | undefined, settledBefore: number | n
       const value = round(group.minutes);
       const endedAt = new Date(group.end).toISOString();
       return {
-        // Estable por noche (día en que termina) y origen: si la noche crece al llegar más segmentos,
+        // Estable por el INICIO de la noche (no por la fecha de fin: una siesta de la mañana y la noche
+        // pueden terminar el mismo día). Si la noche crece al llegar más segmentos el inicio no cambia,
         // el id es el mismo y la muestra nueva reemplaza a la anterior en vez de duplicarla.
-        id: `hk:sleep:${endedAt.slice(0, 10)}`,
+        id: `hk:sleep:${startedAt}`,
         kind: 'sleep' as const,
         value,
         unit: 'min',

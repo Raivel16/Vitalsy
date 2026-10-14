@@ -167,6 +167,12 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
         if (!(await sessionStillValid(deps, accountId))) {
           break;
         }
+        // Antes de CADA lote se relee lo último guardado: una revocación (o un cambio de cuenta) hecha
+        // por la app entre lotes detiene el resto del envío.
+        const fresh = await deps.persistence.load();
+        if (!fresh || fresh.sessionUserId !== accountId || fresh.consentRevokePending) {
+          break;
+        }
         try {
           const result = await deps.client!.sync(chunk);
           if (!result.ok) {

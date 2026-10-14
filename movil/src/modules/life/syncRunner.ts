@@ -50,8 +50,13 @@ async function pullNotices({ life, client, onUnauthorized }: Required<Deps>): Pr
   if (!client || typeof client.getNotices !== 'function') {
     return;
   }
+  const epoch = life.sessionEpoch;
   try {
     const result = await client.getNotices();
+    if (life.sessionChanging || life.sessionEpoch !== epoch) {
+      // Los avisos son de la cuenta anterior: no se mezclan con la actual.
+      return;
+    }
     if (result.ok) {
       life.mergeServerNotices(result.data.notices);
     } else if (result.status === 401) {

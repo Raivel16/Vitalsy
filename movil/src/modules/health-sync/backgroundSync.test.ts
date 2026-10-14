@@ -89,7 +89,7 @@ function setup(options: {
     isOnline: async () => options.online ?? true,
     createLife: (initial) => new LifeApp(initial, { now: () => NOW, random: () => 'r', digest: async () => 'd' as never }),
   };
-  return { deps, reads, persistence, sync, getStored: () => stored };
+  return { deps, reads, persistence, sync, getStored: () => stored, setStored: (next: LifeSnapshot) => void (stored = next) };
 }
 
 afterEach(() => clearForegroundRuntime());
@@ -201,6 +201,30 @@ describe('runBackgroundHealthSync', () => {
     expect(result.pendingRevokes).toEqual([{ accountId: '7', pendingSince: NOW.toISOString() }]);
     expect(result.consentRevokePending).toBe(true);
     expect(result.samples.map((item) => item.id)).toContain('a');
+  });
+
+  it('stops sending the remaining chunks when the app sets a revocation between chunks', async () => {
+    const queue = Array.from({ length: 250 }, (_, index) => ({
+      id: `plan-${index}`,
+      kind: 'plan' as const,
+      body: '{}',
+      status: 'pending' as const,
+    }));
+    const harness = setup({ snapshot: snapshot({ queue }) });
+    let calls = 0;
+    const racing = jest.fn(async (items: Array<{ id: string }>) => {
+      calls += 1;
+      if (calls === 1) {
+        harness.setStored({ ...harness.getStored()!, consentRevokePending: true });
+      }
+      return { ok: true, status: 200, data: { accepted: items.map((item) => item.id), rejected: [] } };
+    });
+    harness.deps.client = { sync: racing, getNotices: jest.fn() } as never;
+    await runBackgroundHealthSync(harness.deps);
+    expect(racing).toHaveBeenCalledTimes(1);
+    const after = harness.getStored()!;
+    expect(after.consentRevokePending).toBe(true);
+    expect(after.queue.filter((item) => item.status === 'pending')).toHaveLength(150);
   });
 
   it('does not send biometrics while a revocation is pending', async () => {

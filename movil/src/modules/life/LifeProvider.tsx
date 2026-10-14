@@ -17,6 +17,7 @@ import { collectAndEnqueue } from '../health-sync/collectAndEnqueue';
 import { createHealthSource } from '../health-sync/createHealthSource';
 import type { HealthStatus } from '../health-sync/HealthDataSource';
 import { emptySnapshot, LifeApp, type LifeSnapshot } from './lifeApp';
+import { reconcileSessionStartup } from './sessionStartup';
 
 type HealthFeedback = {
   status: HealthStatus;
@@ -122,6 +123,14 @@ export function LifeProvider({
       active = false;
     };
   }, [ready]);
+
+  // Arranque: limpia una marca de cambio de cuenta que quedó de un cierre brusco y vincula un token anterior a la cuenta.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    void reconcileSessionStartup({ life, tokenStore });
+  }, [ready, life, tokenStore]);
 
   const refresh = useCallback(async () => {
     setTick((value) => value + 1);

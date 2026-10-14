@@ -18,6 +18,7 @@ export type SharingOutcome = { ok: boolean; status: 'confirmed' | 'pending' | 'f
 export type LinkCodeOutcome = { ok: true; code: string; expiresAt: string } | { ok: false; message: string };
 
 export const REVOKE_PENDING_MESSAGE = 'Se revocará en cuanto haya conexión.';
+const SESSION_CHANGED_MESSAGE = 'La sesión cambió mientras tanto. Intenta de nuevo.';
 const REVOKE_PENDING_NO_SESSION = 'Se revocará en cuanto inicies sesión y haya conexión.';
 
 // Las llamadas de consentimiento se serializan: un reintento viejo nunca pisa un cambio más reciente.
@@ -102,7 +103,11 @@ async function grant(deps: ConsentDeps): Promise<SharingOutcome> {
   }
   const version = life.consentVersion;
   return serialize(async () => {
+    const epoch = life.sessionEpoch;
     const result = await callSetConsent(client, true);
+    if (life.sessionChanging || life.sessionEpoch !== epoch) {
+      return { ok: false, status: 'failed', message: SESSION_CHANGED_MESSAGE } as SharingOutcome;
+    }
     if (!result.ok) {
       if (result.status === 401) {
         await deps.onUnauthorized();
@@ -163,11 +168,16 @@ export async function issueServerLinkCode(deps: ConsentDeps): Promise<LinkCodeOu
     return { ok: false, message: 'Sin conexión. Conéctate para generar tu código.' };
   }
   const version = life.consentVersion;
+  const epoch = life.sessionEpoch;
   let result: Awaited<ReturnType<ConsentClient['issueLinkCode']>>;
   try {
     result = await client.issueLinkCode();
   } catch {
     return { ok: false, message: 'Sin conexión. Conéctate para generar tu código.' };
+  }
+  if (life.sessionChanging || life.sessionEpoch !== epoch) {
+    // El código es de la cuenta anterior: no se muestra ni se guarda.
+    return { ok: false, message: SESSION_CHANGED_MESSAGE };
   }
   if (!result.ok) {
     if (result.status === 401) {
