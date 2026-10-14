@@ -84,6 +84,7 @@ class AuthController extends Controller
     private function payload(User $user): array
     {
         return [
+            'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,

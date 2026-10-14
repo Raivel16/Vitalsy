@@ -96,7 +96,7 @@ function Shell() {
           </div>
         </div>
         <div className="session-box">
-          <AlertNotifications enabled={isAlertRole(role)} />
+          <AlertNotifications enabled={isAlertRole(role)} userId={user?.id ?? null} />
           <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
           <Button variant="quiet" type="button" onClick={() => void logout()}>
             <IconLogout size={18} stroke={1.75} aria-hidden />

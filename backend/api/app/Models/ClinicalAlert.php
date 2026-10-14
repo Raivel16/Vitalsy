@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Observers\ClinicalAlertObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(ClinicalAlertObserver::class)]
 class ClinicalAlert extends Model
 {
     public const STATUS_OPEN = 'abierta';

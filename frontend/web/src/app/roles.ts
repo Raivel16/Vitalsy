@@ -41,6 +41,8 @@ export function isRole(value: string): value is Role {
 }
 
 export type SessionUser = {
+  /** Id propio; define el canal privado de alertas en tiempo real. */
+  id?: number;
   name: string;
   email: string;
   role: Role;
