@@ -66,17 +66,21 @@ Dos capas: (a) trait `App\Models\Concerns\Immutable` (eventos `updating`/`deleti
 | AlertEvent (`alert_events`) | Congelado desde su creación (historial append-only). |
 | AlertAcknowledgement (`alert_acknowledgements`) | Congelado desde su creación (acuse de recibo). |
 | AlertEscalation (`alert_escalations`) | Congelado desde su creación (evidencia de SLA vencido). |
-| DischargeIndicationReceipt | Congelado desde su creación (acuse del paciente/familiar). Un reenvío conserva el primer acuse (`firstOrCreate`). |
+| DischargeIndicationReceipt | Congelado desde su creación (acuse del paciente/familiar). Un reenvío idéntico es idempotente; uno con contenido distinto responde 422 «La recepción de indicaciones ya fue registrada y no puede modificarse.». |
+| MedicalEvolutionNote | Editable mientras `signed_at` es nulo; congelada desde que se firma. |
+| Handover (entrega de turno) | Editable mientras `signed_at` es nulo; congelada desde que se firma (hoy se crea ya firmada). |
 | MedicationAdministration | Editable mientras `status` ≠ `administrado` (pendiente → administrado, pendiente → cancelado, intento fallido de código de barras). Una vez `administrado` (firma digital de la dosis) queda congelada; solo se permite la cancelación masiva de dosis pendientes. |
 
-Excepción referencial: las FK de usuario/ítem (`user_id`, `nurse_user_id`, `prescription_item_id`) pueden pasar a `NULL` por `nullOnDelete`; no es edición de contenido.
+Excepción referencial: las FK de usuario/ítem (`user_id`, `nurse_user_id`, `prescription_item_id`) solo pueden pasar a `NULL` cuando la fila referenciada **ya no existe** (efecto de `nullOnDelete`); anular el autor de un registro cuyo usuario existe se rechaza en el modelo y en el trigger (migración `2026_10_14_110000_refine_traceability_triggers`). Eliminar un usuario con entregas firmadas (`handovers` usa `cascadeOnDelete`) queda bloqueado por el trigger: los usuarios se desactivan, no se eliminan.
 
-**Sin protección (decisión explícita):** `ClinicalAlert` (cambia de estado legítimamente; su trazabilidad vive en `alert_events`, `alert_acknowledgements` y `alert_escalations`), `monitoring_schedules` (el `next_due_at` se reprograma al cumplirse un control; los incumplimientos quedan en los eventos inmutables), `ExitPass`, `PatientExit`, `AccountVerification`, `LifeBaselineImport` (inmutable por convención; candidato a futuro).
+**Sin protección (decisión explícita):** `Prescription` / `PrescriptionItem` (el flujo CPOE vigente permite modificar ítems de una prescripción ya firmada; congelarla rompería ese flujo. Seguimiento recomendado: versionado de cambios de prescripción, una fila nueva por modificación), `ClinicalAlert` (cambia de estado legítimamente; su trazabilidad vive en `alert_events`, `alert_acknowledgements` y `alert_escalations`), `monitoring_schedules` (el `next_due_at` se reprograma al cumplirse un control; los incumplimientos quedan en los eventos inmutables), `ExitPass`, `PatientExit`, `AccountVerification`, `LifeBaselineImport` (inmutable por convención; candidato a futuro).
 
 **No existe ninguna ruta HTTP** de `PUT/PATCH/DELETE` sobre estos recursos (verificado por escaneo de `Route::getRoutes()` en `TraceabilityImmutabilityTest`), por lo que ningún rol, incluido `administrador_accesos`, puede alterarlos por la API.
 
 ## 3. Riesgos residuales
 
+- Los triggers copian la lista de columnas al momento de la migración: una columna nueva en estas tablas exige una migración nueva que los recree.
+- Lectura con clave incorrecta: un valor con forma de payload cifrado que no descifra lanza `UndecryptableFieldException` (no se trata como vacío); `vitalsy:encrypt-existing` no los toca, los informa y termina con error («posible APP_KEY incorrecta»).
 - Un superusuario de BD puede desactivar o eliminar los triggers y alterar filas; los triggers elevan el costo, no lo eliminan. Mitigar con roles de BD sin `ALTER`/`TRIGGER` para la aplicación y auditoría de DDL.
 - No hay encadenamiento por hash (hash-chaining) de los registros: no se detecta una alteración hecha por un superusuario. Pendiente si se requiere evidencia forense.
 - En SQLite, un `ALTER` futuro con `->change()` reconstruye la tabla y **elimina los triggers**: toda migración que cambie estas tablas debe recrearlos.

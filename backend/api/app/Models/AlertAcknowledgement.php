@@ -26,7 +26,7 @@ class AlertAcknowledgement extends Model
 
     public function immutableNullableColumns(): array
     {
-        return ['user_id'];
+        return ['user_id' => 'users'];
     }
 
     public function alert(): BelongsTo

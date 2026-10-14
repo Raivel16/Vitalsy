@@ -41,7 +41,7 @@ class MedicationAdministration extends Model
 
     public function immutableNullableColumns(): array
     {
-        return ['nurse_user_id', 'prescription_item_id'];
+        return ['nurse_user_id' => 'users', 'prescription_item_id' => 'prescription_items'];
     }
 
     /** Solo se admite la cancelación masiva de dosis pendientes (el trigger protege las firmadas). */

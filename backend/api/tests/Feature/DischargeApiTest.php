@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
+use App\Models\DischargeIndicationReceipt;
 use App\Models\DischargeOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,6 +87,37 @@ class DischargeApiTest extends TestCase
             'evolution' => 'Estable para el alta',
         ])->assertStatus(422)
             ->assertJsonPath('message', 'Registre primero la orden digital de alta.');
+    }
+
+    public function test_indication_receipt_is_idempotent_but_rejects_different_content(): void
+    {
+        $this->inpatientEncounter();
+        $this->asRole('medico_tratante');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/order')->assertCreated();
+        $this->asRole('medico_residente');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/epicrisis', [
+            'diagnoses' => 'Neumonía', 'procedures' => 'Antibióticos', 'evolution' => 'Mejoría.',
+        ])->assertCreated();
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/prescriptions', [
+            'items' => [['drug' => 'Amoxicilina', 'dose' => '500 mg', 'route' => 'VO', 'frequency' => 'c/8 h', 'days' => 5]],
+        ])->assertCreated();
+        $this->asRole('trabajo_social');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/social-assessment', [
+            'report' => 'Red familiar adecuada.', 'validated' => true,
+        ])->assertCreated();
+        $this->asRole('enfermera_piso');
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/reconciliation', ['notes' => 'Sin omisiones.'])->assertCreated();
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/nursing-report', [
+            'instructions' => 'Completar el antibiótico.', 'alarmSigns' => 'Fiebre.', 'homeCare' => 'Reposo.',
+        ])->assertCreated();
+
+        $url = '/api/v1/discharge/encounters/ENC-ALTA-0001/indication-receipt';
+        $this->postJson($url, ['receivedByName' => 'Familiar Ana Pérez'])->assertCreated();
+        $this->postJson($url, ['receivedByName' => 'Familiar Ana Pérez'])->assertCreated();
+        $this->postJson($url, ['receivedByName' => 'Otra Persona'])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'La recepción de indicaciones ya fue registrada y no puede modificarse.']);
+        $this->assertSame('Familiar Ana Pérez', DischargeIndicationReceipt::query()->firstOrFail()->received_by_name);
     }
 
     public function test_parallel_social_and_nursing_then_exit_pass_and_physical_exit(): void
