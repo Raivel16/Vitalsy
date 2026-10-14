@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Events\PatientExited;
 use App\Models\AdmissionEncounter;
+use App\Models\AmbulatoryPrescription;
 use App\Models\LifeAccount;
 use App\Models\LifeDischargePlan;
 use App\Models\User;
@@ -180,7 +181,7 @@ class LifeDischargePlanApiTest extends TestCase
     public function test_plan_without_medications_is_not_issued(): void
     {
         $this->dischargeReady();
-        $rx = \App\Models\AmbulatoryPrescription::query()->where('encounter_id', self::ENC)->firstOrFail();
+        $rx = AmbulatoryPrescription::query()->where('encounter_id', self::ENC)->firstOrFail();
         $rx->update(['content' => ['items' => [['drug' => 'Amoxicilina', 'dose' => '']]]]);
 
         $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])->assertStatus(422);
