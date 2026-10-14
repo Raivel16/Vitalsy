@@ -38,6 +38,15 @@ export type LifeSnapshot = {
    * sesión y cambios de cuenta; se reintentan solo cuando vuelve a iniciar sesión ESA cuenta.
    */
   pendingRevokes: PendingRevoke[];
+  /** Estado de la lectura de salud: sirve a la sincronización en segundo plano (sin diálogos) y a las lecturas por delta. */
+  healthSync: HealthSyncState;
+};
+
+export type HealthSyncState = {
+  /** La persona concedió la lectura en primer plano. En segundo plano nunca se pide. */
+  accessGranted: boolean;
+  /** Fin de la última lectura completa; la siguiente lee solo desde aquí. */
+  lastReadAt: string | null;
 };
 
 export type PendingRevoke = { accountId: string; pendingSince: string };
@@ -64,6 +73,7 @@ export function emptySnapshot(): LifeSnapshot {
     dismissedNoticeIds: [],
     consentRevokePending: false,
     pendingRevokes: [],
+    healthSync: { accessGranted: false, lastReadAt: null },
   };
 }
 
@@ -92,6 +102,7 @@ export class LifeApp {
       consent: legacyCode ? { ...consent, linkingCode: null, linkingIssuedAt: null, linkingExpiresAt: null } : consent,
       consentRevokePending: snapshot.consentRevokePending ?? false,
       pendingRevokes: snapshot.pendingRevokes ?? [],
+      healthSync: { ...emptySnapshot().healthSync, ...(snapshot.healthSync ?? {}) },
       queue: (snapshot.queue ?? []).filter((item) => item.kind !== ('consent' as SyncItem['kind'])),
       notices: (snapshot.notices ?? []).slice(0, MAX_NOTICES),
       dismissedNoticeIds: (snapshot.dismissedNoticeIds ?? []).slice(-MAX_DISMISSED),
@@ -232,6 +243,17 @@ export class LifeApp {
   /** Cambia con cada apertura/cierre de sesión: un envío en curso lo compara para no seguir con otra cuenta. */
   get sessionEpoch(): number {
     return this.sessionEpochValue;
+  }
+
+  markHealthAccess(granted: boolean): void {
+    if (this.snapshot.healthSync.accessGranted === granted) {
+      return;
+    }
+    this.snapshot = { ...this.snapshot, healthSync: { ...this.snapshot.healthSync, accessGranted: granted } };
+  }
+
+  recordHealthRead(at: string): void {
+    this.snapshot = { ...this.snapshot, healthSync: { ...this.snapshot.healthSync, lastReadAt: at } };
   }
 
   addSamples(samples: BiometricSample[]): number {

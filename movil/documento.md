@@ -34,7 +34,7 @@ La integración es real (`react-native-health-connect`). No hay datos simulados.
 Funciona cuando se cumplen todas:
 
 1. Compilas un **development build**, no Expo Go. Health Connect es código nativo y Expo Go no lo incluye.
-2. El teléfono o emulador es **Android**. En iOS esta versión no lee Apple Health.
+2. El teléfono o emulador es **Android** (Health Connect) o un **iPhone con development build** (Apple Health). Expo Go no incluye ninguno de los dos módulos nativos.
 3. **Health Connect está instalado.** En Android 14 o superior viene con el sistema. En Android 9 a 13 hay que instalar «Health Connect» de Google Play. La app, si falta, abre la ficha de Play Store y no se cierra.
 4. Aceptas los permisos de **lectura** (pulso, reposo, variabilidad, SpO2, pasos, sueño, temperatura). Si los niegas, verás el aviso y podrás seguir con una lectura manual.
 5. Otra app ya escribió esos datos en Health Connect. Mi Fitness, Samsung Health u otra app compatible no entregan nada a Vitalsy hasta que sincronicen con Health Connect. Vitalsy solo lee lo que Health Connect tenga y lo que hayas autorizado.
@@ -110,6 +110,18 @@ Cubren línea de base, avisos, cola offline, consentimiento, plan, mapeo de Heal
 ## Limitaciones
 
 - La nube usa `/api/v1/life/*` con token Sanctum (cuenta Life, guardado en `expo-secure-store`). Sin token o sin https (fuera de desarrollo) la cola se queda pendiente. La sincronización marca `synced` solo los ids de `accepted` (y «Sincronizado» solo aparece si el servidor aceptó al menos un item); los de `rejected` pasan a `rejected` y no se reintentan; un 422 o un fallo de red los deja pendientes. El envío se parte en lotes de hasta 100 items y 1 000 000 de caracteres.
-- Apple Health queda detrás del mismo puerto, sin lector en este corte.
+- Apple Health se lee con `@kingstinct/react-native-healthkit` (solo lectura, sin temperatura cutánea). No se ha probado en un iPhone real: por verificar en dispositivo.
 - El aviso al cuidador abre el SMS; no se envía oculto.
-- La lectura de Health Connect ocurre al abrir Hoy, al pulsar sincronizar y al recuperar la red. No hay un sondeo continuo.
+- La lectura ocurre al abrir Hoy, al pulsar sincronizar, al recuperar la red y en una tarea de segundo plano (`expo-background-task`, mínimo 15 min, solo deltas). No hay un sondeo continuo.
+
+## Segundo plano y batería (RNF-19, por verificar en dispositivo)
+
+Estado: implementado y probado con fakes; **no verificado en un dispositivo**. Criterio RNF-19: la app consume ≤5 % de batería al día.
+
+Diseño: sin sondeo; una tarea de `expo-background-task` con intervalo mínimo de 15 minutos (el sistema operativo la ejecuta cuando quiere) que lee solo lo nuevo desde la última lectura (primera lectura limitada a 14 días) y no hace nada sin sesión, sin permiso o sin API.
+
+Procedimiento manual (development build, `eas build --profile development`):
+1. Instala el build en un teléfono real (iPhone con Apple Health o Android con Health Connect y datos), inicia sesión y concede la lectura en Dispositivos.
+2. Android: `adb shell dumpsys batterystats --reset`, usa el teléfono normalmente 24 h con la app en segundo plano, luego `adb shell dumpsys batterystats com.vitalsy.life` y compara el consumo de la app con el total. iOS: Ajustes > Batería > últimas 24 h, porcentaje de Vitalsy Life.
+3. Forzar la tarea: Android `adb shell cmd jobscheduler run -f <paquete> <jobId>`; iOS, en Xcode pausa y ejecuta `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"com.expo.modules.backgroundtask.processing"]`. Verifica que llegan muestras nuevas sin duplicados y que sin sesión no hace nada.
+4. Umbrales esperados: ≤5 % del consumo total en 24 h; cada ejecución de la tarea de segundos y sin diálogos. Registra el resultado aquí cuando se mida.

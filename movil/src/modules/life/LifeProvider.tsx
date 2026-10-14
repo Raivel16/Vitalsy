@@ -1,7 +1,4 @@
-import * as Crypto from 'expo-crypto';
 import * as Network from 'expo-network';
-import * as SecureStore from 'expo-secure-store';
-import * as SQLite from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
@@ -11,11 +8,13 @@ import { activatePlan } from './activatePlan';
 import { changeSharing, issueServerLinkCode, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
 import { needsResync, runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
-import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
-import { SqlitePersistence } from '../../shared/storage/sqlitePersistence';
+import { openLifePersistence } from '../../shared/storage/openLifePersistence';
 import type { LifePersistence } from '../../shared/storage/persistence';
-import { createHealthSource } from '../health-sync/HealthConnectSource';
+import { clearForegroundRuntime, setForegroundRuntime } from '../health-sync/backgroundSync';
+import { setHealthBackgroundSync } from '../health-sync/backgroundScheduling';
+import { collectAndEnqueue } from '../health-sync/collectAndEnqueue';
+import { createHealthSource } from '../health-sync/createHealthSource';
 import type { HealthStatus } from '../health-sync/HealthDataSource';
 import { emptySnapshot, LifeApp, type LifeSnapshot } from './lifeApp';
 
@@ -44,16 +43,6 @@ type LifeContextValue = {
 };
 
 const LifeContext = createContext<LifeContextValue | null>(null);
-
-async function encryptionKey(): Promise<Uint8Array> {
-  const existing = await SecureStore.getItemAsync('vitalsy.life.key');
-  if (existing) {
-    return base64ToBytes(existing);
-  }
-  const bytes = await Crypto.getRandomBytesAsync(32);
-  await SecureStore.setItemAsync('vitalsy.life.key', bytesToBase64(bytes));
-  return bytes;
-}
 
 export function LifeProvider({
   children,
@@ -96,9 +85,7 @@ export function LifeProvider({
     }
     void (async () => {
       try {
-        const key = await encryptionKey();
-        const database = await SQLite.openDatabaseAsync('vitalsy-life.db');
-        const sqlite = await SqlitePersistence.open(database, key, () => Crypto.getRandomBytes(12));
+        const sqlite = await openLifePersistence();
         const loaded = await sqlite.load();
         if (!active) {
           return;
@@ -138,31 +125,26 @@ export function LifeProvider({
   }, [life, store]);
 
   const syncHealthOnce = useCallback(async () => {
-    const source = createHealthSource();
-    const status = await source.availability();
-    if (status.state !== 'available') {
-      setHealth({ status, permission: 'unknown' });
+    const collected = await collectAndEnqueue({
+      source: createHealthSource(),
+      life,
+      now: () => new Date(),
+      interactive: true,
+    });
+    if (collected.status !== 'read') {
+      if (collected.status !== 'stale_session') {
+        setHealth({ status: collected.health, permission: collected.permission });
+      }
       await refresh();
-      return status.message;
+      return collected.message;
     }
-    const access = await source.requestAccess();
-    if (!access.granted) {
-      setHealth({ status, permission: 'denied' });
-      await refresh();
-      return access.message;
-    }
-    const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const to = new Date();
-    const reader = source.readGranted?.bind(source) ?? source.readRange.bind(source);
-    const read = await reader(from, to);
-    life.addSamples(read.samples);
-    setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
+    setHealth({ status: collected.health, permission: collected.permission });
     try {
       await serverSyncRef.current();
     } finally {
       await refresh();
     }
-    return read.message;
+    return collected.message;
   }, [life, refresh]);
 
   // Envío de cola, reintento de revocación y avisos del servidor. Una sola ejecución a la vez.
@@ -220,6 +202,30 @@ export function LifeProvider({
     });
     return () => subscription.remove();
   }, [ready, serverSync]);
+
+  // La tarea en segundo plano reutiliza esta instancia (mismo runtime JS) para no pisarla desde disco.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    setForegroundRuntime({
+      life,
+      persist: async () => {
+        await store?.save(life.state);
+      },
+      notify: () => setTick((value) => value + 1),
+    });
+    return () => clearForegroundRuntime();
+  }, [ready, life, store]);
+
+  // Con sesión y permiso de lectura se programa la lectura periódica; al cerrar sesión se da de baja.
+  const backgroundEnabled = hasSession && life.state.healthSync.accessGranted;
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    void setHealthBackgroundSync(backgroundEnabled);
+  }, [ready, backgroundEnabled]);
 
   const consentDeps = useCallback(async () => {
     const session = Boolean(await tokenStore.get().catch(() => null));

@@ -46,7 +46,16 @@
         }
       ],
       "react-native-health-connect",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Vitalsy Life lee tus signos vitales para comparar tus lecturas con tu rango personal. Nunca escribe en Salud.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ],
       "./plugins/withHealthConnectPermissions",
+      "expo-background-task",
       "expo-asset"
     ],
     "experiments": {

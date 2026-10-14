@@ -30,10 +30,14 @@ La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/v1/life/sync` con `{ items: 
 | Origen | Plataforma | Comportamiento |
 |---|---|---|
 | Health Connect | Android, development build | Lectura real de los tipos autorizados |
-| Apple Health | iOS | No conectado en este corte |
+| Apple Health | iOS, development build | Lectura de solo lectura con `@kingstinct/react-native-healthkit` (frecuencia cardíaca, reposo, HRV SDNN, SpO2, pasos, sueño, temperatura corporal). Sin development build (Expo Go) queda «no disponible». Por verificar en dispositivo |
 | Manual | Ambas | Pulso y SpO2 validados en el teléfono |
 
 Tipos de Health Connect: frecuencia cardíaca, pulso en reposo, HRV, SpO2, pasos, sueño, temperatura cutánea y corporal. Solo lectura.
+
+Apple Health lee los mismos tipos salvo temperatura cutánea (HealthKit solo expone la temperatura de muñeca durante el sueño y no se usa en este corte); la HRV es SDNN, no RMSSD. Solo lectura: `NSHealthShareUsageDescription` sin descripción de escritura.
+
+
 
 ## Calidad
 

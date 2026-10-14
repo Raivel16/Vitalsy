@@ -1,7 +1,6 @@
 import { Linking, Platform } from 'react-native';
 import { mapHealthConnectRecords, type HealthConnectBundle } from './domain/mapHealthRecords';
-import type { BiometricSample } from './domain/types';
-import { UnavailableHealthSource, type HealthDataSource, type HealthStatus } from './HealthDataSource';
+import type { HealthDataSource, HealthReadResult, HealthStatus } from './HealthDataSource';
 
 const READS = [
   'HeartRate',
@@ -151,13 +150,17 @@ export class HealthConnectSource implements HealthDataSource {
       if (!Array.isArray(granted) || granted.length === 0) {
         return { granted: false, message: 'No concediste permisos de lectura en Health Connect.' };
       }
+      // Lectura en segundo plano (Android 14+ / Health Connect con la función). Si no existe, la lectura sigue en primer plano.
+      await health
+        .requestPermission([{ accessType: 'read' as const, recordType: 'BackgroundAccessPermission' }])
+        .catch(() => undefined);
       return { granted: true, message: 'Permisos de lectura concedidos.' };
     } catch {
       return { granted: false, message: 'Health Connect rechazó la solicitud de permisos.' };
     }
   }
 
-  async readRange(from: Date, to: Date): Promise<{ samples: BiometricSample[]; message: string | null }> {
+  async readRange(from: Date, to: Date): Promise<HealthReadResult> {
     const access = await this.requestAccess();
     if (!access.granted) {
       return { samples: [], message: access.message };
@@ -165,7 +168,7 @@ export class HealthConnectSource implements HealthDataSource {
     return this.readGranted(from, to);
   }
 
-  async readGranted(from: Date, to: Date): Promise<{ samples: BiometricSample[]; message: string | null }> {
+  async readGranted(from: Date, to: Date): Promise<HealthReadResult> {
     try {
       const health = await loadModule();
       const timeRangeFilter = { operator: 'between' as const, startTime: from.toISOString(), endTime: to.toISOString() };
@@ -185,16 +188,10 @@ export class HealthConnectSource implements HealthDataSource {
         message: samples.length === 0 ? 'Health Connect no tiene lecturas en este periodo.' : null,
       };
     } catch {
-      return { samples: [], message: 'No se pudieron leer los registros de Health Connect.' };
+      return { samples: [], message: 'No se pudieron leer los registros de Health Connect.', failed: true };
     }
   }
 }
 
-export function createHealthSource(): HealthDataSource {
-  if (Platform.OS === 'android') {
-    return new HealthConnectSource();
-  }
-  return new UnavailableHealthSource('Health Connect', 'Health Connect solo está disponible en Android.');
-}
-
-export const appleHealthMessage = 'Apple Health no está conectado en esta versión. La lectura real es Health Connect en Android.';
+export const appleHealthMessage =
+  'Apple Health se lee en iPhone con un development build, solo lectura. No funciona en Expo Go ni en Android.';

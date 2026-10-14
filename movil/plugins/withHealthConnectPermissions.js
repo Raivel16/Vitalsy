@@ -9,6 +9,8 @@ const PERMISSIONS = [
   'android.permission.health.READ_SLEEP',
   'android.permission.health.READ_SKIN_TEMPERATURE',
   'android.permission.health.READ_BODY_TEMPERATURE',
+  // Lectura con la app en segundo plano (tarea de expo-background-task).
+  'android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND',
 ];
 
 function withHealthConnectPermissions(config) {
