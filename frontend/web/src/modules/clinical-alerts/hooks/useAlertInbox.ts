@@ -9,8 +9,11 @@ import { createEchoClient, type RealtimeClient } from "../realtime/realtimeClien
 const POLL_MS = 15000;
 /** Sondeo de respaldo mientras el canal en tiempo real está conectado. */
 const POLL_CONNECTED_MS = 60000;
-/** RNF-12: reintento de conexión mientras esté caído (reconecta en 5 s o menos tras volver la señal). */
-const RECONNECT_MS = 2000;
+/**
+ * RNF-12: reintentos de conexión con espera creciente y tope de 5 s (1 s, 2 s, 4 s, 5 s, 5 s...);
+ * se reinicia al conectar o al volver la señal (`online`).
+ */
+export const RECONNECT_STEPS_MS = [1000, 2000, 4000, 5000] as const;
 
 export type AlertInboxOptions = {
   /** Id del usuario autenticado: define el canal privado `alerts.{userId}`. */
@@ -133,11 +136,26 @@ export function useAlertInbox(enabled: boolean, options: AlertInboxOptions = {})
   // RNF-12: mientras el canal esté caído, reintenta cada pocos segundos y al volver la señal.
   useEffect(() => {
     if (!realtime || connected) return;
-    const timer = setInterval(() => realtime.reconnect(), RECONNECT_MS);
-    const onOnline = () => realtime.reconnect();
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      const delay = RECONNECT_STEPS_MS[Math.min(attempt, RECONNECT_STEPS_MS.length - 1)];
+      timer = setTimeout(() => {
+        attempt += 1;
+        realtime.reconnect();
+        schedule();
+      }, delay);
+    };
+    const onOnline = () => {
+      realtime.reconnect();
+      attempt = 0;
+      clearTimeout(timer);
+      schedule();
+    };
+    schedule();
     window.addEventListener("online", onOnline);
     return () => {
-      clearInterval(timer);
+      clearTimeout(timer);
       window.removeEventListener("online", onOnline);
     };
   }, [realtime, connected]);

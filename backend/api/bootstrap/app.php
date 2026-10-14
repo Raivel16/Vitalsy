@@ -23,11 +23,6 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    // RNF-01: canales privados autenticados en /api/v1/broadcasting/auth con el mismo token Sanctum.
-    ->withBroadcasting(
-        __DIR__.'/../routes/channels.php',
-        ['prefix' => 'api/v1', 'middleware' => ['auth:sanctum', 'active']],
-    )
     ->withMiddleware(function (Middleware $middleware): void {
         // Nginx (HTTP/HTTPS) envía X-Forwarded-*; necesario para URL/scheme correctos en LAN.
         $middleware->trustProxies(

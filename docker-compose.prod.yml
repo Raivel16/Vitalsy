@@ -6,6 +6,12 @@ services:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile
+      # Vite incrusta VITE_* en el build: sin la clave el cliente en tiempo real no conecta.
+      args:
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST:-}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT:-}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
     environment:
       PORT: "4200"
     ports:
@@ -32,9 +38,9 @@ services:
       DB_USERNAME: ${DB_USER:-postgres}
       # RNF-01 / RNF-05: Reverb detras del proxy TLS (wss) en /app; el backend publica por red interna.
       BROADCAST_CONNECTION: reverb
-      REVERB_APP_ID: ${REVERB_APP_ID}
-      REVERB_APP_KEY: ${REVERB_APP_KEY}
-      REVERB_APP_SECRET: ${REVERB_APP_SECRET}
+      REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?defina REVERB_APP_SECRET}
       REVERB_HOST: reverb
       REVERB_PORT: "8080"
       REVERB_SCHEME: http
@@ -54,13 +60,13 @@ services:
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY}
       BROADCAST_CONNECTION: reverb
-      REVERB_APP_ID: ${REVERB_APP_ID}
-      REVERB_APP_KEY: ${REVERB_APP_KEY}
-      REVERB_APP_SECRET: ${REVERB_APP_SECRET}
+      REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?defina REVERB_APP_SECRET}
       REVERB_SERVER_HOST: 0.0.0.0
       REVERB_SERVER_PORT: "8080"
       # Origenes permitidos del navegador (dominio publico con HTTPS).
-      REVERB_ALLOWED_ORIGINS: ${REVERB_ALLOWED_ORIGINS}
+      REVERB_ALLOWED_ORIGINS: ${REVERB_ALLOWED_ORIGINS:?defina REVERB_ALLOWED_ORIGINS con el dominio https publico}
     # Sin puerto publicado: solo el proxy TLS (wss://<dominio>/app) llega a este servicio.
 
   postgres:

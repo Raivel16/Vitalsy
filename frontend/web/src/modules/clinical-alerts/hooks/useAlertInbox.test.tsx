@@ -131,6 +131,32 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
     expect(String(apiMock.mock.calls.at(-1)?.[0])).toContain("/clinical-alerts/inbox");
   });
 
+  it("reintenta con espera creciente 1 s, 2 s, 4 s y luego fija en 5 s, y la reinicia al conectar", async () => {
+    const client = new FakeClient();
+    renderHook(() => useAlertInbox(true, { userId: 42, client }));
+    await flush();
+    act(() => client.handlers?.onDisconnected());
+
+    const at = async (ms: number) => {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+      return client.reconnects;
+    };
+    expect(await at(999)).toBe(0);
+    expect(await at(1)).toBe(1); // t=1 s
+    expect(await at(1999)).toBe(1);
+    expect(await at(1)).toBe(2); // t=3 s
+    expect(await at(4000)).toBe(3); // t=7 s
+    expect(await at(5000)).toBe(4); // t=12 s
+    expect(await at(5000)).toBe(5); // t=17 s (tope fijo de 5 s)
+
+    act(() => client.handlers?.onConnected());
+    await flush();
+    act(() => client.handlers?.onDisconnected());
+    expect(await at(1000)).toBe(6); // vuelve a empezar en 1 s
+  });
+
   it("reintenta de inmediato cuando el navegador vuelve a estar en línea", async () => {
     const client = new FakeClient();
     renderHook(() => useAlertInbox(true, { userId: 42, client }));

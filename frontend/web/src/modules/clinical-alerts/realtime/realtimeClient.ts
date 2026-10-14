@@ -1,3 +1,5 @@
+import { ALERT_RAISED_EVENT, ALERT_UPDATED_EVENT, alertChannelName } from "./alertEvents";
+
 /**
  * RNF-01 / RNF-12: transporte en tiempo real de alertas. El hook depende de
  * esta interfaz (inyectable) y no de Echo/Pusher, para poder probar la
@@ -18,7 +20,8 @@ export interface RealtimeClient {
   reconnect(): void;
 }
 
-const ALERT_EVENTS = [".alert.raised", ".alert.updated"] as const;
+// El punto inicial hace que Echo use el nombre tal cual (sin namespace de aplicación).
+const ALERT_EVENTS = [`.${ALERT_RAISED_EVENT}`, `.${ALERT_UPDATED_EVENT}`] as const;
 
 function xsrfToken(): string {
   const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
@@ -103,13 +106,25 @@ export function createEchoClient(): RealtimeClient {
   return {
     subscribe(userId, handlers) {
       let cancelled = false;
+      let released = false;
       let cleanup: (() => void) | null = null;
       subscribers += 1;
+
+      // Libera exactamente una vez (baja normal o fallo de ensure()); evita fugas del contador.
+      const release = () => {
+        if (released) return;
+        released = true;
+        subscribers = Math.max(0, subscribers - 1);
+        if (subscribers === 0 && echo) {
+          echo.disconnect();
+          echo = null;
+        }
+      };
 
       void ensure()
         .then((instance) => {
           if (cancelled) return;
-          const channel = `alerts.${userId}`;
+          const channel = alertChannelName(userId);
           const onAlert = () => handlers.onAlert();
           const connection = instance.connector.pusher.connection;
           const onConnected = () => handlers.onConnected();
@@ -126,17 +141,15 @@ export function createEchoClient(): RealtimeClient {
             instance.leave(channel);
           };
         })
-        .catch(() => handlers.onDisconnected());
+        .catch(() => {
+          release();
+          handlers.onDisconnected();
+        });
 
       return () => {
         cancelled = true;
         cleanup?.();
-        subscribers -= 1;
-        if (subscribers <= 0 && echo) {
-          echo.disconnect();
-          echo = null;
-          subscribers = 0;
-        }
+        release();
       };
     },
 

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -52,6 +53,11 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'active', 'password.rotated'])->group(function () {
+        // RNF-01: autorización de canales privados (POST /api/v1/broadcasting/auth). Se registra
+        // dentro de este grupo para heredar la pila del grupo `api` (stateful, sesión, origen) y la
+        // misma autenticación por cookie + XSRF que el resto de la API.
+        Broadcast::routes(['middleware' => []]);
+        require base_path('routes/channels.php');
 
         Route::prefix('hospital-admission')->group(function () {
             Route::get('encounters', [AdmissionCensusController::class, 'index']);

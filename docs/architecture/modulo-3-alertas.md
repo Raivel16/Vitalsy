@@ -127,6 +127,16 @@ El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `
 
 **Medición.** `php artisan alerts:measure-latency --count=50` genera alertas sintéticas (en una transacción que se revierte) y reporta p50/p95/máx del tiempo de servidor entre la decisión y la entrega al broadcaster configurado. Alcance honesto: mide el despacho del servidor, no la recepción en el navegador.
 
+**Autenticación del canal.** La web usa sesión Sanctum por cookie + XSRF (no bearer). La ruta `POST /api/v1/broadcasting/auth` está registrada en `routes/api.php` dentro del grupo `auth:sanctum` + `active` + `password.rotated`, por lo que hereda la pila del grupo `api` (stateful, sesión, `EnsureRequestOrigin`); una prueba hace el flujo real login -> auth de canal sin `actingAs` y compara la pila de middleware con la de las demás rutas autenticadas.
+
+**Emisión tras commit.** El observador difunde con `DB::afterCommit`: una transacción revertida no emite y el refresh del cliente siempre ve la alerta. Los nombres de evento (`alert.raised`, `alert.updated`) están en `realtime/alertEvents.ts` y una prueba de backend los compara con `broadcastAs()`.
+
+**Reconexión.** Espera creciente determinista 1 s, 2 s, 4 s y fija en 5 s; se reinicia al conectar o al disparar `online`.
+
+**Producción.** `docker-compose.prod.yml` exige `REVERB_APP_ID/KEY/SECRET` y `REVERB_ALLOWED_ORIGINS` (sin valores por defecto); `reverb.php` es restrictivo si `APP_ENV=production`. La clave pública entra al build web por `VITE_REVERB_APP_KEY` (build arg del Dockerfile). `docker/nginx/default.conf` incluye el proxy `/app/` (Upgrade/Connection); en producción el navegador debe usar `wss://` (RNF-05) tras el TLS del proxy.
+
+**Riesgo residual.** Un usuario desactivado conserva la conexión WebSocket ya autorizada hasta que cae; el corte inmediato del lado del servidor queda fuera de alcance.
+
 **Qué está verificado y qué no.** Verificado por pruebas automáticas: destinatarios por camino (NEWS2, observación, escalamiento, acuse), autorización de canal, carga mínima, y en la web suscripción, refresh por evento, respaldo por sondeo, reintento ≤ 5 s (con temporizadores simulados), refresh completo al reconectar y limpieza. **No verificado de extremo a extremo:** la latencia real ≤ 2 s hasta el navegador (RNF-01) y la reconexión real tras perder señal (RNF-12) requieren una corrida en staging con Reverb y un cliente real; hasta entonces no se declaran cumplidos.
 
 ## Deuda conocida

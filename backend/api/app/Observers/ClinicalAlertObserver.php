@@ -9,6 +9,7 @@ use App\Models\ClinicalAlert;
 use App\Models\User;
 use App\Services\ClinicalAlerts\AlertAudience;
 use App\Services\ClinicalAlerts\AlertWorkflow;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -28,7 +29,7 @@ class ClinicalAlertObserver
     {
         $this->safely(function () use ($alert) {
             foreach (AlertAudience::recipients($alert) as $user) {
-                event(new ClinicalAlertRaised($user->id, $this->payload($alert, $user)));
+                $this->emit(new ClinicalAlertRaised($user->id, $this->payload($alert, $user)));
             }
         });
     }
@@ -49,16 +50,22 @@ class ClinicalAlertObserver
             foreach ($now as $user) {
                 if (! in_array($user->id, $previousIds, true)) {
                     $raisedIds[] = $user->id;
-                    event(new ClinicalAlertRaised($user->id, $this->payload($alert, $user)));
+                    $this->emit(new ClinicalAlertRaised($user->id, $this->payload($alert, $user)));
                 }
             }
 
             foreach ($now->merge($previous)->unique('id') as $user) {
                 if (! in_array($user->id, $raisedIds, true)) {
-                    event(new ClinicalAlertUpdated($user->id, $this->payload($alert, $user)));
+                    $this->emit(new ClinicalAlertUpdated($user->id, $this->payload($alert, $user)));
                 }
             }
         });
+    }
+
+    /** Solo se emite tras el commit: una transacción revertida nunca difunde y el refresh ve la alerta. */
+    private function emit(object $event): void
+    {
+        DB::afterCommit(fn () => event($event));
     }
 
     /** @return array<string, mixed> */

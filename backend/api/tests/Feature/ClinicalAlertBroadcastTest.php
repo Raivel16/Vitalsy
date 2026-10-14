@@ -13,7 +13,9 @@ use App\Services\ClinicalAlerts\AlertRecorder;
 use App\Services\ClinicalAlerts\AlertWorkflow;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -217,5 +219,79 @@ class ClinicalAlertBroadcastTest extends TestCase
         $this->assertFalse((bool) $callback($life, (string) $this->nurse->id));
         $this->assertFalse((bool) $callback($this->inactiveNurse, (string) $this->inactiveNurse->id));
         $this->assertFalse((bool) $callback($this->nurse, (string) $this->nurse2->id));
+    }
+
+    public function test_event_names_match_frontend_constants(): void
+    {
+        $this->assertSame('alert.raised', (new ClinicalAlertRaised(1, []))->broadcastAs());
+        $this->assertSame('alert.updated', (new ClinicalAlertUpdated(1, []))->broadcastAs());
+
+        $frontend = file_get_contents(base_path('../../frontend/web/src/modules/clinical-alerts/realtime/alertEvents.ts'));
+        $this->assertStringContainsString('"alert.raised"', $frontend);
+        $this->assertStringContainsString('"alert.updated"', $frontend);
+    }
+
+    public function test_rolled_back_alert_never_broadcasts_and_committed_one_does_once_per_recipient(): void
+    {
+        Event::fake([ClinicalAlertRaised::class, ClinicalAlertUpdated::class]);
+
+        DB::beginTransaction();
+        app(AlertRecorder::class)->openFromMonitoring('ENC-BC-1', 8);
+        $this->assertSame([], $this->raisedTo(), 'no debe emitir antes del commit');
+        DB::rollBack();
+        $this->assertSame([], $this->raisedTo());
+
+        DB::beginTransaction();
+        app(AlertRecorder::class)->openFromMonitoring('ENC-BC-1', 8);
+        $this->assertSame([], $this->raisedTo());
+        DB::commit();
+        $this->assertSame($this->sorted($this->nurse->id, $this->nurse2->id), $this->raisedTo());
+    }
+
+    public function test_broadcast_auth_route_has_the_same_middleware_stack_as_authenticated_api_routes(): void
+    {
+        $routes = app('router')->getRoutes();
+        $auth = $routes->match(Request::create('/api/v1/broadcasting/auth', 'POST'));
+        $me = $routes->match(Request::create('/api/v1/hospital-admission/encounters', 'GET'));
+
+        $this->assertSame(
+            app('router')->gatherRouteMiddleware($me),
+            app('router')->gatherRouteMiddleware($auth),
+        );
+    }
+
+    public function test_real_stateful_session_flow_authorizes_only_own_channel(): void
+    {
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => 'test-key',
+            'broadcasting.connections.reverb.secret' => 'test-secret',
+            'broadcasting.connections.reverb.app_id' => 'test-app',
+        ]);
+        Broadcast::forgetDrivers();
+        require base_path('routes/channels.php');
+
+        $this->nurse->forceFill(['password' => 'Clave-Segura-123', 'must_change_password' => false])->save();
+        $headers = ['Origin' => 'http://localhost', 'Referer' => 'http://localhost/'];
+
+        $login = $this->withHeaders($headers)->postJson('/api/v1/auth/login', [
+            'email' => $this->nurse->email, 'password' => 'Clave-Segura-123',
+        ]);
+        $login->assertOk();
+        $cookies = collect($login->headers->getCookies())->mapWithKeys(fn ($c) => [$c->getName() => $c->getValue()])->all();
+
+        $call = fn (int $id, array $cookies) => $this->withHeaders($headers)->withUnencryptedCookies([])
+            ->withCookies($cookies)->postJson('/api/v1/broadcasting/auth', [
+                'socket_id' => '1234.5678', 'channel_name' => 'private-alerts.'.$id,
+            ]);
+
+        $own = $call($this->nurse->id, $cookies);
+        $own->assertOk();
+        $this->assertStringStartsWith('test-key:', $own->json('auth'));
+        $this->assertSame(403, $call($this->nurse2->id, $cookies)->status());
+
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+        $this->assertContains($call($this->nurse->id, [])->status(), [401, 403]);
     }
 }
