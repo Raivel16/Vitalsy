@@ -85,11 +85,21 @@ class TransportSecurityTest extends TestCase
 
     public function test_sanctum_stateful_domains_come_from_environment(): void
     {
+        // env() lee de $_SERVER/$_ENV (putenv va desactivado en Laravel): se fijan las tres fuentes.
+        $previous = [$_SERVER['SANCTUM_STATEFUL_DOMAINS'] ?? null, $_ENV['SANCTUM_STATEFUL_DOMAINS'] ?? null];
         putenv('SANCTUM_STATEFUL_DOMAINS=vitalsy.example.org');
+        $_SERVER['SANCTUM_STATEFUL_DOMAINS'] = $_ENV['SANCTUM_STATEFUL_DOMAINS'] = 'vitalsy.example.org';
         try {
             $config = require config_path('sanctum.php');
         } finally {
             putenv('SANCTUM_STATEFUL_DOMAINS');
+            foreach ([['_SERVER', 0], ['_ENV', 1]] as [$bag, $i]) {
+                if ($previous[$i] === null) {
+                    unset($GLOBALS[$bag]['SANCTUM_STATEFUL_DOMAINS']);
+                } else {
+                    $GLOBALS[$bag]['SANCTUM_STATEFUL_DOMAINS'] = $previous[$i];
+                }
+            }
         }
 
         $this->assertSame(['vitalsy.example.org'], $config['stateful']);
