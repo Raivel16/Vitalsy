@@ -75,7 +75,11 @@ return new class extends Migration
                 $updateWhen = "{$rule['when']} AND ({$updateWhen})";
             }
 
-            $this->createTrigger($driver, "trg_{$table}_no_update", $table, 'UPDATE', $updateWhen);
+            if ($driver === 'pgsql') {
+                $this->createPgUpdateGuard($table, $columns, $rule);
+            } else {
+                $this->createTrigger($driver, "trg_{$table}_no_update", $table, 'UPDATE', $updateWhen);
+            }
             $this->createTrigger($driver, "trg_{$table}_no_delete", $table, 'DELETE', $rule['when'] ?? 'TRUE');
         }
     }
@@ -94,6 +98,43 @@ return new class extends Migration
                     : "DROP TRIGGER IF EXISTS trg_{$table}_{$kind}");
             }
         }
+    }
+
+    /**
+     * PostgreSQL no admite subconsultas en la cláusula WHEN de un trigger. El WHEN solo lleva
+     * predicados baratos de columna; la comprobación «la fila referenciada ya no existe» va en
+     * el cuerpo plpgsql. ON DELETE SET NULL se ejecuta como trigger referencial AFTER cuya
+     * consulta ya ve al padre eliminado: el EXISTS es falso y el NULL se permite; un UPDATE
+     * directo con el usuario presente se rechaza.
+     *
+     * @param  list<string>  $columns
+     * @param  array{nullable: array<string, string>, when: string|null}  $rule
+     */
+    private function createPgUpdateGuard(string $table, array $columns, array $rule): void
+    {
+        $fn = "vitalsy_guard_{$table}_update";
+        $checks = [];
+        foreach ($columns as $c) {
+            if (isset($rule['nullable'][$c])) {
+                $ref = $rule['nullable'][$c];
+                $checks[] = "IF NEW.{$c} IS DISTINCT FROM OLD.{$c} AND (NEW.{$c} IS NOT NULL OR EXISTS (SELECT 1 FROM {$ref} WHERE id = OLD.{$c})) THEN\n"
+                    ."    RAISE EXCEPTION '".self::MESSAGE."' USING ERRCODE = 'restrict_violation';\n  END IF;";
+            } else {
+                $checks[] = "IF NEW.{$c} IS DISTINCT FROM OLD.{$c} THEN\n"
+                    ."    RAISE EXCEPTION '".self::MESSAGE."' USING ERRCODE = 'restrict_violation';\n  END IF;";
+            }
+        }
+
+        DB::unprepared(
+            "CREATE OR REPLACE FUNCTION {$fn}() RETURNS trigger AS \$\$\nBEGIN\n  "
+            .implode("\n  ", $checks)
+            ."\n  RETURN NEW;\nEND;\n\$\$ LANGUAGE plpgsql;"
+        );
+        DB::unprepared("DROP TRIGGER IF EXISTS trg_{$table}_no_update ON {$table}");
+        $when = $rule['when'] !== null ? " WHEN ({$rule['when']})" : '';
+        DB::unprepared(
+            "CREATE TRIGGER trg_{$table}_no_update BEFORE UPDATE ON {$table} FOR EACH ROW{$when} EXECUTE FUNCTION {$fn}()"
+        );
     }
 
     private function createTrigger(string $driver, string $name, string $table, string $event, string $when): void
