@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 
 class AdmissionEncounter extends Model
@@ -32,8 +33,8 @@ class AdmissionEncounter extends Model
     protected function casts(): array
     {
         return [
+            'clinical_payload' => EncryptedArray::class,
             'deliverables' => 'array',
-            'clinical_payload' => 'array',
         ];
     }
 }

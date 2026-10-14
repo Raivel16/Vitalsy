@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,7 +13,8 @@ class LifeBaselineImport extends Model
 
     protected function casts(): array
     {
-        return ['baseline' => 'array', 'imported_at' => 'datetime'];
+        return [
+            'baseline' => EncryptedArray::class, 'imported_at' => 'datetime'];
     }
 
     public function account(): BelongsTo

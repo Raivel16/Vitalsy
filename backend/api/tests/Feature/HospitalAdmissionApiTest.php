@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
+use App\Models\PrescriptionItem;
 use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\Admission\AdmissionBoard;
@@ -490,15 +491,11 @@ class HospitalAdmissionApiTest extends TestCase
             'encounter_id' => 'ENC-BPMH',
             'status' => 'activo',
         ]);
-        $this->assertDatabaseHas('prescription_items', [
-            'drug_name' => 'Losartán',
-            'dose' => '50 mg',
-            'route' => 'oral',
-            'frequency' => 'cada 8 horas',
-        ]);
-        $this->assertDatabaseMissing('prescription_items', [
-            'drug_name' => 'Reposo relativo',
-        ]);
+        // RNF-06: drug_name/dose/route/frequency van cifrados; se verifica por el modelo.
+        $items = PrescriptionItem::query()->get();
+        $this->assertTrue($items->contains(fn ($i) => $i->drug_name === 'Losartán'
+            && $i->dose === '50 mg' && $i->route === 'oral' && $i->frequency === 'cada 8 horas'));
+        $this->assertFalse($items->contains(fn ($i) => $i->drug_name === 'Reposo relativo'));
 
         $this->asRole('enfermera_piso');
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-BPMH/emar')

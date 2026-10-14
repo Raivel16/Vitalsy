@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 
 class AmbulatoryPrescription extends Model
@@ -15,7 +16,7 @@ class AmbulatoryPrescription extends Model
     protected function casts(): array
     {
         return [
-            'content' => 'array',
+            'content' => EncryptedArray::class,
             'issued_at' => 'datetime',
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 
 /** Plan de seguimiento al alta emitido para Vitalsy Life (RF-96, RF-97, RF-98). */
@@ -15,7 +16,7 @@ class LifeDischargePlan extends Model
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
+            'payload' => EncryptedArray::class,
             'valid_until' => 'date',
             'claimed_at' => 'datetime',
             'custody_transferred_at' => 'datetime',

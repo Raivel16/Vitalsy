@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +18,7 @@ class MedicalEvolutionNote extends Model
     protected function casts(): array
     {
         return [
+            'body' => EncryptedText::class,
             'signed_at' => 'datetime',
         ];
     }

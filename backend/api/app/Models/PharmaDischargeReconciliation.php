@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
 use Illuminate\Database\Eloquent\Model;
 
 class PharmaDischargeReconciliation extends Model
@@ -11,4 +12,11 @@ class PharmaDischargeReconciliation extends Model
         'notes',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'notes' => EncryptedText::class,
+        ];
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,6 +13,13 @@ class NursingEvolutionNote extends Model
         'author_user_id',
         'body',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'body' => EncryptedText::class,
+        ];
+    }
 
     public function author(): BelongsTo
     {

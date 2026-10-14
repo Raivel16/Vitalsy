@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
 use App\Observers\ClinicalAlertObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -67,6 +68,8 @@ class ClinicalAlert extends Model
     protected function casts(): array
     {
         return [
+            'closure_note' => EncryptedText::class,
+            'message' => EncryptedText::class,
             'generated_at' => 'datetime',
             'acknowledge_due_at' => 'datetime',
             'follow_up_due_at' => 'datetime',

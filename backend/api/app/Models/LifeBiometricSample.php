@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedFloat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,7 +15,8 @@ class LifeBiometricSample extends Model
 
     protected function casts(): array
     {
-        return ['value' => 'float', 'started_at' => 'datetime', 'ended_at' => 'datetime'];
+        return [
+            'value' => EncryptedFloat::class, 'started_at' => 'datetime', 'ended_at' => 'datetime'];
     }
 
     public function account(): BelongsTo
