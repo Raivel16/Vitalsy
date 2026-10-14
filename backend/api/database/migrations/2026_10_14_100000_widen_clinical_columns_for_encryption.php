@@ -1,6 +1,5 @@
 <?php
 
-use App\Support\Security\EncryptedColumns;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,16 +12,37 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /** Lista propia de la migración (no depende de la clase viva EncryptedColumns). */
+    private const COLUMNS = [
+        'admission_encounters' => ['clinical_payload'],
+        'nursing_evolution_notes' => ['body'],
+        'medical_evolution_notes' => ['body'],
+        'patient_allergies' => ['substance', 'notes'],
+        'epicrisis_documents' => ['diagnoses', 'procedures', 'evolution'],
+        'social_assessments' => ['report'],
+        'ambulatory_prescriptions' => ['content'],
+        'prescription_items' => ['drug_name', 'dose', 'route', 'frequency'],
+        'nursing_discharge_reports' => ['instructions', 'alarm_signs', 'home_care'],
+        'pharma_discharge_reconciliations' => ['notes'],
+        'lab_results' => ['summary', 'payload'],
+        'imaging_reports' => ['summary', 'payload'],
+        'clinical_alerts' => ['message', 'closure_note'],
+        'handovers' => ['payload'],
+        'life_biometric_samples' => ['value'],
+        'life_baseline_imports' => ['baseline'],
+        'life_discharge_plans' => ['payload'],
+    ];
+
     public function up(): void
     {
-        foreach (EncryptedColumns::map() as $table => $spec) {
+        foreach (self::COLUMNS as $table => $columns) {
             if (! Schema::hasTable($table)) {
                 continue;
             }
 
             $existing = collect(Schema::getColumns($table))->keyBy('name');
 
-            foreach ($spec['columns'] as $column) {
+            foreach ($columns as $column) {
                 $meta = $existing->get($column);
                 if ($meta === null || $meta['type_name'] === 'text') {
                     continue;

@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * RNF-06: cifra los valores en claro que existían antes de activar el cifrado en reposo.
  * Idempotente: un valor que ya descifra con APP_KEY (o APP_PREVIOUS_KEYS) no se vuelve a cifrar.
+ * Un valor con forma de payload cifrado que NO descifra (clave incorrecta) no se toca: se
+ * informa (solo tabla, columna e id) y el comando termina con error.
  */
 class EncryptExistingData extends Command
 {
@@ -28,7 +30,7 @@ class EncryptExistingData extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $chunk = max(1, (int) $this->option('chunk'));
-        $grand = ['encrypted' => 0, 'already' => 0];
+        $grand = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0];
 
         foreach (EncryptedColumns::map() as $table => $spec) {
             if (! Schema::hasTable($table)) {
@@ -39,11 +41,12 @@ class EncryptExistingData extends Command
                 continue;
             }
 
-            $counts = ['encrypted' => 0, 'already' => 0];
+            $counts = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0];
 
             DB::table($table)->select(array_merge(['id'], $columns))->orderBy('id')
                 ->chunkById($chunk, function ($rows) use ($table, $columns, $dryRun, &$counts) {
-                    $apply = function () use ($rows, $table, $columns, $dryRun, &$counts) {
+                    $apply = function () use ($rows, $table, $columns, $dryRun): array {
+                        $local = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0, 'bad' => []];
                         foreach ($rows as $row) {
                             $changes = [];
                             foreach ($columns as $column) {
@@ -51,27 +54,43 @@ class EncryptExistingData extends Command
                                 if ($value === null || $value === '') {
                                     continue;
                                 }
-                                $plain = is_string($value) ? $value : (string) $value;
-                                if (FieldCipher::isEncrypted($plain)) {
-                                    $counts['already']++;
-
-                                    continue;
+                                $plain = (string) $value;
+                                $state = FieldCipher::state($plain);
+                                if ($state === FieldCipher::ENCRYPTED) {
+                                    $local['already']++;
+                                } elseif ($state === FieldCipher::UNDECRYPTABLE) {
+                                    $local['undecryptable']++;
+                                    $local['bad'][] = "{$table}.{$column} id={$row->id}";
+                                } else {
+                                    $changes[$column] = FieldCipher::encrypt($plain);
+                                    $local['encrypted']++;
                                 }
-                                $changes[$column] = FieldCipher::encrypt($plain);
-                                $counts['encrypted']++;
                             }
                             if ($changes !== [] && ! $dryRun) {
                                 DB::table($table)->where('id', $row->id)->update($changes);
                             }
                         }
+
+                        return $local;
                     };
 
-                    $dryRun ? $apply() : DB::transaction($apply);
+                    // Los contadores se suman solo cuando el bloque se confirmó.
+                    $local = $dryRun ? $apply() : DB::transaction($apply);
+                    foreach (['encrypted', 'already', 'undecryptable'] as $k) {
+                        $counts[$k] += $local[$k];
+                    }
+                    foreach ($local['bad'] as $ref) {
+                        $this->warn("  no descifrable: {$ref}");
+                    }
                 });
 
-            $this->line(sprintf('%-36s cifrados: %d | ya cifrados: %d', $table, $counts['encrypted'], $counts['already']));
-            $grand['encrypted'] += $counts['encrypted'];
-            $grand['already'] += $counts['already'];
+            $this->line(sprintf(
+                '%-36s cifrados: %d | ya cifrados: %d | no descifrables: %d',
+                $table, $counts['encrypted'], $counts['already'], $counts['undecryptable'],
+            ));
+            foreach ($grand as $k => $_) {
+                $grand[$k] += $counts[$k];
+            }
         }
 
         $this->info(sprintf(
@@ -81,6 +100,15 @@ class EncryptExistingData extends Command
             $grand['encrypted'],
             $grand['already'],
         ));
+
+        if ($grand['undecryptable'] > 0) {
+            $this->error(sprintf(
+                'ADVERTENCIA: %d valores parecen cifrados pero no descifran con la clave actual: posible APP_KEY incorrecta. No se modificaron.',
+                $grand['undecryptable'],
+            ));
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
