@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureLifeAccount;
 use App\Http\Middleware\EnsurePasswordRotated;
 use App\Http\Middleware\EnsureRequestOrigin;
 use App\Http\Middleware\EnsureUserRole;
+use App\Support\TrustedProxies;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,9 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Nginx (HTTP/HTTPS) envía X-Forwarded-*; necesario para URL/scheme correctos en LAN.
+        // Nginx (HTTP/HTTPS) envía X-Forwarded-*; solo se confía en TRUSTED_PROXIES (RNF-05).
         $middleware->trustProxies(
-            at: '*',
+            at: TrustedProxies::fromEnv(env('TRUSTED_PROXIES')),
             headers: Request::HEADER_X_FORWARDED_FOR
                 | Request::HEADER_X_FORWARDED_HOST
                 | Request::HEADER_X_FORWARDED_PORT

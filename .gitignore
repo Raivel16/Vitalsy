@@ -57,3 +57,6 @@ graphify-out/
 # SonarQube
 .scannerwork/
 movil/coverage/
+
+# Certificados TLS de produccion (RNF-05): nunca se versionan
+/certs/

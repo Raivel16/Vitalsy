@@ -133,7 +133,7 @@ El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `
 
 **Reconexión.** Espera creciente determinista 1 s, 2 s, 4 s y fija en 5 s; se reinicia al conectar o al disparar `online`.
 
-**Producción.** `docker-compose.prod.yml` exige `REVERB_APP_ID/KEY/SECRET` y `REVERB_ALLOWED_ORIGINS` (sin valores por defecto); `reverb.php` es restrictivo si `APP_ENV=production`. La clave pública entra al build web por `VITE_REVERB_APP_KEY` (build arg del Dockerfile). `docker/nginx/default.conf` incluye el proxy `/app/` (Upgrade/Connection); en producción el navegador debe usar `wss://` (RNF-05) tras el TLS del proxy.
+**Producción.** `docker-compose.prod.yml` exige `REVERB_APP_ID/KEY/SECRET` y `REVERB_ALLOWED_ORIGINS` (sin valores por defecto); `reverb.php` es restrictivo si `APP_ENV=production`. La clave pública entra al build web por `VITE_REVERB_APP_KEY` (build arg del Dockerfile). `docker/nginx/prod.conf` (servicio `proxy`, solo TLS 1.3) incluye `/app/` (Upgrade/Connection, lectura larga); el navegador usa `wss://<dominio>/app` y Reverb no publica puertos (ver `https-produccion.md`, RNF-05).
 
 **Riesgo residual.** Un usuario desactivado conserva la conexión WebSocket ya autorizada hasta que cae; el corte inmediato del lado del servidor queda fuera de alcance.
 
