@@ -94,11 +94,12 @@ class EncryptExistingData extends Command
         }
 
         $this->info(sprintf(
-            '%s Valores %s: %d. Ya cifrados: %d.',
+            '%s Valores %s: %d. Ya cifrados: %d. No descifrables: %d.',
             $dryRun ? '[dry-run]' : 'Listo.',
             $dryRun ? 'por cifrar' : 'cifrados',
             $grand['encrypted'],
             $grand['already'],
+            $grand['undecryptable'],
         ));
 
         if ($grand['undecryptable'] > 0) {

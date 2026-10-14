@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ClinicalAlert;
 use App\Services\ClinicalAlerts\AlertWorkflow;
+use App\Support\Security\DegradedRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,7 @@ class ClinicalAlertsController extends Controller
 
     public function inbox(Request $request): JsonResponse
     {
-        return response()->json($this->alerts->inboxFor($request->user()));
+        return DegradedRead::json(fn () => $this->alerts->inboxFor($request->user()));
     }
 
     /** RF-40: deterioro observado de forma imprevista. */
@@ -194,6 +195,6 @@ class ClinicalAlertsController extends Controller
     /** RF-52: historial consolidado del evento. */
     public function timeline(Request $request, ClinicalAlert $alert): JsonResponse
     {
-        return response()->json($this->alerts->timeline($alert, $request->user()));
+        return DegradedRead::json(fn () => $this->alerts->timeline($alert, $request->user()));
     }
 }

@@ -11,11 +11,15 @@ class EncryptedFloat implements CastsAttributes
 {
     public function get(Model $model, string $key, mixed $value, array $attributes): ?float
     {
-        return $value === null ? null : (float) FieldCipher::decryptOrRaw((string) $value);
+        $plain = $value === null ? null : FieldCipher::decryptOrRaw((string) $value, $model, $key);
+
+        return $plain === null ? null : (float) $plain;
     }
 
     public function set(Model $model, string $key, mixed $value, array $attributes): ?string
     {
+        FieldCipher::assertWritable($model, $key);
+
         return $value === null ? null : FieldCipher::encrypt((string) (float) $value);
     }
 }

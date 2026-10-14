@@ -15,13 +15,20 @@ class EncryptedArray implements CastsAttributes
             return null;
         }
 
-        $decoded = json_decode(FieldCipher::decryptOrRaw((string) $value), true);
+        $plain = FieldCipher::decryptOrRaw((string) $value, $model, $key);
+        if ($plain === null) {
+            return null;
+        }
+
+        $decoded = json_decode($plain, true);
 
         return is_array($decoded) ? $decoded : null;
     }
 
     public function set(Model $model, string $key, mixed $value, array $attributes): ?string
     {
+        FieldCipher::assertWritable($model, $key);
+
         return $value === null ? null : FieldCipher::encrypt(json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 }
