@@ -24,7 +24,19 @@ use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+// RNF-11: sonda de salud para balanceador/monitoreo; sin autenticacion ni datos clinicos.
+Route::get('health', function () {
+    try {
+        DB::select('select 1');
+    } catch (\Throwable) {
+        return response()->json(['status' => 'degraded', 'db' => 'fail'], 503);
+    }
+
+    return response()->json(['status' => 'ok', 'db' => 'ok']);
+});
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
