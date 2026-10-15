@@ -1,0 +1,32 @@
+import { render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Barcode, printBarcodeOnly } from "./Barcode";
+
+describe("printBarcodeOnly", () => {
+  afterEach(() => {
+    document.querySelectorAll("iframe").forEach((frame) => frame.remove());
+  });
+
+  it("no hace nada si no existe el código en pantalla", () => {
+    printBarcodeOnly("no-existe");
+    expect(document.querySelector("iframe")).toBeNull();
+  });
+
+  it("imprime solo el código de barras del brazalete en un documento aparte", async () => {
+    render(
+      <div id="wristband-barcode">
+        <Barcode value="BRZ-0001-ANA" />
+      </div>,
+    );
+    printBarcodeOnly();
+    const frame = document.querySelector<HTMLIFrameElement>("iframe");
+
+    await vi.waitFor(() => {
+      expect(frame?.contentDocument?.querySelector("svg, img")).toBeTruthy();
+    });
+    const doc = frame!.contentDocument!;
+    expect(doc.title).toBe("Brazalete");
+    expect(doc.querySelector("style")?.textContent).toContain("90mm");
+    expect(frame?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
