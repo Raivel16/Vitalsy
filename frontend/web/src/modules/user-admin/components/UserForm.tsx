@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { ROLES, ROLE_LABEL } from "../../../app/roles";
 import { Button } from "../../../shared/ui/Button";
 import { SelectField, TextField } from "../../../shared/ui/Field";
@@ -18,7 +18,7 @@ export function UserForm({
   const [values, setValues] = useState<UserFormValues>(initial);
   const [errors, setErrors] = useState<UserFormErrors>({});
 
-  function submit(event: FormEvent) {
+  function submit(event: SyntheticEvent) {
     event.preventDefault();
     const found = validateUserForm(values);
     setErrors(found);

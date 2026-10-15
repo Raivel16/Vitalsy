@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
 import { api, ApiError } from "../../../app/api";
 import { printClinicalDocument } from "../../../shared/print/printDocument";
@@ -45,7 +45,7 @@ export function WristbandPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -136,7 +136,7 @@ export function RecordPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -292,7 +292,7 @@ export function ConsentPage() {
     }
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!signerName.trim()) next.signerName = "El nombre de quien firma es obligatorio.";

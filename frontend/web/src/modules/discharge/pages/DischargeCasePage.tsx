@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useParams } from "react-router";
 import { api, ApiError } from "../../../app/api";
@@ -179,7 +179,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "medico_residente" && item.order && !item.epicrisis ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/epicrisis`, {
             diagnoses: form.diagnoses ?? "",
@@ -195,7 +195,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "medico_residente" && item.epicrisis && !item.prescriptions ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/prescriptions`, {
             items: [{
@@ -217,7 +217,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "trabajo_social" && item.order && !item.socialAssessment ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/social-assessment`, {
             report: form.report ?? "",
@@ -231,7 +231,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "enfermera_piso" && item.order && !item.reconciliation ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/reconciliation`, { notes: form.notes ?? "" }, "Conciliación farmacéutica al alta registrada.");
         }}>
@@ -242,7 +242,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "enfermera_piso" && item.reconciliation && !item.nursingReport ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           if (!LIFE_MODES.includes(life)) {
             setError("Indique el seguimiento en Vitalsy Life.");
@@ -281,7 +281,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "enfermera_piso" && item.nursingReport && !item.indicationReceipt ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/indication-receipt`, {
             receivedByName: form.receivedByName ?? "",
@@ -293,7 +293,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "altas_caja" && item.order && item.account?.status !== "conforme" ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/account`, { status: "conforme" }, "Estado de cuenta verificado.");
         }}>
@@ -303,7 +303,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "altas_caja" && item.account?.status === "conforme" && !item.exitPass ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/exit-pass`, {}, "Pase de salida digital emitido.");
         }}>
@@ -318,7 +318,7 @@ export function DischargeCasePage() {
       ) : null}
 
       {role === "enfermera_piso" && item.exitPass && !item.exit ? (
-        <form className="stack ops-form" onSubmit={(event: FormEvent) => {
+        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
           void submit(`/api/v1/discharge/encounters/${encounterId}/exit`, {}, "Salida efectiva registrada. La cama queda vacante.");
         }}>

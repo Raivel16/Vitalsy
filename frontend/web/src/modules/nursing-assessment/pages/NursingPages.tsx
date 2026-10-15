@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconDeviceHeartMonitor, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -84,7 +84,7 @@ export function NursingAssessmentPage() {
     setSaved("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const complaintIssue = requiredText(complaint, "El motivo de consulta es obligatorio.");
@@ -301,7 +301,7 @@ export function VitalSignsPage() {
     setFields((current) => ({ ...current, [key]: value }));
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setSubmitted(true);
     if (!ready || !news2) return;

@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   IconAlertTriangle,
@@ -94,7 +94,7 @@ export function TransferOrderPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
@@ -280,7 +280,7 @@ export function WristbandVerifyPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     await runVerify(code);
   }
@@ -353,7 +353,7 @@ export function FloorReceptionPage() {
   const assignedBed = [room ? `Habitación ${room}` : null, bed ? `lecho ${bed}` : null].filter(Boolean).join("-")
     || "el lecho asignado";
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -502,7 +502,7 @@ export function RelocationPage() {
   ].filter(Boolean).join(" · ") || "Sin ubicación asignada";
   const chosen = beds.find((bed) => bedKey(bed) === selected);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!reason.trim()) next.reason = "El motivo de la discrepancia es obligatorio.";

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconAlertTriangle, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
@@ -137,7 +137,7 @@ export function MedicalOrdersPage() {
     if (items.length === 0) setItems([{ title: "", detail: "", category: "" }]);
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const ready = filledItems(items);
     const next: Record<string, string> = {};

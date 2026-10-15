@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { Button } from "../../../shared/ui/Button";
 import { Panel } from "../../../shared/ui/clinical";
@@ -46,7 +46,7 @@ export function ProjectionPanel({
     };
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SyntheticEvent) {
     event.preventDefault();
     const result = validate();
     setErrors({ patient: result.patient, when: result.when });

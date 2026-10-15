@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconShieldCheck } from "@tabler/icons-react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
@@ -155,7 +155,7 @@ export function ReferralPage() {
     ? `/admision/cobertura?ingreso=${encodeURIComponent(ingreso)}`
     : "/admision/cobertura";
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const nameIssue = requiredText(relativeName, "El nombre del familiar es obligatorio.");

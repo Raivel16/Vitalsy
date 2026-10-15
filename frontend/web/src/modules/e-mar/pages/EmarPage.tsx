@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -108,7 +108,7 @@ export function EmarPage() {
     [doses],
   );
 
-  async function onAdminister(event: FormEvent) {
+  async function onAdminister(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso || !selected) return;
     setError("");

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -62,7 +62,7 @@ export function CpoePage() {
     setNewLines((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   }
 
-  async function onCreatePlan(event: FormEvent) {
+  async function onCreatePlan(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const cleaned = newLines
@@ -96,7 +96,7 @@ export function CpoePage() {
     }
   }
 
-  async function onSaveEdit(event: FormEvent) {
+  async function onSaveEdit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso || editingId == null) return;
     setSaving(true);
@@ -134,7 +134,7 @@ export function CpoePage() {
     }
   }
 
-  async function onAddItem(event: FormEvent) {
+  async function onAddItem(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     if (!addForm.drugName.trim() || !addForm.dose.trim() || !addForm.route.trim() || !addForm.frequency.trim()) {

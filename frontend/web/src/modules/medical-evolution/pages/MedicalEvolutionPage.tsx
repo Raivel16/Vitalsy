@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -45,7 +45,7 @@ export function MedicalEvolutionPage() {
     };
   }, [ingreso]);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const message = requiredText(body, "La nota de evolución es obligatoria.") ?? "";

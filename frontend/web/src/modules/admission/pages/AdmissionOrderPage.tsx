@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconPrinter, IconSearch, IconCheck } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -45,7 +45,7 @@ export function AdmissionOrderPage() {
     setAdvanced(Boolean(encounter && encounter.currentStep !== "orden"));
   }, [encounter?.encounterId, encounter?.orderNumber, encounter?.currentStep]);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");

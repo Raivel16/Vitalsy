@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useId, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useId, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -130,7 +130,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onReassess(event: FormEvent) {
+  async function onReassess(event: SyntheticEvent) {
     event.preventDefault();
     setVitalsSubmitted(true);
     setVitalsError("");
@@ -163,7 +163,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onSchedule(event: FormEvent) {
+  async function onSchedule(event: SyntheticEvent) {
     event.preventDefault();
     setScheduleError("");
     setScheduleNotice("");
@@ -193,7 +193,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onRequestMedical(event: FormEvent) {
+  async function onRequestMedical(event: SyntheticEvent) {
     event.preventDefault();
     setMedicalReasonError("");
     setMedicalNotice("");
@@ -216,7 +216,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onMedicalAssessment(event: FormEvent) {
+  async function onMedicalAssessment(event: SyntheticEvent) {
     event.preventDefault();
     setMedicalError("");
     setMedicalActionNotice("");
@@ -238,7 +238,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onRequestRrt(event: FormEvent) {
+  async function onRequestRrt(event: SyntheticEvent) {
     event.preventDefault();
     setErrReasonError("");
     if (errReason.trim().length < 5) {
@@ -258,7 +258,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onErrAssessment(event: FormEvent) {
+  async function onErrAssessment(event: SyntheticEvent) {
     event.preventDefault();
     setErrAssessmentError("");
     setErrNotice("");
@@ -297,7 +297,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onIcuTransfer(event: FormEvent) {
+  async function onIcuTransfer(event: SyntheticEvent) {
     event.preventDefault();
     setSaving("icu-transfer");
     setIcuError("");
@@ -313,7 +313,7 @@ export function AlertDetailPage() {
     }
   }
 
-  async function onIcuReturn(event: FormEvent) {
+  async function onIcuReturn(event: SyntheticEvent) {
     event.preventDefault();
     setSaving("icu-return");
     setIcuError("");

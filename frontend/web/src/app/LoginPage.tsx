@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { IconEye, IconEyeOff, IconLogin } from "@tabler/icons-react";
 import { loginRequest } from "./api";
@@ -20,7 +20,7 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!email.trim()) next.email = "El correo es obligatorio.";

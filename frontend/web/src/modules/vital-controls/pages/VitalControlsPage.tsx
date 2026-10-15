@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -88,7 +88,7 @@ export function VitalControlsPage() {
     setConfusionOnset("new");
   }
 
-  async function onComplete(event: FormEvent) {
+  async function onComplete(event: SyntheticEvent) {
     event.preventDefault();
     if (!selected) return;
     setSubmitted(true);

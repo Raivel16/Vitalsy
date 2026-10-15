@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { changePasswordRequest } from "./api";
 import { useAuth } from "./AuthProvider";
 import { errorText } from "./userMessage";
@@ -17,7 +17,7 @@ export function ChangePasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!currentPassword) next.currentPassword = "Ingrese la contraseña temporal.";

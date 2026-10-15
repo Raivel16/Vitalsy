@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { Button } from "../../../shared/ui/Button";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import {
@@ -57,7 +57,7 @@ export function BedRequestForm({
     setResults([]);
   }
 
-  function submit(event: FormEvent) {
+  function submit(event: SyntheticEvent) {
     event.preventDefault();
     setSubmitted(true);
     if (Object.keys(validateRequest(effective)).length > 0) return;

@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type SyntheticEvent, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -68,7 +68,7 @@ export function ReconciliationPage() {
     setResult("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
