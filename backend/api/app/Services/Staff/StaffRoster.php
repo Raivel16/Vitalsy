@@ -15,7 +15,6 @@ use App\Models\StaffShift;
 use App\Models\StaffShiftPlan;
 use App\Models\User;
 use App\Models\VitalSignReading;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -24,6 +23,16 @@ class StaffRoster
 {
     /** Roles que pueden recibir pacientes o cubrir un turno. */
     public const CARE_ROLES = ['enfermera_piso', 'auxiliar_enfermeria'];
+
+    /** Peso de carga según NEWS2: crítico 3, riesgo 2, estable 1. */
+    private function newsWeight(int $news2): int
+    {
+        if ($news2 >= 7) {
+            return 3;
+        }
+
+        return $news2 >= 1 ? 2 : 1;
+    }
 
     /** @param array<string, mixed> $data */
     public function publishPlan(array $data, User $user): array
@@ -117,7 +126,7 @@ class StaffRoster
                 'encounterId' => $encounter->encounter_id,
                 'patientName' => $encounter->patient_name,
                 'news2' => $news2,
-                'weight' => $news2 >= 7 ? 3 : ($news2 >= 1 ? 2 : 1),
+                'weight' => $this->newsWeight($news2),
             ];
         })->sortByDesc('weight')->values();
 
@@ -174,7 +183,7 @@ class StaffRoster
             ? User::query()->findOrFail($fromUserId)
             : $viewer;
         if (! $from->is($viewer)) {
-            $this->assertSameUnit($viewer, $from, $shiftDate);
+            app(ShiftRelief::class)->assertSameUnit($viewer, $from, $shiftDate);
         }
 
         $ids = DailyPatientAssignment::query()
@@ -442,55 +451,6 @@ class StaffRoster
         return [$reassignments, 0];
     }
 
-    /**
-     * Control de objeto del handover: si el rol publicado ubica a ambas enfermeras ese día,
-     * deben compartir servicio; así no se consultan ni reasignan pacientes de otra unidad.
-     */
-    private function assertSameUnit(User $incoming, User $outgoing, string $shiftDate): void
-    {
-        if (! $this->isRelief($incoming, $outgoing, $shiftDate)) {
-            throw new ClinicalRuleException('La entrega solo procede en el cambio de turno, entre turnos consecutivos del mismo servicio del rol publicado.');
-        }
-    }
-
-    /** @return array{unit: string, endsAt: Carbon}|null */
-    private function reliefBoundary(User $incoming, User $outgoing, string $shiftDate): ?array
-    {
-        // Turnos que cubren el día, incluidos los nocturnos iniciados el día anterior.
-        $shiftsOf = fn (User $user) => StaffShift::query()
-            ->where('user_id', $user->id)
-            ->whereDate('starts_at', '<=', $shiftDate)
-            ->whereDate('ends_at', '>=', $shiftDate)
-            ->get();
-
-        // Falla cerrado. Es un relevo real solo si, en el mismo servicio: el turno de la saliente
-        // termina el día indicado (así la fecha reasignada es la del turno relevado), empieza el
-        // de la entrante en el límite (1 h) y el cambio de turno es ahora (-1 h a +2 h).
-        $incomingShifts = $shiftsOf($incoming);
-        $now = now();
-        foreach ($shiftsOf($outgoing) as $left) {
-            if ($left->unit === null || $left->ends_at->toDateString() !== $shiftDate) {
-                continue;
-            }
-            $secondsToBoundary = $now->diffInSeconds($left->ends_at, false);
-            if ($secondsToBoundary > 3600 || $secondsToBoundary < -7200) {
-                continue;
-            }
-            $matches = $incomingShifts->contains(fn (StaffShift $right) => $right->unit === $left->unit
-                && abs($left->ends_at->diffInSeconds($right->starts_at, false)) <= 3600);
-            if ($matches) {
-                return ['unit' => $left->unit, 'endsAt' => $left->ends_at];
-            }
-        }
-
-        return null;
-    }
-
-    private function isRelief(User $incoming, User $outgoing, string $shiftDate): bool
-    {
-        return $this->reliefBoundary($incoming, $outgoing, $shiftDate) !== null;
-    }
-
     /** Enfermeras a las que la persona puede relevar ahora (misma regla que firmar la entrega). */
     public function handoverCandidates(User $incoming, string $shiftDate): array
     {
@@ -499,7 +459,7 @@ class StaffRoster
             ->whereKeyNot($incoming->id)->orderBy('name')->get();
 
         foreach ($nurses as $nurse) {
-            $boundary = $this->reliefBoundary($incoming, $nurse, $shiftDate);
+            $boundary = app(ShiftRelief::class)->boundary($incoming, $nurse, $shiftDate);
             if ($boundary === null) {
                 continue;
             }

@@ -76,12 +76,7 @@ class UserAdministration
             $current = User::query()->lockForUpdate()->findOrFail($user->getKey());
 
             if (isset($changes['role']) && $changes['role'] !== $current->role) {
-                if ($current->is($actor)) {
-                    throw new ClinicalRuleException('No puede cambiar su propio rol.');
-                }
-                if ($current->role === 'administrador_accesos' && $current->is_active) {
-                    $this->assertAnotherActiveAdministrator($current);
-                }
+                $this->assertRoleChangeAllowed($current, $actor);
             }
 
             $before = $current->only(array_keys($changes));
@@ -90,6 +85,16 @@ class UserAdministration
         });
 
         return $this->present($user->fresh());
+    }
+
+    private function assertRoleChangeAllowed(User $current, User $actor): void
+    {
+        if ($current->is($actor)) {
+            throw new ClinicalRuleException('No puede cambiar su propio rol.');
+        }
+        if ($current->role === 'administrador_accesos' && $current->is_active) {
+            $this->assertAnotherActiveAdministrator($current);
+        }
     }
 
     /** @return array<string, mixed> */

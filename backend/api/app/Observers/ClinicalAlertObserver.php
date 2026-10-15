@@ -72,10 +72,13 @@ class ClinicalAlertObserver
     private function payload(ClinicalAlert $alert, User $user): array
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $alert->encounter_id)->first();
-        $parts = $encounter === null ? [] : array_filter([
-            $encounter->room ? "Habitación {$encounter->room}" : null,
-            $encounter->bed ? "lecho {$encounter->bed}" : null,
-        ]);
+        $parts = [];
+        if ($encounter !== null) {
+            $parts = array_filter([
+                $encounter->room ? "Habitación {$encounter->room}" : null,
+                $encounter->bed ? "lecho {$encounter->bed}" : null,
+            ]);
+        }
         $location = $parts === [] ? null : implode(', ', $parts);
 
         return [

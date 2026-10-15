@@ -40,18 +40,28 @@ final class AlertAudience
             return false;
         }
 
-        if ($alert->assigned_role === $user->role || ($alert->assigned_user_id !== null && (int) $alert->assigned_user_id === $user->id)) {
-            return true;
-        }
+        return self::isAssignedTo($user, $alert)
+            || self::seesAsDoctor($user, $alert)
+            || self::seesAsNurse($user, $alert);
+    }
 
-        if (in_array($user->role, self::MEDICAL_ROLES, true)
+    private static function isAssignedTo(User $user, ClinicalAlert $alert): bool
+    {
+        return $alert->assigned_role === $user->role
+            || ($alert->assigned_user_id !== null && (int) $alert->assigned_user_id === $user->id);
+    }
+
+    private static function seesAsDoctor(User $user, ClinicalAlert $alert): bool
+    {
+        return in_array($user->role, self::MEDICAL_ROLES, true)
             && (in_array($alert->assigned_role, self::MEDICAL_ROLES, true)
-                || in_array($alert->status, self::MEDICAL_STATUSES, true))) {
-            return true;
-        }
+                || in_array($alert->status, self::MEDICAL_STATUSES, true));
+    }
 
-        if ($user->role === 'enfermera_piso' && in_array($alert->status, self::ICU_STATUSES, true)) {
-            return true;
+    private static function seesAsNurse(User $user, ClinicalAlert $alert): bool
+    {
+        if ($user->role === 'enfermera_piso') {
+            return in_array($alert->status, self::ICU_STATUSES, true);
         }
 
         return in_array($user->role, ['enfermera_supervisora', 'camillero'], true)

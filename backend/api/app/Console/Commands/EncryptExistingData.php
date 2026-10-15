@@ -20,6 +20,8 @@ class EncryptExistingData extends Command
 
     protected $description = 'Cifra en reposo (AES-256-CBC) los campos clínicos sensibles que aún están en claro';
 
+    private const COUNTER_KEYS = ['encrypted', 'already', 'undecryptable'];
+
     public function handle(): int
     {
         if (trim((string) config('app.key')) === '') {
@@ -30,65 +32,19 @@ class EncryptExistingData extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $chunk = max(1, (int) $this->option('chunk'));
-        $grand = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0];
+        $grand = array_fill_keys(self::COUNTER_KEYS, 0);
 
         foreach (EncryptedColumns::map() as $table => $spec) {
-            if (! Schema::hasTable($table)) {
+            $counts = $this->encryptTable($table, $spec['columns'], $chunk, $dryRun);
+            if ($counts === null) {
                 continue;
             }
-            $columns = array_values(array_filter($spec['columns'], fn (string $c) => Schema::hasColumn($table, $c)));
-            if ($columns === []) {
-                continue;
-            }
-
-            $counts = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0];
-
-            DB::table($table)->select(array_merge(['id'], $columns))->orderBy('id')
-                ->chunkById($chunk, function ($rows) use ($table, $columns, $dryRun, &$counts) {
-                    $apply = function () use ($rows, $table, $columns, $dryRun): array {
-                        $local = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0, 'bad' => []];
-                        foreach ($rows as $row) {
-                            $changes = [];
-                            foreach ($columns as $column) {
-                                $value = $row->{$column};
-                                if ($value === null || $value === '') {
-                                    continue;
-                                }
-                                $plain = (string) $value;
-                                $state = FieldCipher::state($plain);
-                                if ($state === FieldCipher::ENCRYPTED) {
-                                    $local['already']++;
-                                } elseif ($state === FieldCipher::UNDECRYPTABLE) {
-                                    $local['undecryptable']++;
-                                    $local['bad'][] = "{$table}.{$column} id={$row->id}";
-                                } else {
-                                    $changes[$column] = FieldCipher::encrypt($plain);
-                                    $local['encrypted']++;
-                                }
-                            }
-                            if ($changes !== [] && ! $dryRun) {
-                                DB::table($table)->where('id', $row->id)->update($changes);
-                            }
-                        }
-
-                        return $local;
-                    };
-
-                    // Los contadores se suman solo cuando el bloque se confirmó.
-                    $local = $dryRun ? $apply() : DB::transaction($apply);
-                    foreach (['encrypted', 'already', 'undecryptable'] as $k) {
-                        $counts[$k] += $local[$k];
-                    }
-                    foreach ($local['bad'] as $ref) {
-                        $this->warn("  no descifrable: {$ref}");
-                    }
-                });
 
             $this->line(sprintf(
                 '%-36s cifrados: %d | ya cifrados: %d | no descifrables: %d',
                 $table, $counts['encrypted'], $counts['already'], $counts['undecryptable'],
             ));
-            foreach ($grand as $k => $_) {
+            foreach (self::COUNTER_KEYS as $k) {
                 $grand[$k] += $counts[$k];
             }
         }
@@ -112,5 +68,89 @@ class EncryptExistingData extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Cifra las columnas existentes de una tabla por bloques.
+     *
+     * @param  list<string>  $specColumns
+     * @return array{encrypted: int, already: int, undecryptable: int}|null null si la tabla/columnas no existen
+     */
+    private function encryptTable(string $table, array $specColumns, int $chunk, bool $dryRun): ?array
+    {
+        if (! Schema::hasTable($table)) {
+            return null;
+        }
+        $columns = array_values(array_filter($specColumns, fn (string $c) => Schema::hasColumn($table, $c)));
+        if ($columns === []) {
+            return null;
+        }
+
+        $counts = array_fill_keys(self::COUNTER_KEYS, 0);
+
+        DB::table($table)->select(array_merge(['id'], $columns))->orderBy('id')
+            ->chunkById($chunk, function ($rows) use ($table, $columns, $dryRun, &$counts) {
+                // Los contadores se suman solo cuando el bloque se confirmó.
+                $local = $dryRun
+                    ? $this->processChunk($rows, $table, $columns, false)
+                    : DB::transaction(fn () => $this->processChunk($rows, $table, $columns, true));
+                foreach (self::COUNTER_KEYS as $k) {
+                    $counts[$k] += $local[$k];
+                }
+                foreach ($local['bad'] as $ref) {
+                    $this->warn("  no descifrable: {$ref}");
+                }
+            });
+
+        return $counts;
+    }
+
+    /**
+     * @param  iterable<object>  $rows
+     * @param  list<string>  $columns
+     * @return array{encrypted: int, already: int, undecryptable: int, bad: list<string>}
+     */
+    private function processChunk(iterable $rows, string $table, array $columns, bool $persist): array
+    {
+        $local = ['encrypted' => 0, 'already' => 0, 'undecryptable' => 0, 'bad' => []];
+        foreach ($rows as $row) {
+            $changes = $this->classifyRow($row, $table, $columns, $local);
+            if ($changes !== [] && $persist) {
+                DB::table($table)->where('id', $row->id)->update($changes);
+            }
+        }
+
+        return $local;
+    }
+
+    /**
+     * Clasifica las columnas de una fila (actualizando los contadores) y devuelve las cifras a escribir.
+     *
+     * @param  list<string>  $columns
+     * @param  array{encrypted: int, already: int, undecryptable: int, bad: list<string>}  $local
+     * @return array<string, string>
+     */
+    private function classifyRow(object $row, string $table, array $columns, array &$local): array
+    {
+        $changes = [];
+        foreach ($columns as $column) {
+            $value = $row->{$column};
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $plain = (string) $value;
+            $state = FieldCipher::state($plain);
+            if ($state === FieldCipher::ENCRYPTED) {
+                $local['already']++;
+            } elseif ($state === FieldCipher::UNDECRYPTABLE) {
+                $local['undecryptable']++;
+                $local['bad'][] = "{$table}.{$column} id={$row->id}";
+            } else {
+                $changes[$column] = FieldCipher::encrypt($plain);
+                $local['encrypted']++;
+            }
+        }
+
+        return $changes;
     }
 }

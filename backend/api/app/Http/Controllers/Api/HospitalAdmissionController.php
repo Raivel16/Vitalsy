@@ -334,9 +334,10 @@ class HospitalAdmissionController extends Controller
 
         $noneDeclared = (bool) ($data['noHomeMedications'] ?? false);
         $status = $alerts === [] ? 'validada' : 'con_observaciones';
-        $statusLabel = $status === 'validada'
-            ? ($noneDeclared && $data['medications'] === [] ? 'Validada: sin medicación habitual' : 'Validada')
-            : 'Con observaciones';
+        $statusLabel = 'Con observaciones';
+        if ($status === 'validada') {
+            $statusLabel = $noneDeclared && $data['medications'] === [] ? 'Validada: sin medicación habitual' : 'Validada';
+        }
         $reconciliation = [
             'status' => $status,
             'statusLabel' => $statusLabel,
