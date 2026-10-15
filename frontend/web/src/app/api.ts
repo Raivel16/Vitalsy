@@ -4,7 +4,7 @@ import type { SessionUser } from "./roles";
 const baseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 function xsrfToken(): string {
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+  const match = /(?:^|; )XSRF-TOKEN=([^;]*)/.exec(document.cookie);
   return match ? decodeURIComponent(match[1]) : "";
 }
 

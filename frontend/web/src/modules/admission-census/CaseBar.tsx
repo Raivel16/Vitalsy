@@ -21,7 +21,7 @@ export function CaseBar({ children }: Readonly<{ children: ReactNode }>) {
   const location = useLocation();
   const [params] = useSearchParams();
   const { encounterId: routeEncounterId } = useParams();
-  const pathId = location.pathname.match(/^\/pacientes\/([^/]+)$/)?.[1];
+  const pathId = /^\/pacientes\/([^/]+)$/.exec(location.pathname)?.[1];
   const fileId = routeEncounterId && routeEncounterId !== "nuevo"
     ? routeEncounterId
     : pathId && pathId !== "nuevo"

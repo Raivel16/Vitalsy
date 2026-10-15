@@ -25,7 +25,7 @@ function isTechnical(message: string): boolean {
   if (TECHNICAL.test(message)) return true;
   if (/^The .+ field /i.test(message)) return true;
   return (
-    /^[A-Za-z0-9_ .:\/\\()-]+$/.test(message) &&
+    /^[A-Za-z0-9_ .:/\\()-]+$/.test(message) &&
     /\b(error|exception|failed|invalid|required)\b/i.test(message)
   );
 }

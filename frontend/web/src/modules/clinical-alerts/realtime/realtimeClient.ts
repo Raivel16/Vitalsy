@@ -24,7 +24,7 @@ export interface RealtimeClient {
 const ALERT_EVENTS = [`.${ALERT_RAISED_EVENT}`, `.${ALERT_UPDATED_EVENT}`] as const;
 
 function xsrfToken(): string {
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+  const match = /(?:^|; )XSRF-TOKEN=([^;]*)/.exec(document.cookie);
   return match ? decodeURIComponent(match[1]) : "";
 }
 

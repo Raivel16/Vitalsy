@@ -1,7 +1,7 @@
 export function printClinicalDocument(title: string, bodyHtml: string) {
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
-  frame.setAttribute("data-print-document", title);
+  frame.dataset.printDocument = title;
   frame.style.position = "fixed";
   frame.style.right = "0";
   frame.style.bottom = "0";
