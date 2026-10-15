@@ -46,8 +46,8 @@ export function AbsencePanel({ members, onRecorded }: { members: StaffMember[]; 
       setPerson(null);
       setReason("");
       onRecorded();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la inasistencia."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la inasistencia."));
     } finally {
       setPending(false);
     }

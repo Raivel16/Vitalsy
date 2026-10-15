@@ -104,9 +104,9 @@ export function TransferOrderPage() {
         `/api/v1/hospital-admission/transfer-orders/${encodeURIComponent(orderNumber.trim())}`,
       );
       setResult(data);
-    } catch (caught) {
+    } catch (error_) {
       setResult(null);
-      setError(errorText(caught, "No se pudo consultar el traslado."));
+      setError(errorText(error_, "No se pudo consultar el traslado."));
     } finally {
       setLoading(false);
     }
@@ -122,8 +122,8 @@ export function TransferOrderPage() {
       }
       setNotice("Traslado confirmado.");
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar el traslado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar el traslado."));
     } finally {
       setPending(false);
     }
@@ -264,8 +264,8 @@ export function WristbandVerifyPage() {
       const notice = await verifyWristbandCode(trimmed, encounter, applyEncounter);
       setMessage(notice);
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo verificar el brazalete."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo verificar el brazalete."));
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -373,8 +373,8 @@ export function FloorReceptionPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar la recepción."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar la recepción."));
     } finally {
       setPending(false);
     }
@@ -478,8 +478,8 @@ export function RelocationPage() {
         setBeds((data.beds ?? []).filter((bed) => bed.status === "available"));
         setBedsError("");
       })
-      .catch((caught: unknown) => {
-        if (active) setBedsError(errorText(caught, "No se pudieron cargar los lechos disponibles."));
+      .catch((error_: unknown) => {
+        if (active) setBedsError(errorText(error_, "No se pudieron cargar los lechos disponibles."));
       });
     return () => {
       active = false;
@@ -523,8 +523,8 @@ export function RelocationPage() {
       });
       setNotice(`Reubicación notificada a la central. Habitación ${chosen.room}, lecho ${chosen.bedCode}.`);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la reubicación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la reubicación."));
     } finally {
       setPending(false);
     }

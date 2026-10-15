@@ -47,9 +47,9 @@ export function BedCensusPage() {
       setNotice(success);
       await board.reload();
       return true;
-    } catch (caught) {
+    } catch (error_) {
       setNotice("");
-      setError(errorText(caught, failure));
+      setError(errorText(error_, failure));
       return false;
     } finally {
       setBusy(null);

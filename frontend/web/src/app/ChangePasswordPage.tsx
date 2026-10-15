@@ -35,8 +35,8 @@ export function ChangePasswordPage() {
     try {
       const data = await changePasswordRequest({ currentPassword, password, passwordConfirmation: confirmation });
       setUser(data.user);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo cambiar la contraseña."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo cambiar la contraseña."));
     } finally {
       setLoading(false);
     }

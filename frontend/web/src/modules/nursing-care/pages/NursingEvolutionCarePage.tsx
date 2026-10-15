@@ -103,8 +103,8 @@ export function NursingEvolutionCarePage() {
       setNotes((prev) => [data.note, ...prev]);
       setNotice("Nota de enfermería registrada.");
       setBody("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la nota."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la nota."));
     }
   }
 
@@ -128,8 +128,8 @@ export function NursingEvolutionCarePage() {
       setNotice(`Cuidado directo registrado: ${label}.`);
       setCareOther("");
       setCareOption(CARE_OPTIONS[0]);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el cuidado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el cuidado."));
     }
   }
 

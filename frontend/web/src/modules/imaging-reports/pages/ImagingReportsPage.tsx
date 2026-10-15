@@ -35,8 +35,8 @@ export function ImagingReportsPage() {
       .then((data) => {
         if (active) setReports(data.reports);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar los informes."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar los informes."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -58,8 +58,8 @@ export function ImagingReportsPage() {
       );
       setReports(data.reports);
       setNotice(`${data.integrated} informes integrados desde el PACS.`);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo integrar el PACS."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo integrar el PACS."));
     } finally {
       setSyncing(false);
     }

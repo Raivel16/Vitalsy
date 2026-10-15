@@ -28,8 +28,8 @@ export function UsersListPage() {
       const data = await listUsers(search, status);
       setUsers(data.data);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo cargar el listado de cuentas."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo cargar el listado de cuentas."));
       setUsers([]);
     }
   }, [search, status]);

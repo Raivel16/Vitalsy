@@ -38,8 +38,8 @@ export function AssignmentPanel({ members }: { members: StaffMember[] }) {
       setAssignments(result.assignments);
       setLoads(result.loads);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo calcular la distribución."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo calcular la distribución."));
     } finally {
       setPending(false);
     }
@@ -53,8 +53,8 @@ export function AssignmentPanel({ members }: { members: StaffMember[] }) {
       setError("");
       setNotice("Asignación diaria aprobada.");
       setAssignments(null);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo aprobar la asignación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo aprobar la asignación."));
     } finally {
       setPending(false);
     }

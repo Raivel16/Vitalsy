@@ -69,8 +69,8 @@ export function CoveragePage() {
         setNotice("Cobertura registrada. Derive el trámite (caja o trabajo social) antes de continuar la admisión.");
         setAdvanced(false);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la cobertura."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la cobertura."));
     } finally {
       setPending(false);
     }
@@ -184,8 +184,8 @@ export function ReferralPage() {
         const advanced = await advanceEncounter(encounter.encounterId, encounter.currentStep, "pendiente");
         if (advanced?.encounterId) applyEncounter(advanced);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la derivación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la derivación."));
     } finally {
       setPending(false);
     }

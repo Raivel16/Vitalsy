@@ -41,8 +41,8 @@ export function DeteriorationPage() {
       setNotice("Se registró el deterioro y se notificó a la enfermera de piso responsable.");
       setNote("");
       setSeverity("media");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el deterioro observado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el deterioro observado."));
     } finally {
       setSaving(false);
     }

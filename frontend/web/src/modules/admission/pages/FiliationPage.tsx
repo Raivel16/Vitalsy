@@ -91,8 +91,8 @@ export function FiliationPage() {
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo validar la filiación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo validar la filiación."));
     } finally {
       setPending(false);
     }

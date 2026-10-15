@@ -113,8 +113,8 @@ export function NursingAssessmentPage() {
         applyEncounter(nextEncounter);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo guardar la valoración."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo guardar la valoración."));
     } finally {
       setPending(false);
     }
@@ -332,8 +332,8 @@ export function VitalSignsPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las constantes."));
     } finally {
       setPending(false);
     }

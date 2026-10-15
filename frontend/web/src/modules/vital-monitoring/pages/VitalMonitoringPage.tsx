@@ -118,8 +118,8 @@ export function VitalMonitoringPage() {
       setConsciousness("alert");
       setSpo2Scale("scale1");
       loadChart();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las constantes."));
     } finally {
       setSaving(false);
     }

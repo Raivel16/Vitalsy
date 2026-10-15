@@ -91,8 +91,8 @@ export function PatientRegistrationPage() {
         }),
       });
       navigate(stepPath(data.encounter.currentStep, data.encounter.encounterId));
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el ingreso."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el ingreso."));
     } finally {
       setPending(false);
     }

@@ -93,8 +93,8 @@ export function AlertDetailPage() {
       setEvents(data.events);
       setEscalations(data.escalations);
       setPageError("");
-    } catch (caught) {
-      setPageError(errorText(caught, "No se pudo cargar el evento."));
+    } catch (error_) {
+      setPageError(errorText(error_, "No se pudo cargar el evento."));
     } finally {
       setLoading(false);
     }
@@ -123,8 +123,8 @@ export function AlertDetailPage() {
       if (alertId) notifyAlertAcknowledged(Number(alertId));
       setAckNotice("Confirmó la lectura. Continúe con la atención del paciente.");
       await load();
-    } catch (caught) {
-      setAckError(errorText(caught, "No se pudo confirmar la recepción."));
+    } catch (error_) {
+      setAckError(errorText(error_, "No se pudo confirmar la recepción."));
     } finally {
       setSaving("");
     }
@@ -156,8 +156,8 @@ export function AlertDetailPage() {
           : "Se recalculó el NEWS2. Si es 0, puede programar el próximo control.",
       );
       await load();
-    } catch (caught) {
-      setVitalsError(errorText(caught, "No se pudo recalcular el NEWS2."));
+    } catch (error_) {
+      setVitalsError(errorText(error_, "No se pudo recalcular el NEWS2."));
     } finally {
       setSaving("");
     }
@@ -186,8 +186,8 @@ export function AlertDetailPage() {
           : "Se programó el próximo control y se cerró la alerta.",
       );
       await load();
-    } catch (caught) {
-      setScheduleError(errorText(caught, "No se pudo programar el control."));
+    } catch (error_) {
+      setScheduleError(errorText(error_, "No se pudo programar el control."));
     } finally {
       setSaving("");
     }
@@ -209,8 +209,8 @@ export function AlertDetailPage() {
       );
       setMedicalReason("");
       await load();
-    } catch (caught) {
-      setMedicalReasonError(errorText(caught, "No se pudo solicitar atención médica."));
+    } catch (error_) {
+      setMedicalReasonError(errorText(error_, "No se pudo solicitar atención médica."));
     } finally {
       setSaving("");
     }
@@ -231,8 +231,8 @@ export function AlertDetailPage() {
       setAssessment("");
       setOrders("");
       await load();
-    } catch (caught) {
-      setMedicalError(errorText(caught, "No se pudo registrar la atención médica."));
+    } catch (error_) {
+      setMedicalError(errorText(error_, "No se pudo registrar la atención médica."));
     } finally {
       setSaving("");
     }
@@ -251,8 +251,8 @@ export function AlertDetailPage() {
       setMedicalActionNotice("Se solicitó la intervención del equipo de respuesta rápida.");
       setErrReason("");
       await load();
-    } catch (caught) {
-      setErrReasonError(errorText(caught, "No se pudo solicitar el ERR."));
+    } catch (error_) {
+      setErrReasonError(errorText(error_, "No se pudo solicitar el ERR."));
     } finally {
       setSaving("");
     }
@@ -275,8 +275,8 @@ export function AlertDetailPage() {
           : "Paciente estabilizado; la alerta se cerró en sala general.",
       );
       await load();
-    } catch (caught) {
-      setErrAssessmentError(errorText(caught, "No se pudo registrar la evaluación del ERR."));
+    } catch (error_) {
+      setErrAssessmentError(errorText(error_, "No se pudo registrar la evaluación del ERR."));
     } finally {
       setSaving("");
     }
@@ -290,8 +290,8 @@ export function AlertDetailPage() {
       await postAction("icu-authorize", null);
       setIcuNotice("Autorización de traslado a UCI registrada.");
       await load();
-    } catch (caught) {
-      setIcuError(errorText(caught, "No se pudo autorizar el traslado."));
+    } catch (error_) {
+      setIcuError(errorText(error_, "No se pudo autorizar el traslado."));
     } finally {
       setSaving("");
     }
@@ -306,8 +306,8 @@ export function AlertDetailPage() {
       await postAction("icu-transfer", { service: "UCI", room: icuRoom.trim(), bed: icuBed.trim() || undefined });
       setIcuNotice("Traslado efectivo a UCI registrado. La ubicación del ingreso se actualizó.");
       await load();
-    } catch (caught) {
-      setIcuError(errorText(caught, "No se pudo registrar el traslado a UCI."));
+    } catch (error_) {
+      setIcuError(errorText(error_, "No se pudo registrar el traslado a UCI."));
     } finally {
       setSaving("");
     }
@@ -327,8 +327,8 @@ export function AlertDetailPage() {
       });
       setIcuNotice("Retorno a sala registrado. La alerta quedó cerrada con trazabilidad completa.");
       await load();
-    } catch (caught) {
-      setIcuError(errorText(caught, "No se pudo registrar el retorno a sala."));
+    } catch (error_) {
+      setIcuError(errorText(error_, "No se pudo registrar el retorno a sala."));
     } finally {
       setSaving("");
     }

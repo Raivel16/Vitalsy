@@ -94,8 +94,8 @@ export function ReconciliationPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la conciliación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la conciliación."));
     } finally {
       setPending(false);
     }

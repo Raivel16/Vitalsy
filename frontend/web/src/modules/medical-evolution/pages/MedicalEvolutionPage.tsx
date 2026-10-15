@@ -37,8 +37,8 @@ export function MedicalEvolutionPage() {
       .then((data) => {
         if (active) setNotes(data.notes);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar las notas."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar las notas."));
       });
     return () => {
       active = false;
@@ -63,8 +63,8 @@ export function MedicalEvolutionPage() {
       setNotes((prev) => [data.note, ...(prev ?? [])]);
       setBody("");
       setNotice("Evolución registrada.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la evolución."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la evolución."));
     } finally {
       setSaving(false);
     }

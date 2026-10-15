@@ -45,9 +45,9 @@ export function CleaningOrdersPage() {
       setActionError("");
       setNotice(success);
       await board.reload();
-    } catch (caught) {
+    } catch (error_) {
       setNotice("");
-      setActionError(errorText(caught, failure));
+      setActionError(errorText(error_, failure));
     } finally {
       setBusyId(null);
     }

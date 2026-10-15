@@ -34,8 +34,8 @@ export function LabResultsPage() {
       .then((data) => {
         if (active) setResults(data.results);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar los resultados."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar los resultados."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -57,8 +57,8 @@ export function LabResultsPage() {
       );
       setResults(data.results);
       setNotice(`${data.integrated} resultados integrados desde el LIS.`);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo integrar el LIS."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo integrar el LIS."));
     } finally {
       setSyncing(false);
     }

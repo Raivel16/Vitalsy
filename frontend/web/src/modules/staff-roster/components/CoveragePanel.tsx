@@ -35,8 +35,8 @@ export function CoveragePanel({
       setError("");
       setNotice(success);
       onChanged();
-    } catch (caught) {
-      setError(errorText(caught, fallback));
+    } catch (error_) {
+      setError(errorText(error_, fallback));
     } finally {
       setBusy(null);
     }

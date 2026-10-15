@@ -89,8 +89,8 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setNewLines([emptyItem()]);
       setNotice("Prescripción CPOE registrada. La enfermera verá las dosis en e-MAR del turno.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la prescripción."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la prescripción."));
     } finally {
       setSaving(false);
     }
@@ -109,8 +109,8 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setEditingId(null);
       setNotice("Medicamento actualizado.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo actualizar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo actualizar el medicamento."));
     } finally {
       setSaving(false);
     }
@@ -127,8 +127,8 @@ export function CpoePage() {
       );
       applyPlan(data.prescription, data.kardex.medications);
       setNotice("Medicamento eliminado del plan.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo eliminar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo eliminar el medicamento."));
     } finally {
       setSaving(false);
     }
@@ -152,8 +152,8 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setAddForm(emptyItem());
       setNotice("Medicamento agregado al plan activo.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo agregar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo agregar el medicamento."));
     } finally {
       setSaving(false);
     }

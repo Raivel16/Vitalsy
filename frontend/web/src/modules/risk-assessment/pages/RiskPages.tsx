@@ -89,8 +89,8 @@ export function RiskScalesPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las escalas."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las escalas."));
     } finally {
       setPending(false);
     }

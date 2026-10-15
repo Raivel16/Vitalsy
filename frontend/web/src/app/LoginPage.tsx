@@ -39,8 +39,8 @@ export function LoginPage() {
       setUser(data.user);
       setNotice("");
       navigate("/");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo iniciar sesión."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo iniciar sesión."));
     } finally {
       setLoading(false);
     }

@@ -113,8 +113,8 @@ export function RosterPanel({ members }: { members: StaffMember[] }) {
       setConfirming(false);
       setNotice("Rol mensual de turnos publicado.");
       setVersion((current) => current + 1);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo publicar el rol."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo publicar el rol."));
     } finally {
       setPending(false);
     }

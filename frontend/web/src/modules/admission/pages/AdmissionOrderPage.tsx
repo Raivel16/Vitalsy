@@ -56,8 +56,8 @@ export function AdmissionOrderPage() {
       );
       setResult(data);
       if (encounter) writeDraft(encounter.encounterId, "order", data);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo consultar la orden."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo consultar la orden."));
     } finally {
       setLoading(false);
     }
@@ -74,8 +74,8 @@ export function AdmissionOrderPage() {
       }
       setNotice("Orden confirmada.");
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar la orden."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar la orden."));
     } finally {
       setPending(false);
     }

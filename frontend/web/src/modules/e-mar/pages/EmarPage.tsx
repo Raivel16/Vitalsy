@@ -79,7 +79,7 @@ export function EmarPage() {
           setShiftLabel(`${formatDateTime(data.shiftStart)} – ${formatDateTime(data.shiftEnd)}`);
         }
       })
-      .catch((caught) => setError(errorText(caught, "No se pudo cargar el e-MAR.")));
+      .catch((error_) => setError(errorText(error_, "No se pudo cargar el e-MAR.")));
   }
 
   useEffect(() => {
@@ -123,8 +123,8 @@ export function EmarPage() {
       setPatientBarcode("");
       setDrugBarcode("");
       load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo administrar la dosis."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo administrar la dosis."));
     }
   }
 

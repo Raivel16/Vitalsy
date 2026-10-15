@@ -66,8 +66,8 @@ export function CensusPage() {
         setMeta(data.meta ?? EMPTY_META);
         setError("");
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo cargar el censo."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo cargar el censo."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -243,8 +243,8 @@ export function EncounterFilePage() {
       .then((data) => {
         if (active) setEncounter(data.encounter);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir la ficha."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir la ficha."));
       });
     return () => {
       active = false;

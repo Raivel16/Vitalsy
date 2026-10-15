@@ -68,7 +68,7 @@ export function VitalControlsPage() {
   function load() {
     api<{ controls: ControlRow[] }>("/api/v1/inpatient-care/monitoring-controls")
       .then((data) => setControls(data.controls))
-      .catch((caught) => setError(errorText(caught, "No se pudo cargar la bandeja de controles.")));
+      .catch((error_) => setError(errorText(error_, "No se pudo cargar la bandeja de controles.")));
   }
 
   useEffect(() => {
@@ -128,8 +128,8 @@ export function VitalControlsPage() {
       setSelected(null);
       resetForm();
       load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el control."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el control."));
     } finally {
       setSaving(false);
     }

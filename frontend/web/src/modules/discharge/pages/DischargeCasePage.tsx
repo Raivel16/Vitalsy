@@ -45,8 +45,8 @@ export function DischargeCasePage() {
       const data = await api<{ case: DischargeCase }>(`/api/v1/discharge/encounters/${encounterId}`);
       setItem(data.case);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo cargar la ficha de egreso."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo cargar la ficha de egreso."));
     } finally {
       setLoading(false);
     }
@@ -72,9 +72,9 @@ export function DischargeCasePage() {
       setItem((current) => (current ? { ...current, lifePlan: data.lifePlan } : current));
       setLifeFailed(false);
       return true;
-    } catch (caught) {
+    } catch (error_) {
       setLifeFailed(true);
-      setError(caught instanceof ApiError && caught.status >= 500 ? LIFE_ERROR : errorText(caught, LIFE_ERROR));
+      setError(error_ instanceof ApiError && error_.status >= 500 ? LIFE_ERROR : errorText(error_, LIFE_ERROR));
       return false;
     } finally {
       setLifePending(false);
@@ -95,8 +95,8 @@ export function DischargeCasePage() {
       setForm({});
       const ok = afterSave ? await afterSave() : true;
       if (ok) setNotice(success);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo guardar el entregable."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo guardar el entregable."));
     } finally {
       setPending(false);
     }

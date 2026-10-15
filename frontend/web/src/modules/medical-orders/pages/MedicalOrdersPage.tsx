@@ -84,8 +84,8 @@ export function MedicalOrdersPage() {
         setItems(asItems(data.orders.items));
         setStatusLabel(data.orders.statusLabel);
       })
-      .catch((caught: unknown) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar las indicaciones."));
+      .catch((error_: unknown) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar las indicaciones."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -128,8 +128,8 @@ export function MedicalOrdersPage() {
         await persistDraft(items);
         setEditing(false);
         setError("");
-      } catch (caught) {
-        setError(errorText(caught, "No se pudieron guardar las indicaciones."));
+      } catch (error_) {
+        setError(errorText(error_, "No se pudieron guardar las indicaciones."));
       }
       return;
     }
@@ -161,8 +161,8 @@ export function MedicalOrdersPage() {
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo firmar."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo firmar."));
     }
   }
 

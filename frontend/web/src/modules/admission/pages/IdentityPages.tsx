@@ -64,8 +64,8 @@ export function WristbandPage() {
       } else {
         setAdvanced(true);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo emitir el brazalete."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo emitir el brazalete."));
     } finally {
       setPending(false);
     }
@@ -151,8 +151,8 @@ export function RecordPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo aperturar el expediente."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo aperturar el expediente."));
     } finally {
       setPending(false);
     }
@@ -275,15 +275,15 @@ export function ConsentPage() {
       setLifeMetrics(data.link?.baselineSummary?.metrics ?? []);
       setLifeStatus("linked");
       setLifeMessage("");
-    } catch (caught) {
+    } catch (error_) {
       const generic = "No se pudo vincular Vitalsy Life. Intente de nuevo.";
       let message: string;
-      if (caught instanceof ApiError) {
-        message = caught.status === 429
+      if (error_ instanceof ApiError) {
+        message = error_.status === 429
           ? "Demasiados intentos. Espere un minuto e intente de nuevo."
-          : lifeLinkErrorMessage(caught.code) ?? generic;
+          : lifeLinkErrorMessage(error_.code) ?? generic;
       } else {
-        message = errorText(caught, generic);
+        message = errorText(error_, generic);
       }
       setLifeStatus("failed");
       setLifeMessage(message);
@@ -325,8 +325,8 @@ export function ConsentPage() {
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el consentimiento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el consentimiento."));
     } finally {
       setPending(false);
     }

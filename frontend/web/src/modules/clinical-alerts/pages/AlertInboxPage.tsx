@@ -25,8 +25,8 @@ export function AlertInboxPage() {
       const data = await api<{ alerts: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
       setAlerts(data.alerts);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron cargar las alertas."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron cargar las alertas."));
     } finally {
       setLoading(false);
     }
@@ -44,8 +44,8 @@ export function AlertInboxPage() {
       notifyAlertAcknowledged(alert.id);
       setNotice(`Confirmó la recepción de la alerta de ${alert.patientName ?? "el paciente"}.`);
       await load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar la recepción."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar la recepción."));
     } finally {
       setBusyId(null);
     }

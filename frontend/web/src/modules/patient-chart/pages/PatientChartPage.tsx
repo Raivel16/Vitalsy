@@ -138,8 +138,8 @@ export function PatientChartPage() {
       .then((payload) => {
         if (active) setData(payload);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir el expediente clínico."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir el expediente clínico."));
       });
     return () => {
       active = false;

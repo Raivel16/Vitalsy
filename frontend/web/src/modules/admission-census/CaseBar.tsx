@@ -56,8 +56,8 @@ export function CaseBar({ children }: { children: ReactNode }) {
         setEncounter(data.encounter);
         setCoverageStatus(asCoverage(data.encounter.coverage.status));
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir el ingreso."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir el ingreso."));
       });
     return () => {
       active = false;
