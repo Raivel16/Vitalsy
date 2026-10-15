@@ -1,7 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useParams } from "react-router";
-import { api } from "../../../app/api";
+import { api, ApiError } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
@@ -9,7 +9,12 @@ import { Panel, StatusPill } from "../../../shared/ui/clinical";
 import { TextAreaField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
-import { handoffLines, type DischargeCase } from "../domain/discharge";
+import { printClinicalDocument } from "../../../shared/print/printDocument";
+import { handoffLines, lifePlanCode, lifePlanValidUntil, type DischargeCase, type LifePlan, type LifePlanMode } from "../domain/discharge";
+import { lifeSheetHtml } from "../domain/lifeSheet";
+
+const LIFE_ERROR = "No se pudo generar el código de Vitalsy Life. Intente de nuevo.";
+const LIFE_MODES: string[] = ["usuario", "invitacion", "rechaza"];
 
 const PERSPECTIVES = [
   { id: "medico_tratante", label: "Médico tratante" },
@@ -31,6 +36,8 @@ export function DischargeCasePage() {
   const [pending, setPending] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [life, setLife] = useState("");
+  const [lifePending, setLifePending] = useState(false);
+  const [lifeFailed, setLifeFailed] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -55,18 +62,60 @@ export function DischargeCasePage() {
     }
   }, [error, notice]);
 
-  async function submit(path: string, body: Record<string, unknown>, success: string) {
+  async function issueLifePlan(mode: LifePlanMode): Promise<boolean> {
+    setLifePending(true);
+    try {
+      const data = await api<{ lifePlan: LifePlan }>(`/api/v1/discharge/encounters/${encounterId}/life-plan`, {
+        method: "POST",
+        body: JSON.stringify({ mode }),
+      });
+      setItem((current) => (current ? { ...current, lifePlan: data.lifePlan } : current));
+      setLifeFailed(false);
+      return true;
+    } catch (caught) {
+      setLifeFailed(true);
+      setError(caught instanceof ApiError && caught.status >= 500 ? LIFE_ERROR : errorText(caught, LIFE_ERROR));
+      return false;
+    } finally {
+      setLifePending(false);
+    }
+  }
+
+  async function submit(path: string, body: Record<string, unknown>, success: string, afterSave?: () => Promise<boolean>) {
     setPending(true);
     setError("");
+    setNotice("");
     try {
       const data = await api<{ case: DischargeCase }>(path, { method: "POST", body: JSON.stringify(body) });
-      setItem(data.case);
-      setNotice(success);
+      // Las respuestas de mutación traen el plan sin códigos: se conservan los ya emitidos.
+      setItem((current) => ({
+        ...data.case,
+        lifePlan: keepIssuedCodes(current?.lifePlan ?? null, data.case.lifePlan ?? null),
+      }));
       setForm({});
+      const ok = afterSave ? await afterSave() : true;
+      if (ok) setNotice(success);
     } catch (caught) {
       setError(errorText(caught, "No se pudo guardar el entregable."));
     } finally {
       setPending(false);
+    }
+  }
+
+  async function retryLifePlan() {
+    if (!LIFE_MODES.includes(life)) {
+      setError("Indique el seguimiento en Vitalsy Life.");
+      return;
+    }
+    setError("");
+    if (await issueLifePlan(life as LifePlanMode)) setNotice("Seguimiento en Vitalsy Life registrado.");
+  }
+
+  async function printSheet(current: DischargeCase) {
+    try {
+      printClinicalDocument("Ficha de alta", await lifeSheetHtml(current, role));
+    } catch {
+      setError("No se pudo preparar la ficha de alta para imprimir.");
     }
   }
 
@@ -79,13 +128,14 @@ export function DischargeCasePage() {
 
   const done = item.deliverables.filter((deliverable) => deliverable.done).length;
   const next = handoffLines(item);
-  const lifeNote = life === "usuario"
-    ? "Vitalsy Life: el paciente ya es usuario. Sincronizar el plan de seguimiento."
-    : life === "invitacion"
-      ? `Vitalsy Life: invitación ${encounterId}.`
-      : life === "rechaza"
-        ? "Vitalsy Life: el paciente rechaza el seguimiento digital."
-        : "";
+  // Solo la enfermera de piso ve códigos; los demás roles reciben el plan reducido al modo.
+  const viewPlan: LifePlan | null = item.lifePlan && role !== "enfermera_piso"
+    ? { mode: item.lifePlan.mode, status: item.lifePlan.status, validUntil: item.lifePlan.validUntil }
+    : item.lifePlan ?? null;
+  const printable = role === "enfermera_piso" && Boolean(item.nursingReport)
+    && (Boolean(lifePlanCode(item.lifePlan, role)) || item.lifePlan?.mode === "rechaza");
+  // Con plan emitido no se ofrece cambiar el modo en la UI; la API permite reemitir hasta que el paciente egrese.
+  const canIssueLife = role === "enfermera_piso" && !item.lifePlan && !item.exit;
 
   return (
     <Sheet kicker="Alta y egreso" title={item.patientName} wide clinic="file" className="floor-care ops-board">
@@ -194,29 +244,40 @@ export function DischargeCasePage() {
       {role === "enfermera_piso" && item.reconciliation && !item.nursingReport ? (
         <form className="stack ops-form" onSubmit={(event: FormEvent) => {
           event.preventDefault();
-          if (!lifeNote) {
+          if (!LIFE_MODES.includes(life)) {
             setError("Indique el seguimiento en Vitalsy Life.");
             return;
           }
           void submit(`/api/v1/discharge/encounters/${encounterId}/nursing-report`, {
             instructions: form.instructions ?? "",
             alarmSigns: form.alarmSigns ?? "",
-            homeCare: [form.homeCare ?? "", lifeNote].filter(Boolean).join("\n"),
-          }, "Informe digital de alta de enfermería generado.");
+            homeCare: form.homeCare ?? "",
+          }, "Informe digital de alta de enfermería generado.", () => issueLifePlan(life as LifePlanMode));
         }}>
           <TextAreaField id="instructions" label="Indicaciones de medicamentos" value={form.instructions ?? ""} onChange={onField("instructions")} />
           <TextAreaField id="alarmSigns" label="Signos de alarma" value={form.alarmSigns ?? ""} onChange={onField("alarmSigns")} />
           <TextAreaField id="homeCare" label="Cuidados domiciliarios" value={form.homeCare ?? ""} onChange={onField("homeCare")} />
-          <VitalsyLifeCard encounterId={encounterId} life={life} onChange={setLife} />
-          <Button type="submit" pending={pending}>Generar informe</Button>
+          <VitalsyLifeCard life={life} onChange={setLife} />
+          <Button type="submit" pending={pending || lifePending}>Generar informe</Button>
         </form>
       ) : null}
 
-      {item.nursingReport?.homeCare?.includes("Vitalsy Life") ? (
+      {item.nursingReport ? (
         <VitalsyLifeCard
-          encounterId={encounterId}
-          savedLine={item.nursingReport.homeCare.split("\n").find((line) => line.includes("Vitalsy Life"))}
+          plan={viewPlan}
+          role={role}
+          life={life}
+          onChange={canIssueLife ? setLife : undefined}
+          onGenerate={canIssueLife ? () => void retryLifePlan() : undefined}
+          failed={lifeFailed}
+          pending={lifePending}
         />
+      ) : null}
+
+      {printable ? (
+        <div className="stack ops-form">
+          <Button type="button" onClick={() => void printSheet(item)}>Imprimir ficha de alta</Button>
+        </div>
       ) : null}
 
       {role === "enfermera_piso" && item.nursingReport && !item.indicationReceipt ? (
@@ -270,19 +331,42 @@ export function DischargeCasePage() {
   );
 }
 
+function keepIssuedCodes(current: LifePlan | null, incoming: LifePlan | null | undefined): LifePlan | null {
+  if (!incoming) return current;
+  if (!current || current.mode !== incoming.mode) return incoming;
+  return {
+    ...incoming,
+    code: incoming.code ?? current.code,
+    invitationCode: incoming.invitationCode ?? current.invitationCode,
+    payload: incoming.payload ?? current.payload,
+  };
+}
+
+const MODE_TEXT: Record<LifePlanMode, string> = {
+  usuario: "Ya es usuario: plan domiciliario sincronizado con Vitalsy Life",
+  invitacion: "No es usuario: invitación generada",
+  rechaza: "Rechaza el seguimiento digital",
+};
+
 function VitalsyLifeCard({
-  encounterId,
   life = "",
   onChange,
-  savedLine,
+  onGenerate,
+  plan = null,
+  role = "",
+  failed = false,
+  pending = false,
 }: {
-  encounterId: string;
   life?: string;
   onChange?: (value: string) => void;
-  savedLine?: string;
+  onGenerate?: () => void;
+  plan?: LifePlan | null;
+  role?: string;
+  failed?: boolean;
+  pending?: boolean;
 }) {
-  const invitation = life === "invitacion" || Boolean(savedLine?.includes("invitación"));
-  const showQr = onChange ? life !== "usuario" && life !== "rechaza" : invitation;
+  const code = lifePlanCode(plan, role);
+  const validUntil = lifePlanValidUntil(plan);
 
   return (
     <section className="ops-life-card" aria-label="Vitalsy Life">
@@ -296,12 +380,13 @@ function VitalsyLifeCard({
       <p>
         Permite al paciente y a sus cuidadores consultar el plan de alta, los signos de alarma y los recordatorios de medicación.
       </p>
-      {showQr ? (
+      {code && plan ? (
         <div className="ops-life-code">
-          <LifeQr value={encounterId} />
-          <strong>Código de invitación</strong>
-          <span>{encounterId}</span>
-          <small>El paciente lo escanea para vincular la app.</small>
+          <LifeQr value={code} />
+          <strong>{plan.mode === "invitacion" ? "Código de invitación" : "Código de activación"}</strong>
+          <span>Código: {code}</span>
+          {validUntil ? <small>Válido hasta: {validUntil}</small> : null}
+          <small>El paciente lo escanea con la app Vitalsy Life para activar su seguimiento.</small>
         </div>
       ) : null}
       {onChange ? (
@@ -320,8 +405,13 @@ function VitalsyLifeCard({
           </label>
         </div>
       ) : (
-        <p className="ops-life-saved">{savedLine}</p>
+        <p className="ops-life-saved">{plan ? MODE_TEXT[plan.mode] : "Sin seguimiento definido"}</p>
       )}
+      {onGenerate ? (
+        <Button type="button" onClick={onGenerate} pending={pending}>
+          {failed ? "Reintentar código de Vitalsy Life" : "Guardar seguimiento en Vitalsy Life"}
+        </Button>
+      ) : null}
     </section>
   );
 }

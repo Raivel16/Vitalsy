@@ -8,6 +8,7 @@ use App\Models\CareActivityCompletion;
 use App\Models\ClinicalAlert;
 use App\Models\ImagingReport;
 use App\Models\LabResult;
+use App\Models\LifeBaselineImport;
 use App\Models\MedicalEvolutionNote;
 use App\Models\MedicationAdministration;
 use App\Models\NursingEvolutionNote;
@@ -171,7 +172,8 @@ class PatientClinicalChart
             ])
             ->all();
 
-        $payload = is_array($encounter->clinical_payload) ? $encounter->clinical_payload : [];
+        $unreadable = $encounter->payloadUnreadable();
+        $payload = $unreadable ? [] : (is_array($encounter->clinical_payload) ? $encounter->clinical_payload : []);
         $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
         $vitalsBasal = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : null;
         $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : null;
@@ -204,6 +206,7 @@ class PatientClinicalChart
                 'createdAt' => optional($encounter->created_at)?->toIso8601String(),
             ],
             'admission' => [
+                'unreadable' => $unreadable,
                 'deliverables' => $encounter->deliverables ?? [],
                 'assessment' => $assessment,
                 'vitalsBasal' => $vitalsBasal,
@@ -213,6 +216,7 @@ class PatientClinicalChart
                 'consent' => $consent,
                 'kardexMedications' => array_values(array_filter($admissionMeds)),
             ],
+            'lifeBaseline' => LifeBaselineImport::presentFor($encounterId),
             'activePrescription' => $prescription ? [
                 'id' => $prescription->id,
                 'status' => $prescription->status,

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../../../shared/ui/AppHeader';
 import { BackRow } from '../../../shared/ui/BackRow';
 import { Banner } from '../../../shared/ui/Banner';
@@ -9,10 +9,12 @@ import { Field } from '../../../shared/ui/Field';
 import { Screen } from '../../../shared/ui/Screen';
 import { chalk, font } from '../../../shared/theme/tokens';
 import { useLife } from '../../life/LifeProvider';
+import { logoutSession, REVOKE_UNDELIVERED_NOTICE } from '../../life/sessionAuth';
 
 export function ProfileScreen() {
   const router = useRouter();
-  const { life, refresh } = useLife();
+  const { life, refresh, client, tokenStore } = useLife();
+  const [signingOut, setSigningOut] = useState(false);
   const user = life.currentUser();
   const contact = life.state.contact;
   const baseline = life.today();
@@ -48,9 +50,21 @@ export function ProfileScreen() {
       ))}
       <Button
         label="Cerrar sesión"
+        loading={signingOut}
         onPress={() => {
-          life.logout();
-          void refresh().then(() => router.replace('/'));
+          if (signingOut) {
+            return;
+          }
+          setSigningOut(true);
+          void logoutSession({ life, client, tokenStore })
+            .then((result) => {
+              if (result.undeliveredRevoke) {
+                Alert.alert('Revocación pendiente', REVOKE_UNDELIVERED_NOTICE);
+              }
+              return refresh();
+            })
+            .then(() => router.replace('/'))
+            .finally(() => setSigningOut(false));
         }}
         palette={chalk}
         tone="ghost"

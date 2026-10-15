@@ -4,6 +4,35 @@ export type DischargeDeliverable = {
   done: boolean;
 };
 
+export type LifePlanMode = "usuario" | "invitacion" | "rechaza";
+
+export type LifePlan = {
+  mode: LifePlanMode;
+  status?: string;
+  validUntil?: string | null;
+  /** Solo los ve la enfermera de piso. */
+  code?: string | null;
+  invitationCode?: string | null;
+  payload?: {
+    id?: string;
+    medications?: Array<{ name: string; dose: string; schedule: string }>;
+    comfortSigns?: string[];
+    homeCare?: string[];
+    validUntil?: string | null;
+  } | null;
+};
+
+/** Código que codifica el QR: invitación para quien no es usuario, código de activación para quien ya lo es. */
+export function lifePlanCode(plan: LifePlan | null | undefined, role: string): string | null {
+  if (role !== "enfermera_piso" || !plan || plan.mode === "rechaza") return null;
+  const value = plan.mode === "invitacion" ? plan.invitationCode : plan.code;
+  return value ? value : null;
+}
+
+export function lifePlanValidUntil(plan: LifePlan | null | undefined): string | null {
+  return plan?.payload?.validUntil ?? plan?.validUntil ?? null;
+}
+
 export type DischargeCase = {
   encounterId: string;
   patientName: string;
@@ -20,6 +49,7 @@ export type DischargeCase = {
   account: { status: string; verifiedAt: string | null } | null;
   exitPass: { status: string; issuedAt: string | null } | null;
   exit: { confirmed: boolean; exitedAt: string | null } | null;
+  lifePlan?: LifePlan | null;
 };
 
 function deliverableDone(item: DischargeCase, id: string): boolean {

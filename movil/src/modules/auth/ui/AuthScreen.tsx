@@ -3,12 +3,13 @@ import { Screen } from '../../../shared/ui/Screen';
 import { Wordmark } from '../../../shared/ui/Wordmark';
 import { aire } from '../../../shared/theme/tokens';
 import { useLife } from '../../life/LifeProvider';
+import { loginAccount, registerCitizen, type AuthOutcome } from '../../life/sessionAuth';
 import { AuthForm } from './AuthForm';
 
 export function AuthScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ next?: string; mode?: string }>();
-  const { life, refresh } = useLife();
+  const { life, refresh, client, tokenStore } = useLife();
 
   function goNext() {
     if (params.next === 'activar') {
@@ -18,25 +19,26 @@ export function AuthScreen() {
     router.replace('/hoy');
   }
 
+  async function finish(outcome: AuthOutcome): Promise<AuthOutcome> {
+    if (outcome.confirmation) {
+      const { confirmation } = outcome;
+      return { ...outcome, confirmation: { ...confirmation, confirm: async () => finish(await confirmation.confirm()) } };
+    }
+    if (Object.keys(outcome.errors).length === 0) {
+      await refresh();
+    }
+    return outcome;
+  }
+
   return (
     <Screen palette={aire}>
       <Wordmark />
       <AuthForm
         initialMode={params.mode === 'register' ? 'register' : 'login'}
-        onLogin={(email, password) => {
-          const result = life.login(email, password);
-          if (result.ok) {
-            void refresh().then(goNext);
-          }
-          return result.errors;
-        }}
-        onRegister={(input) => {
-          const result = life.register(input);
-          if (result.ok) {
-            void refresh().then(goNext);
-          }
-          return result.errors;
-        }}
+        localOnly={!client}
+        onDone={goNext}
+        onLogin={async (email, password) => finish(await loginAccount({ life, client, tokenStore }, email, password))}
+        onRegister={async (input) => finish(await registerCitizen({ life, client, tokenStore }, input))}
       />
     </Screen>
   );

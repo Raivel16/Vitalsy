@@ -56,10 +56,9 @@ class MedicalEvolutionNoteApiTest extends TestCase
             ->assertJsonPath('note.body', 'Evolución favorable. Continuar plan actual.')
             ->assertJsonPath('note.signed', true);
 
-        $this->assertDatabaseHas('medical_evolution_notes', [
-            'encounter_id' => 'ENC-HOSP-0001',
-            'body' => 'Evolución favorable. Continuar plan actual.',
-        ]);
+        // RNF-06: el cuerpo se almacena cifrado; se verifica por el modelo.
+        $this->assertSame('ENC-HOSP-0001', MedicalEvolutionNote::query()->first()->encounter_id);
+        $this->assertSame('Evolución favorable. Continuar plan actual.', MedicalEvolutionNote::query()->first()->body);
         $this->assertNotNull(MedicalEvolutionNote::query()->first()->signed_at);
     }
 

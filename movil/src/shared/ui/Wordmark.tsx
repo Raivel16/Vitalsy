@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { font } from '../theme/tokens';
+import { brand, font } from '../theme/tokens';
 
 export function Wordmark() {
   return (
@@ -12,10 +12,10 @@ export function Wordmark() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  word: { fontFamily: font.bold, fontSize: 22, color: '#1C242B', letterSpacing: -0.3 },
+  word: { fontFamily: font.bold, fontSize: 22, color: brand.word, letterSpacing: -0.3 },
   pill: {
-    backgroundColor: '#E6F4F3',
-    color: '#2B8A88',
+    backgroundColor: brand.pillBg,
+    color: brand.pillText,
     fontFamily: font.semibold,
     fontSize: 11,
     letterSpacing: 0.4,

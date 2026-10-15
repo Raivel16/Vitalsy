@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
+use App\Support\Security\DegradedRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,7 @@ class AdmissionCensusController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        return response()->json($this->board->list(
+        return DegradedRead::json(fn () => $this->board->list(
             $data['q'] ?? null,
             (int) ($data['page'] ?? 1),
             (int) ($data['per_page'] ?? 10),

@@ -11,16 +11,51 @@ use App\Http\Controllers\Api\EmarCareController;
 use App\Http\Controllers\Api\HospitalAdmissionController;
 use App\Http\Controllers\Api\ImagingReportsController;
 use App\Http\Controllers\Api\LabResultsController;
+use App\Http\Controllers\Api\Life\LifeAuthController;
+use App\Http\Controllers\Api\Life\LifeConsentController;
+use App\Http\Controllers\Api\Life\LifeDischargePlanController;
+use App\Http\Controllers\Api\Life\LifeLinkCodeController;
+use App\Http\Controllers\Api\Life\LifeNoticesController;
+use App\Http\Controllers\Api\Life\LifeSyncController;
 use App\Http\Controllers\Api\MedicalEvolutionNoteController;
 use App\Http\Controllers\Api\MonitoringControlsController;
 use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+// RNF-11: sonda de salud para balanceador/monitoreo; sin autenticacion ni datos clinicos.
+Route::get('health', function () {
+    try {
+        DB::select('select 1');
+    } catch (Throwable) {
+        return response()->json(['status' => 'degraded', 'db' => 'fail'], 503);
+    }
+
+    return response()->json(['status' => 'ok', 'db' => 'ok']);
+});
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+    // Vitalsy Life: cuentas ciudadanas (RF-89); el middleware `life` excluye al personal clínico.
+    Route::prefix('life')->group(function () {
+        Route::post('auth/register', [LifeAuthController::class, 'register'])->middleware('throttle:10,1');
+        Route::post('auth/login', [LifeAuthController::class, 'login'])->middleware('throttle:10,1');
+
+        Route::middleware(['auth:sanctum', 'life', 'abilities:life'])->group(function () {
+            Route::post('auth/logout', [LifeAuthController::class, 'logout']);
+            Route::post('sync', [LifeSyncController::class, 'store']);
+            Route::put('consent', [LifeConsentController::class, 'update']);
+            Route::post('link-codes', [LifeLinkCodeController::class, 'store']);
+            Route::get('notices', [LifeNoticesController::class, 'index']);
+            Route::get('discharge-plans/{code}', [LifeDischargePlanController::class, 'show'])
+                ->middleware('throttle:30,1');
+        });
+    });
 
     // Rutas permitidas aun con contraseña temporal (RF-102).
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
@@ -30,6 +65,11 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'active', 'password.rotated'])->group(function () {
+        // RNF-01: autorización de canales privados (POST /api/v1/broadcasting/auth). Se registra
+        // dentro de este grupo para heredar la pila del grupo `api` (stateful, sesión, origen) y la
+        // misma autenticación por cookie + XSRF que el resto de la API.
+        Broadcast::routes(['middleware' => []]);
+        require base_path('routes/channels.php');
 
         Route::prefix('hospital-admission')->group(function () {
             Route::get('encounters', [AdmissionCensusController::class, 'index']);
@@ -46,6 +86,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('wristbands', [HospitalAdmissionController::class, 'issueWristband']);
                 Route::post('clinical-records', [HospitalAdmissionController::class, 'openRecord']);
                 Route::post('informed-consents', [HospitalAdmissionController::class, 'storeConsent']);
+                // RF-95: importa la línea de base de Vitalsy Life; el código tiene ~41 bits, de ahí el tope de intentos.
+                Route::post('life-links', [HospitalAdmissionController::class, 'linkLife'])->middleware('throttle:20,1');
+            });
+
+            // RF-95: lectura de la línea de base importada de Vitalsy Life.
+            Route::middleware('role:admision,enfermera_piso,medico_residente,medico_tratante')->group(function () {
+                Route::get('encounters/{encounterId}/life-baseline', [HospitalAdmissionController::class, 'showLifeBaseline']);
             });
 
             Route::middleware('role:camillero')->group(function () {
@@ -205,6 +252,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('encounters/{encounterId}/nursing-report', [DischargeController::class, 'storeNursingReport']);
                 Route::post('encounters/{encounterId}/indication-receipt', [DischargeController::class, 'storeIndicationReceipt']);
                 Route::post('encounters/{encounterId}/exit', [DischargeController::class, 'confirmExit']);
+                // RF-96: plan de seguimiento y código para Vitalsy Life.
+                Route::post('encounters/{encounterId}/life-plan', [DischargeController::class, 'storeLifePlan']);
             });
 
             Route::middleware('role:altas_caja')->group(function () {

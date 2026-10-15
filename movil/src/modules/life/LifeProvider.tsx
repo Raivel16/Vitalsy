@@ -1,17 +1,23 @@
-import * as Crypto from 'expo-crypto';
 import * as Network from 'expo-network';
-import * as SecureStore from 'expo-secure-store';
-import * as SQLite from 'expo-sqlite';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { apiBaseUrl, fetchDischargeBody, postLifeBatch } from '../../shared/api/lifeClient';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/lifeClient';
+import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
+import { singleFlight } from '../../shared/async/singleFlight';
+import { AppState } from 'react-native';
+import { activatePlan } from './activatePlan';
+import { changeSharing, issueServerLinkCode, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
+import { needsResync, runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
-import { base64ToBytes, bytesToBase64 } from '../../shared/crypto/seal';
 import { sha256Hex } from '../../shared/crypto/sha256';
-import { SqlitePersistence } from '../../shared/storage/sqlitePersistence';
+import { openLifePersistence } from '../../shared/storage/openLifePersistence';
 import type { LifePersistence } from '../../shared/storage/persistence';
-import { createHealthSource } from '../health-sync/HealthConnectSource';
+import { clearForegroundRuntime, setForegroundRuntime } from '../health-sync/backgroundSync';
+import { setHealthBackgroundSync } from '../health-sync/backgroundScheduling';
+import { collectAndEnqueue } from '../health-sync/collectAndEnqueue';
+import { createHealthSource } from '../health-sync/createHealthSource';
 import type { HealthStatus } from '../health-sync/HealthDataSource';
 import { emptySnapshot, LifeApp, type LifeSnapshot } from './lifeApp';
+import { reconcileSessionStartup } from './sessionStartup';
 
 type HealthFeedback = {
   status: HealthStatus;
@@ -22,23 +28,22 @@ type LifeContextValue = {
   ready: boolean;
   life: LifeApp;
   online: boolean;
+  /** Hay un token guardado (la cola puede enviarse). */
+  hasSession: boolean;
   health: HealthFeedback;
   refresh: () => Promise<void>;
   syncHealth: () => Promise<string | null>;
   activateFromCode: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  /** Activa/revoca la compartición; la revocación llega al servidor o queda pendiente de forma honesta. */
+  changeSharing: (enabled: boolean) => Promise<SharingOutcome>;
+  /** Pide el código de vinculación al servidor (nunca lo genera localmente). */
+  issueLinkCode: () => Promise<LinkCodeOutcome>;
+  /** Cliente autenticado de /api/v1/life (null si la API no está configurada o no es https). */
+  client: LifeClient | null;
+  tokenStore: TokenStore;
 };
 
 const LifeContext = createContext<LifeContextValue | null>(null);
-
-async function encryptionKey(): Promise<Uint8Array> {
-  const existing = await SecureStore.getItemAsync('vitalsy.life.key');
-  if (existing) {
-    return base64ToBytes(existing);
-  }
-  const bytes = await Crypto.getRandomBytesAsync(32);
-  await SecureStore.setItemAsync('vitalsy.life.key', bytesToBase64(bytes));
-  return bytes;
-}
 
 export function LifeProvider({
   children,
@@ -58,6 +63,23 @@ export function LifeProvider({
     permission: 'unknown',
   });
   const [tick, setTick] = useState(0);
+  // La red puede volver mientras una sincronización está en curso: se lee al usarla, no al arrancar.
+  const onlineRef = useRef(online);
+  useLayoutEffect(() => {
+    onlineRef.current = online;
+  }, [online]);
+  const [hasSession, setHasSession] = useState(false);
+  // Hasta leer el token no se sabe si hay sesión: no se da de baja la tarea por un alse que solo es «aún no cargó».
+  const [sessionKnown, setSessionKnown] = useState(false);
+  const client = useMemo(() => {
+    const baseUrl = apiBaseUrl();
+    return baseUrl ? createLifeClient(baseUrl, () => tokenStore.get()) : null;
+  }, []);
+
+  const clientRef = useRef(client);
+  useLayoutEffect(() => {
+    clientRef.current = client;
+  }, [client]);
 
   useEffect(() => {
     let active = true;
@@ -66,9 +88,7 @@ export function LifeProvider({
     }
     void (async () => {
       try {
-        const key = await encryptionKey();
-        const database = await SQLite.openDatabaseAsync('vitalsy-life.db');
-        const sqlite = await SqlitePersistence.open(database, key, () => Crypto.getRandomBytes(12));
+        const sqlite = await openLifePersistence();
         const loaded = await sqlite.load();
         if (!active) {
           return;
@@ -88,49 +108,94 @@ export function LifeProvider({
     };
   }, [initial, persistence]);
 
+  useEffect(() => {
+    let active = true;
+    void tokenStore.get().then(
+      (token) => {
+        if (active) {
+          setHasSession(Boolean(token));
+          setSessionKnown(true);
+        }
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [ready]);
+
+  // Arranque: limpia una marca de cambio de cuenta que quedó de un cierre brusco y vincula un token anterior a la cuenta.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    void reconcileSessionStartup({ life, tokenStore });
+  }, [ready, life, tokenStore]);
+
   const refresh = useCallback(async () => {
     setTick((value) => value + 1);
     const network = await Network.getNetworkStateAsync().catch(() => null);
-    setOnline(Boolean(network?.isConnected));
+    onlineRef.current = Boolean(network?.isConnected);
+    setOnline(onlineRef.current);
+    setHasSession(Boolean(await tokenStore.get().catch(() => null)));
+    setSessionKnown(true);
     if (store) {
       await store.save(life.state);
     }
   }, [life, store]);
 
-  const syncHealth = useCallback(async () => {
-    const source = createHealthSource();
-    const status = await source.availability();
-    if (status.state !== 'available') {
-      setHealth({ status, permission: 'unknown' });
-      await refresh();
-      return status.message;
-    }
-    const access = await source.requestAccess();
-    if (!access.granted) {
-      setHealth({ status, permission: 'denied' });
-      await refresh();
-      return access.message;
-    }
-    const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const to = new Date();
-    const reader = source.readGranted?.bind(source) ?? source.readRange.bind(source);
-    const read = await reader(from, to);
-    life.addSamples(read.samples);
-    setHealth({ status: { state: 'available', message: access.message }, permission: 'granted' });
-    const baseUrl = apiBaseUrl();
-    const decision = life.flushDecision(online, Boolean(baseUrl));
-    if (baseUrl && decision.send.length > 0) {
-      const ok = await postLifeBatch(baseUrl, decision.send).catch(() => false);
-      if (ok) {
-        life.markQueueSynced(
-          decision.send.map((item) => item.id),
-          new Date().toISOString(),
-        );
+  const syncHealthOnce = useCallback(async () => {
+    const collected = await collectAndEnqueue({
+      source: createHealthSource(),
+      life,
+      now: () => new Date(),
+      interactive: true,
+    });
+    if (collected.status !== 'read') {
+      if (collected.status !== 'stale_session') {
+        setHealth({ status: collected.health, permission: collected.permission });
       }
+      await refresh();
+      return collected.message;
     }
-    await refresh();
-    return read.message;
-  }, [life, online, refresh]);
+    setHealth({ status: collected.health, permission: collected.permission });
+    try {
+      await serverSyncRef.current();
+    } finally {
+      await refresh();
+    }
+    return collected.message;
+  }, [life, refresh]);
+
+  // Envío de cola, reintento de revocación y avisos del servidor. Una sola ejecución a la vez.
+  const serverSyncOnce = useCallback(async () => {
+    try {
+      const hasSession = Boolean(await tokenStore.get().catch(() => null));
+      const usedOnline = onlineRef.current;
+      await runSync({ life, client: clientRef.current, online: usedOnline, hasSession, onUnauthorized: () => tokenStore.clear() });
+      if (needsResync(usedOnline, onlineRef.current)) {
+        await runSync({ life, client: clientRef.current, online: true, hasSession, onUnauthorized: () => tokenStore.clear() });
+      }
+    } finally {
+      await refresh();
+    }
+  }, [life, refresh]);
+  const serverSyncImplRef = useRef(serverSyncOnce);
+  useLayoutEffect(() => {
+    serverSyncImplRef.current = serverSyncOnce;
+  }, [serverSyncOnce]);
+  const serverSync = useMemo(() => singleFlight(() => serverSyncImplRef.current()), []);
+  const serverSyncRef = useRef(serverSync);
+  useLayoutEffect(() => {
+    serverSyncRef.current = serverSync;
+  }, [serverSync]);
+
+  // Dos disparos concurrentes (efecto de red + botón) comparten una sola ejecución.
+  const syncImplRef = useRef(syncHealthOnce);
+  useLayoutEffect(() => {
+    syncImplRef.current = syncHealthOnce;
+  }, [syncHealthOnce]);
+  const syncHealth = useMemo(() => singleFlight(() => syncImplRef.current()), []);
 
   const wasOnline = useRef(true);
   useEffect(() => {
@@ -139,24 +204,105 @@ export function LifeProvider({
     }
     if (!wasOnline.current && online) {
       void syncHealth();
+      void serverSync();
     }
     wasOnline.current = online;
-  }, [online, ready, syncHealth]);
+  }, [online, ready, syncHealth, serverSync]);
 
-  const activateFromCode = useCallback(
-    async (raw: string) => {
-      const baseUrl = apiBaseUrl();
-      const remote = baseUrl ? await fetchDischargeBody(baseUrl, raw.trim()).catch(() => null) : null;
-      const result = life.activateDischarge(raw, remote);
+  // Al abrir la app y al volver a primer plano: revocación pendiente, cola y avisos del servidor.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    void serverSync();
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        void serverSync();
+      }
+    });
+    return () => subscription.remove();
+  }, [ready, serverSync]);
+
+  // La tarea en segundo plano reutiliza esta instancia (mismo runtime JS) para no pisarla desde disco.
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    setForegroundRuntime({
+      life,
+      persist: async () => {
+        await store?.save(life.state);
+      },
+      notify: () => setTick((value) => value + 1),
+    });
+    return () => clearForegroundRuntime();
+  }, [ready, life, store]);
+
+  // Con sesión y permiso de lectura se programa la lectura periódica; al cerrar sesión se da de baja.
+  const backgroundEnabled = hasSession && life.state.healthSync.accessGranted;
+  useEffect(() => {
+    if (!ready || !sessionKnown) {
+      return;
+    }
+    void setHealthBackgroundSync(backgroundEnabled);
+  }, [ready, sessionKnown, backgroundEnabled]);
+
+  const consentDeps = useCallback(async () => {
+    const session = Boolean(await tokenStore.get().catch(() => null));
+    return {
+      life,
+      client,
+      hasSession: session,
+      online: onlineRef.current,
+      onUnauthorized: () => tokenStore.clear(),
+      // La revocación se guarda antes de la llamada de red: si matan la app, no se pierde el toque.
+      persist: async () => {
+        await store?.save(life.state);
+      },
+    };
+  }, [client, life, store]);
+
+  const changeSharingNow = useCallback(
+    async (enabled: boolean) => {
+      const result = await changeSharing(enabled, await consentDeps());
       await refresh();
       return result;
     },
-    [life, refresh],
+    [consentDeps, refresh],
+  );
+
+  const issueLinkCodeNow = useCallback(async () => {
+    const result = await issueServerLinkCode(await consentDeps());
+    await refresh();
+    return result;
+  }, [consentDeps, refresh]);
+
+  const activateFromCode = useCallback(
+    async (raw: string) => {
+      const hasSession = Boolean(await tokenStore.get().catch(() => null));
+      const result = await activatePlan(raw, { life, client, hasSession, onUnauthorized: () => tokenStore.clear() });
+      await refresh();
+      return result;
+    },
+    [client, life, refresh],
   );
 
   const value = useMemo(
-    () => ({ ready, life, online, health, refresh, syncHealth, activateFromCode }),
-    [ready, life, online, health, refresh, syncHealth, activateFromCode, tick],
+    () => ({
+      ready,
+      life,
+      online,
+      hasSession,
+      health,
+      refresh,
+      syncHealth,
+      activateFromCode,
+      changeSharing: changeSharingNow,
+      issueLinkCode: issueLinkCodeNow,
+      client,
+      tokenStore,
+    }),
+    [ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, changeSharingNow, issueLinkCodeNow, client, tick],
   );
 
   return <LifeContext.Provider value={value}>{children}</LifeContext.Provider>;

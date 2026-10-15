@@ -1,0 +1,4 @@
+{"resourceType":"Bundle","type":"searchset","entry":[
+{"resource":{"resourceType":"DiagnosticReport","id":"dr-1","status":"final","category":[{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v2-0074","code":"RAD"},{"system":"http://dicom.nema.org/resources/ontology/DCM","code":"CR"}]}],"code":{"text":"Radiografia de torax"},"subject":{"reference":"Patient/p-1","display":"JUAN PEREZ"},"issued":"2026-09-21T09:00:00+00:00","conclusion":"Sin consolidaciones","presentedForm":[{"contentType":"application/pdf","data":"AAAA"}]}},
+{"resource":{"resourceType":"DiagnosticReport","status":"final"}}
+]}

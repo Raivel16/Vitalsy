@@ -14,7 +14,7 @@ import { TodayBody } from './TodayBody';
 
 export function TodayScreen() {
   const router = useRouter();
-  const { life, online, refresh, syncHealth } = useLife();
+  const { life, online, refresh, syncHealth, hasSession } = useLife();
   const user = life.currentUser();
   const [manualOpen, setManualOpen] = useState(false);
   const [kind, setKind] = useState<'heart_rate' | 'spo2'>('heart_rate');
@@ -40,7 +40,7 @@ export function TodayScreen() {
         onProfilePress={() => router.push('/perfil')}
         onStatusPress={() => router.push('/hoy/avisos')}
         palette={aire}
-        status={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt)}
+        status={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt, hasSession)}
       />
       {syncMessage ? <Banner message={syncMessage} palette={aire} tone={syncMessage.includes('No ') || syncMessage.includes('no ') ? 'warning' : 'info'} /> : null}
       <TodayBody
@@ -57,7 +57,7 @@ export function TodayScreen() {
         onOpenNotices={() => router.push('/hoy/avisos')}
         onSync={() => void syncHealth().then((message) => setSyncMessage(message))}
         snapshot={snapshot}
-        syncLabel={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt)}
+        syncLabel={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt, hasSession)}
       />
       <Modal animationType="slide" transparent visible={manualOpen}>
         <View style={styles.modal}>

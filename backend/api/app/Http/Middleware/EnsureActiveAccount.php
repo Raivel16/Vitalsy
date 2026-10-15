@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,9 @@ class EnsureActiveAccount
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+        if ($user !== null && ! $user instanceof User) {
+            return response()->json(['message' => 'No tiene permiso para esta acción.'], 403);
+        }
         if ($user !== null && $user->is_active === false) {
             Auth::guard('web')->logout();
 

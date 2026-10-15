@@ -11,7 +11,9 @@ abstract class TestCase extends BaseTestCase
     public function createApplication()
     {
         // Docker inyecta DB_*=pgsql; sin forzar SQLite, RefreshDatabase borra la BD real.
-        $sqlite = dirname(__DIR__).DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'testing.sqlite';
+        // VITALSY_TEST_SQLITE permite aislar la BD de pruebas cuando varias ejecuciones corren a la vez.
+        $sqlite = getenv('VITALSY_TEST_SQLITE')
+            ?: dirname(__DIR__).DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'testing.sqlite';
         if (! file_exists($sqlite)) {
             touch($sqlite);
         }

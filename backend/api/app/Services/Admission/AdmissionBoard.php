@@ -158,7 +158,7 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = AdmissionEncounter::query()->where('order_number', $orderNumber)->first();
         if ($encounter) {
-            $payload = $encounter->clinical_payload ?? [];
+            $payload = $encounter->readablePayload();
 
             return [
                 'orderNumber' => $encounter->order_number,
@@ -416,7 +416,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $payload['consent'] = $consent;
         $encounter->clinical_payload = $payload;
         $encounter->save();
@@ -432,7 +432,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $payload['referral'] = [
             ...$referral,
             'status' => 'derivado',
@@ -457,7 +457,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $payload[$key] = $value;
         $encounter->clinical_payload = $payload;
         if ($key === 'relocation') {
@@ -474,7 +474,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $assessment = $payload['assessment'] ?? null;
         $vitals = $payload['vitals'] ?? null;
         $reconciliation = $payload['reconciliation'] ?? null;
@@ -508,7 +508,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $orders = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
         $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : [];
         $vitals = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : [];
@@ -560,7 +560,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $existing = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
         if (($existing['status'] ?? '') === 'firmado') {
             throw new AdmissionBoardException('Las indicaciones ya fueron firmadas.', 422);
@@ -585,7 +585,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $existing = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
         $rawItems = $signature['items'] ?? null;
         $items = $this->normalizeOrderItems(is_array($rawItems) ? $rawItems : ($existing['items'] ?? []));
@@ -773,7 +773,23 @@ class AdmissionBoard
         }
 
         $waiting = $encounter->waiting_reason !== null;
-        $payload = $encounter->clinical_payload ?? [];
+        // RNF-06: un payload ilegible (lectura degradada) jamas se presenta como "sin datos".
+        $unreadable = $encounter->payloadUnreadable();
+        $payload = $unreadable ? [] : $encounter->readablePayload();
+        $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
+        $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : null;
+        $allergies = ($unreadable || $assessment === null || ! is_array($assessment['allergies'] ?? null))
+            ? null
+            : array_values(array_filter($assessment['allergies'], fn ($item) => is_string($item) && trim($item) !== ''));
+        $medications = null;
+        if (! $unreadable && $reconciliation !== null) {
+            $medications = [];
+            foreach ($reconciliation['medications'] ?? [] as $item) {
+                if (is_array($item) && trim((string) ($item['name'] ?? '')) !== '') {
+                    $medications[] = trim($item['name'].' '.($item['dose'] ?? '').' '.($item['frequency'] ?? ''));
+                }
+            }
+        }
         $referral = is_array($payload['referral'] ?? null) ? $payload['referral'] : null;
         $currentIndex = array_search($encounter->current_step === 'derivacion' ? 'cobertura' : $encounter->current_step, self::FLOW_STEPS, true);
         if ($currentIndex === false) {
@@ -825,7 +841,11 @@ class AdmissionBoard
             'currentStepLabel' => $waiting ? 'Esperar regularización de cobertura' : $step['label'],
             'nextRole' => $waiting || $encounter->current_step === 'cerrado' ? null : $step['role'],
             'statusLabel' => $waiting ? 'En trámite de cobertura' : $step['status'],
+            'unreadable' => $unreadable,
             'clinical' => [
+                'unreadable' => $unreadable,
+                'allergies' => $allergies,
+                'medications' => $medications,
                 'filiation' => is_array($payload['filiation'] ?? null) ? $payload['filiation'] : null,
                 'consent' => is_array($payload['consent'] ?? null) ? $payload['consent'] : null,
             ],

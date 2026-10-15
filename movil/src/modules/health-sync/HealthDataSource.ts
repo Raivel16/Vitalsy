@@ -7,12 +7,21 @@ export type HealthStatus = {
   message: string;
 };
 
+export type HealthReadResult = {
+  samples: BiometricSample[];
+  message: string | null;
+  /** true cuando la lectura falló (no es lo mismo que «sin datos»): quien lee no avanza su marca de lectura. */
+  failed?: boolean;
+};
+
 export interface HealthDataSource {
   readonly name: string;
   availability(): Promise<HealthStatus>;
-  requestAccess(): Promise<{ granted: boolean; message: string }>;
-  readRange(from: Date, to: Date): Promise<{ samples: BiometricSample[]; message: string | null }>;
-  readGranted?(from: Date, to: Date): Promise<{ samples: BiometricSample[]; message: string | null }>;
+  /** `includeBackground`: pide además el permiso de lectura en segundo plano (solo una vez por cuenta; lo decide quien llama). */
+  requestAccess(options?: { includeBackground?: boolean }): Promise<{ granted: boolean; message: string }>;
+  readRange(from: Date, to: Date): Promise<HealthReadResult>;
+  /** Lee sin pedir permisos (apta para segundo plano, donde no se puede mostrar un diálogo). */
+  readGranted?(from: Date, to: Date): Promise<HealthReadResult>;
 }
 
 export class UnavailableHealthSource implements HealthDataSource {
@@ -29,7 +38,7 @@ export class UnavailableHealthSource implements HealthDataSource {
     return Promise.resolve({ granted: false, message: this.message });
   }
 
-  readRange(): Promise<{ samples: BiometricSample[]; message: string | null }> {
+  readRange(): Promise<HealthReadResult> {
     return Promise.resolve({ samples: [], message: this.message });
   }
 }

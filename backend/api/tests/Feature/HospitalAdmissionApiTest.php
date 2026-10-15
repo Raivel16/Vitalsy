@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
+use App\Models\PrescriptionItem;
 use App\Models\User;
 use App\Models\VitalSignReading;
 use App\Services\Admission\AdmissionBoard;
@@ -88,6 +89,27 @@ class HospitalAdmissionApiTest extends TestCase
             'signerName' => 'Rosa Quispe',
             'accepted' => true,
         ])->assertCreated()->assertJsonPath('consent.status', 'firmado');
+    }
+
+    public function test_consent_stores_life_user_flag(): void
+    {
+        $this->asRole('admision');
+        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
+            'signerName' => 'Rosa Quispe',
+            'accepted' => true,
+            'lifeUser' => true,
+        ])->assertCreated();
+
+        $payload = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first()->clinical_payload;
+        $this->assertTrue($payload['consent']['lifeUser']);
+
+        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+            'encounterId' => 'ENC-0001',
+            'signerName' => 'Rosa Quispe',
+            'accepted' => true,
+            'lifeUser' => 'tal vez',
+        ])->assertStatus(422);
     }
 
     public function test_referral_phone_rejects_letters(): void
@@ -469,15 +491,11 @@ class HospitalAdmissionApiTest extends TestCase
             'encounter_id' => 'ENC-BPMH',
             'status' => 'activo',
         ]);
-        $this->assertDatabaseHas('prescription_items', [
-            'drug_name' => 'Losartán',
-            'dose' => '50 mg',
-            'route' => 'oral',
-            'frequency' => 'cada 8 horas',
-        ]);
-        $this->assertDatabaseMissing('prescription_items', [
-            'drug_name' => 'Reposo relativo',
-        ]);
+        // RNF-06: drug_name/dose/route/frequency van cifrados; se verifica por el modelo.
+        $items = PrescriptionItem::query()->get();
+        $this->assertTrue($items->contains(fn ($i) => $i->drug_name === 'Losartán'
+            && $i->dose === '50 mg' && $i->route === 'oral' && $i->frequency === 'cada 8 horas'));
+        $this->assertFalse($items->contains(fn ($i) => $i->drug_name === 'Reposo relativo'));
 
         $this->asRole('enfermera_piso');
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-BPMH/emar')

@@ -1,0 +1,29 @@
+{
+  "info": {
+    "_postman_id": "vitalsy-life-integracion",
+    "name": "Vitalsy — Integración Life (RF-89 a RF-98)",
+    "description": "Recorrido Clinical-Life. Ciudadano: Bearer token de registro/login (habilidad life). Personal: cookies Sanctum (CSRF + login + X-XSRF-TOKEN) como en la colección del Módulo 2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "encounterId", "value": "ENC-HOSP-0001" },
+    { "key": "lifeToken", "value": "" },
+    { "key": "linkCode", "value": "VL-ABCD-2345" },
+    { "key": "planCode", "value": "VLA-XXXXXXXX" },
+    { "key": "xsrfToken", "value": "" }
+  ],
+  "item": [
+    { "name": "Life · registro", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/auth/register", "body": { "mode": "raw", "raw": "{\"name\":\"Ana Rojas\",\"email\":\"ana@correo.pe\",\"password\":\"Clave-segura-9\"}" } } },
+    { "name": "Life · login", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/auth/login", "body": { "mode": "raw", "raw": "{\"email\":\"ana@correo.pe\",\"password\":\"Clave-segura-9\"}" } } },
+    { "name": "Life · consentimiento", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{lifeToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/consent", "body": { "mode": "raw", "raw": "{\"sharingEnabled\":true}" } } },
+    { "name": "Life · sync", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{lifeToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/sync", "body": { "mode": "raw", "raw": "{\"items\":[{\"id\":\"bio-1\",\"kind\":\"biometrics\",\"status\":\"pending\",\"body\":\"[{\\\"id\\\":\\\"hr-1\\\",\\\"kind\\\":\\\"heart_rate\\\",\\\"value\\\":72,\\\"unit\\\":\\\"bpm\\\",\\\"startedAt\\\":\\\"2026-10-10T08:00:00Z\\\",\\\"endedAt\\\":\\\"2026-10-10T08:01:00Z\\\",\\\"origin\\\":\\\"health_connect\\\"}]\"}]}" } } },
+    { "name": "Life · código de vinculación", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{lifeToken}}" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/link-codes" } },
+    { "name": "Life · avisos", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{lifeToken}}" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/notices" } },
+    { "name": "Life · reclamar plan de alta", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{lifeToken}}" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/life/discharge-plans/{{planCode}}" } },
+    { "name": "Admisión · importar línea base (rol admision)", "request": { "method": "POST", "header": [{ "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/hospital-admission/life-links", "body": { "mode": "raw", "raw": "{\"encounterId\":\"{{encounterId}}\",\"code\":\"{{linkCode}}\"}" } } },
+    { "name": "Admisión · leer línea base", "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/hospital-admission/encounters/{{encounterId}}/life-baseline" } },
+    { "name": "Alta · emitir plan Life (enfermera_piso)", "request": { "method": "POST", "header": [{ "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/discharge/encounters/{{encounterId}}/life-plan", "body": { "mode": "raw", "raw": "{\"mode\":\"usuario\"}" } } },
+    { "name": "Alta · salida efectiva (custodia del plan)", "request": { "method": "POST", "header": [{ "key": "X-XSRF-TOKEN", "value": "{{xsrfToken}}" }, { "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/discharge/encounters/{{encounterId}}/exit" } }
+  ]
+}

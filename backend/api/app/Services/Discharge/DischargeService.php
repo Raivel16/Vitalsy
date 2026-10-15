@@ -11,11 +11,13 @@ use App\Models\DischargeIndicationReceipt;
 use App\Models\DischargeOrder;
 use App\Models\EpicrisisDocument;
 use App\Models\ExitPass;
+use App\Models\LifeDischargePlan;
 use App\Models\NursingDischargeReport;
 use App\Models\PatientExit;
 use App\Models\PharmaDischargeReconciliation;
 use App\Models\SocialAssessment;
 use App\Models\User;
+use App\Services\Life\DischargeLifePlan;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DischargeService
@@ -45,9 +47,9 @@ class DischargeService
         return ['cases' => $cases];
     }
 
-    public function show(string $encounterId): array
+    public function show(string $encounterId, ?User $viewer = null): array
     {
-        return ['case' => $this->present($encounterId)];
+        return ['case' => $this->present($encounterId, $viewer)];
     }
 
     public function registerOrder(string $encounterId, User $user): array
@@ -185,7 +187,14 @@ class DischargeService
             throw new ClinicalRuleException('Genere primero el informe digital de alta de enfermería.');
         }
 
-        DischargeIndicationReceipt::query()->updateOrCreate(
+        // RNF-07: el acuse de recibo es inmutable. Un reenvío idéntico es idempotente;
+        // uno con contenido distinto se rechaza en lugar de responder éxito sin cambios.
+        $existing = DischargeIndicationReceipt::query()->where('encounter_id', $encounterId)->first();
+        if ($existing && trim((string) $existing->received_by_name) !== trim((string) $data['receivedByName'])) {
+            throw new ClinicalRuleException('La recepción de indicaciones ya fue registrada y no puede modificarse.');
+        }
+
+        DischargeIndicationReceipt::query()->firstOrCreate(
             ['encounter_id' => $encounterId],
             [
                 'received_by_name' => $data['receivedByName'],
@@ -331,6 +340,11 @@ class DischargeService
                 'confirmed' => true,
                 'exitedAt' => optional($exit->exited_at)?->toIso8601String(),
             ] : null,
+            // Los códigos son secretos al portador: solo la enfermera de piso los ve completos.
+            'lifePlan' => app(DischargeLifePlan::class)->present(
+                LifeDischargePlan::query()->where('encounter_id', $encounterId)->first(),
+                $viewer?->role === 'enfermera_piso',
+            ),
             'administered' => [],
         ];
     }

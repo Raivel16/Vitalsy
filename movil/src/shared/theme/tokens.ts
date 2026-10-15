@@ -46,6 +46,14 @@ export const chalk: Palette = {
   success: '#2E7D52',
 };
 
+/** Colores del wordmark «Vitalsy Life» (iguales a LifeWordmark de la web). */
+export const brand = {
+  word: '#1B2228',
+  pillBg: '#E6F4F3',
+  pillText: '#1F6B69',
+  canvas: '#FAF9F6',
+} as const;
+
 export const font = {
   regular: 'PlusJakartaSans_400Regular',
   medium: 'PlusJakartaSans_500Medium',

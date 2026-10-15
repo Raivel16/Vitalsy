@@ -15,7 +15,7 @@
     "android": {
       "package": "life.vitalsy.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4F3",
+        "backgroundColor": "#FAF9F6",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -46,8 +46,25 @@
         }
       ],
       "react-native-health-connect",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Vitalsy Life lee tus signos vitales para comparar tus lecturas con tu rango personal. Nunca escribe en Salud.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ],
       "./plugins/withHealthConnectPermissions",
-      "expo-asset"
+      "expo-background-task",
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 320,
+          "backgroundColor": "#FAF9F6"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

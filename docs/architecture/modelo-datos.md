@@ -114,6 +114,23 @@ El Kardex y la ficha digital siguen apoyados en `admission_encounters.clinical_p
 
 ---
 
+## Integración Vitalsy Life (RF-89–98)
+
+Contrato en [contrato-clinical-life.md](contrato-clinical-life.md). `life_accounts` es una identidad ciudadana separada de `users` (sin `role`). `encounter_id` sigue la convención sin FK.
+
+| Tabla | Contenido | RF |
+|-------|-----------|----|
+| `life_accounts` | Cuenta ciudadana: `name`, `email` único, `password` (hash) | RF-89 |
+| `life_biometric_samples` | Lecturas sincronizadas: `life_account_id` (FK, cascade), `client_id` (64), `kind` (24), `value` decimal(8,2), `unit` (16), `started_at`, `ended_at`, `origin` (24); único `(life_account_id, client_id)` | RF-89, RF-92 |
+| `life_consents` | Consentimiento de compartición: `life_account_id` único (FK, cascade), `sharing_enabled` (default false), `revoked_at` null | RF-93 |
+| `life_link_codes` | Código de vinculación: `life_account_id` (FK, cascade), `code` (16) único, `expires_at`, `consumed_at` null, `consumed_encounter_id` indexado null | RF-94 |
+| `life_baseline_imports` | Línea de base importada: `encounter_id` indexado, `life_account_id` (FK), `baseline` json, `imported_by` (FK `users`, nullOnDelete), `imported_at` | RF-95 |
+| `life_discharge_plans` | Plan de alta: `encounter_id` único, `mode` (16), `code` (20) único null, `invitation_code` (20) único null, `payload` json, `valid_until` date, `status` (16, default `pendiente`: pendiente / activo / reclamado), `claimed_by_account_id` (FK `life_accounts`, nullOnDelete), `claimed_at`, `custody_transferred_at`, `created_by` (FK `users`, nullOnDelete) | RF-96–98 |
+
+Migraciones: `2026_10_12_100000_create_life_tables.php`, `2026_10_13_100000_unique_life_baseline_import_per_encounter.php` (una importación por ingreso) y `2026_10_14_100000_widen_clinical_columns_for_encryption.php` (campos cifrados en reposo).
+
+---
+
 ## Diagrama lógico (resumen ER)
 
 ```

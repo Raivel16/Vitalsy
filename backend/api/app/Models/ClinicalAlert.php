@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
+use App\Observers\ClinicalAlertObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(ClinicalAlertObserver::class)]
 class ClinicalAlert extends Model
 {
     public const STATUS_OPEN = 'abierta';
@@ -64,6 +68,8 @@ class ClinicalAlert extends Model
     protected function casts(): array
     {
         return [
+            'closure_note' => EncryptedText::class,
+            'message' => EncryptedText::class,
             'generated_at' => 'datetime',
             'acknowledge_due_at' => 'datetime',
             'follow_up_due_at' => 'datetime',

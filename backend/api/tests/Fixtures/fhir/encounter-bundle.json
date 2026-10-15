@@ -1,0 +1,1 @@
+{"resourceType":"Bundle","type":"searchset","total":1,"entry":[{"resource":{"resourceType":"Encounter","id":"enc-77","identifier":[{"system":"urn:vitalsy:encounter","value":"ENC-HOSP-0001"}],"status":"in-progress"}}]}

@@ -1436,21 +1436,31 @@ a.stepper-label:hover {
   gap: 0.75rem;
 }
 .life-panel-head > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-.life-panel-icon {
-  width: 2rem;
-  height: 2rem;
-  margin: 0;
   display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--navy);
-  color: #fff;
+  gap: 0.2rem;
+  min-width: 0;
 }
-.life-panel h3 { margin: 0; font-size: 16px; }
+.life-wordmark {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.life-wordmark-word {
+  color: #1b2228;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.life-wordmark-pill {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #e6f4f3;
+  color: #1f6b69;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.life-panel h3 { margin: 0; font-size: 18px; }
 .life-panel-head p { margin: 0; color: var(--muted); font-size: 13px; }
 .sheet-surface .form-actions-bar {
   justify-content: space-between;

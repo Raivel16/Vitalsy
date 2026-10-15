@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdmissionEncounter;
+use App\Models\LifeBaselineImport;
 use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
@@ -12,6 +13,7 @@ use App\Services\Clinical\MorseFallScale;
 use App\Services\Clinical\News2Calculator;
 use App\Services\InpatientCare\CpoeService;
 use App\Services\InpatientCare\VitalSignsMonitoring;
+use App\Services\Life\LifeLinking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -130,14 +132,33 @@ class HospitalAdmissionController extends Controller
             'signerName' => ['required', 'string'],
             'accepted' => ['accepted'],
             'relationship' => ['nullable', 'string'],
+            'lifeUser' => ['nullable', 'boolean'],
         ]);
 
         return $this->guard(fn () => response()->json([
             'consent' => $this->board->storeConsent($data['encounterId'], [
                 'signerName' => $data['signerName'],
                 'relationship' => $data['relationship'] ?? null,
+                'lifeUser' => (bool) ($data['lifeUser'] ?? false),
             ]),
         ], 201));
+    }
+
+    public function linkLife(Request $request, LifeLinking $linking): JsonResponse
+    {
+        $data = $request->validate([
+            'encounterId' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:32'],
+        ]);
+
+        return response()->json([
+            'link' => $linking->link($data['encounterId'], $data['code'], $request->user()),
+        ], 201);
+    }
+
+    public function showLifeBaseline(string $encounterId): JsonResponse
+    {
+        return response()->json(['baseline' => LifeBaselineImport::presentFor($encounterId)]);
     }
 
     public function showTransferOrder(string $orderNumber): JsonResponse
@@ -427,7 +448,7 @@ class HospitalAdmissionController extends Controller
         }
 
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
-        $reconciliation = $encounter?->clinical_payload['reconciliation'] ?? null;
+        $reconciliation = $encounter?->readablePayload()['reconciliation'] ?? null;
         if (! is_array($reconciliation) || ! empty($reconciliation['noHomeMedications'])) {
             return;
         }

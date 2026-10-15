@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Immutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AlertEscalation extends Model
 {
+    use Immutable;
+
     protected $fillable = [
         'alert_id',
         'to_role',

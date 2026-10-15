@@ -31,3 +31,17 @@ export function phoneNumberError(
   }
   return undefined;
 }
+
+export const LIFE_CODE_PATTERN = /^VL-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
+/** Normaliza el código de vinculación de Vitalsy Life (mayúsculas, sin espacios). */
+export function normalizeLinkCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+export function validateLinkCode(value: string): string | undefined {
+  const code = normalizeLinkCode(value);
+  if (!code) return "Ingrese o escanee el código de Vitalsy Life, o desmarque la opción.";
+  if (!LIFE_CODE_PATTERN.test(code)) return "Formato VL-XXXX-XXXX";
+  return undefined;
+}

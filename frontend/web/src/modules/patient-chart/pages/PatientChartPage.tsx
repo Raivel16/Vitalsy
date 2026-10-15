@@ -19,6 +19,8 @@ import {
 import { VitalSignsChartPanel } from "../../vital-monitoring/ui/VitalSignsChartPanel";
 import { eventLabel, STATUS_LABEL, type AlertStatus } from "../../clinical-alerts/domain/alert";
 import { cleanRiskLabel } from "../domain/riskLabel";
+import { LifeBaselineMetrics } from "../../admission/components/LifeBaselineMetrics";
+import type { LifeBaseline } from "../../admission/domain/lifeBaseline";
 
 type ChartPayload = {
   encounter: {
@@ -35,6 +37,8 @@ type ChartPayload = {
     createdAt: string | null;
   };
   admission?: {
+    /** RNF-06: el payload clínico no se pudo descifrar; alergias y medicación no están disponibles. */
+    unreadable?: boolean;
     deliverables?: unknown;
     assessment?: { chiefComplaint?: string; allergies?: string[]; history?: string } | null;
     vitalsBasal?: { summary?: string; news2Label?: string; news2Total?: number } | null;
@@ -53,6 +57,7 @@ type ChartPayload = {
     consent?: { signerName?: string } | null;
     kardexMedications?: string[];
   };
+  lifeBaseline?: LifeBaseline | null;
   activePrescription: {
     signedAt: string | null;
     items: { drugName: string; dose: string; route: string; frequency: string; drugBarcode?: string }[];
@@ -88,7 +93,8 @@ const TABS: { id: ChartTab; label: string; icon: typeof IconNotes }[] = [
   { id: "alertas", label: "Alertas", icon: IconBellRinging },
 ];
 
-function hasAdmissionContent(admission: ChartPayload["admission"]): boolean {
+function hasAdmissionContent(admission: ChartPayload["admission"], lifeBaseline?: LifeBaseline | null): boolean {
+  if (lifeBaseline && lifeBaseline.metrics.length > 0) return true;
   if (!admission) return false;
   return Boolean(
     admission.assessment
@@ -225,10 +231,23 @@ export function PatientChartPage() {
           aria-label="Admisión"
         >
           <h3>Admisión y recepción</h3>
-          {!hasAdmissionContent(admission) ? (
+          {admission?.unreadable ? (
+            <Feedback tone="error">No disponible: los datos clínicos de admisión (alergias, medicación y riesgos) no se pudieron leer. No asuma que el paciente no tiene alergias ni medicación; contacte a soporte.</Feedback>
+          ) : !hasAdmissionContent(admission, data.lifeBaseline) ? (
             <Feedback tone="info">Aún no hay registros clínicos de admisión en este expediente.</Feedback>
           ) : (
             <div className="stack">
+              {data.lifeBaseline && data.lifeBaseline.metrics.length > 0 ? (
+                <div>
+                  <p><strong>Línea de base Vitalsy Life</strong></p>
+                  <LifeBaselineMetrics metrics={data.lifeBaseline.metrics} />
+                  {data.lifeBaseline.importedAt ? (
+                    <p className="hint">Importada el {formatDateTime(data.lifeBaseline.importedAt)}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="hint">Aún no hay línea de base importada de Vitalsy Life.</p>
+              )}
               {admission?.assessment ? (
                 <dl className="facts">
                   <div><dt>Motivo / valoración</dt><dd>{admission.assessment.chiefComplaint ?? "—"}</dd></div>

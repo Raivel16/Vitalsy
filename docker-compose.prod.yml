@@ -2,14 +2,47 @@
 # Este archivo usa las mismas rutas de módulo que el laboratorio.
 
 services:
+  # RNF-05: unico punto de entrada; termina TLS 1.3 y redirige 80 -> 443.
+  # Certificados en ${TLS_CERTS_DIR:-./certs} (fullchain.pem, privkey.pem); no se versionan.
+  proxy:
+    image: nginx:1.27-alpine
+    restart: always
+    environment:
+      # Solo ${PUBLIC_DOMAIN} se sustituye en la plantilla; $host, $remote_addr... quedan intactos.
+      NGINX_ENVSUBST_FILTER: PUBLIC_DOMAIN
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?defina PUBLIC_DOMAIN (dominio publico, sin esquema)}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/prod.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/nginx/proxy-headers.conf:/etc/nginx/snippets/proxy-headers.conf:ro
+      - ${TLS_CERTS_DIR:-./certs}:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+      - reverb
+
   frontend:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile
+      # Vite incrusta VITE_* en el build: sin la clave el cliente en tiempo real no conecta.
+      args:
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST:-}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT:-}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
     environment:
       PORT: "4200"
-    ports:
-      - "4200:4200"
+    # RNF-11: reinicio automatico y sonda de salud.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4200/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Sin puertos publicados: solo el proxy TLS (443) es accesible desde fuera (RNF-05).
     depends_on:
       - backend
 
@@ -20,7 +53,9 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY}
+      # Sin APP_KEY los campos cifrados (RNF-06) serian ilegibles: el arranque debe fallar.
+      APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
+      APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
       PORT: "3000"
       DB_CONNECTION: pgsql
       DB_HOST: postgres
@@ -30,10 +65,57 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_NAME:-mi_db}
       DB_USERNAME: ${DB_USER:-postgres}
-    ports:
-      - "3000:3000"
+      # RNF-01 / RNF-05: Reverb detras del proxy TLS (wss) en /app; el backend publica por red interna.
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?defina REVERB_APP_SECRET}
+      REVERB_HOST: reverb
+      REVERB_PORT: "8080"
+      REVERB_SCHEME: http
+      # RNF-05: confiar en X-Forwarded-* solo del proxy (red interna de Docker).
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
+      SESSION_SECURE_COOKIE: "true"
+      APP_URL: ${APP_URL:?defina APP_URL con https://<dominio>}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:?defina SANCTUM_STATEFUL_DOMAINS con el dominio publico}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+    # RNF-11: /api/health valida el proceso y la conexion a PostgreSQL.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
       - postgres
+      - reverb
+
+  reverb:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      # Sin APP_KEY los campos cifrados (RNF-06) serian ilegibles: el arranque debe fallar.
+      APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
+      APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?defina REVERB_APP_SECRET}
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: "8080"
+      # Origenes permitidos del navegador (dominio publico con HTTPS).
+      REVERB_ALLOWED_ORIGINS: ${REVERB_ALLOWED_ORIGINS:?defina REVERB_ALLOWED_ORIGINS con el dominio https publico}
+    # Sin puerto publicado: solo el proxy TLS (wss://<dominio>/app) llega a este servicio.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine
@@ -44,6 +126,33 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mi_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RNF-13: respaldo automatico cada BACKUP_INTERVAL_HOURS (RPO <= 24 h; defecto 6 h).
+  # Ver docs/operacion/recuperacion-ante-desastres.md (cifrado en reposo y copia fuera del servidor).
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-mi_db}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-6}
+    volumes:
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+      - backup_data:/backups
+    entrypoint: ["sh", "-c", "while true; do /usr/local/bin/backup-db.sh || echo 'backup fallo' >&2; sleep $$((BACKUP_INTERVAL_HOURS * 3600)); done"]
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  backup_data:

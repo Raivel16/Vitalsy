@@ -40,3 +40,8 @@ Rol `administrador_accesos`. Una cuenta desactivada no inicia sesión y pierde s
 | apoyo RF-78–88 | `GET /api/v1/staff/members?role=` — personal asistencial activo (`id, name, role, isActive`; `email` solo para jefatura y supervisora) |
 | RF-81 | `GET /api/v1/staff/handover/candidates?shiftDate=` — enfermeras a las que la persona puede relevar ahora (misma regla que la firma) |
 | RF-78 | `GET /api/v1/staff/shift-plans` (últimos 12 meses) · `GET /api/v1/staff/shift-plans/{yyyy-mm}` (nombres, publicador y retenes) |
+
+
+## Integración Vitalsy Life (RF-89–98)
+
+Colección: [`yaak-vitalsy-life.postman_collection.json`](./yaak-vitalsy-life.postman_collection.json). Las rutas `life/*` usan `Authorization: Bearer` con el token de registro o login (variable `lifeToken`); admisión y alta usan la sesión de personal (`admision`, `enfermera_piso`). Contrato: `docs/architecture/contrato-clinical-life.md`.
