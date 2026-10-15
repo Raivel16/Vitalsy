@@ -12,9 +12,16 @@ import { useLife } from '../../life/LifeProvider';
 import { REVOKE_PENDING_MESSAGE } from '../../life/consentSync';
 import { activeLinkingCode, linkCodeExpiryLabel } from '../domain/consent';
 
+function toggleTone(result: { ok: boolean; status?: string }): 'info' | 'warning' | 'danger' {
+  if (!result.ok) {
+    return 'danger';
+  }
+  return result.status === 'pending' ? 'warning' : 'info';
+}
+
 export function PrivacyScreen() {
   const router = useRouter();
-  const { life, refresh, changeSharing, issueLinkCode } = useLife();
+  const { life, changeSharing, issueLinkCode } = useLife();
   const consent = life.state.consent;
   const revokePending = life.state.consentRevokePending;
   const [message, setMessage] = useState<{ text: string; tone: 'info' | 'warning' | 'danger' } | null>(null);
@@ -24,7 +31,7 @@ export function PrivacyScreen() {
     setBusy('toggle');
     try {
       const result = await changeSharing(enabled);
-      setMessage({ text: result.message, tone: result.ok ? (result.status === 'pending' ? 'warning' : 'info') : 'danger' });
+      setMessage({ text: result.message, tone: toggleTone(result) });
     } finally {
       setBusy(null);
     }
