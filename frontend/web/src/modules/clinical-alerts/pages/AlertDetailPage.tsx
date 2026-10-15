@@ -21,6 +21,7 @@ import {
   type ClinicalAlert,
 } from "../domain/alert";
 import { notifyAlertAcknowledged } from "../domain/inboxEvents";
+import { keyByContent } from "../../../shared/list/rowKeys";
 
 const NURSING_ROLES: ReadonlySet<string> = new Set(["enfermera_piso", "enfermera_supervisora"]);
 const MEDICAL_ROLES: ReadonlySet<string> = new Set(["medico_residente", "medico_tratante"]);
@@ -620,8 +621,8 @@ export function AlertDetailPage() {
         )}
         {escalations.length > 0 ? (
           <ul className="hint">
-            {escalations.map((item, index) => (
-              <li key={index}>Escalada a {item.toRole} · {formatDateTime(item.escalatedAt)} · {item.reason}</li>
+            {keyByContent(escalations, (item) => `${item.toRole}|${item.escalatedAt}|${item.reason}`).map(({ key, item }) => (
+              <li key={key}>Escalada a {item.toRole} · {formatDateTime(item.escalatedAt)} · {item.reason}</li>
             ))}
           </ul>
         ) : null}
