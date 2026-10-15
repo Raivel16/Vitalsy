@@ -12,7 +12,9 @@ import { useLife } from '../../life/LifeProvider';
 import { REVOKE_PENDING_MESSAGE } from '../../life/consentSync';
 import { activeLinkingCode, linkCodeExpiryLabel } from '../domain/consent';
 
-function toggleTone(result: { ok: boolean; status?: string }): 'info' | 'warning' | 'danger' {
+type Tone = 'info' | 'warning' | 'danger';
+
+function toggleTone(result: { ok: boolean; status?: string }): Tone {
   if (!result.ok) {
     return 'danger';
   }
