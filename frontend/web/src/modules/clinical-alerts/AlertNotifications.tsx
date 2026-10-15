@@ -23,6 +23,32 @@ function toastKicker(alert: ClinicalAlert): string {
  * La alerta permanece en la bandeja hasta disponer. A los 15 min sin atención
  * `needsSiren` vuelve a true y sirena/toast reaparecen.
  */
+async function confirmRead(
+  alertId: number,
+  confirming: Set<number>,
+  announced: Set<number>,
+  acknowledge: (alertId: number) => Promise<void>,
+) {
+  confirming.add(alertId);
+  alertSiren.stop();
+  try {
+    await acknowledge(alertId);
+    announced.delete(alertId);
+  } finally {
+    confirming.delete(alertId);
+  }
+}
+
+function releaseSirenTracking(announced: Set<number>, confirming: Set<number>, alerts: ClinicalAlert[]) {
+  for (const id of announced) {
+    if (confirming.has(id)) continue;
+    const alert = alerts.find((item) => item.id === id);
+    if (!alert?.needsSiren) {
+      announced.delete(id);
+    }
+  }
+}
+
 export function AlertNotifications({ enabled, userId }: Readonly<{ enabled: boolean; userId?: number | null }>) {
   const { alerts, acknowledge } = useAlertInbox(enabled, { userId });
   const { push, dismiss, clear } = useToast();
@@ -59,30 +85,12 @@ export function AlertNotifications({ enabled, userId }: Readonly<{ enabled: bool
         followUpHref: `/alertas/${alert.id}`,
         followUpLabel: "Ir al evento",
         dismissLabel: "Cerrar",
-        onConfirm: async () => {
-          confirming.current.add(alert.id);
-          alertSiren.stop();
-          try {
-            await acknowledge(alert.id);
-            announced.current.delete(alert.id);
-          } catch (error) {
-            confirming.current.delete(alert.id);
-            throw error;
-          } finally {
-            confirming.current.delete(alert.id);
-          }
-        },
+        onConfirm: () => confirmRead(alert.id, confirming.current, announced.current, acknowledge),
       });
     }
 
     // Liberar tracking de sirena; el toast de follow-up lo cierra el usuario.
-    for (const id of announced.current) {
-      if (confirming.current.has(id)) continue;
-      const alert = alerts.find((item) => item.id === id);
-      if (!alert?.needsSiren) {
-        announced.current.delete(id);
-      }
-    }
+    releaseSirenTracking(announced.current, confirming.current, alerts);
 
     // Si la alerta salió del inbox (cerrada), retirar el aviso.
     for (const id of toastAlertIds.current) {
