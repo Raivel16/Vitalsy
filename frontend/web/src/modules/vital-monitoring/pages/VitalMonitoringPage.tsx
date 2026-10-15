@@ -144,7 +144,7 @@ export function VitalMonitoringPage() {
       </p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
-      {news2Label ? <p role="status" className={`news news-${news2Label.includes(" 0") ? "green" : "yellow"}`}>{news2Label}</p> : null}
+      {news2Label ? <output className={`news news-${news2Label.includes(" 0") ? "green" : "yellow"}`}>{news2Label}</output> : null}
       <form className="stack clinical-panel" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
           <UnitField id="rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={fields.respiratoryRate} onChange={(e) => update("respiratoryRate", e.target.value)} error={visibleErrors.respiratoryRate} />

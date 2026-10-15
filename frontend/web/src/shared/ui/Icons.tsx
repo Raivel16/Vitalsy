@@ -4,7 +4,7 @@ type IconProps = { title?: string };
 
 function Svg({ children, title }: IconProps & { children: ReactNode }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden={title ? undefined : true} role={title ? "img" : undefined} className="icon">
+    <svg viewBox="0 0 24 24" aria-hidden={title ? undefined : true} className="icon">
       {title ? <title>{title}</title> : null}
       {children}
     </svg>

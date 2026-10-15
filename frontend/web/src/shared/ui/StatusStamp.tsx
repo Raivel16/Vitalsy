@@ -15,9 +15,9 @@ export function StatusStamp({
 }>) {
   const text = label ?? `Cobertura ${status}`;
   return (
-    <p className={`stamp stamp-${status}`} role="status" aria-label={text}>
+    <output className={`stamp stamp-${status}`} aria-label={text}>
       <span aria-hidden="true">{ICONS[status]}</span>
       {text}
-    </p>
+    </output>
   );
 }

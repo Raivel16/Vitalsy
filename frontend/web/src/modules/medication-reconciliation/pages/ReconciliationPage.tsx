@@ -181,11 +181,11 @@ export function ReconciliationPage() {
           onChange={(event) => setAllergies(event.target.value)}
           hint="Puede dejarse vacío si no hay alergias."
         />
-        <p role="status" aria-label="Estado de conciliación">
+        <output aria-label="Estado de conciliación">
           <StatusPill tone={review.status === "validada" ? "success" : review.status === "con_observaciones" ? "warning" : "neutral"}>
             {review.label}
           </StatusPill>
-        </p>
+        </output>
         {review.alerts.map((alert) => (
           <p key={alert} className="nursing-banner nursing-banner-warn" role="alert">
             <IconAlertTriangle size={18} aria-hidden /> {alert}

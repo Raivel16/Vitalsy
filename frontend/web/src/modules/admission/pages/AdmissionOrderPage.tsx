@@ -127,7 +127,7 @@ export function AdmissionOrderPage() {
           <Button type="submit"><IconSearch size={16} /> Consultar orden</Button>
         </div>
       </form>
-      {loading ? <p role="status">Cargando orden de internamiento.</p> : null}
+      {loading ? <output>Cargando orden de internamiento.</output> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {order ? (

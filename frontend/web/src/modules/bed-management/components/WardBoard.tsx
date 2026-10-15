@@ -68,7 +68,7 @@ export function WardBoard({
   onAssign: (bed: Bed, ward: WardCensus) => void;
 }>) {
   if (wards.length === 0) {
-    return <p className="banner banner-info" role="status">No hay pabellones registrados en el catálogo de camas.</p>;
+    return <output className="banner banner-info">No hay pabellones registrados en el catálogo de camas.</output>;
   }
 
   return (

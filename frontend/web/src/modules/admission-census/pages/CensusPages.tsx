@@ -198,9 +198,9 @@ export function CensusPage() {
               </tbody>
             </table>
           <nav className="pagination" aria-label="Paginación del censo">
-            <p role="status">
+            <output>
               Página {meta.page} de {meta.lastPage}
-            </p>
+            </output>
             {meta.lastPage > 1 ? (
               <div className="pager-actions">
                 <Button

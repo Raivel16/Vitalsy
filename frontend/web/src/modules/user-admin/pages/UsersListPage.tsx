@@ -50,7 +50,7 @@ export function UsersListPage() {
       <Panel
         title="Cuentas"
         aside={
-          <div className="filter-row" role="group" aria-label="Filtrar por estado">
+          <fieldset className="filter-row" aria-label="Filtrar por estado">
             {FILTERS.map((filter) => (
               <Button
                 key={filter.id}
@@ -62,7 +62,7 @@ export function UsersListPage() {
                 {filter.label}
               </Button>
             ))}
-          </div>
+          </fieldset>
         }
       >
         <TextField

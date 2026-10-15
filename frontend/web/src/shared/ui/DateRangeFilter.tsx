@@ -18,7 +18,7 @@ type Props = {
 
 export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }: Readonly<Props>) {
   return (
-    <div className="date-range-filter" role="group" aria-label={label}>
+    <fieldset className="date-range-filter" aria-label={label}>
       <div className="date-range-presets">
         {PRESETS.map((preset) => (
           <button
@@ -54,7 +54,7 @@ export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }
           </label>
         </div>
       ) : null}
-    </div>
+    </fieldset>
   );
 }
 

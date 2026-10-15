@@ -292,9 +292,9 @@ export function VitalControlsPage() {
             </SelectField>
           ) : null}
           {preview ? (
-            <p role="status" className={`news news-${preview.visual}`}>
+            <output className={`news news-${preview.visual}`}>
               Vista previa NEWS2: {preview.total} · {preview.visualLabel}
-            </p>
+            </output>
           ) : null}
           <FormActions>
             <Button type="button" variant="quiet" onClick={() => setSelected(null)}>

@@ -437,5 +437,5 @@ function LifeQr({ value }: Readonly<{ value: string }>) {
   }, [value]);
 
   if (!markup) return <div className="ops-life-qr" aria-hidden="true" />;
-  return <div className="ops-life-qr" role="img" aria-label={`Código QR ${value}`} dangerouslySetInnerHTML={{ __html: markup }} />;
+  return <img className="ops-life-qr" alt={`Código QR ${value}`} src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`} />;
 }

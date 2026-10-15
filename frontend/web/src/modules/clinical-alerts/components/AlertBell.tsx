@@ -30,7 +30,7 @@ export function AlertBell({ alerts }: Readonly<{ alerts: ClinicalAlert[] }>) {
         {worklist > 0 ? <span className="bell-badge" aria-hidden>{worklist}</span> : null}
       </button>
       {open ? (
-        <div className="bell-panel" role="region" aria-label="Alertas pendientes">
+        <section className="bell-panel" aria-label="Alertas pendientes">
           {worklist === 0 ? (
             <p className="hint">No tiene alertas pendientes en este momento.</p>
           ) : (
@@ -50,7 +50,7 @@ export function AlertBell({ alerts }: Readonly<{ alerts: ClinicalAlert[] }>) {
               ))}
             </ul>
           )}
-        </div>
+        </section>
       ) : null}
     </div>
   );
