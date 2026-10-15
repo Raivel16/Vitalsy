@@ -292,11 +292,8 @@ class DischargeService
         return [
             'encounterId' => $encounterId,
             'patientName' => $encounter->patient_name,
-            'location' => trim(implode(', ', array_filter([
-                $encounter->room ? "Habitación {$encounter->room}" : null,
-                $encounter->bed ? "lecho {$encounter->bed}" : null,
-            ]))) ?: null,
-            'nextAction' => $this->nextAction($order, $epicrisis, $prescription, $social, $reconciliation, $nursing, $receipt, $account, $pass, $exit, $viewer),
+            'location' => $this->locationOf($encounter),
+            'nextAction' => $this->nextAction(array_column($deliverables, 'done', 'id'), $viewer?->role),
             'deliverables' => $deliverables,
             'order' => $order ? [
                 'status' => $order->status,
@@ -349,68 +346,72 @@ class DischargeService
         ];
     }
 
-    private function nextAction(
-        ?DischargeOrder $order,
-        ?EpicrisisDocument $epicrisis,
-        ?AmbulatoryPrescription $prescription,
-        ?SocialAssessment $social,
-        ?PharmaDischargeReconciliation $reconciliation,
-        ?NursingDischargeReport $nursing,
-        ?DischargeIndicationReceipt $receipt,
-        ?AccountVerification $account,
-        ?ExitPass $pass,
-        ?PatientExit $exit,
-        ?User $viewer,
-    ): ?string {
-        if ($exit) {
+    private const ROLE_CHECKLISTS = [
+        'trabajo_social' => ['social'],
+        'medico_residente' => ['order', 'epicrisis', 'prescriptions'],
+        'medico_tratante' => ['order', 'epicrisis', 'prescriptions'],
+        'enfermera_piso' => ['reconciliation', 'nursing', 'receipt'],
+    ];
+
+    /**
+     * Siguiente acción según el avance (banderas por entregable) y el rol de quien consulta.
+     *
+     * @param  array<string, bool>  $done
+     */
+    private function nextAction(array $done, ?string $role): ?string
+    {
+        if ($done['exit']) {
             return null;
         }
-        if ($pass) {
-            return match ($viewer?->role) {
+        if ($done['pass']) {
+            return match ($role) {
                 'enfermera_piso' => 'exit',
                 'camillero' => 'transfer',
                 default => 'await_exit',
             };
         }
-        if ($account?->status === 'conforme' && $nursing && $receipt && $social) {
+        if ($done['account'] && $done['nursing'] && $done['receipt'] && $done['social']) {
             return 'pass';
         }
-        if ($viewer?->role === 'trabajo_social' && ! $social) {
-            return 'social';
-        }
-        if ($viewer?->role === 'altas_caja') {
-            return $account?->status === 'conforme' ? 'pass' : 'account';
-        }
-        if (in_array($viewer?->role, ['medico_residente', 'medico_tratante'], true)) {
-            if (! $order) {
-                return 'order';
-            }
-            if (! $epicrisis) {
-                return 'epicrisis';
-            }
-            if (! $prescription) {
-                return 'prescriptions';
-            }
-        }
-        if ($viewer?->role === 'enfermera_piso') {
-            if (! $reconciliation) {
-                return 'reconciliation';
-            }
-            if (! $nursing) {
-                return 'nursing';
-            }
-            if (! $receipt) {
-                return 'receipt';
-            }
-        }
-        if (! $social) {
-            return 'social';
-        }
-        if (! $reconciliation) {
-            return 'reconciliation';
+
+        return $this->roleStep($done, $role)
+            ?? $this->firstMissing($done, ['social', 'reconciliation'])
+            ?? 'account';
+    }
+
+    /** @param  array<string, bool>  $done */
+    private function roleStep(array $done, ?string $role): ?string
+    {
+        if ($role === 'altas_caja') {
+            return $done['account'] ? 'pass' : 'account';
         }
 
-        return 'account';
+        return $this->firstMissing($done, self::ROLE_CHECKLISTS[$role ?? ''] ?? []);
+    }
+
+    /**
+     * @param  array<string, bool>  $done
+     * @param  list<string>  $keys
+     */
+    private function firstMissing(array $done, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            if (! $done[$key]) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    private function locationOf(AdmissionEncounter $encounter): ?string
+    {
+        $parts = array_filter([
+            $encounter->room ? "Habitación {$encounter->room}" : null,
+            $encounter->bed ? "lecho {$encounter->bed}" : null,
+        ]);
+
+        return trim(implode(', ', $parts)) ?: null;
     }
 
     private function assertReadyForPass(string $encounterId): void
