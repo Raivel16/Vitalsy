@@ -169,7 +169,7 @@ describe("consentimiento con Vitalsy Life (RF-06, RF-95)", () => {
     const before = fetchFn.mock.calls.length;
     await user.click(screen.getByRole("button", { name: /reintentar vinculación/i }));
     expect(field).toHaveAttribute("aria-invalid", "true");
-    expect(fetchFn.mock.calls.length).toBe(before);
+    expect(fetchFn.mock.calls).toHaveLength(before);
   });
 
   it("limpia el estado de vinculación al desmarcar la opción", async () => {
