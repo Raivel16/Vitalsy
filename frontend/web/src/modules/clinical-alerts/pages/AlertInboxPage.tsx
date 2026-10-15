@@ -79,7 +79,7 @@ export function AlertInboxPage() {
         <StatTile label="En bandeja" value={counts.todas} />
       </div>
 
-      <div className="filter-pills" role="group" aria-label="Filtrar alertas">
+      <fieldset className="filter-pills" aria-label="Filtrar alertas">
         <button type="button" className={`filter-pill${filter === "todas" ? " is-active" : ""}`} aria-pressed={filter === "todas"} onClick={() => setFilter("todas")}>
           Todas las alertas ({counts.todas})
         </button>
@@ -89,7 +89,7 @@ export function AlertInboxPage() {
         <button type="button" className={`filter-pill${filter === "seguimiento" ? " is-active" : ""}`} aria-pressed={filter === "seguimiento"} onClick={() => setFilter("seguimiento")}>
           En seguimiento ({counts.seguimiento})
         </button>
-      </div>
+      </fieldset>
 
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de la alerta">{notice}</Feedback> : null}

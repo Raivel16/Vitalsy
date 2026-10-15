@@ -195,7 +195,7 @@ export function DischargeBoardPage() {
         <Feedback tone="info">No hay hospitalizados que coincidan con la búsqueda.</Feedback>
       ) : null}
       <div className="ops-toolbar">
-        <div className="filter-pills" role="group" aria-label="Filtrar flujo por estado">
+        <fieldset className="filter-pills" aria-label="Filtrar flujo por estado">
           {(
             [
               ["todas", `Todas ${counts.todas}`],
@@ -214,7 +214,7 @@ export function DischargeBoardPage() {
               {label}
             </button>
           ))}
-        </div>
+        </fieldset>
       </div>
 
       {filtered.length === 0 ? (

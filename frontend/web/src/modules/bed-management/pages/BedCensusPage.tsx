@@ -135,7 +135,7 @@ export function BedCensusPage() {
 
       <BedKpiStrip totals={totals} />
 
-      <div className="filter-pills" role="group" aria-label="Filtrar pabellones">
+      <fieldset className="filter-pills" aria-label="Filtrar pabellones">
         <button type="button" className={`filter-pill${wardFilter === "todos" ? " is-active" : ""}`} aria-pressed={wardFilter === "todos"} onClick={() => setWardFilter("todos")}>
           Todos los pabellones
         </button>
@@ -150,7 +150,7 @@ export function BedCensusPage() {
             {ward.name}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       <div className="chip-row bed-legend" aria-label="Leyenda de estados">
         <StatusMark tone="available" />
