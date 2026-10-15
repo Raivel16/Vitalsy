@@ -128,9 +128,16 @@ class AlertWorkflow
         $reading = $this->vitals->storeManual($alert->encounter_id, $input, $user, activateAlerts: false);
         $total = (int) $reading['reading']['news2']['total'];
 
+        $severity = 'baja';
+        if ($total >= 7) {
+            $severity = 'alta';
+        } elseif ($total >= 1) {
+            $severity = 'media';
+        }
+
         $alert->update([
             'news2_total' => $total,
-            'severity' => $total >= 7 ? 'alta' : ($total >= 1 ? 'media' : 'baja'),
+            'severity' => $severity,
             'reassessed_at' => now(),
         ]);
 
