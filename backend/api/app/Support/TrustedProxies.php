@@ -31,16 +31,11 @@ final class TrustedProxies
     {
         return [
             implode('.', self::LOOPBACK),
-            ...array_map(self::cidr(...), [self::RFC1918_CLASS_A, self::RFC1918_CLASS_B, self::RFC1918_CLASS_C]),
+            ...array_map(
+                static fn (array $parts): string => implode('.', array_slice($parts, 0, 4)).'/'.$parts[4],
+                [self::RFC1918_CLASS_A, self::RFC1918_CLASS_B, self::RFC1918_CLASS_C],
+            ),
         ];
-    }
-
-    /** @param  array<int, int>  $parts octetos seguidos del prefijo */
-    private static function cidr(array $parts): string
-    {
-        $prefix = array_pop($parts);
-
-        return implode('.', $parts).'/'.$prefix;
     }
 
     /** @return array<int, string> */
