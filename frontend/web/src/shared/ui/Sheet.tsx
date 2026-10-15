@@ -30,13 +30,7 @@ export function Sheet({
   );
 
   const clinicClass = [
-    clinic === "board"
-      ? "clinic-sheet clinic-board"
-      : clinic === "file"
-        ? "clinic-sheet clinic-file"
-        : clinic === "form"
-          ? "clinic-sheet clinic-form"
-          : "",
+    clinic ? `clinic-sheet clinic-${clinic}` : "",
     className,
   ].filter(Boolean).join(" ");
 
