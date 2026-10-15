@@ -7,12 +7,12 @@ export function AppHeader({
   status,
   onStatusPress,
   onProfilePress,
-}: {
+}: Readonly<{
   palette: Palette;
   status: string;
   onStatusPress?: () => void;
   onProfilePress?: () => void;
-}) {
+}>) {
   return (
     <View style={styles.row}>
       <Wordmark />

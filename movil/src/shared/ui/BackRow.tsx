@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { font, type Palette } from '../theme/tokens';
 
-export function BackRow({ title, subtitle, palette, onBack }: { title: string; subtitle?: string; palette: Palette; onBack: () => void }) {
+export function BackRow({ title, subtitle, palette, onBack }: Readonly<{ title: string; subtitle?: string; palette: Palette; onBack: () => void }>) {
   return (
     <View style={styles.wrap}>
       <Pressable accessibilityRole="button" onPress={onBack} style={[styles.back, { backgroundColor: palette.soft }]}>

@@ -3,7 +3,7 @@ import { font, type Palette } from '../theme/tokens';
 
 type Tone = 'info' | 'danger' | 'warning';
 
-export function Banner({ message, palette, tone = 'info' }: { message: string; palette: Palette; tone?: Tone }) {
+export function Banner({ message, palette, tone = 'info' }: Readonly<{ message: string; palette: Palette; tone?: Tone }>) {
   const background = tone === 'danger' ? palette.dangerSoft : tone === 'warning' ? '#FEF3C7' : palette.soft;
   const color = tone === 'danger' ? palette.danger : tone === 'warning' ? palette.warning : palette.text;
   return (

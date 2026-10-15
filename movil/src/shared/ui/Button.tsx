@@ -10,7 +10,7 @@ type Props = {
   loading?: boolean;
 };
 
-export function Button({ label, onPress, palette, tone = 'primary', disabled, loading }: Props) {
+export function Button({ label, onPress, palette, tone = 'primary', disabled, loading }: Readonly<Props>) {
   const background = tone === 'primary' ? palette.accent : tone === 'soft' ? palette.soft : 'transparent';
   const color = tone === 'primary' ? palette.onAccent : palette.accent;
   return (

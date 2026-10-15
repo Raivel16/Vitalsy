@@ -49,11 +49,11 @@ export function LifeProvider({
   children,
   initial,
   persistence,
-}: {
+}: Readonly<{
   children: ReactNode;
   initial?: LifeSnapshot;
   persistence?: LifePersistence;
-}) {
+}>) {
   const [life, setLife] = useState(() => new LifeApp(initial ?? emptySnapshot(), { now: () => new Date(), random: randomHex, digest: sha256Hex }));
   const [ready, setReady] = useState(Boolean(initial || persistence));
   const [online, setOnline] = useState(true);

@@ -123,7 +123,7 @@ export function ActivatePlanScreen() {
   );
 }
 
-export function MedicationScreen({ id }: { id: string }) {
+export function MedicationScreen({ id }: Readonly<{ id: string }>) {
   const router = useRouter();
   const { life, refresh } = useLife();
   const medication = life.state.plan?.medications.find((item) => item.id === id);

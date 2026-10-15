@@ -7,11 +7,11 @@ export function Screen({
   palette,
   children,
   footer,
-}: {
+}: Readonly<{
   palette: Palette;
   children: ReactNode;
   footer?: ReactNode;
-}) {
+}>) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { backgroundColor: palette.canvas, paddingTop: insets.top }]}>

@@ -14,7 +14,7 @@ export function DevicesBody({
   message,
   onConnect,
   onSync,
-}: {
+}: Readonly<{
   status: HealthStatus;
   permission: 'unknown' | 'granted' | 'denied';
   pending: number;
@@ -23,7 +23,7 @@ export function DevicesBody({
   message: string | null;
   onConnect: () => void;
   onSync: () => void;
-}) {
+}>) {
   const denied = permission === 'denied' || status.state === 'error' || status.state === 'missing' || status.state === 'unavailable';
   return (
     <View style={styles.wrap}>

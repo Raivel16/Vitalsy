@@ -15,7 +15,7 @@ export function TodayBody({
   onDismissNudge,
   onManual,
   onSync,
-}: {
+}: Readonly<{
   name: string;
   dateLabel: string;
   snapshot: TodaySnapshot;
@@ -25,7 +25,7 @@ export function TodayBody({
   onDismissNudge: () => void;
   onManual: () => void;
   onSync: () => void;
-}) {
+}>) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.date}>{dateLabel}</Text>
