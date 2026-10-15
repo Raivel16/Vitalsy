@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -47,6 +47,134 @@ function doseStatusLabel(dose: Dose): string {
   if (isOverdue(dose)) return "Vencida";
   if (dose.status === "pendiente") return "Pendiente";
   return dose.status;
+}
+
+function ShiftLead({ patientName, shiftLabel }: Readonly<{ patientName?: string; shiftLabel: string }>) {
+  return (
+    <p className="lead">
+      Dosis del turno
+      {patientName ? ` para ${patientName}` : ""}
+      {shiftLabel ? (
+        <>
+          {" · "}
+          <strong>Turno {shiftLabel}</strong>
+        </>
+      ) : null}
+      . Verifique los cinco correctos antes de firmar.
+    </p>
+  );
+}
+
+function DiscrepancyCard({ message, cardRef }: Readonly<{ message: string; cardRef?: RefObject<HTMLElement | null> }>) {
+  return (
+    <aside ref={cardRef} className="state-card state-danger" role="alert">
+      <div>
+        <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
+        <p>{message}</p>
+      </div>
+    </aside>
+  );
+}
+
+function DoseRow({ dose, active, onSelect }: Readonly<{ dose: Dose; active: boolean; onSelect: () => void }>) {
+  const overdue = isOverdue(dose);
+  return (
+    <tr className={active ? "emar-row-active" : undefined}>
+      <td>
+        <div className="emar-drug">
+          {active ? <span className="emar-drug-bar" aria-hidden /> : null}
+          <div>
+            <strong>{dose.drugName}</strong>
+            {overdue ? <StatusPill tone="warning">Prioritaria</StatusPill> : null}
+          </div>
+        </div>
+      </td>
+      <td>{dose.dose}</td>
+      <td><span className="emar-route">{dose.route}</span></td>
+      <td className="tabular-nums">{timeLabel(dose.scheduledAt)}</td>
+      <td>
+        <div className="emar-status">
+          <StatusPill tone={doseTone(dose)}>{doseStatusLabel(dose)}</StatusPill>
+          {dose.status === "administrado" && dose.administeredAt ? (
+            <span className="hint">{timeLabel(dose.administeredAt)}</span>
+          ) : null}
+          {dose.status === "pendiente" && !overdue ? (
+            <span className="hint">Dosis en ventana</span>
+          ) : null}
+        </div>
+      </td>
+      <td className="col-action">
+        {dose.status === "pendiente" ? (
+          <Button type="button" variant={active || overdue ? "primary" : "quiet"} onClick={onSelect}>
+            {overdue ? "Justificar / Administrar" : "Verificar y administrar"}
+          </Button>
+        ) : (
+          <span className="hint">Registrada</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function ScanCard({
+  id,
+  label,
+  scanLabel,
+  hint,
+  value,
+  ok,
+  onChange,
+}: Readonly<{
+  id: string;
+  label: string;
+  scanLabel: string;
+  hint: string;
+  value: string;
+  ok: boolean;
+  onChange: (value: string) => void;
+}>) {
+  return (
+    <div className={`emar-scan-card${ok ? " is-ok" : ""}`}>
+      <TextField id={id} label={label} value={value} onChange={(e) => onChange(e.target.value)} required />
+      <BarcodeScanner label={scanLabel} onScan={(code) => onChange(code)} />
+      {ok ? <p className="emar-ok">Validado</p> : <p className="hint">{hint}</p>}
+    </div>
+  );
+}
+
+function FiveCorrects({
+  selected,
+  patientName,
+  patientOk,
+  drugOk,
+}: Readonly<{ selected: Dose; patientName?: string; patientOk: boolean; drugOk: boolean }>) {
+  return (
+    <div className="emar-five" aria-label="Auditoría de los 5 correctos">
+      <p className="kicker">Auditoría de los 5 correctos (OMS / JCI)</p>
+      <ul>
+        <li className={patientOk ? "is-ok" : undefined}>
+          <strong>1. Paciente</strong>
+          <span>{patientName ?? "Pendiente"}</span>
+        </li>
+        <li className={drugOk ? "is-ok" : undefined}>
+          <strong>2. Fármaco</strong>
+          <span>{selected.drugName}</span>
+        </li>
+        <li className={drugOk ? "is-ok" : undefined}>
+          <strong>3. Dosis</strong>
+          <span>{selected.dose}</span>
+        </li>
+        <li className={drugOk ? "is-ok" : undefined}>
+          <strong>4. Vía</strong>
+          <span>{selected.route}</span>
+        </li>
+        <li className={patientOk && drugOk ? "is-ok" : undefined}>
+          <strong>5. Hora</strong>
+          <span>{timeLabel(selected.scheduledAt)}</span>
+        </li>
+      </ul>
+    </div>
+  );
 }
 
 export function EmarPage() {
@@ -108,6 +236,14 @@ export function EmarPage() {
     [doses],
   );
 
+  function selectDose(dose: Dose) {
+    setSelected(dose);
+    setPatientBarcode("");
+    setDrugBarcode("");
+    setError("");
+    setNotice("");
+  }
+
   async function onAdminister(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso || !selected) return;
@@ -150,26 +286,9 @@ export function EmarPage() {
         </aside>
       )}
     >
-      <p className="lead">
-        Dosis del turno
-        {encounter ? ` para ${encounter.patientName}` : ""}
-        {shiftLabel ? (
-          <>
-            {" · "}
-            <strong>Turno {shiftLabel}</strong>
-          </>
-        ) : null}
-        . Verifique los cinco correctos antes de firmar.
-      </p>
+      <ShiftLead patientName={encounter?.patientName} shiftLabel={shiftLabel} />
 
-      {error && !selected ? (
-        <aside className="state-card state-danger" role="alert">
-          <div>
-            <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
-            <p>{error}</p>
-          </div>
-        </aside>
-      ) : null}
+      {error && !selected ? <DiscrepancyCard message={error} /> : null}
       {notice ? (
         <output className="state-card state-success" aria-label="Resultado de administración">
           <div>
@@ -211,56 +330,9 @@ export function EmarPage() {
                 </tr>
               </thead>
               <tbody>
-                {doses.map((dose) => {
-                  const active = selected?.id === dose.id;
-                  const overdue = isOverdue(dose);
-                  return (
-                    <tr key={dose.id} className={active ? "emar-row-active" : undefined}>
-                      <td>
-                        <div className="emar-drug">
-                          {active ? <span className="emar-drug-bar" aria-hidden /> : null}
-                          <div>
-                            <strong>{dose.drugName}</strong>
-                            {overdue ? <StatusPill tone="warning">Prioritaria</StatusPill> : null}
-                          </div>
-                        </div>
-                      </td>
-                      <td>{dose.dose}</td>
-                      <td><span className="emar-route">{dose.route}</span></td>
-                      <td className="tabular-nums">{timeLabel(dose.scheduledAt)}</td>
-                      <td>
-                        <div className="emar-status">
-                          <StatusPill tone={doseTone(dose)}>{doseStatusLabel(dose)}</StatusPill>
-                          {dose.status === "administrado" && dose.administeredAt ? (
-                            <span className="hint">{timeLabel(dose.administeredAt)}</span>
-                          ) : null}
-                          {dose.status === "pendiente" && !overdue ? (
-                            <span className="hint">Dosis en ventana</span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="col-action">
-                        {dose.status === "pendiente" ? (
-                          <Button
-                            type="button"
-                            variant={active || overdue ? "primary" : "quiet"}
-                            onClick={() => {
-                              setSelected(dose);
-                              setPatientBarcode("");
-                              setDrugBarcode("");
-                              setError("");
-                              setNotice("");
-                            }}
-                          >
-                            {overdue ? "Justificar / Administrar" : "Verificar y administrar"}
-                          </Button>
-                        ) : (
-                          <span className="hint">Registrada</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {doses.map((dose) => (
+                  <DoseRow key={dose.id} dose={dose} active={selected?.id === dose.id} onSelect={() => selectDose(dose)} />
+                ))}
               </tbody>
             </table>
           </div>
@@ -285,55 +357,27 @@ export function EmarPage() {
           </header>
 
           <div className="emar-scan-grid">
-            <div className={`emar-scan-card${patientOk ? " is-ok" : ""}`}>
-              <TextField
-                id="patient-bc"
-                label="Código paciente (brazalete)"
-                value={patientBarcode}
-                onChange={(e) => setPatientBarcode(e.target.value)}
-                required
-              />
-              <BarcodeScanner label="Escanear brazalete" onScan={(code) => setPatientBarcode(code)} />
-              {patientOk ? <p className="emar-ok">Validado</p> : <p className="hint">Escanee o escriba el código de la pulsera</p>}
-            </div>
-            <div className={`emar-scan-card${drugOk ? " is-ok" : ""}`}>
-              <TextField
-                id="drug-bc"
-                label="Código medicamento"
-                value={drugBarcode}
-                onChange={(e) => setDrugBarcode(e.target.value)}
-                required
-              />
-              <BarcodeScanner label="Escanear medicamento" onScan={(code) => setDrugBarcode(code)} />
-              {drugOk ? <p className="emar-ok">Validado</p> : <p className="hint">Escanee o escriba el código del fármaco</p>}
-            </div>
+            <ScanCard
+              id="patient-bc"
+              label="Código paciente (brazalete)"
+              scanLabel="Escanear brazalete"
+              hint="Escanee o escriba el código de la pulsera"
+              value={patientBarcode}
+              ok={patientOk}
+              onChange={setPatientBarcode}
+            />
+            <ScanCard
+              id="drug-bc"
+              label="Código medicamento"
+              scanLabel="Escanear medicamento"
+              hint="Escanee o escriba el código del fármaco"
+              value={drugBarcode}
+              ok={drugOk}
+              onChange={setDrugBarcode}
+            />
           </div>
 
-          <div className="emar-five" aria-label="Auditoría de los 5 correctos">
-            <p className="kicker">Auditoría de los 5 correctos (OMS / JCI)</p>
-            <ul>
-              <li className={patientOk ? "is-ok" : undefined}>
-                <strong>1. Paciente</strong>
-                <span>{encounter?.patientName ?? "Pendiente"}</span>
-              </li>
-              <li className={drugOk ? "is-ok" : undefined}>
-                <strong>2. Fármaco</strong>
-                <span>{selected.drugName}</span>
-              </li>
-              <li className={drugOk ? "is-ok" : undefined}>
-                <strong>3. Dosis</strong>
-                <span>{selected.dose}</span>
-              </li>
-              <li className={drugOk ? "is-ok" : undefined}>
-                <strong>4. Vía</strong>
-                <span>{selected.route}</span>
-              </li>
-              <li className={patientOk && drugOk ? "is-ok" : undefined}>
-                <strong>5. Hora</strong>
-                <span>{timeLabel(selected.scheduledAt)}</span>
-              </li>
-            </ul>
-          </div>
+          <FiveCorrects selected={selected} patientName={encounter?.patientName} patientOk={patientOk} drugOk={drugOk} />
 
           <label className="check">
             <input type="checkbox" checked={sign} onChange={(e) => setSign(e.target.checked)} />
@@ -341,14 +385,7 @@ export function EmarPage() {
             Confirmo la administración según indicación médica y validación del e-MAR.
           </label>
 
-          {error ? (
-            <aside ref={discrepancyRef} className="state-card state-danger" role="alert">
-              <div>
-                <p className="state-card-title">Discrepancia detectada <span className="status-pill pill-danger">Bloqueante</span></p>
-                <p>{error}</p>
-              </div>
-            </aside>
-          ) : null}
+          {error ? <DiscrepancyCard message={error} cardRef={discrepancyRef} /> : null}
 
           <div className="form-actions-bar">
             <Button
