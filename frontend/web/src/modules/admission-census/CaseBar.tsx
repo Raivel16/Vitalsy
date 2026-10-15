@@ -16,7 +16,7 @@ function asCoverage(status: string | null | undefined): CoverageStatus | null {
   return null;
 }
 
-export function CaseBar({ children }: { children: ReactNode }) {
+export function CaseBar({ children }: Readonly<{ children: ReactNode }>) {
   const { user } = useAuth();
   const location = useLocation();
   const [params] = useSearchParams();

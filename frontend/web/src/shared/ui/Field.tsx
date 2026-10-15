@@ -16,7 +16,7 @@ function describedBy(id: string, error?: string, hint?: string) {
   return [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
 }
 
-function FieldMeta({ id, error, hint }: { id: string; error?: string; hint?: string }) {
+function FieldMeta({ id, error, hint }: Readonly<{ id: string; error?: string; hint?: string }>) {
   return (
     <div className="field-meta">
       {hint ? <p id={`${id}-hint`} className="hint">{hint}</p> : null}
@@ -25,7 +25,7 @@ function FieldMeta({ id, error, hint }: { id: string; error?: string; hint?: str
   );
 }
 
-function FieldLabel({ id, label, labelAside, hideLabel }: { id: string; label: string; labelAside?: ReactNode; hideLabel?: boolean }) {
+function FieldLabel({ id, label, labelAside, hideLabel }: Readonly<{ id: string; label: string; labelAside?: ReactNode; hideLabel?: boolean }>) {
   return (
     <label htmlFor={id} className={hideLabel ? "sr-only" : undefined}>
       <span>{label}</span>

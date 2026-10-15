@@ -23,7 +23,7 @@ function toastKicker(alert: ClinicalAlert): string {
  * La alerta permanece en la bandeja hasta disponer. A los 15 min sin atención
  * `needsSiren` vuelve a true y sirena/toast reaparecen.
  */
-export function AlertNotifications({ enabled, userId }: { enabled: boolean; userId?: number | null }) {
+export function AlertNotifications({ enabled, userId }: Readonly<{ enabled: boolean; userId?: number | null }>) {
   const { alerts, acknowledge } = useAlertInbox(enabled, { userId });
   const { push, dismiss, clear } = useToast();
   const announced = useRef<Set<number>>(new Set());

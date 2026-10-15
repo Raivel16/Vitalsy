@@ -20,7 +20,7 @@ export function PersonPicker({
   onClear,
   error,
   onPick,
-}: {
+}: Readonly<{
   id: string;
   label: string;
   members: StaffMember[];
@@ -29,7 +29,7 @@ export function PersonPicker({
   onClear?: () => void;
   error?: string;
   onPick: (member: StaffMember) => void;
-}) {
+}>) {
   const listId = useId();
   const optionId = (index: number) => `${listId}-opt-${index}`;
   const [query, setQuery] = useState("");

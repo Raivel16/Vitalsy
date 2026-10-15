@@ -10,12 +10,12 @@ export function WaitingList({
   canAssign,
   onAssign,
   onNewRequest,
-}: {
+}: Readonly<{
   items: WaitingItem[];
   canAssign: boolean;
   onAssign: (item: WaitingItem) => void;
   onNewRequest?: () => void;
-}) {
+}>) {
   return (
     <Panel
       title="Lista de espera priorizada"

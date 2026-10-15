@@ -16,7 +16,7 @@ type Props = {
   label?: string;
 };
 
-export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }: Props) {
+export function DateRangeFilter({ value, onChange, label = "Filtrar por fecha" }: Readonly<Props>) {
   return (
     <div className="date-range-filter" role="group" aria-label={label}>
       <div className="date-range-presets">
@@ -65,7 +65,7 @@ type DaySectionProps = {
   children: ReactNode;
 };
 
-export function DaySection({ label, count, defaultOpen = false, children }: DaySectionProps) {
+export function DaySection({ label, count, defaultOpen = false, children }: Readonly<DaySectionProps>) {
   return (
     <details className="day-section" open={defaultOpen}>
       <summary>

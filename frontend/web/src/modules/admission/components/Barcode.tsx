@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 
-function FallbackBars({ value }: { value: string }) {
+function FallbackBars({ value }: Readonly<{ value: string }>) {
   const widths = value.split("").map((char) => ((char.codePointAt(0) ?? 0) % 3) + 1);
   let x = 4;
   const bars = widths.map((width, index) => {
@@ -30,7 +30,7 @@ function canUseJsBarcode() {
   }
 }
 
-export function Barcode({ value, id = "wristband-barcode" }: { value: string; id?: string }) {
+export function Barcode({ value, id = "wristband-barcode" }: Readonly<{ value: string; id?: string }>) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [mode, setMode] = useState<"js" | "fallback">(() => (canUseJsBarcode() ? "js" : "fallback"));
 

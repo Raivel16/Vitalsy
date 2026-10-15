@@ -31,7 +31,7 @@ const ToastContext = createContext<ToastState | null>(null);
  * Avisos emergentes propios. No hay cierre automático por tiempo (RF-53).
  * Tras confirmar lectura, si hay follow-up, el aviso ofrece ir al evento o cerrar.
  */
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorById, setErrorById] = useState<Record<string, string>>({});

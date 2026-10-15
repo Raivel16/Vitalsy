@@ -22,12 +22,12 @@ export function BedRequestForm({
   busy,
   onSearch,
   onSubmit,
-}: {
+}: Readonly<{
   specialties: string[];
   busy: boolean;
   onSearch: (query: string) => Promise<PatientOption[]>;
   onSubmit: (form: RequestForm) => void;
-}) {
+}>) {
   const [form, setForm] = useState<RequestForm>(emptyRequestForm);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PatientOption[]>([]);

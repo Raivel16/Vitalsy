@@ -6,11 +6,11 @@ export function BedRequestDrawer({
   title,
   onClose,
   children,
-}: {
+}: Readonly<{
   title: string;
   onClose: () => void;
   children: ReactNode;
-}) {
+}>) {
   const panelRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { IconBell, IconBellRinging } from "@tabler/icons-react";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { STATUS_LABEL, severityVisual, type ClinicalAlert } from "../domain/alert";
 
-export function AlertBell({ alerts }: { alerts: ClinicalAlert[] }) {
+export function AlertBell({ alerts }: Readonly<{ alerts: ClinicalAlert[] }>) {
   const [open, setOpen] = useState(false);
   const worklist = alerts.length;
   const urgent = alerts.filter((alert) => alert.needsSiren).length;

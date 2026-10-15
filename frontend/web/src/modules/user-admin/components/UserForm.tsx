@@ -9,12 +9,12 @@ export function UserForm({
   submitLabel,
   pending,
   onSubmit,
-}: {
+}: Readonly<{
   initial: UserFormValues;
   submitLabel: string;
   pending: boolean;
   onSubmit: (values: UserFormValues) => void;
-}) {
+}>) {
   const [values, setValues] = useState<UserFormValues>(initial);
   const [errors, setErrors] = useState<UserFormErrors>({});
 

@@ -61,7 +61,7 @@ function bedKey(bed: AvailableBed) {
   return `${bed.room}|${bed.bedCode}`;
 }
 
-function NeedPatient({ title }: { title: string }) {
+function NeedPatient({ title }: Readonly<{ title: string }>) {
   return (
     <Sheet kicker="Celador / Camillero" title={title} clinic="form">
       <EmptyEncounter message="Abra un paciente desde el censo para trabajar este paso con su código propio." />

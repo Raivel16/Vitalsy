@@ -9,10 +9,10 @@ const ICONS: Record<CoverageStampStatus, string> = {
 export function StatusStamp({
   status,
   label,
-}: {
+}: Readonly<{
   status: CoverageStampStatus;
   label?: string;
-}) {
+}>) {
   const text = label ?? `Cobertura ${status}`;
   return (
     <p className={`stamp stamp-${status}`} role="status" aria-label={text}>

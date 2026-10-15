@@ -29,7 +29,7 @@ type Props = {
   currentStep?: string;
 };
 
-export function AdmissionStepper({ steps, role, encounterId, currentStep }: Props) {
+export function AdmissionStepper({ steps, role, encounterId, currentStep }: Readonly<Props>) {
   if (steps.length === 0) return null;
   const current = steps.find((step) => step.state === "current");
   const done = steps.filter((step) => step.state === "done").length;

@@ -22,7 +22,7 @@ import { PersonPicker } from "./PersonPicker";
 import { ShiftMatrix } from "./ShiftMatrix";
 
 /** RF-78: matriz mensual de turnos; el rol publicado y los meses anteriores permanecen visibles. */
-export function RosterPanel({ members }: { members: StaffMember[] }) {
+export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
   const [month, setMonth] = useState(() => todayIso().slice(0, 7));
   const [unit, setUnit] = useState<string>(SERVICES[0]);
   const [plan, setPlan] = useState<PublishedPlan | null>(null);

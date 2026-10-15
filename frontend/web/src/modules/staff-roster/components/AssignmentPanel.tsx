@@ -9,7 +9,7 @@ import { approveAssignments, suggestAssignments } from "../staffApi";
 import type { NurseLoad, ProposedAssignment, StaffMember } from "../types";
 
 /** RF-79/80: sugerencia por NEWS2, edición de la propuesta y aprobación. */
-export function AssignmentPanel({ members }: { members: StaffMember[] }) {
+export function AssignmentPanel({ members }: Readonly<{ members: StaffMember[] }>) {
   const [date, setDate] = useState(todayIso());
   const [selected, setSelected] = useState<number[]>([]);
   const [assignments, setAssignments] = useState<ProposedAssignment[] | null>(null);

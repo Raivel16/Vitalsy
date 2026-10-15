@@ -15,12 +15,12 @@ export function ShiftMatrix({
   rows,
   onChange,
   onRemove,
-}: {
+}: Readonly<{
   yearMonth: string;
   rows: MatrixRow[];
   onChange: (rows: MatrixRow[]) => void;
   onRemove: (userId: number) => void;
-}) {
+}>) {
   const days = daysOfMonth(yearMonth);
 
   function toggle(userId: number, day: number) {

@@ -8,11 +8,11 @@ export function NotificationsPanel({
   items,
   busyId,
   onAcknowledge,
-}: {
+}: Readonly<{
   items: AssignmentNotification[];
   busyId: number | null;
   onAcknowledge: (item: AssignmentNotification) => void;
-}) {
+}>) {
   return (
     <Panel title="Asignaciones por confirmar" aside={`${items.length} nuevas`}>
       {items.length === 0 ? (

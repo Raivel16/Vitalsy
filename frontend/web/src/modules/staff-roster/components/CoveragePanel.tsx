@@ -16,12 +16,12 @@ export function CoveragePanel({
   members,
   capabilities,
   onChanged,
-}: {
+}: Readonly<{
   requests: CoverageRequest[] | null;
   members: StaffMember[];
   capabilities: StaffCapabilities;
   onChanged: () => void;
-}) {
+}>) {
   const [retainers, setRetainers] = useState<Record<number, StaffMember | null>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");

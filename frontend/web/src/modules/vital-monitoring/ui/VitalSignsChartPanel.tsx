@@ -17,7 +17,7 @@ type Props = {
 };
 
 /** Panel reutilizable de gráfica evolutiva (lectura) para enfermería y médicos. */
-export function VitalSignsChartPanel({ encounterId, showTable = true, range }: Props) {
+export function VitalSignsChartPanel({ encounterId, showTable = true, range }: Readonly<Props>) {
   const [series, setSeries] = useState<ChartPoint[] | null>(null);
   const [error, setError] = useState("");
 

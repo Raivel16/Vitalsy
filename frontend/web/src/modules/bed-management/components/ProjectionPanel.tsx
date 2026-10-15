@@ -21,13 +21,13 @@ export function ProjectionPanel({
   projections,
   busy,
   onSubmit,
-}: {
+}: Readonly<{
   canWrite: boolean;
   occupants: Occupant[];
   projections: Projection[];
   busy: boolean;
   onSubmit: (encounterId: string, projectedAt: string) => Promise<boolean>;
-}) {
+}>) {
   const [encounterId, setEncounterId] = useState("");
   const [when, setWhen] = useState("");
 

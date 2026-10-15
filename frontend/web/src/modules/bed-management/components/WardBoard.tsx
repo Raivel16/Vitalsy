@@ -14,12 +14,12 @@ function BedCard({
   canAssign,
   compatible,
   onAssign,
-}: {
+}: Readonly<{
   bed: Bed;
   canAssign: boolean;
   compatible: number;
   onAssign: (bed: Bed) => void;
-}) {
+}>) {
   const tone = bedTone(bed.status, bed.isolation);
   const code = `${bed.room}-${bed.bedCode}`;
   const days = occupiedDays(bed.occupant?.since);
@@ -61,12 +61,12 @@ export function WardBoard({
   waiting,
   canAssign,
   onAssign,
-}: {
+}: Readonly<{
   wards: WardCensus[];
   waiting: BedRequest[];
   canAssign: boolean;
   onAssign: (bed: Bed, ward: WardCensus) => void;
-}) {
+}>) {
   if (wards.length === 0) {
     return <p className="banner banner-info" role="status">No hay pabellones registrados en el catálogo de camas.</p>;
   }

@@ -356,7 +356,7 @@ function VitalsyLifeCard({
   role = "",
   failed = false,
   pending = false,
-}: {
+}: Readonly<{
   life?: string;
   onChange?: (value: string) => void;
   onGenerate?: () => void;
@@ -364,7 +364,7 @@ function VitalsyLifeCard({
   role?: string;
   failed?: boolean;
   pending?: boolean;
-}) {
+}>) {
   const code = lifePlanCode(plan, role);
   const validUntil = lifePlanValidUntil(plan);
 
@@ -416,7 +416,7 @@ function VitalsyLifeCard({
   );
 }
 
-function LifeQr({ value }: { value: string }) {
+function LifeQr({ value }: Readonly<{ value: string }>) {
   const [markup, setMarkup] = useState("");
 
   useEffect(() => {

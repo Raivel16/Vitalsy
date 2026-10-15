@@ -29,14 +29,14 @@ export function CleaningOrderCard({
   onDisinfect,
   onEquip,
   onEnable,
-}: {
+}: Readonly<{
   order: CleaningOrder;
   role: string;
   busy: boolean;
   onDisinfect: (order: CleaningOrder, checklist: Checklist) => void;
   onEquip: (order: CleaningOrder) => void;
   onEnable: (order: CleaningOrder) => void;
-}) {
+}>) {
   const [checklist, setChecklist] = useState<Checklist>(emptyChecklist);
   const status = order.status as CleaningStatus;
   const action = actionFor(role, status);

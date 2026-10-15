@@ -187,7 +187,7 @@ export function RiskScalesPage() {
   );
 }
 
-function ScaleRow({ id, title, hint, children }: { id: string; title: string; hint: string; children: ReactNode }) {
+function ScaleRow({ id, title, hint, children }: Readonly<{ id: string; title: string; hint: string; children: ReactNode }>) {
   return (
     <div className="scale-row">
       <div>
@@ -203,14 +203,14 @@ function ScaleRow({ id, title, hint, children }: { id: string; title: string; hi
 
 function ScoreSelect({
   id, label, max, value, labels, onChange,
-}: {
+}: Readonly<{
   id: string;
   label: string;
   max: 3 | 4;
   value: number;
   labels: Record<number, string>;
   onChange: (value: number) => void;
-}) {
+}>) {
   return (
     <SelectField id={id} label={label} value={String(value)} onChange={(event) => onChange(Number(event.target.value))} compact>
       {Array.from({ length: max }, (_, index) => index + 1).map((score) => (

@@ -14,7 +14,7 @@ type Lane = {
 };
 
 /** Dos escalas separadas: el pulso (lpm) no aplasta el NEWS2. */
-export function VitalSignsChart({ series }: Props) {
+export function VitalSignsChart({ series }: Readonly<Props>) {
   const lanes = useMemo<Lane[]>(() => [
     {
       label: "Pulso",
@@ -41,7 +41,7 @@ export function VitalSignsChart({ series }: Props) {
   );
 }
 
-function VitalLane({ lane, series }: { lane: Lane; series: ChartPoint[] }) {
+function VitalLane({ lane, series }: Readonly<{ lane: Lane; series: ChartPoint[] }>) {
   const width = 960;
   const height = 168;
   const padX = 36;

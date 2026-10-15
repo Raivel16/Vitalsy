@@ -9,7 +9,7 @@ export function Sheet({
   aside,
   clinic,
   className,
-}: {
+}: Readonly<{
   kicker: string;
   title: string;
   children: ReactNode;
@@ -18,7 +18,7 @@ export function Sheet({
   aside?: ReactNode;
   clinic?: "form" | "board" | "file";
   className?: string;
-}) {
+}>) {
   const head = (
     <header className="page-head">
       <div>
@@ -94,11 +94,11 @@ export function Feedback({
   tone,
   children,
   label,
-}: {
+}: Readonly<{
   tone: "error" | "success" | "info";
   children: ReactNode;
   label?: string;
-}) {
+}>) {
   if (tone === "error") {
     return (
       <p className="banner banner-error" role="alert" aria-label={label}>
