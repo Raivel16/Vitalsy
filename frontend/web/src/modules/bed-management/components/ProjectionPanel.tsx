@@ -14,6 +14,12 @@ function toIso(local: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function projectedDischargeError(iso: string | null): string | undefined {
+  if (!iso) return "Indique la fecha y hora previstas de alta.";
+  if (new Date(iso).getTime() <= Date.now()) return "La fecha prevista debe ser futura.";
+  return undefined;
+}
+
 /** Proyección de altas (RF-71): la supervisora alimenta la disponibilidad futura del censo. */
 export function ProjectionPanel({
   canWrite,
@@ -38,11 +44,7 @@ export function ProjectionPanel({
     return {
       iso,
       patient: encounterId === "" ? "Seleccione al paciente internado." : undefined,
-      when: !iso
-        ? "Indique la fecha y hora previstas de alta."
-        : new Date(iso).getTime() <= Date.now()
-          ? "La fecha prevista debe ser futura."
-          : undefined,
+      when: projectedDischargeError(iso),
     };
   }
 
