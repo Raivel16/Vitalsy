@@ -689,11 +689,11 @@ function EventHistory({ events, escalations }: Readonly<{ events: AlertEvent[]; 
   );
 }
 
-const ICU_FLOW_STATUSES = ["orden_uci", "uci_autorizada", "en_uci"];
+const ICU_FLOW_STATUSES = new Set(["orden_uci", "uci_autorizada", "en_uci"]);
 
 function alertPermissions(alert: ClinicalAlert, role: string) {
   const closed = alert.status === "cerrada";
-  const inIcuFlow = ICU_FLOW_STATUSES.includes(alert.status);
+  const inIcuFlow = ICU_FLOW_STATUSES.has(alert.status);
   const isDoctor = MEDICAL_ROLES.has(role);
   const icu = alert.icuTransfer;
   const canNurseCare = NURSING_ROLES.has(role) && !closed && alert.status === "en_atencion";
