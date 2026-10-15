@@ -21,6 +21,7 @@ import { eventLabel, STATUS_LABEL, type AlertStatus } from "../../clinical-alert
 import { cleanRiskLabel } from "../domain/riskLabel";
 import { LifeBaselineMetrics } from "../../admission/components/LifeBaselineMetrics";
 import type { LifeBaseline } from "../../admission/domain/lifeBaseline";
+import { keyByContent } from "../../../shared/list/rowKeys";
 
 type ChartPayload = {
   encounter: {
@@ -268,8 +269,8 @@ export function PatientChartPage() {
                       <table>
                         <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th></tr></thead>
                         <tbody>
-                          {(admission.reconciliation.medications ?? []).map((med, index) => (
-                            <tr key={index}>
+                          {keyByContent(admission.reconciliation.medications ?? [], (med) => `${med.name}|${med.dose}|${med.frequency}`).map(({ key, item: med }) => (
+                            <tr key={key}>
                               <td>{med.name ?? "—"}</td>
                               <td>{med.dose ?? "—"}</td>
                               <td>{med.frequency ?? "—"}</td>
@@ -383,8 +384,8 @@ export function PatientChartPage() {
                       <tr><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Frecuencia</th><th>Código</th></tr>
                     </thead>
                     <tbody>
-                      {data.activePrescription.items.map((item, index) => (
-                        <tr key={index}>
+                      {keyByContent(data.activePrescription.items, (item) => `${item.drugName}|${item.dose}|${item.route}|${item.frequency}|${item.drugBarcode}`).map(({ key, item }) => (
+                        <tr key={key}>
                           <td>{item.drugName}</td>
                           <td>{item.dose}</td>
                           <td>{item.route}</td>

@@ -7,6 +7,7 @@ import { type DateRangeValue } from "../../../shared/datetime/range";
 import { filterByRange } from "../../../shared/navigation/returnTo";
 import { VitalSignsChart } from "./VitalSignsChart";
 import type { ChartPoint } from "./types";
+import { keyByContent } from "../../../shared/list/rowKeys";
 
 type Props = {
   encounterId: string;
@@ -65,8 +66,8 @@ export function VitalSignsChartPanel({ encounterId, showTable = true, range }: R
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((point, index) => (
-                    <tr key={index}>
+                  {keyByContent(filtered, (point) => `${point.recordedAt}|${point.pulse}|${point.respiratoryRate}|${point.oxygenSaturation}|${point.news2}`).map(({ key, item: point }) => (
+                    <tr key={key}>
                       <td>{formatDateTime(point.recordedAt)}</td>
                       <td>{point.pulse ?? "—"}</td>
                       <td>{point.respiratoryRate ?? "—"}</td>

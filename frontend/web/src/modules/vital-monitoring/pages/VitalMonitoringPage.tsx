@@ -19,6 +19,7 @@ import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { VitalSignsChart } from "../ui/VitalSignsChart";
 import type { ChartPoint } from "../ui/types";
+import { keyByContent } from "../../../shared/list/rowKeys";
 
 const emptyFields = {
   respiratoryRate: "",
@@ -212,8 +213,8 @@ export function VitalMonitoringPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {series.map((point, index) => (
-                    <tr key={index}>
+                  {keyByContent(series, (point) => `${point.recordedAt}|${point.pulse}|${point.respiratoryRate}|${point.oxygenSaturation}|${point.news2}`).map(({ key, item: point }) => (
+                    <tr key={key}>
                       <td>{formatDateTime(point.recordedAt)}</td>
                       <td>{point.pulse ?? "—"}</td>
                       <td>{point.respiratoryRate ?? "—"}</td>
