@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type RefObject, type SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useParams } from "react-router";
 import { api, ApiError } from "../../../app/api";
@@ -15,6 +15,7 @@ import { lifeSheetHtml } from "../domain/lifeSheet";
 
 const LIFE_ERROR = "No se pudo generar el código de Vitalsy Life. Intente de nuevo.";
 const LIFE_MODES: ReadonlySet<string> = new Set(["usuario", "invitacion", "rechaza"]);
+const LIFE_REQUIRED = "Indique el seguimiento en Vitalsy Life.";
 
 const PERSPECTIVES = [
   { id: "medico_tratante", label: "Médico tratante" },
@@ -25,20 +26,36 @@ const PERSPECTIVES = [
   { id: "camillero", label: "Camillero" },
 ];
 
-export function DischargeCasePage() {
-  const { encounterId = "" } = useParams();
-  const { user } = useAuth();
-  const role = user?.role ?? "admision";
+type SubmitFn = (
+  path: string,
+  body: Record<string, unknown>,
+  success: string,
+  afterSave?: () => Promise<boolean>,
+) => Promise<void>;
+
+type FieldHandler = (id: string) => (event: { target: { value: string } }) => void;
+
+type StepContext = {
+  role: string;
+  item: DischargeCase;
+  encounterId: string;
+  form: Record<string, string>;
+  onField: FieldHandler;
+  pending: boolean;
+  submit: SubmitFn;
+};
+
+function submitHandler(action: () => void) {
+  return (event: SyntheticEvent) => {
+    event.preventDefault();
+    action();
+  };
+}
+
+function useDischargeLoader(encounterId: string) {
   const [item, setItem] = useState<DischargeCase | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
-  const [pending, setPending] = useState(false);
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [life, setLife] = useState("");
-  const [lifePending, setLifePending] = useState(false);
-  const [lifeFailed, setLifeFailed] = useState(false);
-  const bannerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -56,11 +73,21 @@ export function DischargeCasePage() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if ((error || notice) && typeof bannerRef.current?.scrollIntoView === "function") {
-      bannerRef.current.scrollIntoView({ block: "center" });
-    }
-  }, [error, notice]);
+  return { item, setItem, error, setError, loading };
+}
+
+function useLifePlanActions(
+  encounterId: string,
+  handlers: {
+    setItem: (update: (current: DischargeCase | null) => DischargeCase | null) => void;
+    setError: (message: string) => void;
+    setNotice: (message: string) => void;
+  },
+) {
+  const { setItem, setError, setNotice } = handlers;
+  const [life, setLife] = useState("");
+  const [lifePending, setLifePending] = useState(false);
+  const [lifeFailed, setLifeFailed] = useState(false);
 
   async function issueLifePlan(mode: LifePlanMode): Promise<boolean> {
     setLifePending(true);
@@ -81,7 +108,30 @@ export function DischargeCasePage() {
     }
   }
 
-  async function submit(path: string, body: Record<string, unknown>, success: string, afterSave?: () => Promise<boolean>) {
+  async function retryLifePlan() {
+    if (!LIFE_MODES.has(life)) {
+      setError(LIFE_REQUIRED);
+      return;
+    }
+    setError("");
+    if (await issueLifePlan(life as LifePlanMode)) setNotice("Seguimiento en Vitalsy Life registrado.");
+  }
+
+  return { life, setLife, lifePending, lifeFailed, issueLifePlan, retryLifePlan };
+}
+
+function useDischargeSubmit(
+  handlers: {
+    setItem: (update: (current: DischargeCase | null) => DischargeCase | null) => void;
+    setError: (message: string) => void;
+    setNotice: (message: string) => void;
+    resetForm: () => void;
+  },
+) {
+  const { setItem, setError, setNotice, resetForm } = handlers;
+  const [pending, setPending] = useState(false);
+
+  const submit: SubmitFn = async (path, body, success, afterSave) => {
     setPending(true);
     setError("");
     setNotice("");
@@ -92,7 +142,7 @@ export function DischargeCasePage() {
         ...data.case,
         lifePlan: keepIssuedCodes(current?.lifePlan ?? null, data.case.lifePlan ?? null),
       }));
-      setForm({});
+      resetForm();
       const ok = afterSave ? await afterSave() : true;
       if (ok) setNotice(success);
     } catch (error_) {
@@ -100,16 +150,252 @@ export function DischargeCasePage() {
     } finally {
       setPending(false);
     }
-  }
+  };
 
-  async function retryLifePlan() {
+  return { pending, submit };
+}
+
+function OrderStep({ role, item, encounterId, pending, submit }: Readonly<StepContext>) {
+  if (!(role === "medico_tratante" || role === "medico_residente") || item.order) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/order`, {}, "Orden digital de alta registrada. Sigue el médico residente con la epicrisis. Trabajo social y enfermería avanzan en paralelo."))}
+    >
+      <p>Si el paciente cumple criterios de estabilidad, autorice el egreso.</p>
+      <Button type="submit" pending={pending}>Registrar orden de alta</Button>
+    </form>
+  );
+}
+
+function EpicrisisStep({ role, item, encounterId, form, onField, pending, submit }: Readonly<StepContext>) {
+  if (role !== "medico_residente" || !item.order || item.epicrisis) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/epicrisis`, {
+        diagnoses: form.diagnoses ?? "",
+        procedures: form.procedures ?? "",
+        evolution: form.evolution ?? "",
+      }, "Epicrisis electrónica registrada."))}
+    >
+      <TextAreaField id="diagnoses" label="Diagnósticos" value={form.diagnoses ?? ""} onChange={onField("diagnoses")} />
+      <TextAreaField id="procedures" label="Procedimientos" value={form.procedures ?? ""} onChange={onField("procedures")} />
+      <TextAreaField id="evolution" label="Evolución" value={form.evolution ?? ""} onChange={onField("evolution")} />
+      <Button type="submit" pending={pending}>Guardar epicrisis</Button>
+    </form>
+  );
+}
+
+function PrescriptionStep({ role, item, encounterId, form, onField, pending, submit }: Readonly<StepContext>) {
+  if (role !== "medico_residente" || !item.epicrisis || item.prescriptions) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/prescriptions`, {
+        items: [{
+          drug: form.drug ?? "",
+          dose: form.dose ?? "",
+          route: form.route ?? "",
+          frequency: form.frequency ?? "",
+          days: Number(form.days || 0),
+        }],
+      }, "Recetas ambulatorias emitidas."))}
+    >
+      <TextField id="drug" label="Medicamento" value={form.drug ?? ""} onChange={onField("drug")} />
+      <TextField id="dose" label="Dosis" value={form.dose ?? ""} onChange={onField("dose")} />
+      <TextField id="route" label="Vía" value={form.route ?? ""} onChange={onField("route")} />
+      <TextField id="frequency" label="Frecuencia" value={form.frequency ?? ""} onChange={onField("frequency")} />
+      <TextField id="days" label="Días" inputMode="numeric" value={form.days ?? ""} onChange={onField("days")} />
+      <Button type="submit" pending={pending}>Emitir receta</Button>
+    </form>
+  );
+}
+
+function SocialStep({ role, item, encounterId, form, onField, pending, submit }: Readonly<StepContext>) {
+  if (role !== "trabajo_social" || !item.order || item.socialAssessment) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/social-assessment`, {
+        report: form.report ?? "",
+        validated: form.validated === "si",
+      }, "Valoración social registrada."))}
+    >
+      <TextAreaField id="report" label="Informe de valoración social" value={form.report ?? ""} onChange={onField("report")} />
+      <TextField id="validated" label="¿Entorno adecuado? (si/no)" value={form.validated ?? ""} onChange={onField("validated")} />
+      <Button type="submit" pending={pending}>Guardar valoración</Button>
+    </form>
+  );
+}
+
+function ReconciliationStep({ role, item, encounterId, form, onField, pending, submit }: Readonly<StepContext>) {
+  if (role !== "enfermera_piso" || !item.order || item.reconciliation) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/reconciliation`, { notes: form.notes ?? "" }, "Conciliación farmacéutica al alta registrada."))}
+    >
+      {item.epicrisis ? <p>Epicrisis: {item.epicrisis.diagnoses}</p> : <p className="hint">La epicrisis aún no está disponible.</p>}
+      <TextAreaField id="notes" label="Resultado de la conciliación" value={form.notes ?? ""} onChange={onField("notes")} />
+      <Button type="submit" pending={pending}>Registrar conciliación</Button>
+    </form>
+  );
+}
+
+function NursingReportStep({
+  role,
+  item,
+  encounterId,
+  form,
+  onField,
+  pending,
+  submit,
+  life,
+  setLife,
+  lifePending,
+  issueLifePlan,
+  setError,
+}: Readonly<StepContext & {
+  life: string;
+  setLife: (value: string) => void;
+  lifePending: boolean;
+  issueLifePlan: (mode: LifePlanMode) => Promise<boolean>;
+  setError: (message: string) => void;
+}>) {
+  if (role !== "enfermera_piso" || !item.reconciliation || item.nursingReport) return null;
+  const onSubmit = () => {
     if (!LIFE_MODES.has(life)) {
-      setError("Indique el seguimiento en Vitalsy Life.");
+      setError(LIFE_REQUIRED);
       return;
     }
-    setError("");
-    if (await issueLifePlan(life as LifePlanMode)) setNotice("Seguimiento en Vitalsy Life registrado.");
-  }
+    void submit(`/api/v1/discharge/encounters/${encounterId}/nursing-report`, {
+      instructions: form.instructions ?? "",
+      alarmSigns: form.alarmSigns ?? "",
+      homeCare: form.homeCare ?? "",
+    }, "Informe digital de alta de enfermería generado.", () => issueLifePlan(life as LifePlanMode));
+  };
+  return (
+    <form className="stack ops-form" onSubmit={submitHandler(onSubmit)}>
+      <TextAreaField id="instructions" label="Indicaciones de medicamentos" value={form.instructions ?? ""} onChange={onField("instructions")} />
+      <TextAreaField id="alarmSigns" label="Signos de alarma" value={form.alarmSigns ?? ""} onChange={onField("alarmSigns")} />
+      <TextAreaField id="homeCare" label="Cuidados domiciliarios" value={form.homeCare ?? ""} onChange={onField("homeCare")} />
+      <VitalsyLifeCard life={life} onChange={setLife} />
+      <Button type="submit" pending={pending || lifePending}>Generar informe</Button>
+    </form>
+  );
+}
+
+function ReceiptStep({ role, item, encounterId, form, onField, pending, submit }: Readonly<StepContext>) {
+  if (role !== "enfermera_piso" || !item.nursingReport || item.indicationReceipt) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/indication-receipt`, {
+        receivedByName: form.receivedByName ?? "",
+      }, "Recepción de indicaciones confirmada."))}
+    >
+      <TextField id="receivedByName" label="Nombre de quien recibe" value={form.receivedByName ?? ""} onChange={onField("receivedByName")} />
+      <Button type="submit" pending={pending}>Confirmar recepción</Button>
+    </form>
+  );
+}
+
+function AccountStep({ role, item, encounterId, pending, submit }: Readonly<StepContext>) {
+  if (role !== "altas_caja" || !item.order || item.account?.status === "conforme") return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/account`, { status: "conforme" }, "Estado de cuenta verificado."))}
+    >
+      <p>Verifique el pago o la cobertura antes de emitir el pase.</p>
+      <Button type="submit" pending={pending}>Marcar liquidación conforme</Button>
+    </form>
+  );
+}
+
+function ExitPassStep({ role, item, encounterId, pending, submit }: Readonly<StepContext>) {
+  if (role !== "altas_caja" || item.account?.status !== "conforme" || item.exitPass) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/exit-pass`, {}, "Pase de salida digital emitido."))}
+    >
+      <Button type="submit" pending={pending}>Emitir pase de salida</Button>
+    </form>
+  );
+}
+
+function PorterNote({ role, item }: Readonly<Pick<StepContext, "role" | "item">>) {
+  if (role !== "camillero" || !item.exitPass || item.exit) return null;
+  return (
+    <section className="ops-form">
+      <p>El pase de salida ya está emitido. Traslade al paciente. La salida efectiva la registra una sola persona: la enfermera de piso.</p>
+    </section>
+  );
+}
+
+function ExitStep({ role, item, encounterId, pending, submit }: Readonly<StepContext>) {
+  if (role !== "enfermera_piso" || !item.exitPass || item.exit) return null;
+  return (
+    <form
+      className="stack ops-form"
+      onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/exit`, {}, "Salida efectiva registrada. La cama queda vacante."))}
+    >
+      <Button type="submit" pending={pending}>Registrar salida efectiva</Button>
+    </form>
+  );
+}
+
+function DeliverablesPanel({ item }: Readonly<{ item: DischargeCase }>) {
+  const done = item.deliverables.filter((deliverable) => deliverable.done).length;
+  return (
+    <Panel title="Cadena de entregables" aside={`${done} de ${item.deliverables.length}`}>
+      <ul className="deliverables">
+        {item.deliverables.map((deliverable, index) => (
+          <li key={deliverable.id} className={deliverable.done ? "done" : undefined}>
+            <span>{index + 1}. {deliverable.label}</span>
+            <strong>{deliverable.done ? "Listo" : "Pendiente"}</strong>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+function lifeView(item: DischargeCase, role: string) {
+  // Solo la enfermera de piso ve códigos; los demás roles reciben el plan reducido al modo.
+  const viewPlan: LifePlan | null = item.lifePlan && role !== "enfermera_piso"
+    ? { mode: item.lifePlan.mode, status: item.lifePlan.status, validUntil: item.lifePlan.validUntil }
+    : item.lifePlan ?? null;
+  const printable = role === "enfermera_piso" && Boolean(item.nursingReport)
+    && (Boolean(lifePlanCode(item.lifePlan, role)) || item.lifePlan?.mode === "rechaza");
+  // Con plan emitido no se ofrece cambiar el modo en la UI; la API permite reemitir hasta que el paciente egrese.
+  const canIssueLife = role === "enfermera_piso" && !item.lifePlan && !item.exit;
+  return { viewPlan, printable, canIssueLife };
+}
+
+function useScrollToBanner(ref: RefObject<HTMLDivElement | null>, error: string, notice: string) {
+  useEffect(() => {
+    if ((error || notice) && typeof ref.current?.scrollIntoView === "function") {
+      ref.current.scrollIntoView({ block: "center" });
+    }
+  }, [error, notice, ref]);
+}
+
+export function DischargeCasePage() {
+  const { encounterId = "" } = useParams();
+  const { user } = useAuth();
+  const role = user?.role ?? "admision";
+  const { item, setItem, error, setError, loading } = useDischargeLoader(encounterId);
+  const [notice, setNotice] = useState("");
+  const [form, setForm] = useState<Record<string, string>>({});
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const resetForm = useCallback(() => setForm({}), []);
+  const lifeActions = useLifePlanActions(encounterId, { setItem, setError, setNotice });
+  const { pending, submit } = useDischargeSubmit({ setItem, setError, setNotice, resetForm });
+
+  useScrollToBanner(bannerRef, error, notice);
 
   async function printSheet(current: DischargeCase) {
     try {
@@ -119,23 +405,14 @@ export function DischargeCasePage() {
     }
   }
 
-  function onField(id: string) {
-    return (event: { target: { value: string } }) => setForm((current) => ({ ...current, [id]: event.target.value }));
-  }
+  const onField: FieldHandler = (id) => (event) => setForm((current) => ({ ...current, [id]: event.target.value }));
 
   if (loading) return <LoadingState label="Cargando ficha de egreso…" />;
   if (!item) return <Feedback tone="error">{error || "No se encontró el ingreso."}</Feedback>;
 
-  const done = item.deliverables.filter((deliverable) => deliverable.done).length;
   const next = handoffLines(item);
-  // Solo la enfermera de piso ve códigos; los demás roles reciben el plan reducido al modo.
-  const viewPlan: LifePlan | null = item.lifePlan && role !== "enfermera_piso"
-    ? { mode: item.lifePlan.mode, status: item.lifePlan.status, validUntil: item.lifePlan.validUntil }
-    : item.lifePlan ?? null;
-  const printable = role === "enfermera_piso" && Boolean(item.nursingReport)
-    && (Boolean(lifePlanCode(item.lifePlan, role)) || item.lifePlan?.mode === "rechaza");
-  // Con plan emitido no se ofrece cambiar el modo en la UI; la API permite reemitir hasta que el paciente egrese.
-  const canIssueLife = role === "enfermera_piso" && !item.lifePlan && !item.exit;
+  const { viewPlan, printable, canIssueLife } = lifeView(item, role);
+  const context: StepContext = { role, item, encounterId, form, onField, pending, submit };
 
   return (
     <Sheet kicker="Alta y egreso" title={item.patientName} wide clinic="file" className="floor-care ops-board">
@@ -149,16 +426,7 @@ export function DischargeCasePage() {
           {next.map((line) => <li key={line}>{line}</li>)}
         </ul>
       </section>
-      <Panel title="Cadena de entregables" aside={`${done} de ${item.deliverables.length}`}>
-        <ul className="deliverables">
-          {item.deliverables.map((deliverable, index) => (
-            <li key={deliverable.id} className={deliverable.done ? "done" : undefined}>
-              <span>{index + 1}. {deliverable.label}</span>
-              <strong>{deliverable.done ? "Listo" : "Pendiente"}</strong>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+      <DeliverablesPanel item={item} />
       <div className="ops-roles" aria-label="Perspectiva operativa">
         {PERSPECTIVES.map((perspective) => (
           <span key={perspective.id} className={role === perspective.id ? "is-active" : undefined}>
@@ -171,106 +439,29 @@ export function DischargeCasePage() {
         {notice ? <Feedback tone="success" label="Resultado del egreso">{notice}</Feedback> : null}
       </div>
 
-      {(role === "medico_tratante" || role === "medico_residente") && !item.order ? (
-        <form className="stack ops-form" onSubmit={(event) => { event.preventDefault(); void submit(`/api/v1/discharge/encounters/${encounterId}/order`, {}, "Orden digital de alta registrada. Sigue el médico residente con la epicrisis. Trabajo social y enfermería avanzan en paralelo."); }}>
-          <p>Si el paciente cumple criterios de estabilidad, autorice el egreso.</p>
-          <Button type="submit" pending={pending}>Registrar orden de alta</Button>
-        </form>
-      ) : null}
-
-      {role === "medico_residente" && item.order && !item.epicrisis ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/epicrisis`, {
-            diagnoses: form.diagnoses ?? "",
-            procedures: form.procedures ?? "",
-            evolution: form.evolution ?? "",
-          }, "Epicrisis electrónica registrada.");
-        }}>
-          <TextAreaField id="diagnoses" label="Diagnósticos" value={form.diagnoses ?? ""} onChange={onField("diagnoses")} />
-          <TextAreaField id="procedures" label="Procedimientos" value={form.procedures ?? ""} onChange={onField("procedures")} />
-          <TextAreaField id="evolution" label="Evolución" value={form.evolution ?? ""} onChange={onField("evolution")} />
-          <Button type="submit" pending={pending}>Guardar epicrisis</Button>
-        </form>
-      ) : null}
-
-      {role === "medico_residente" && item.epicrisis && !item.prescriptions ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/prescriptions`, {
-            items: [{
-              drug: form.drug ?? "",
-              dose: form.dose ?? "",
-              route: form.route ?? "",
-              frequency: form.frequency ?? "",
-              days: Number(form.days || 0),
-            }],
-          }, "Recetas ambulatorias emitidas.");
-        }}>
-          <TextField id="drug" label="Medicamento" value={form.drug ?? ""} onChange={onField("drug")} />
-          <TextField id="dose" label="Dosis" value={form.dose ?? ""} onChange={onField("dose")} />
-          <TextField id="route" label="Vía" value={form.route ?? ""} onChange={onField("route")} />
-          <TextField id="frequency" label="Frecuencia" value={form.frequency ?? ""} onChange={onField("frequency")} />
-          <TextField id="days" label="Días" inputMode="numeric" value={form.days ?? ""} onChange={onField("days")} />
-          <Button type="submit" pending={pending}>Emitir receta</Button>
-        </form>
-      ) : null}
-
-      {role === "trabajo_social" && item.order && !item.socialAssessment ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/social-assessment`, {
-            report: form.report ?? "",
-            validated: form.validated === "si",
-          }, "Valoración social registrada.");
-        }}>
-          <TextAreaField id="report" label="Informe de valoración social" value={form.report ?? ""} onChange={onField("report")} />
-          <TextField id="validated" label="¿Entorno adecuado? (si/no)" value={form.validated ?? ""} onChange={onField("validated")} />
-          <Button type="submit" pending={pending}>Guardar valoración</Button>
-        </form>
-      ) : null}
-
-      {role === "enfermera_piso" && item.order && !item.reconciliation ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/reconciliation`, { notes: form.notes ?? "" }, "Conciliación farmacéutica al alta registrada.");
-        }}>
-          {item.epicrisis ? <p>Epicrisis: {item.epicrisis.diagnoses}</p> : <p className="hint">La epicrisis aún no está disponible.</p>}
-          <TextAreaField id="notes" label="Resultado de la conciliación" value={form.notes ?? ""} onChange={onField("notes")} />
-          <Button type="submit" pending={pending}>Registrar conciliación</Button>
-        </form>
-      ) : null}
-
-      {role === "enfermera_piso" && item.reconciliation && !item.nursingReport ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          if (!LIFE_MODES.has(life)) {
-            setError("Indique el seguimiento en Vitalsy Life.");
-            return;
-          }
-          void submit(`/api/v1/discharge/encounters/${encounterId}/nursing-report`, {
-            instructions: form.instructions ?? "",
-            alarmSigns: form.alarmSigns ?? "",
-            homeCare: form.homeCare ?? "",
-          }, "Informe digital de alta de enfermería generado.", () => issueLifePlan(life as LifePlanMode));
-        }}>
-          <TextAreaField id="instructions" label="Indicaciones de medicamentos" value={form.instructions ?? ""} onChange={onField("instructions")} />
-          <TextAreaField id="alarmSigns" label="Signos de alarma" value={form.alarmSigns ?? ""} onChange={onField("alarmSigns")} />
-          <TextAreaField id="homeCare" label="Cuidados domiciliarios" value={form.homeCare ?? ""} onChange={onField("homeCare")} />
-          <VitalsyLifeCard life={life} onChange={setLife} />
-          <Button type="submit" pending={pending || lifePending}>Generar informe</Button>
-        </form>
-      ) : null}
+      <OrderStep {...context} />
+      <EpicrisisStep {...context} />
+      <PrescriptionStep {...context} />
+      <SocialStep {...context} />
+      <ReconciliationStep {...context} />
+      <NursingReportStep
+        {...context}
+        life={lifeActions.life}
+        setLife={lifeActions.setLife}
+        lifePending={lifeActions.lifePending}
+        issueLifePlan={lifeActions.issueLifePlan}
+        setError={setError}
+      />
 
       {item.nursingReport ? (
         <VitalsyLifeCard
           plan={viewPlan}
           role={role}
-          life={life}
-          onChange={canIssueLife ? setLife : undefined}
-          onGenerate={canIssueLife ? () => void retryLifePlan() : undefined}
-          failed={lifeFailed}
-          pending={lifePending}
+          life={lifeActions.life}
+          onChange={canIssueLife ? lifeActions.setLife : undefined}
+          onGenerate={canIssueLife ? () => void lifeActions.retryLifePlan() : undefined}
+          failed={lifeActions.lifeFailed}
+          pending={lifeActions.lifePending}
         />
       ) : null}
 
@@ -280,51 +471,11 @@ export function DischargeCasePage() {
         </div>
       ) : null}
 
-      {role === "enfermera_piso" && item.nursingReport && !item.indicationReceipt ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/indication-receipt`, {
-            receivedByName: form.receivedByName ?? "",
-          }, "Recepción de indicaciones confirmada.");
-        }}>
-          <TextField id="receivedByName" label="Nombre de quien recibe" value={form.receivedByName ?? ""} onChange={onField("receivedByName")} />
-          <Button type="submit" pending={pending}>Confirmar recepción</Button>
-        </form>
-      ) : null}
-
-      {role === "altas_caja" && item.order && item.account?.status !== "conforme" ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/account`, { status: "conforme" }, "Estado de cuenta verificado.");
-        }}>
-          <p>Verifique el pago o la cobertura antes de emitir el pase.</p>
-          <Button type="submit" pending={pending}>Marcar liquidación conforme</Button>
-        </form>
-      ) : null}
-
-      {role === "altas_caja" && item.account?.status === "conforme" && !item.exitPass ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/exit-pass`, {}, "Pase de salida digital emitido.");
-        }}>
-          <Button type="submit" pending={pending}>Emitir pase de salida</Button>
-        </form>
-      ) : null}
-
-      {role === "camillero" && item.exitPass && !item.exit ? (
-        <section className="ops-form">
-          <p>El pase de salida ya está emitido. Traslade al paciente. La salida efectiva la registra una sola persona: la enfermera de piso.</p>
-        </section>
-      ) : null}
-
-      {role === "enfermera_piso" && item.exitPass && !item.exit ? (
-        <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
-          event.preventDefault();
-          void submit(`/api/v1/discharge/encounters/${encounterId}/exit`, {}, "Salida efectiva registrada. La cama queda vacante.");
-        }}>
-          <Button type="submit" pending={pending}>Registrar salida efectiva</Button>
-        </form>
-      ) : null}
+      <ReceiptStep {...context} />
+      <AccountStep {...context} />
+      <ExitPassStep {...context} />
+      <PorterNote role={role} item={item} />
+      <ExitStep {...context} />
 
       {item.exit ? <Feedback tone="success">El paciente ya egresó.</Feedback> : null}
     </Sheet>
