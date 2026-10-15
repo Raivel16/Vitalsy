@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
@@ -12,6 +12,7 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
+import { createRowKeys } from "../../../shared/list/rowKeys";
 
 type OrderItem = { title: string; detail: string; category: string };
 
@@ -54,6 +55,7 @@ export function MedicalOrdersPage() {
   const ingreso = params.get("ingreso");
   const role = user?.role ?? "medico_residente";
   const [orders, setOrders] = useState<Orders | null>(null);
+  const rowKeys = useMemo(createRowKeys, []);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [statusLabel, setStatusLabel] = useState("");
   const [physicianName, setPhysicianName] = useState("");
@@ -108,7 +110,7 @@ export function MedicalOrdersPage() {
   const visible = filledItems(items);
 
   function updateItem(index: number, patch: Partial<OrderItem>) {
-    setItems((current) => current.map((item, position) => (position === index ? { ...item, ...patch } : item)));
+    setItems((current) => current.map((item, position) => (position === index ? rowKeys.carry(item, { ...item, ...patch }) : item)));
   }
 
   async function persistDraft(nextItems: OrderItem[]) {
@@ -250,7 +252,7 @@ export function MedicalOrdersPage() {
         {editing ? (
           <div className="stack">
             {items.map((item, index) => (
-              <div key={`order-edit-${index}`} className="order-edit">
+              <div key={rowKeys.keyOf(item)} className="order-edit">
                 <TextField
                   id={`order-title-${index}`}
                   label={`Indicación ${index + 1}`}

@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -10,6 +10,7 @@ import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
+import { createRowKeys } from "../../../shared/list/rowKeys";
 
 type Item = { drugName: string; dose: string; route: string; frequency: string };
 type ActiveItem = Item & { id: number; drugBarcode?: string };
@@ -28,6 +29,7 @@ export function CpoePage() {
   const encounter = useEncounter();
   const [active, setActive] = useState<ActivePrescription | null>(null);
   const [kardexMeds, setKardexMeds] = useState<string[]>([]);
+  const rowKeys = useMemo(createRowKeys, []);
   const [newLines, setNewLines] = useState<Item[]>([emptyItem()]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Item>(emptyItem());
@@ -59,7 +61,7 @@ export function CpoePage() {
   }, [ingreso]);
 
   function updateNewLine(index: number, patch: Partial<Item>) {
-    setNewLines((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+    setNewLines((prev) => prev.map((item, i) => (i === index ? rowKeys.carry(item, { ...item, ...patch }) : item)));
   }
 
   async function onCreatePlan(event: SyntheticEvent) {
@@ -256,7 +258,7 @@ export function CpoePage() {
         <Panel title="Nueva prescripción">
         <form className="stack" onSubmit={onCreatePlan} noValidate aria-label="Nueva prescripción">
           {newLines.map((item, index) => (
-            <div className="form-grid" key={index}>
+            <div className="form-grid" key={rowKeys.keyOf(item)}>
               <TextField id={`drug-${index}`} label="Medicamento" value={item.drugName} onChange={(e) => updateNewLine(index, { drugName: e.target.value })} required />
               <TextField id={`dose-${index}`} label="Dosis" value={item.dose} onChange={(e) => updateNewLine(index, { dose: e.target.value })} required />
               <TextField id={`route-${index}`} label="Vía" value={item.route} onChange={(e) => updateNewLine(index, { route: e.target.value })} required placeholder="VO, IV…" />
