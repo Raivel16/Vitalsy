@@ -22,8 +22,8 @@ import {
 } from "../domain/alert";
 import { notifyAlertAcknowledged } from "../domain/inboxEvents";
 
-const NURSING_ROLES = ["enfermera_piso", "enfermera_supervisora"];
-const MEDICAL_ROLES = ["medico_residente", "medico_tratante"];
+const NURSING_ROLES: ReadonlySet<string> = new Set(["enfermera_piso", "enfermera_supervisora"]);
+const MEDICAL_ROLES: ReadonlySet<string> = new Set(["medico_residente", "medico_tratante"]);
 
 type NurseTab = "vitals" | "deterioro";
 
@@ -104,7 +104,7 @@ export function AlertDetailPage() {
     void load();
   }, [load]);
 
-  async function postAction(action: string, body: unknown | null): Promise<Record<string, unknown>> {
+  async function postAction(action: string, body: unknown): Promise<Record<string, unknown>> {
     return api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
       method: "POST",
       ...(body ? { body: JSON.stringify(body) } : {}),
@@ -340,9 +340,9 @@ export function AlertDetailPage() {
   const closed = alert.status === "cerrada";
   const pendingAck = alert.needsSiren
     && !["orden_uci", "uci_autorizada", "en_uci"].includes(alert.status);
-  const canNurseCare = NURSING_ROLES.includes(role) && !closed && alert.status === "en_atencion";
+  const canNurseCare = NURSING_ROLES.has(role) && !closed && alert.status === "en_atencion";
   const canSchedule = canNurseCare && Boolean(alert.reassessedAt) && (alert.news2Total ?? 1) < 1;
-  const isDoctor = MEDICAL_ROLES.includes(role);
+  const isDoctor = MEDICAL_ROLES.has(role);
   const isRrt = role === "equipo_respuesta_rapida";
   const icu = alert.icuTransfer;
   const canAuthorizeIcu = !closed
@@ -353,7 +353,7 @@ export function AlertDetailPage() {
     && ["enfermera_piso", "enfermera_supervisora", "camillero"].includes(role);
   const canReturnIcu = !closed
     && alert.status === "en_uci"
-    && NURSING_ROLES.includes(role);
+    && NURSING_ROLES.has(role);
 
   return (
     <Sheet kicker="Gestión de alertas" title="Evento de alerta" wide clinic="file" className="floor-care">

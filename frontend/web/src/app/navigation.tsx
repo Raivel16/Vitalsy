@@ -41,6 +41,7 @@ export type NavGroup = {
 };
 
 const CLINICAL: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "medico_residente", "medico_tratante"];
+const CLINICAL_SET: ReadonlySet<Role> = new Set<Role>(CLINICAL);
 
 /** Perfiles que intervienen en el proceso 3 de gestión de alertas. */
 export const ALERT_ROLES: Role[] = [
@@ -165,7 +166,7 @@ export function withIngreso(path: string): string {
 }
 
 export function isClinicalRole(role: Role): boolean {
-  return CLINICAL.includes(role);
+  return CLINICAL_SET.has(role);
 }
 
 export function canOpenPatientWorklist(role: Role): boolean {

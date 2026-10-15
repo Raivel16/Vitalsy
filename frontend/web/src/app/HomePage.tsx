@@ -34,7 +34,7 @@ const GUIDE: Record<Role, string> = {
   administrador_accesos: "Cree cuentas, asigne el rol de cada persona y desactive los accesos que ya no corresponden.",
 };
 
-const CONTROL_ROLES: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "enfermera_supervisora"];
+const CONTROL_ROLES: ReadonlySet<Role> = new Set<Role>(["enfermera_piso", "auxiliar_enfermeria", "enfermera_supervisora"]);
 
 type ControlRow = {
   encounterId: string;
@@ -91,7 +91,7 @@ export function HomePage() {
   const [patientTotal, setPatientTotal] = useState<number | null>(null);
   const [overdueControls, setOverdueControls] = useState<ControlRow[]>([]);
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
-  const showDashboard = isClinicalRole(role) || isAlertRole(role) || CONTROL_ROLES.includes(role);
+  const showDashboard = isClinicalRole(role) || isAlertRole(role) || CONTROL_ROLES.has(role);
 
   useEffect(() => {
     let active = true;
@@ -103,7 +103,7 @@ export function HomePage() {
           )
         : Promise.resolve(null);
 
-      const nextControls = CONTROL_ROLES.includes(role)
+      const nextControls = CONTROL_ROLES.has(role)
         ? softFail(
             api<{ controls: ControlRow[] }>("/api/v1/inpatient-care/monitoring-controls").then((data) =>
               data.controls.filter((row) => row.overdue),
@@ -176,7 +176,7 @@ export function HomePage() {
           <StatTile label="Pacientes en turno" value={patientTotal ?? "—"} hint="en censo" />
           <StatTile
             label="Controles vencidos"
-            value={CONTROL_ROLES.includes(role) ? overdueControls.length : "—"}
+            value={CONTROL_ROLES.has(role) ? overdueControls.length : "—"}
             hint="requieren registro"
             tone={overdueControls.length > 0 ? "warning" : "neutral"}
           />

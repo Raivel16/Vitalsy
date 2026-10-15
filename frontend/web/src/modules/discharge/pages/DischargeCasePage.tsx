@@ -14,7 +14,7 @@ import { handoffLines, lifePlanCode, lifePlanValidUntil, type DischargeCase, typ
 import { lifeSheetHtml } from "../domain/lifeSheet";
 
 const LIFE_ERROR = "No se pudo generar el código de Vitalsy Life. Intente de nuevo.";
-const LIFE_MODES: string[] = ["usuario", "invitacion", "rechaza"];
+const LIFE_MODES: ReadonlySet<string> = new Set(["usuario", "invitacion", "rechaza"]);
 
 const PERSPECTIVES = [
   { id: "medico_tratante", label: "Médico tratante" },
@@ -103,7 +103,7 @@ export function DischargeCasePage() {
   }
 
   async function retryLifePlan() {
-    if (!LIFE_MODES.includes(life)) {
+    if (!LIFE_MODES.has(life)) {
       setError("Indique el seguimiento en Vitalsy Life.");
       return;
     }
@@ -244,7 +244,7 @@ export function DischargeCasePage() {
       {role === "enfermera_piso" && item.reconciliation && !item.nursingReport ? (
         <form className="stack ops-form" onSubmit={(event: SyntheticEvent) => {
           event.preventDefault();
-          if (!LIFE_MODES.includes(life)) {
+          if (!LIFE_MODES.has(life)) {
             setError("Indique el seguimiento en Vitalsy Life.");
             return;
           }
@@ -333,7 +333,7 @@ export function DischargeCasePage() {
 
 function keepIssuedCodes(current: LifePlan | null, incoming: LifePlan | null | undefined): LifePlan | null {
   if (!incoming) return current;
-  if (!current || current.mode !== incoming.mode) return incoming;
+  if (current?.mode !== incoming.mode) return incoming;
   return {
     ...incoming,
     code: incoming.code ?? current.code,

@@ -33,7 +33,8 @@ export function lifeKindLabel(kind: string): string {
 
 export function lifeMetricRange(metric: LifeMetric): string {
   const unit = KIND_UNIT[metric.kind];
-  return `${metric.low}–${metric.high}${unit ? ` ${unit}` : ""}`;
+  const suffix = unit ? ` ${unit}` : "";
+  return `${metric.low}–${metric.high}${suffix}`;
 }
 
 /** Texto en español para un código de error de vinculación; undefined si no está mapeado. */
@@ -41,9 +42,9 @@ export function lifeLinkErrorMessage(code: string | undefined): string | undefin
   return code ? LINK_ERROR_MESSAGE[code] : undefined;
 }
 
-const BASELINE_READER_ROLES: readonly string[] = ["admision", "enfermera_piso", "medico_residente", "medico_tratante"];
+const BASELINE_READER_ROLES: ReadonlySet<string> = new Set(["admision", "enfermera_piso", "medico_residente", "medico_tratante"]);
 
 /** Roles que el backend autoriza a leer la línea de base domiciliaria. */
 export function canReadLifeBaseline(role: string | null | undefined): boolean {
-  return Boolean(role) && BASELINE_READER_ROLES.includes(role as string);
+  return Boolean(role) && BASELINE_READER_ROLES.has(role as string);
 }
