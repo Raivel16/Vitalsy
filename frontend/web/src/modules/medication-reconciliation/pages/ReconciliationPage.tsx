@@ -22,6 +22,12 @@ const ROUTE_LABEL: Record<string, string> = {
   inhalatoria: "Inhalatoria",
 };
 
+function reviewTone(status: string): "success" | "warning" | "neutral" {
+  if (status === "validada") return "success";
+  if (status === "con_observaciones") return "warning";
+  return "neutral";
+}
+
 export function ReconciliationPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
@@ -182,7 +188,7 @@ export function ReconciliationPage() {
           hint="Puede dejarse vacío si no hay alergias."
         />
         <output aria-label="Estado de conciliación">
-          <StatusPill tone={review.status === "validada" ? "success" : review.status === "con_observaciones" ? "warning" : "neutral"}>
+          <StatusPill tone={reviewTone(review.status)}>
             {review.label}
           </StatusPill>
         </output>
