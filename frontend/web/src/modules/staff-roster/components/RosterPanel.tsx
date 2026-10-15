@@ -21,6 +21,12 @@ import type { PlanSummary, PublishedPlan, StaffMember } from "../types";
 import { PersonPicker } from "./PersonPicker";
 import { ShiftMatrix } from "./ShiftMatrix";
 
+function planStatusText(plan: PublishedPlan | null, month: string): string {
+  if (!plan) return `Aún no hay un rol publicado para ${monthLabel(month)}.`;
+  const author = plan.publishedByName ? " por " + plan.publishedByName : "";
+  return `Publicado el ${formatDate(plan.publishedAt)}${author}.`;
+}
+
 /** RF-78: matriz mensual de turnos; el rol publicado y los meses anteriores permanecen visibles. */
 export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
   const [month, setMonth] = useState(() => todayIso().slice(0, 7));
@@ -184,9 +190,7 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
           </SelectField>
         </div>
         <p className="hint roster-status">
-          {plan
-            ? `Publicado el ${formatDate(plan.publishedAt)}${plan.publishedByName ? " por " + plan.publishedByName : ""}.`
-            : `Aún no hay un rol publicado para ${monthLabel(month)}.`}
+          {planStatusText(plan, month)}
           {dirty ? " Tiene cambios sin publicar." : ""}
         </p>
 
