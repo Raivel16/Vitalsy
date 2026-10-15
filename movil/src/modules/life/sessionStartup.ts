@@ -22,7 +22,7 @@ export async function reconcileSessionStartup(deps: { life: LifeApp; tokenStore:
     }
     const binding = await tokenStore.getBinding();
     const sessionUserId = life.state.sessionUserId;
-    if (binding && binding.accountId === null && sessionUserId && life.hasServerSession() && !life.sessionChanging) {
+    if (binding?.accountId === null && sessionUserId && life.hasServerSession() && !life.sessionChanging) {
       await tokenStore.set(binding.token, sessionUserId);
     }
   } catch {

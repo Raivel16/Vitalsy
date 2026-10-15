@@ -84,7 +84,7 @@ export function authenticate(
     return { errors };
   }
   const account = accounts.find((item) => item.email === email.trim().toLowerCase());
-  if (!account || !account.salt || !account.passwordHash || account.passwordHash !== hashPassword(password, account.salt, digest)) {
+  if (!account?.salt || !account.passwordHash || account.passwordHash !== hashPassword(password, account.salt, digest)) {
     return { errors: { form: 'Correo o contraseña incorrectos.' } };
   }
   return { account, errors: {} };

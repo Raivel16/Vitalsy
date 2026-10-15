@@ -59,7 +59,7 @@ export async function runBackgroundHealthSync(deps: BackgroundSyncDeps): Promise
       return 'noop';
     }
     const binding = await deps.tokenStore.getBinding().catch(() => null);
-    if (!binding || !binding.accountId) {
+    if (!binding?.accountId) {
       // Sin sesión, o un token anterior al vínculo con la cuenta: no se sabe de quién es.
       return 'noop';
     }
@@ -103,7 +103,7 @@ async function runInForeground(deps: BackgroundSyncDeps, runtime: ForegroundRunt
 
 async function sessionStillValid(deps: BackgroundSyncDeps, accountId: string): Promise<boolean> {
   const binding = await deps.tokenStore.getBinding().catch(() => null);
-  if (!binding || binding.accountId !== accountId) {
+  if (binding?.accountId !== accountId) {
     return false;
   }
   return !(await deps.tokenStore.isTransitioning().catch(() => true));
@@ -111,7 +111,7 @@ async function sessionStillValid(deps: BackgroundSyncDeps, accountId: string): P
 
 async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<BackgroundOutcome> {
   const snapshot = await deps.persistence.load();
-  if (!snapshot || snapshot.sessionUserId !== accountId || !snapshot.healthSync.accessGranted) {
+  if (snapshot?.sessionUserId !== accountId || !snapshot.healthSync.accessGranted) {
     return 'noop';
   }
   const scratch = deps.createLife(snapshot);
@@ -139,7 +139,7 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
   // Se aplica sobre lo ÚLTIMO guardado, no sobre la copia leída al empezar.
   let applied = false;
   await deps.persistence.update((latest) => {
-    if (!latest || latest.sessionUserId !== accountId) {
+    if (latest?.sessionUserId !== accountId) {
       return null;
     }
     const life = deps.createLife(latest);
@@ -157,7 +157,7 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
   const online = await deps.isOnline().catch(() => false);
   if (online && (await sessionStillValid(deps, accountId))) {
     const latest = await deps.persistence.load();
-    if (latest && latest.sessionUserId === accountId && !latest.consentRevokePending) {
+    if (latest?.sessionUserId === accountId && !latest.consentRevokePending) {
       const life = deps.createLife(latest);
       const decision = life.flushDecision(true, true, true);
       const accepted: string[] = [];
@@ -170,7 +170,7 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
         // Antes de CADA lote se relee lo último guardado: una revocación (o un cambio de cuenta) hecha
         // por la app entre lotes detiene el resto del envío.
         const fresh = await deps.persistence.load();
-        if (!fresh || fresh.sessionUserId !== accountId || fresh.consentRevokePending) {
+        if (fresh?.sessionUserId !== accountId || fresh.consentRevokePending) {
           break;
         }
         try {
@@ -188,7 +188,7 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
       if (accepted.length > 0 || rejected.length > 0) {
         const syncedAt = deps.now().toISOString();
         await deps.persistence.update((current) => {
-          if (!current || current.sessionUserId !== accountId) {
+          if (current?.sessionUserId !== accountId) {
             return null;
           }
           const merged = deps.createLife(current);
