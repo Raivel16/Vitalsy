@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PASSWORD_RECOVERY_MESSAGE, type FieldErrors } from '../domain/auth';
 import { Banner } from '../../../shared/ui/Banner';
@@ -19,13 +19,94 @@ export type AuthOutcome = { errors: FieldErrors; notices?: string[]; confirmatio
 
 export const LOCAL_ONLY_BANNER = 'Cuenta solo en este teléfono';
 
+function submitLabel(mode: Mode, loading: boolean): string {
+  if (mode === 'login') {
+    return loading ? 'Iniciando sesión…' : 'Iniciar sesión';
+  }
+  return loading ? 'Creando cuenta…' : 'Crear cuenta';
+}
+
+function ConfirmationView({
+  confirmation,
+  formError,
+  loading,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  confirmation: Confirmation;
+  formError?: string;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}>) {
+  const count = confirmation.pendingCount;
+  const subject = count === 1 ? 'lectura sin enviar' : 'lecturas sin enviar';
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.title}>Cambio de cuenta</Text>
+      {count > 0 ? (
+        <Banner
+          message={`Hay ${count} ${subject} de la otra cuenta. Si continúas, se borrarán de este teléfono.`}
+          palette={aire}
+          tone="warning"
+        />
+      ) : null}
+      {confirmation.undeliveredRevoke ? (
+        <Banner
+          message="Tu revocación aún no llegó al servidor. Se enviará cuando inicies sesión de nuevo con esa cuenta."
+          palette={aire}
+          tone="warning"
+        />
+      ) : null}
+      {formError ? <Banner message={formError} palette={aire} tone="danger" /> : null}
+      <Button label="Continuar y borrar" loading={loading} onPress={onConfirm} palette={aire} />
+      <Button disabled={loading} label="Cancelar" onPress={onCancel} palette={aire} tone="ghost" />
+    </View>
+  );
+}
+
+function NoticesView({ notices, onDone }: Readonly<{ notices: string[]; onDone?: () => void }>) {
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.title}>Sesión iniciada</Text>
+      {notices.map((notice) => (
+        <Banner key={notice} message={notice} palette={aire} tone="warning" />
+      ))}
+      <Button label="Continuar" onPress={() => onDone?.()} palette={aire} />
+    </View>
+  );
+}
+
+function ModeSwitch({ mode, onChange }: Readonly<{ mode: Mode; onChange: (mode: Mode) => void }>) {
+  return (
+    <View style={styles.switch}>
+      <Pressable accessibilityRole="button" onPress={() => onChange('login')} style={[styles.tab, mode === 'login' && styles.tabOn]}>
+        <Text style={[styles.tabText, mode === 'login' && styles.tabTextOn]}>Entrar</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => onChange('register')} style={[styles.tab, mode === 'register' && styles.tabOn]}>
+        <Text style={[styles.tabText, mode === 'register' && styles.tabTextOn]}>Registro</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function classifyOutcome(outcome: AuthOutcome): 'confirm' | 'errors' | 'notices' | 'done' {
+  if (outcome.confirmation) {
+    return 'confirm';
+  }
+  if (Object.keys(outcome.errors).length > 0) {
+    return 'errors';
+  }
+  return (outcome.notices?.length ?? 0) > 0 ? 'notices' : 'done';
+}
+
 export function AuthForm({
   onLogin,
   onRegister,
   onDone,
   localOnly = false,
   initialMode = 'login',
-}: {
+}: Readonly<{
   onLogin: (email: string, password: string) => AuthOutcome | Promise<AuthOutcome>;
   onRegister: (input: { name: string; email: string; password: string; confirm: string }) => AuthOutcome | Promise<AuthOutcome>;
   /** Se llama al terminar con éxito (tras mostrar los avisos, si los hay). */
@@ -33,7 +114,7 @@ export function AuthForm({
   /** Sin servidor configurado: la cuenta vive solo en este teléfono. */
   localOnly?: boolean;
   initialMode?: Mode;
-}) {
+}>) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,6 +127,13 @@ export function AuthForm({
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const busy = useRef(false);
 
+  function submitCredentials(): AuthOutcome | Promise<AuthOutcome> {
+    if (mode === 'login') {
+      return onLogin(email, password);
+    }
+    return onRegister({ name, email, password, confirm });
+  }
+
   async function submit(action?: () => Promise<AuthOutcome>) {
     if (busy.current) {
       return;
@@ -54,21 +142,15 @@ export function AuthForm({
     setLoading(true);
     setErrors({});
     try {
-      const outcome = await (action ? action() : mode === 'login' ? onLogin(email, password) : onRegister({ name, email, password, confirm }));
+      const outcome = await (action ?? submitCredentials)();
       setErrors(outcome.errors);
-      if (outcome.confirmation) {
-        setConfirmation(outcome.confirmation);
-        return;
+      setConfirmation(outcome.confirmation ?? null);
+      const settled = classifyOutcome(outcome);
+      if (settled === 'notices') {
+        setNotices(outcome.notices ?? []);
+      } else if (settled === 'done') {
+        onDone?.();
       }
-      setConfirmation(null);
-      if (Object.keys(outcome.errors).length > 0) {
-        return;
-      }
-      if (outcome.notices && outcome.notices.length > 0) {
-        setNotices(outcome.notices);
-        return;
-      }
-      onDone?.();
     } catch {
       setErrors({ form: 'No pudimos completar la solicitud. Inténtalo de nuevo.' });
     } finally {
@@ -78,83 +160,50 @@ export function AuthForm({
   }
 
   if (confirmation) {
-    const count = confirmation.pendingCount;
-    const subject = count === 1 ? 'lectura sin enviar' : 'lecturas sin enviar';
+    const pending = confirmation;
     return (
-      <View style={styles.wrap}>
-        <Text style={styles.title}>Cambio de cuenta</Text>
-        {count > 0 ? (
-          <Banner
-            message={`Hay ${count} ${subject} de la otra cuenta. Si continúas, se borrarán de este teléfono.`}
-            palette={aire}
-            tone="warning"
-          />
-        ) : null}
-        {confirmation.undeliveredRevoke ? (
-          <Banner
-            message="Tu revocación aún no llegó al servidor. Se enviará cuando inicies sesión de nuevo con esa cuenta."
-            palette={aire}
-            tone="warning"
-          />
-        ) : null}
-        {errors.form ? <Banner message={errors.form} palette={aire} tone="danger" /> : null}
-        <Button label="Continuar y borrar" loading={loading} onPress={() => void submit(confirmation.confirm)} palette={aire} />
-        <Button
-          disabled={loading}
-          label="Cancelar"
-          onPress={() => {
-            const pending = confirmation;
-            setConfirmation(null);
-            setPassword('');
-            void pending.cancel();
-          }}
-          palette={aire}
-          tone="ghost"
-        />
-      </View>
+      <ConfirmationView
+        confirmation={pending}
+        formError={errors.form}
+        loading={loading}
+        onCancel={() => {
+          setConfirmation(null);
+          setPassword('');
+          void pending.cancel();
+        }}
+        onConfirm={() => void submit(pending.confirm)}
+      />
     );
   }
 
   if (notices.length > 0) {
-    return (
-      <View style={styles.wrap}>
-        <Text style={styles.title}>Sesión iniciada</Text>
-        {notices.map((notice) => (
-          <Banner key={notice} message={notice} palette={aire} tone="warning" />
-        ))}
-        <Button label="Continuar" onPress={() => onDone?.()} palette={aire} />
-      </View>
-    );
+    return <NoticesView notices={notices} onDone={onDone} />;
   }
 
-  const label = mode === 'login' ? (loading ? 'Iniciando sesión…' : 'Iniciar sesión') : loading ? 'Creando cuenta…' : 'Crear cuenta';
+  let extra: ReactNode = null;
+  if (mode === 'register') {
+    extra = <Field error={errors.confirm} label="Confirmar contraseña" onChangeText={setConfirm} palette={aire} revealable value={confirm} />;
+  } else if (localOnly) {
+    extra = (
+      <Pressable accessibilityRole="button" onPress={() => setRecovery(true)}>
+        <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+      </Pressable>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Tu ritmo, en calma</Text>
       <Text style={styles.lead}>Información preventiva sobre tu línea de base. No es un diagnóstico.</Text>
       {localOnly ? <Banner message={LOCAL_ONLY_BANNER} palette={aire} tone="info" /> : null}
-      <View style={styles.switch}>
-        <Pressable accessibilityRole="button" onPress={() => setMode('login')} style={[styles.tab, mode === 'login' && styles.tabOn]}>
-          <Text style={[styles.tabText, mode === 'login' && styles.tabTextOn]}>Entrar</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => setMode('register')} style={[styles.tab, mode === 'register' && styles.tabOn]}>
-          <Text style={[styles.tabText, mode === 'register' && styles.tabTextOn]}>Registro</Text>
-        </Pressable>
-      </View>
+      <ModeSwitch mode={mode} onChange={setMode} />
       {mode === 'register' ? <Field autoCapitalize="words" error={errors.name} label="Nombre" onChangeText={setName} palette={aire} value={name} /> : null}
       <Field error={errors.email} keyboardType="email-address" label="Correo" onChangeText={setEmail} palette={aire} value={email} />
       <Field error={errors.password} label="Contraseña" onChangeText={setPassword} palette={aire} revealable value={password} />
-      {mode === 'register' ? (
-        <Field error={errors.confirm} label="Confirmar contraseña" onChangeText={setConfirm} palette={aire} revealable value={confirm} />
-      ) : localOnly ? (
-        <Pressable accessibilityRole="button" onPress={() => setRecovery(true)}>
-          <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
-        </Pressable>
-      ) : null}
+      {extra}
       {localOnly && recovery ? <Banner message={PASSWORD_RECOVERY_MESSAGE} palette={aire} tone="warning" /> : null}
       {errors.form ? <Banner message={errors.form} palette={aire} tone="danger" /> : null}
-      <Button label={label} loading={loading} onPress={() => void submit()} palette={aire} />
+      <Button label={submitLabel(mode, loading)} loading={loading} onPress={() => void submit()} palette={aire} />
     </View>
   );
 }

@@ -67,7 +67,7 @@ async function attemptRevoke(deps: ConsentDeps): Promise<boolean> {
 }
 
 /** Revocación local inmediata; el servidor se avisa de inmediato o queda un pendiente durable. */
-async function revoke(deps: ConsentDeps): Promise<SharingOutcome> {
+export async function revokeSharing(deps: ConsentDeps): Promise<SharingOutcome> {
   const { life, client } = deps;
   life.revokeSharing(Boolean(client));
   try {
@@ -89,7 +89,7 @@ async function revoke(deps: ConsentDeps): Promise<SharingOutcome> {
   };
 }
 
-async function grant(deps: ConsentDeps): Promise<SharingOutcome> {
+export async function grantSharing(deps: ConsentDeps): Promise<SharingOutcome> {
   const { life, client } = deps;
   if (!client) {
     life.confirmSharing();
@@ -135,10 +135,6 @@ async function grant(deps: ConsentDeps): Promise<SharingOutcome> {
   });
 }
 
-export function changeSharing(enabled: boolean, deps: ConsentDeps): Promise<SharingOutcome> {
-  return enabled ? grant(deps) : revoke(deps);
-}
-
 /** Reintenta una revocación pendiente. Seguro de llamar en cada sincronización. */
 export async function retryPendingConsent(deps: ConsentDeps): Promise<void> {
   if (!deps.client || !deps.life.state.consentRevokePending || !canReachServer(deps)) {
@@ -148,6 +144,22 @@ export async function retryPendingConsent(deps: ConsentDeps): Promise<void> {
 }
 
 const SHARING_CLOSED = 'Activa la compartición con instituciones antes de generar un código.';
+
+function linkCodeFailureMessage(result: { status: number; code?: string }): string {
+  if (result.status === 401) {
+    return 'Inicia sesión de nuevo para generar tu código.';
+  }
+  if (result.status === 0) {
+    return 'Sin conexión. Conéctate para generar tu código.';
+  }
+  if (result.status === 409 || result.code === 'sharing_closed') {
+    return SHARING_CLOSED;
+  }
+  if (result.status === 429) {
+    return 'Demasiados intentos. Espera un minuto e intenta de nuevo.';
+  }
+  return 'No se pudo generar el código ahora. Intenta de nuevo.';
+}
 
 /** Emite el código en el servidor. Nunca genera un código local cuando hay API. */
 export async function issueServerLinkCode(deps: ConsentDeps): Promise<LinkCodeOutcome> {
@@ -182,18 +194,8 @@ export async function issueServerLinkCode(deps: ConsentDeps): Promise<LinkCodeOu
   if (!result.ok) {
     if (result.status === 401) {
       await deps.onUnauthorized();
-      return { ok: false, message: 'Inicia sesión de nuevo para generar tu código.' };
     }
-    if (result.status === 0) {
-      return { ok: false, message: 'Sin conexión. Conéctate para generar tu código.' };
-    }
-    if (result.status === 409 || result.code === 'sharing_closed') {
-      return { ok: false, message: SHARING_CLOSED };
-    }
-    if (result.status === 429) {
-      return { ok: false, message: 'Demasiados intentos. Espera un minuto e intenta de nuevo.' };
-    }
-    return { ok: false, message: 'No se pudo generar el código ahora. Intenta de nuevo.' };
+    return { ok: false, message: linkCodeFailureMessage(result) };
   }
   const { code, expiresAt } = result.data ?? ({} as { code?: string; expiresAt?: string });
   if (typeof code !== 'string' || !code || typeof expiresAt !== 'string') {

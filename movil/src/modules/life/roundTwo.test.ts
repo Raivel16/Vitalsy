@@ -2,7 +2,7 @@ import type { SecureBackend } from '../../shared/api/tokenStore';
 import { createTokenStore } from '../../shared/api/tokenStore';
 import { SqlitePersistence } from '../../shared/storage/sqlitePersistence';
 import { mapHealthKitSamples } from '../health-sync/domain/mapHealthKitSamples';
-import { changeSharing, issueServerLinkCode } from './consentSync';
+import { grantSharing, issueServerLinkCode } from './consentSync';
 import { emptySnapshot, LifeApp } from './lifeApp';
 import { reconcileSessionStartup } from './sessionStartup';
 import { runSync } from './syncRunner';
@@ -110,7 +110,7 @@ describe('epoch guards', () => {
       }),
       issueLinkCode: jest.fn(),
     };
-    const outcome = await changeSharing(true, { life, client: client as never, hasSession: true, online: true, onUnauthorized: async () => undefined });
+    const outcome = await grantSharing({ life, client: client as never, hasSession: true, online: true, onUnauthorized: async () => undefined });
     expect(outcome.ok).toBe(false);
     expect(life.state.consent.sharingEnabled).toBe(false);
   });

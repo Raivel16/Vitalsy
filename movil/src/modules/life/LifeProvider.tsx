@@ -5,7 +5,7 @@ import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
 import { singleFlight } from '../../shared/async/singleFlight';
 import { AppState } from 'react-native';
 import { activatePlan } from './activatePlan';
-import { changeSharing, issueServerLinkCode, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
+import { grantSharing, issueServerLinkCode, revokeSharing, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
 import { needsResync, runSync } from './syncRunner';
 import { randomHex } from '../../shared/crypto/randomHex';
 import { sha256Hex } from '../../shared/crypto/sha256';
@@ -264,7 +264,8 @@ export function LifeProvider({
 
   const changeSharingNow = useCallback(
     async (enabled: boolean) => {
-      const result = await changeSharing(enabled, await consentDeps());
+      const deps = await consentDeps();
+      const result = await (enabled ? grantSharing(deps) : revokeSharing(deps));
       await refresh();
       return result;
     },

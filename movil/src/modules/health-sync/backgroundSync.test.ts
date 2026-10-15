@@ -269,4 +269,63 @@ describe('runBackgroundHealthSync', () => {
     };
     await expect(runBackgroundHealthSync(deps)).resolves.toBe('failed');
   });
+
+  describe('cold run characterization', () => {
+    const pendingQueue = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({ id: `plan-${index}`, kind: 'plan' as const, body: '{}', status: 'pending' as const }));
+
+    it('clears the token and keeps the queue pending when the server answers 401', async () => {
+      const harness = setup({ snapshot: snapshot({ queue: pendingQueue(3) }) });
+      const unauthorized = jest.fn(async () => ({ ok: false, status: 401, message: 'no' }));
+      harness.deps.client = { sync: unauthorized, getNotices: jest.fn() } as never;
+      await expect(runBackgroundHealthSync(harness.deps)).resolves.toBe('success');
+      expect(unauthorized).toHaveBeenCalledTimes(1);
+      expect(harness.deps.tokenStore.clear).toHaveBeenCalledTimes(1);
+      expect(harness.getStored()!.queue.filter((item) => item.status === 'pending')).toHaveLength(3);
+    });
+
+    it('does not clear the token on a non-401 failure and stops sending', async () => {
+      const harness = setup({ snapshot: snapshot({ queue: pendingQueue(250) }) });
+      const failing = jest.fn(async () => ({ ok: false, status: 500, message: 'down' }));
+      harness.deps.client = { sync: failing, getNotices: jest.fn() } as never;
+      await expect(runBackgroundHealthSync(harness.deps)).resolves.toBe('success');
+      expect(failing).toHaveBeenCalledTimes(1);
+      expect(harness.deps.tokenStore.clear).not.toHaveBeenCalled();
+      expect(harness.getStored()!.queue.filter((item) => item.status === 'pending')).toHaveLength(250);
+    });
+
+    it('stops without throwing when the network call itself throws', async () => {
+      const harness = setup({ snapshot: snapshot({ queue: pendingQueue(250) }) });
+      const throwing = jest.fn(async () => {
+        throw new Error('offline');
+      });
+      harness.deps.client = { sync: throwing, getNotices: jest.fn() } as never;
+      await expect(runBackgroundHealthSync(harness.deps)).resolves.toBe('success');
+      expect(throwing).toHaveBeenCalledTimes(1);
+      expect(harness.getStored()!.queue.filter((item) => item.status === 'pending')).toHaveLength(250);
+    });
+
+    it('stops sending the remaining chunks when the session starts changing between chunks', async () => {
+      const harness = setup({ snapshot: snapshot({ queue: pendingQueue(250) }) });
+      let transitioning = false;
+      harness.deps.tokenStore.isTransitioning = async () => transitioning;
+      const racing = jest.fn(async (items: Array<{ id: string }>) => {
+        transitioning = true;
+        return { ok: true, status: 200, data: { accepted: items.map((item) => item.id), rejected: [] } };
+      });
+      harness.deps.client = { sync: racing, getNotices: jest.fn() } as never;
+      await runBackgroundHealthSync(harness.deps);
+      expect(racing).toHaveBeenCalledTimes(1);
+      expect(harness.getStored()!.queue.filter((item) => item.status === 'pending')).toHaveLength(150);
+    });
+
+    it('is a no-op when the app switched account while the task was reading', async () => {
+      const { deps, sync } = setup({
+        samples: [sample('a')],
+        concurrentWrite: (current) => ({ ...current, sessionUserId: '9' }),
+      });
+      await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
+      expect(sync).not.toHaveBeenCalled();
+    });
+  });
 });
