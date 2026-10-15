@@ -3,9 +3,18 @@ import { font, type Palette } from '../theme/tokens';
 
 type Tone = 'info' | 'danger' | 'warning';
 
+function toneColors(tone: Tone, palette: Palette): { background: string; color: string } {
+  if (tone === 'danger') {
+    return { background: palette.dangerSoft, color: palette.danger };
+  }
+  if (tone === 'warning') {
+    return { background: '#FEF3C7', color: palette.warning };
+  }
+  return { background: palette.soft, color: palette.text };
+}
+
 export function Banner({ message, palette, tone = 'info' }: Readonly<{ message: string; palette: Palette; tone?: Tone }>) {
-  const background = tone === 'danger' ? palette.dangerSoft : tone === 'warning' ? '#FEF3C7' : palette.soft;
-  const color = tone === 'danger' ? palette.danger : tone === 'warning' ? palette.warning : palette.text;
+  const { background, color } = toneColors(tone, palette);
   return (
     <View style={[styles.box, { backgroundColor: background }]}>
       <Text style={[styles.text, { color, fontFamily: font.medium }]}>{message}</Text>

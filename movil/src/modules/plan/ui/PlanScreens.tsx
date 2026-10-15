@@ -11,6 +11,8 @@ import { Screen } from '../../../shared/ui/Screen';
 import { aire, font } from '../../../shared/theme/tokens';
 import { useLife, scheduleMedicationReminder } from '../../life/LifeProvider';
 
+const DOSE_STATUS_LABEL: Record<string, string> = { taken: 'Tomada', postponed: 'Pospuesta' };
+
 export function PlanScreen() {
   const router = useRouter();
   const { life } = useLife();
@@ -34,7 +36,7 @@ export function PlanScreen() {
           {plan.medications.map((item) => (
             <View key={item.id} style={styles.card}>
               <Text style={styles.itemTitle}>{item.name}</Text>
-              <Text style={styles.lead}>{item.dose} · {item.schedule} · {item.status === 'taken' ? 'Tomada' : item.status === 'postponed' ? 'Pospuesta' : 'Pendiente'}</Text>
+              <Text style={styles.lead}>{item.dose} · {item.schedule} · {DOSE_STATUS_LABEL[item.status] ?? 'Pendiente'}</Text>
               <Button label="Ver toma" onPress={() => router.push(`/plan/medicacion/${item.id}`)} palette={aire} tone="soft" />
             </View>
           ))}
