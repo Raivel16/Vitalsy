@@ -68,7 +68,7 @@ function nights(records: HealthKitSleep[] | undefined, settledBefore: number | n
   // Fuentes solapadas (reloj + teléfono) no deben duplicar minutos: se unen los intervalos.
   const merged: Array<{ start: number; end: number }> = [];
   for (const span of spans) {
-    const last = merged[merged.length - 1];
+    const last = merged.at(-1);
     if (last && span.start <= last.end) {
       last.end = Math.max(last.end, span.end);
     } else {
@@ -78,7 +78,7 @@ function nights(records: HealthKitSleep[] | undefined, settledBefore: number | n
 
   const groups: Array<{ start: number; end: number; minutes: number }> = [];
   for (const span of merged) {
-    const last = groups[groups.length - 1];
+    const last = groups.at(-1);
     const minutes = (span.end - span.start) / 60000;
     if (last && span.start - last.end <= NIGHT_GAP_MS) {
       last.end = span.end;

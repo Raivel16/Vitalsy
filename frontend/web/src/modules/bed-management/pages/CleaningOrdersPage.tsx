@@ -45,9 +45,9 @@ export function CleaningOrdersPage() {
       setActionError("");
       setNotice(success);
       await board.reload();
-    } catch (caught) {
+    } catch (error_) {
       setNotice("");
-      setActionError(errorText(caught, failure));
+      setActionError(errorText(error_, failure));
     } finally {
       setBusyId(null);
     }
@@ -90,7 +90,7 @@ export function CleaningOrdersPage() {
       <CleaningStageStrip counts={counts} active={filter} onSelect={setFilter} />
 
       <div className="ops-toolbar">
-        <div className="filter-pills" role="group" aria-label="Filtrar órdenes">
+        <fieldset className="filter-pills" aria-label="Filtrar órdenes">
           {FILTERS.map((item) => (
             <button
               key={item.id}
@@ -102,7 +102,7 @@ export function CleaningOrdersPage() {
               {item.label(counts, orders.length)}
             </button>
           ))}
-        </div>
+        </fieldset>
         <div className="ops-toolbar-tools">
           <TextField
             id="cleaning-search"

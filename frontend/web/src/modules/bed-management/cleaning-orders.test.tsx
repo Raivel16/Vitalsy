@@ -97,7 +97,7 @@ describe("habilitación de unidades (RF-74 a RF-77)", () => {
     await user.click(button);
     release();
 
-    await screen.findByText(/unidad equipada/i, { selector: "[role=status]" });
+    await screen.findByText(/unidad equipada/i, { selector: "output" });
     expect(calls.filter((call) => call.method === "POST")).toHaveLength(1);
   });
 

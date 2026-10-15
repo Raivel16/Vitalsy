@@ -21,11 +21,11 @@ export function bedTone(status: string, isolation = false): BedVisual {
   return "neutral";
 }
 
-export function StatusMark({ tone, children }: { tone: BedVisual; children?: ReactNode }) {
+export function StatusMark({ tone, children }: Readonly<{ tone: BedVisual; children?: ReactNode }>) {
   return <span className={`status-mark status-${tone}`}>{children ?? BED_LABEL[tone]}</span>;
 }
 
-export function MetricRow({ items }: { items: Array<{ label: string; value: number | string }> }) {
+export function MetricRow({ items }: Readonly<{ items: Array<{ label: string; value: number | string }> }>) {
   return (
     <ul className="metric-row">
       {items.map((item) => (
@@ -44,12 +44,12 @@ export function StatTile({
   value,
   hint,
   tone = "neutral",
-}: {
+}: Readonly<{
   label: string;
   value: number | string;
   hint?: string;
   tone?: ClinicalTone;
-}) {
+}>) {
   return (
     <article className={`stat-tile tone-${tone}`}>
       <span className="stat-tile-label">{label}</span>
@@ -61,11 +61,11 @@ export function StatTile({
   );
 }
 
-export function StatusPill({ tone = "neutral", children }: { tone?: ClinicalTone; children: ReactNode }) {
+export function StatusPill({ tone = "neutral", children }: Readonly<{ tone?: ClinicalTone; children: ReactNode }>) {
   return <span className={`status-pill pill-${tone}`}>{children}</span>;
 }
 
-export function ProgressTrack({ done, total }: { done: number; total: number }) {
+export function ProgressTrack({ done, total }: Readonly<{ done: number; total: number }>) {
   const safeTotal = Math.max(total, 0);
   const safeDone = Math.min(Math.max(done, 0), safeTotal || done);
   const pct = safeTotal === 0 ? 0 : Math.round((safeDone / safeTotal) * 100);
@@ -90,14 +90,14 @@ export function QueueRow({
   chip,
   action,
   actionTone = "primary",
-}: {
+}: Readonly<{
   name: string;
   meta?: string;
   tone?: ClinicalTone;
   chip?: ReactNode;
   action?: { to: string; label: string };
   actionTone?: "primary" | "quiet" | "danger";
-}) {
+}>) {
   return (
     <li className={`queue-row tone-${tone}`}>
       <div className="queue-row-main">
@@ -128,12 +128,12 @@ export function BedTile({
   code,
   status,
   isolation = false,
-}: {
+}: Readonly<{
   room: string;
   code: string;
   status: string;
   isolation?: boolean;
-}) {
+}>) {
   const tone = bedTone(status, isolation);
   return (
     <article className={`bed-tile bed-${tone}`}>
@@ -148,11 +148,11 @@ export function Panel({
   title,
   aside,
   children,
-}: {
+}: Readonly<{
   title: string;
   aside?: ReactNode;
   children: ReactNode;
-}) {
+}>) {
   return (
     <section className="panel" aria-label={title}>
       <header className="panel-head">

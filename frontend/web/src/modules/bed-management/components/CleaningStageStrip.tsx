@@ -5,11 +5,11 @@ export function CleaningStageStrip({
   counts,
   active,
   onSelect,
-}: {
+}: Readonly<{
   counts: Record<CleaningStatus, number>;
   active: CleaningStatus | "todas";
   onSelect: (next: CleaningStatus | "todas") => void;
-}) {
+}>) {
   return (
     <div className="stage-grid" aria-label="Etapas de habilitación">
       {STAGES.map((stage) => (

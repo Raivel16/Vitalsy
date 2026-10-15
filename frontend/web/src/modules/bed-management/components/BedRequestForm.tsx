@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { Button } from "../../../shared/ui/Button";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import {
@@ -22,12 +22,12 @@ export function BedRequestForm({
   busy,
   onSearch,
   onSubmit,
-}: {
+}: Readonly<{
   specialties: string[];
   busy: boolean;
   onSearch: (query: string) => Promise<PatientOption[]>;
   onSubmit: (form: RequestForm) => void;
-}) {
+}>) {
   const [form, setForm] = useState<RequestForm>(emptyRequestForm);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PatientOption[]>([]);
@@ -57,7 +57,7 @@ export function BedRequestForm({
     setResults([]);
   }
 
-  function submit(event: FormEvent) {
+  function submit(event: SyntheticEvent) {
     event.preventDefault();
     setSubmitted(true);
     if (Object.keys(validateRequest(effective)).length > 0) return;

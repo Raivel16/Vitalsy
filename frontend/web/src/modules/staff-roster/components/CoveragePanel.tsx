@@ -16,12 +16,12 @@ export function CoveragePanel({
   members,
   capabilities,
   onChanged,
-}: {
+}: Readonly<{
   requests: CoverageRequest[] | null;
   members: StaffMember[];
   capabilities: StaffCapabilities;
   onChanged: () => void;
-}) {
+}>) {
   const [retainers, setRetainers] = useState<Record<number, StaffMember | null>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -35,8 +35,8 @@ export function CoveragePanel({
       setError("");
       setNotice(success);
       onChanged();
-    } catch (caught) {
-      setError(errorText(caught, fallback));
+    } catch (error_) {
+      setError(errorText(error_, fallback));
     } finally {
       setBusy(null);
     }
@@ -76,7 +76,7 @@ export function CoveragePanel({
         </div>
       ) : null}
       {requests === null ? <LoadingState label="Cargando coberturas…" /> : null}
-      {requests && requests.length === 0 ? (
+      {requests?.length === 0 ? (
         <p className="hint">
           No hay solicitudes de cobertura. Cuando la supervisora registre una inasistencia que lo requiera, aparecerá aquí con
           el motivo, la persona ausente y el estado del trámite.

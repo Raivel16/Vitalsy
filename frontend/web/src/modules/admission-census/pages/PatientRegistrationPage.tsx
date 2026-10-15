@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { IconAlertCircle, IconBuildingBank, IconEraser, IconHash, IconHourglass, IconId, IconIdBadge2, IconShield, IconUserCheck, IconX } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { api } from "../../../app/api";
@@ -55,7 +55,7 @@ export function PatientRegistrationPage() {
     setError("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const orderIssue = requiredText(orderNumber, "El número de orden es obligatorio.");
@@ -91,8 +91,8 @@ export function PatientRegistrationPage() {
         }),
       });
       navigate(stepPath(data.encounter.currentStep, data.encounter.encounterId));
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el ingreso."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el ingreso."));
     } finally {
       setPending(false);
     }

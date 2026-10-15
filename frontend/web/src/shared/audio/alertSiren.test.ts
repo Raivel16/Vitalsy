@@ -44,7 +44,7 @@ describe("sirena de alertas (RF-53)", () => {
     const siren = createAlertSiren(() => context as unknown as AudioContext);
 
     siren.start();
-    expect(oscillators.length).toBe(1);
+    expect(oscillators).toHaveLength(1);
 
     vi.advanceTimersByTime(3000);
     expect(oscillators.length).toBeGreaterThan(1);
@@ -52,7 +52,7 @@ describe("sirena de alertas (RF-53)", () => {
     siren.stop();
     const emitted = oscillators.length;
     vi.advanceTimersByTime(5000);
-    expect(oscillators.length).toBe(emitted);
+    expect(oscillators).toHaveLength(emitted);
   });
 
   it("no se duplica si se la arranca dos veces", () => {
@@ -62,7 +62,7 @@ describe("sirena de alertas (RF-53)", () => {
 
     siren.start();
     siren.start();
-    expect(oscillators.length).toBe(1);
+    expect(oscillators).toHaveLength(1);
     expect(siren.isPlaying()).toBe(true);
 
     siren.stop();

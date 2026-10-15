@@ -20,7 +20,7 @@ export function PersonPicker({
   onClear,
   error,
   onPick,
-}: {
+}: Readonly<{
   id: string;
   label: string;
   members: StaffMember[];
@@ -29,7 +29,7 @@ export function PersonPicker({
   onClear?: () => void;
   error?: string;
   onPick: (member: StaffMember) => void;
-}) {
+}>) {
   const listId = useId();
   const optionId = (index: number) => `${listId}-opt-${index}`;
   const [query, setQuery] = useState("");
@@ -111,7 +111,7 @@ export function PersonPicker({
       {open ? (
         <ul id={listId} role="listbox" className="person-picker-list" aria-label={`Resultados de ${label}`}>
           {matches.length === 0 ? (
-            <li className="person-picker-empty" role="presentation">Ninguna persona coincide con la búsqueda.</li>
+            <li className="person-picker-empty">Ninguna persona coincide con la búsqueda.</li>
           ) : (
             matches.map((member, index) => (
               <li

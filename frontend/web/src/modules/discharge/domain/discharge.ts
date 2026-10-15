@@ -26,7 +26,7 @@ export type LifePlan = {
 export function lifePlanCode(plan: LifePlan | null | undefined, role: string): string | null {
   if (role !== "enfermera_piso" || !plan || plan.mode === "rechaza") return null;
   const value = plan.mode === "invitacion" ? plan.invitationCode : plan.code;
-  return value ? value : null;
+  return value || null;
 }
 
 export function lifePlanValidUntil(plan: LifePlan | null | undefined): string | null {

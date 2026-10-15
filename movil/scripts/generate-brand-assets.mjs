@@ -132,15 +132,15 @@ function alphaBox(img) {
   const { width, height } = img;
   const px = img.pixels;
   let x0 = width, y0 = height, x1 = -1, y1 = -1;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (px[(y * width + x) * 4 + 3] > 0) {
-        if (x < x0) x0 = x;
-        if (x > x1) x1 = x;
-        if (y < y0) y0 = y;
-        if (y > y1) y1 = y;
-      }
-    }
+  for (let i = 3; i < px.length; i += 4) {
+    if (px[i] === 0) continue;
+    const pixel = (i - 3) / 4;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y0 = Math.min(y0, y);
+    y1 = Math.max(y1, y);
   }
   return { x0, y0, x1, y1 };
 }

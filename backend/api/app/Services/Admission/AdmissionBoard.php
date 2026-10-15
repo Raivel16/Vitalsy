@@ -3,22 +3,13 @@
 namespace App\Services\Admission;
 
 use App\Models\AdmissionEncounter;
-use RuntimeException;
-
-class AdmissionBoardException extends RuntimeException
-{
-    public function __construct(string $message, public readonly int $status)
-    {
-        parent::__construct($message);
-    }
-}
 
 class AdmissionBoard
 {
     /**
      * @var array<string, array{role: string, next: string|null, subprocess: string, label: string, status: string, deliverable: string|null}>
      */
-    private const STEPS = [
+    public const STEPS = [
         'orden' => ['role' => 'admision', 'next' => 'filiacion', 'subprocess' => '1.1', 'label' => 'Consultar orden de internamiento', 'status' => 'Orden por consultar', 'deliverable' => null],
         'filiacion' => ['role' => 'admision', 'next' => 'cobertura', 'subprocess' => '1.1', 'label' => 'Validar filiación', 'status' => 'Filiación por validar', 'deliverable' => null],
         'cobertura' => ['role' => 'admision', 'next' => 'brazalete', 'subprocess' => '1.1', 'label' => 'Validar cobertura', 'status' => 'Cobertura por validar', 'deliverable' => 'fichaAdmision'],
@@ -41,7 +32,7 @@ class AdmissionBoard
     /**
      * @var array<string, string>
      */
-    private const DELIVERABLES = [
+    public const DELIVERABLES = [
         'fichaAdmision' => 'Ficha digital de admisión',
         'brazalete' => 'Brazalete de identificación',
         'expediente' => 'Expediente clínico electrónico',
@@ -58,7 +49,7 @@ class AdmissionBoard
     /**
      * @var array<string, string>
      */
-    private const SUBPROCESS = [
+    public const SUBPROCESS = [
         '1.1' => 'Verificación y registro administrativo',
         '1.2' => 'Traslado y recepción en piso',
         '1.3' => 'Valoración inicial y conciliación',
@@ -67,30 +58,23 @@ class AdmissionBoard
     /**
      * @var list<string>
      */
-    private const FLOW_STEPS = [
+    public const FLOW_STEPS = [
         'orden', 'filiacion', 'cobertura', 'brazalete', 'expediente', 'consentimiento',
         'traslado', 'identidad', 'recepcion', 'valoracion', 'constantes', 'conciliacion',
         'escalas', 'kardex', 'indicaciones',
     ];
 
+    public function __construct(
+        private readonly AdmissionDemoData $demo,
+        private readonly AdmissionPresenter $presenter,
+        private readonly AdmissionIdentifiers $identifiers,
+        private readonly AdmissionStepTransitions $transitions,
+        private readonly AdmissionMedicalOrderFormatter $orderFormatter,
+    ) {}
+
     public function ensureDemo(): void
     {
-        if (AdmissionEncounter::query()->exists()) {
-            return;
-        }
-
-        $blank = array_fill_keys(array_keys(self::DELIVERABLES), false);
-        $admitted = $blank;
-        $admitted['fichaAdmision'] = true;
-        $admitted['brazalete'] = true;
-        $admitted['expediente'] = true;
-        $admitted['consentimiento'] = true;
-
-        AdmissionEncounter::query()->insert([
-            $this->row('ENC-0003', 'OI-2026-0003', null, 'Carmen Yolanda Vega', '09881234', 'Consulta externa', 'Particular', 'rechazada', 'Sin cobertura vigente', null, null, null, null, null, 'derivacion', null, $blank, 'demo'),
-            $this->row('ENC-0002', 'OI-2026-0002', null, 'Luis Ernesto Paredes', '40112233', 'Emergencia adultos', 'EsSalud', 'pendiente', 'Regular', null, null, null, null, null, 'cobertura', null, $blank, 'demo'),
-            $this->row('ENC-0001', 'OI-2026-0001', 'OT-2026-0001', 'Ana María Quispe Rojas', '45678912', 'Emergencia adultos', 'SIS', 'aprobada', 'SIS Gratuito', '312', 'B', 'Medicina interna', 'BRZ-0001-ANA', 'EXP-0001', 'traslado', null, $admitted, 'demo'),
-        ]);
+        $this->demo->seed();
     }
 
     /**
@@ -116,7 +100,7 @@ class AdmissionBoard
 
         $sorted = $builder
             ->get()
-            ->sortBy(fn (AdmissionEncounter $encounter) => $this->sortKey($encounter))
+            ->sortBy(fn (AdmissionEncounter $encounter) => $this->presenter->sortKey($encounter))
             ->values();
 
         $total = $sorted->count();
@@ -126,7 +110,7 @@ class AdmissionBoard
         $encounters = $sorted
             ->slice(($page - 1) * $perPage, $perPage)
             ->values()
-            ->map(fn (AdmissionEncounter $encounter) => $this->present($encounter))
+            ->map(fn (AdmissionEncounter $encounter) => $this->presenter->present($encounter))
             ->all();
 
         return [
@@ -147,7 +131,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
 
-        return $this->present($this->locate($encounterId));
+        return $this->presenter->present($this->locate($encounterId));
     }
 
     /**
@@ -178,7 +162,7 @@ class AdmissionBoard
             ];
         }
 
-        return $this->catalogOrders()[$orderNumber] ?? null;
+        return $this->demo->catalogOrders()[$orderNumber] ?? null;
     }
 
     /**
@@ -189,16 +173,16 @@ class AdmissionBoard
         $this->ensureDemo();
         $existing = AdmissionEncounter::query()->where('order_number', $orderNumber)->first();
         if ($existing) {
-            return $this->present($existing);
+            return $this->presenter->present($existing);
         }
 
-        $order = $this->catalogOrders()[$orderNumber] ?? null;
+        $order = $this->demo->catalogOrders()[$orderNumber] ?? null;
         if (! $order) {
             throw new AdmissionBoardException('No se encontró la orden.', 404);
         }
 
         $encounter = AdmissionEncounter::query()->create([
-            'encounter_id' => $this->nextEncounterId(),
+            'encounter_id' => $this->identifiers->nextEncounterId(),
             'order_number' => $order['orderNumber'],
             'source' => 'catalog',
             'patient_name' => $order['patient']['fullName'],
@@ -216,7 +200,7 @@ class AdmissionBoard
             ],
         ]);
 
-        return $this->present($encounter);
+        return $this->presenter->present($encounter);
     }
 
     /**
@@ -232,7 +216,7 @@ class AdmissionBoard
         }
 
         $encounter = AdmissionEncounter::query()->create([
-            'encounter_id' => $this->nextEncounterId(),
+            'encounter_id' => $this->identifiers->nextEncounterId(),
             'order_number' => $orderNumber,
             'source' => $source,
             'patient_name' => $data['patientName'],
@@ -253,7 +237,7 @@ class AdmissionBoard
             ],
         ]);
 
-        return $this->present($encounter);
+        return $this->presenter->present($encounter);
     }
 
     /**
@@ -268,21 +252,7 @@ class AdmissionBoard
             throw new AdmissionBoardException('Este no es el paso vigente del ingreso.', 422);
         }
 
-        $resolvingCoverage = $coverageStatus === 'aprobada'
-            && in_array($step, ['cobertura', 'derivacion'], true);
-
-        if ($encounter->waiting_reason && ! $resolvingCoverage) {
-            throw new AdmissionBoardException('La cobertura no permite continuar. Derive el trámite.', 422);
-        }
-        if ($encounter->current_step === 'cerrado' || $encounter->current_step !== $step) {
-            throw new AdmissionBoardException('Este no es el paso vigente del ingreso.', 422);
-        }
-        $allowedRoles = $step === 'indicaciones'
-            ? ['medico_residente', 'medico_tratante']
-            : [$definition['role']];
-        if (! in_array($role, $allowedRoles, true)) {
-            throw new AdmissionBoardException('Este paso corresponde a otro perfil.', 403);
-        }
+        $this->transitions->assertCanAdvance($encounter, $step, $definition['role'], $role, $coverageStatus);
 
         if ($coverageStatus !== null) {
             $encounter->coverage_status = $coverageStatus;
@@ -294,25 +264,10 @@ class AdmissionBoard
             $deliverables[$definition['deliverable']] = true;
         }
 
-        $next = $definition['next'];
-        $waiting = null;
-
-        if ($step === 'cobertura' || $step === 'derivacion') {
-            if ($status === 'aprobada') {
-                $next = 'brazalete';
-                $waiting = null;
-                $deliverables['fichaAdmision'] = true;
-            } else {
-                $next = 'derivacion';
-                $deliverables['fichaAdmision'] = false;
-                if ($step === 'derivacion') {
-                    $waiting = 'cobertura';
-                }
-            }
-        }
+        [$next, $waiting, $deliverables] = $this->transitions->resolve($step, $definition['next'], $status, $deliverables);
 
         if ($step === 'consentimiento' && $next === 'traslado') {
-            $this->ensureTransferReady($encounter);
+            $this->identifiers->ensureTransferReady($encounter);
         }
 
         $encounter->fill([
@@ -326,7 +281,7 @@ class AdmissionBoard
             'service' => $encounter->service,
         ])->save();
 
-        return $this->present($encounter->refresh());
+        return $this->presenter->present($encounter->refresh());
     }
 
     /**
@@ -376,7 +331,7 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
         if (! $encounter->wristband_code) {
-            $encounter->wristband_code = $this->nextWristbandCode($encounter);
+            $encounter->wristband_code = $this->identifiers->wristbandCode($encounter);
             $encounter->save();
         }
 
@@ -396,8 +351,7 @@ class AdmissionBoard
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
         if (! $encounter->record_id) {
-            $suffix = preg_replace('/\D+/', '', $encounter->encounter_id) ?: (string) $encounter->id;
-            $encounter->record_id = 'EXP-'.str_pad($suffix, 4, '0', STR_PAD_LEFT);
+            $encounter->record_id = $this->identifiers->recordId($encounter);
             $encounter->save();
         }
 
@@ -508,48 +462,8 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
-        $payload = $encounter->readablePayload();
-        $orders = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
-        $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : [];
-        $vitals = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : [];
-        $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : [];
-        $risks = is_array($payload['risks'] ?? null) ? $payload['risks'] : [];
 
-        $medications = [];
-        foreach ($reconciliation['medications'] ?? [] as $item) {
-            if (! is_array($item)) {
-                continue;
-            }
-            $medications[] = [
-                'name' => trim((string) ($item['name'] ?? '')),
-                'dose' => trim((string) ($item['dose'] ?? '')),
-                'route' => trim((string) ($item['route'] ?? '')),
-                'frequency' => trim((string) ($item['frequency'] ?? '')),
-            ];
-        }
-
-        return [
-            'status' => $orders['status'] ?? 'pendiente',
-            'statusLabel' => $orders['statusLabel'] ?? 'Pendiente de firma',
-            'items' => $this->normalizeOrderItems($orders['items'] ?? []),
-            'chiefComplaint' => $assessment['chiefComplaint'] ?? null,
-            'allergies' => array_values(array_filter($assessment['allergies'] ?? [], fn ($item) => is_string($item) && trim($item) !== '')),
-            'history' => is_string($assessment['history'] ?? null) ? $assessment['history'] : null,
-            'vitals' => [
-                'summary' => is_string($vitals['summary'] ?? null) ? $vitals['summary'] : null,
-                'news2Label' => is_string($vitals['news2Label'] ?? null) ? $vitals['news2Label'] : null,
-            ],
-            'reconciliation' => [
-                'medications' => $medications,
-                'noHomeMedications' => (bool) ($reconciliation['noHomeMedications'] ?? false),
-                'notes' => is_string($reconciliation['notes'] ?? null) ? $reconciliation['notes'] : null,
-                'alerts' => array_values(array_filter($reconciliation['alerts'] ?? [], fn ($alert) => is_string($alert) && trim($alert) !== '')),
-            ],
-            'risks' => [
-                'fallRisk' => is_string($risks['fallRisk'] ?? null) ? $risks['fallRisk'] : null,
-                'pressureRisk' => is_string($risks['pressureRisk'] ?? null) ? $risks['pressureRisk'] : null,
-            ],
-        ];
+        return $this->orderFormatter->view($encounter->readablePayload());
     }
 
     /**
@@ -569,7 +483,7 @@ class AdmissionBoard
         $payload['medicalOrders'] = [
             'status' => $existing['status'] ?? 'pendiente',
             'statusLabel' => $existing['statusLabel'] ?? 'Pendiente de firma',
-            'items' => $this->normalizeOrderItems($items),
+            'items' => $this->orderFormatter->normalizeItems($items),
         ];
         $encounter->clinical_payload = $payload;
         $encounter->save();
@@ -588,7 +502,7 @@ class AdmissionBoard
         $payload = $encounter->readablePayload();
         $existing = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : [];
         $rawItems = $signature['items'] ?? null;
-        $items = $this->normalizeOrderItems(is_array($rawItems) ? $rawItems : ($existing['items'] ?? []));
+        $items = $this->orderFormatter->normalizeItems(is_array($rawItems) ? $rawItems : ($existing['items'] ?? []));
         $filled = array_values(array_filter($items, fn (array $item) => trim($item['title']) !== ''));
         if ($filled === []) {
             throw new AdmissionBoardException('Debe registrar al menos una indicación.', 422);
@@ -613,32 +527,6 @@ class AdmissionBoard
         ];
     }
 
-    /**
-     * @param  array<int, mixed>  $items
-     * @return list<array{title: string, detail: string, category: string}>
-     */
-    private function normalizeOrderItems(array $items): array
-    {
-        $normalized = [];
-        foreach ($items as $item) {
-            if (is_string($item)) {
-                $normalized[] = ['title' => trim($item), 'detail' => '', 'category' => ''];
-
-                continue;
-            }
-            if (! is_array($item)) {
-                continue;
-            }
-            $normalized[] = [
-                'title' => trim((string) ($item['title'] ?? '')),
-                'detail' => trim((string) ($item['detail'] ?? '')),
-                'category' => trim((string) ($item['category'] ?? '')),
-            ];
-        }
-
-        return $normalized;
-    }
-
     private function locate(string $encounterId): AdmissionEncounter
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
@@ -647,260 +535,5 @@ class AdmissionBoard
         }
 
         return $encounter;
-    }
-
-    private function ensureTransferReady(AdmissionEncounter $encounter): void
-    {
-        if (! $encounter->transfer_order_number) {
-            $encounter->transfer_order_number = $this->nextTransferOrderNumber();
-        }
-        if (! $encounter->room) {
-            $index = AdmissionEncounter::query()->whereNotNull('room')->count() + 1;
-            $encounter->room = (string) (300 + $index);
-            $encounter->bed = $index % 2 === 0 ? 'B' : 'A';
-            $encounter->service = $encounter->service ?: 'Medicina interna';
-        }
-    }
-
-    private function nextEncounterId(): string
-    {
-        $max = AdmissionEncounter::query()
-            ->get()
-            ->map(fn (AdmissionEncounter $item) => (int) preg_replace('/\D+/', '', $item->encounter_id))
-            ->max() ?? 0;
-
-        return 'ENC-'.str_pad((string) ($max + 1), 4, '0', STR_PAD_LEFT);
-    }
-
-    private function nextTransferOrderNumber(): string
-    {
-        $year = now()->format('Y');
-        $max = AdmissionEncounter::query()
-            ->whereNotNull('transfer_order_number')
-            ->get()
-            ->map(fn (AdmissionEncounter $item) => (int) preg_replace('/\D+/', '', (string) $item->transfer_order_number))
-            ->max() ?? 0;
-
-        return 'OT-'.$year.'-'.str_pad((string) (($max % 10000) + 1), 4, '0', STR_PAD_LEFT);
-    }
-
-    private function nextWristbandCode(AdmissionEncounter $encounter): string
-    {
-        $parts = preg_split('/\s+/', trim($encounter->patient_name)) ?: [];
-        $initials = '';
-        foreach (array_slice($parts, 0, 3) as $part) {
-            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
-        }
-        $suffix = preg_replace('/\D+/', '', $encounter->encounter_id) ?: (string) $encounter->id;
-
-        return 'BRZ-'.str_pad($suffix, 4, '0', STR_PAD_LEFT).'-'.($initials ?: 'PX');
-    }
-
-    /**
-     * @param  array<string, bool>  $deliverables
-     * @return array<string, mixed>
-     */
-    private function row(
-        string $encounterId,
-        string $orderNumber,
-        ?string $transfer,
-        string $name,
-        string $document,
-        string $origin,
-        string $payer,
-        string $coverage,
-        string $plan,
-        ?string $room,
-        ?string $bed,
-        ?string $service,
-        ?string $wristband,
-        ?string $record,
-        string $step,
-        ?string $waiting,
-        array $deliverables,
-        string $source,
-    ): array {
-        $now = now();
-
-        return [
-            'encounter_id' => $encounterId,
-            'order_number' => $orderNumber,
-            'source' => $source,
-            'transfer_order_number' => $transfer,
-            'patient_name' => $name,
-            'document_type' => 'DNI',
-            'document_number' => $document,
-            'origin_service' => $origin,
-            'coverage_payer' => $payer,
-            'coverage_status' => $coverage,
-            'coverage_plan' => $plan,
-            'room' => $room,
-            'bed' => $bed,
-            'service' => $service,
-            'wristband_code' => $wristband,
-            'record_id' => $record,
-            'current_step' => $step,
-            'waiting_reason' => $waiting,
-            'deliverables' => json_encode($deliverables, JSON_THROW_ON_ERROR),
-            'clinical_payload' => null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-    }
-
-    private function sortKey(AdmissionEncounter $encounter): string
-    {
-        $index = array_search($encounter->current_step, array_keys(self::STEPS), true);
-
-        return str_pad((string) $index, 2, '0', STR_PAD_LEFT).$encounter->patient_name;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function present(AdmissionEncounter $encounter): array
-    {
-        $step = self::STEPS[$encounter->current_step] ?? [
-            'role' => null,
-            'subprocess' => '1.3',
-            'label' => 'Egresado',
-            'status' => 'Egresado',
-        ];
-        $flags = $encounter->deliverables;
-        $deliverables = [];
-        foreach (self::DELIVERABLES as $id => $label) {
-            $deliverables[] = ['id' => $id, 'label' => $label, 'done' => (bool) ($flags[$id] ?? false)];
-        }
-
-        $waiting = $encounter->waiting_reason !== null;
-        // RNF-06: un payload ilegible (lectura degradada) jamas se presenta como "sin datos".
-        $unreadable = $encounter->payloadUnreadable();
-        $payload = $unreadable ? [] : $encounter->readablePayload();
-        $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
-        $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : null;
-        $allergies = ($unreadable || $assessment === null || ! is_array($assessment['allergies'] ?? null))
-            ? null
-            : array_values(array_filter($assessment['allergies'], fn ($item) => is_string($item) && trim($item) !== ''));
-        $medications = null;
-        if (! $unreadable && $reconciliation !== null) {
-            $medications = [];
-            foreach ($reconciliation['medications'] ?? [] as $item) {
-                if (is_array($item) && trim((string) ($item['name'] ?? '')) !== '') {
-                    $medications[] = trim($item['name'].' '.($item['dose'] ?? '').' '.($item['frequency'] ?? ''));
-                }
-            }
-        }
-        $referral = is_array($payload['referral'] ?? null) ? $payload['referral'] : null;
-        $currentIndex = array_search($encounter->current_step === 'derivacion' ? 'cobertura' : $encounter->current_step, self::FLOW_STEPS, true);
-        if ($currentIndex === false) {
-            $currentIndex = count(self::FLOW_STEPS);
-        }
-
-        $progress = [];
-        foreach (self::FLOW_STEPS as $index => $stepId) {
-            $definition = self::STEPS[$stepId];
-            $state = 'pending';
-            if ($waiting && $stepId === 'cobertura') {
-                $state = 'current';
-            } elseif ($index < $currentIndex) {
-                $state = 'done';
-            } elseif ($index === $currentIndex) {
-                $state = 'current';
-            }
-            $progress[] = [
-                'id' => $stepId,
-                'label' => $definition['label'],
-                'state' => $state,
-            ];
-        }
-
-        return [
-            'encounterId' => $encounter->encounter_id,
-            'orderNumber' => $encounter->order_number,
-            'source' => $encounter->source,
-            'transferOrderNumber' => $encounter->transfer_order_number,
-            'patientName' => $encounter->patient_name,
-            'documentType' => $encounter->document_type,
-            'documentNumber' => $encounter->document_number,
-            'originService' => $encounter->origin_service,
-            'coverage' => [
-                'payer' => $encounter->coverage_payer,
-                'status' => $encounter->coverage_status,
-                'plan' => $encounter->coverage_plan,
-            ],
-            'location' => [
-                'room' => $encounter->room,
-                'bed' => $encounter->bed,
-                'service' => $encounter->service,
-            ],
-            'wristbandCode' => $encounter->wristband_code,
-            'recordId' => $encounter->record_id,
-            'subprocess' => $step['subprocess'],
-            'subprocessLabel' => self::SUBPROCESS[$step['subprocess']],
-            'currentStep' => $encounter->current_step,
-            'currentStepLabel' => $waiting ? 'Esperar regularización de cobertura' : $step['label'],
-            'nextRole' => $waiting || $encounter->current_step === 'cerrado' ? null : $step['role'],
-            'statusLabel' => $waiting ? 'En trámite de cobertura' : $step['status'],
-            'unreadable' => $unreadable,
-            'clinical' => [
-                'unreadable' => $unreadable,
-                'allergies' => $allergies,
-                'medications' => $medications,
-                'filiation' => is_array($payload['filiation'] ?? null) ? $payload['filiation'] : null,
-                'consent' => is_array($payload['consent'] ?? null) ? $payload['consent'] : null,
-            ],
-            'coverageReferral' => $referral ? [
-                'destination' => $referral['destination'],
-                'destinationLabel' => ($referral['destination'] ?? '') === 'caja' ? 'Caja' : 'Trabajo social',
-                'status' => $referral['status'] ?? 'derivado',
-                'relativeName' => $referral['relativeName'] ?? '',
-                'relativePhone' => $referral['relativePhone'] ?? null,
-                'note' => $referral['note'] ?? null,
-                'registeredAt' => $referral['registeredAt'] ?? null,
-            ] : null,
-            'deliverables' => $deliverables,
-            'progress' => $progress,
-        ];
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    private function catalogOrders(): array
-    {
-        $patient = [
-            'fullName' => 'Ana María Quispe Rojas',
-            'documentType' => 'DNI',
-            'documentNumber' => '45678912',
-            'birthDate' => '1978-04-12',
-            'sex' => 'Femenino',
-        ];
-
-        return [
-            'OI-2026-0001' => [
-                'orderNumber' => 'OI-2026-0001',
-                'originService' => 'Emergencia adultos',
-                'requestingPhysician' => 'Dra. Lucía Herrera',
-                'reason' => 'Neumonía adquirida en la comunidad',
-                'patient' => $patient,
-                'coverage' => ['payer' => 'SIS', 'status' => 'aprobada', 'plan' => 'SIS Gratuito'],
-            ],
-            'OI-2026-0002' => [
-                'orderNumber' => 'OI-2026-0002',
-                'originService' => 'Emergencia adultos',
-                'requestingPhysician' => 'Dr. Mateo Salas',
-                'reason' => 'Dolor abdominal',
-                'patient' => [...$patient, 'fullName' => 'Luis Ernesto Paredes', 'documentNumber' => '40112233'],
-                'coverage' => ['payer' => 'EsSalud', 'status' => 'pendiente', 'plan' => 'Regular'],
-            ],
-            'OI-2026-0003' => [
-                'orderNumber' => 'OI-2026-0003',
-                'originService' => 'Consulta externa',
-                'requestingPhysician' => 'Dra. Lucía Herrera',
-                'reason' => 'Control de insuficiencia cardíaca',
-                'patient' => [...$patient, 'fullName' => 'Carmen Yolanda Vega', 'documentNumber' => '09881234'],
-                'coverage' => ['payer' => 'Particular', 'status' => 'rechazada', 'plan' => 'Sin cobertura vigente'],
-            ],
-        ];
     }
 }

@@ -2,7 +2,7 @@ import { StatTile } from "../../../shared/ui/clinical";
 import { sharePct, type CensusTotals } from "../domain/census";
 
 /** Capacidad y estado del hospital (RF-69), con porcentaje y barra como en el diseño. */
-export function BedKpiStrip({ totals }: { totals: CensusTotals }) {
+export function BedKpiStrip({ totals }: Readonly<{ totals: CensusTotals }>) {
   const cells = [
     { label: "Capacidad total", value: totals.capacity, hint: "lechos", tone: "neutral" as const, pct: 100 },
     { label: "Disponibles", value: totals.available, hint: "libres", tone: "success" as const, pct: sharePct(totals.available, totals.capacity) },

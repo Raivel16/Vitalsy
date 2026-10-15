@@ -11,7 +11,7 @@ export function BloodPressureField({
   onDiastolic,
   systolicError,
   diastolicError,
-}: {
+}: Readonly<{
   systolicId?: string;
   diastolicId?: string;
   systolic: string;
@@ -20,7 +20,7 @@ export function BloodPressureField({
   onDiastolic: (value: string) => void;
   systolicError?: string;
   diastolicError?: string;
-}) {
+}>) {
   const error = systolicError || diastolicError;
 
   return (

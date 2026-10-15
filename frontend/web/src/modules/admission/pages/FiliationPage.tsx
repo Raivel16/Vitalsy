@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconUserCheck } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
@@ -55,7 +55,7 @@ export function FiliationPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const nameIssue = requiredText(fullName, "El nombre completo es obligatorio.");
@@ -91,8 +91,8 @@ export function FiliationPage() {
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo validar la filiación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo validar la filiación."));
     } finally {
       setPending(false);
     }

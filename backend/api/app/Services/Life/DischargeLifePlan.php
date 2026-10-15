@@ -93,25 +93,21 @@ class DischargeLifePlan
             return null;
         }
 
-        if ($plan->mode === 'rechaza') {
-            return ['mode' => 'rechaza', 'status' => $plan->status];
-        }
-
-        if (! $withSecrets) {
-            return [
+        return match (true) {
+            $plan->mode === 'rechaza' => ['mode' => 'rechaza', 'status' => $plan->status],
+            ! $withSecrets => [
                 'mode' => $plan->mode,
                 'status' => $plan->status,
                 'validUntil' => $plan->valid_until?->toDateString(),
-            ];
-        }
-
-        return [
-            'mode' => $plan->mode,
-            'code' => $plan->code,
-            'invitationCode' => $plan->invitation_code,
-            'payload' => $plan->payload,
-            'status' => $plan->status,
-        ];
+            ],
+            default => [
+                'mode' => $plan->mode,
+                'code' => $plan->code,
+                'invitationCode' => $plan->invitation_code,
+                'payload' => $plan->payload,
+                'status' => $plan->status,
+            ],
+        };
     }
 
     /** @return array{medications: array<int, array<string, string>>, comfortSigns: array<int, string>, homeCare: array<int, string>} */

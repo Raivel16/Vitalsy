@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconShieldCheck } from "@tabler/icons-react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "../../../app/api";
@@ -18,6 +18,12 @@ const COPY: Record<CoverageStatus, string> = {
   aprobada: "La cobertura permite continuar la admisión hacia el brazalete.",
   pendiente: "Hay un trámite pendiente. Registre la cobertura y use «Derivar trámite» para notificar al familiar (caja o trabajo social). No se emite brazalete hasta que la cobertura quede aprobada.",
   rechazada: "La cobertura fue rechazada. Registre el estado, derive el trámite y espere la resolución. No se emite brazalete mientras esté rechazada.",
+};
+
+const VALIDITY: Record<CoverageStatus, string> = {
+  aprobada: "Vigente",
+  pendiente: "Pendiente de verificación",
+  rechazada: "Sin vigencia",
 };
 
 export function CoveragePage() {
@@ -69,8 +75,8 @@ export function CoveragePage() {
         setNotice("Cobertura registrada. Derive el trámite (caja o trabajo social) antes de continuar la admisión.");
         setAdvanced(false);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la cobertura."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la cobertura."));
     } finally {
       setPending(false);
     }
@@ -115,7 +121,7 @@ export function CoveragePage() {
         <dl className="admit-tiles">
           <div className="admit-tile">
             <dt>Vigencia del seguro</dt>
-            <dd>{status === "aprobada" ? "Vigente" : status === "pendiente" ? "Pendiente de verificación" : "Sin vigencia"}</dd>
+            <dd>{VALIDITY[status]}</dd>
             <p className="hint">{encounter.coverage.plan}</p>
           </div>
           <div className="admit-tile">
@@ -155,7 +161,7 @@ export function ReferralPage() {
     ? `/admision/cobertura?ingreso=${encodeURIComponent(ingreso)}`
     : "/admision/cobertura";
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const nameIssue = requiredText(relativeName, "El nombre del familiar es obligatorio.");
@@ -184,8 +190,8 @@ export function ReferralPage() {
         const advanced = await advanceEncounter(encounter.encounterId, encounter.currentStep, "pendiente");
         if (advanced?.encounterId) applyEncounter(advanced);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la derivación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la derivación."));
     } finally {
       setPending(false);
     }

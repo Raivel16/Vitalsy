@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import type { LifeClient } from '../../shared/api/lifeClient';
-import { changeSharing, issueServerLinkCode, retryPendingConsent } from './consentSync';
+import { grantSharing, revokeSharing, issueServerLinkCode, retryPendingConsent } from './consentSync';
 import { emptySnapshot, LifeApp } from './lifeApp';
 
 const clock = {
@@ -27,7 +27,7 @@ describe('changeSharing', () => {
     const life = sharingOn();
     life.setServerLinkCode('K7QX-93MP', '2026-10-03T12:30:00.000Z');
     const setConsent = jest.fn(async () => ({ ok: true, data: { sharingEnabled: false, revokedAt: '2026-10-03T12:00:01.000Z' } }));
-    const result = await changeSharing(false, deps(life, { setConsent }));
+    const result = await revokeSharing(deps(life, { setConsent }));
     expect(setConsent).toHaveBeenCalledWith(false);
     expect(result).toMatchObject({ ok: true, status: 'confirmed' });
     expect(life.state.consentRevokePending).toBe(false);
@@ -37,7 +37,7 @@ describe('changeSharing', () => {
   it('revoking offline closes locally at once, marks it pending and says so honestly', async () => {
     const life = sharingOn();
     const setConsent = jest.fn(async () => net);
-    const result = await changeSharing(false, deps(life, { setConsent }));
+    const result = await revokeSharing(deps(life, { setConsent }));
     expect(life.state.consent.sharingEnabled).toBe(false);
     expect(life.state.consentRevokePending).toBe(true);
     expect(result).toMatchObject({ ok: true, status: 'pending' });
@@ -54,14 +54,14 @@ describe('changeSharing', () => {
     const persist = jest.fn(async () => {
       order.push(`save:pending=${life.state.consentRevokePending}`);
     });
-    await changeSharing(false, { ...deps(life, { setConsent }), persist });
+    await revokeSharing({ ...deps(life, { setConsent }), persist });
     expect(order).toEqual(['save:pending=true', 'put:pending=true']);
   });
 
   it('revoking without a session stays pending and does not call the server', async () => {
     const life = sharingOn();
     const setConsent = jest.fn();
-    const result = await changeSharing(false, deps(life, { setConsent }, { hasSession: false }));
+    const result = await revokeSharing(deps(life, { setConsent }, { hasSession: false }));
     expect(setConsent).not.toHaveBeenCalled();
     expect(result.status).toBe('pending');
     expect(life.state.consentRevokePending).toBe(true);
@@ -69,7 +69,7 @@ describe('changeSharing', () => {
 
   it('local-only mode revokes without any pending state', async () => {
     const life = sharingOn();
-    const result = await changeSharing(false, deps(life, null));
+    const result = await revokeSharing(deps(life, null));
     expect(result).toMatchObject({ ok: true, status: 'confirmed' });
     expect(life.state.consentRevokePending).toBe(false);
     expect(life.state.consent.sharingEnabled).toBe(false);
@@ -77,11 +77,11 @@ describe('changeSharing', () => {
 
   it('granting requires the server to confirm when a server is configured', async () => {
     const life = new LifeApp(emptySnapshot(), clock);
-    const failing = await changeSharing(true, deps(life, { setConsent: jest.fn(async () => net) }));
+    const failing = await grantSharing(deps(life, { setConsent: jest.fn(async () => net) }));
     expect(failing.ok).toBe(false);
     expect(life.state.consent.sharingEnabled).toBe(false);
     const setConsent = jest.fn(async () => ({ ok: true, data: { sharingEnabled: true, revokedAt: null } }));
-    const ok = await changeSharing(true, deps(life, { setConsent }));
+    const ok = await grantSharing(deps(life, { setConsent }));
     expect(setConsent).toHaveBeenCalledWith(true);
     expect(ok.ok).toBe(true);
     expect(life.state.consent.sharingEnabled).toBe(true);
@@ -89,16 +89,16 @@ describe('changeSharing', () => {
 
   it('does not enable when the server answers without enabling or there is no session', async () => {
     const life = new LifeApp(emptySnapshot(), clock);
-    const odd = await changeSharing(true, deps(life, { setConsent: jest.fn(async () => ({ ok: true, data: { sharingEnabled: false, revokedAt: null } })) }));
+    const odd = await grantSharing(deps(life, { setConsent: jest.fn(async () => ({ ok: true, data: { sharingEnabled: false, revokedAt: null } })) }));
     expect(odd.ok).toBe(false);
-    const noSession = await changeSharing(true, deps(life, { setConsent: jest.fn() }, { hasSession: false }));
+    const noSession = await grantSharing(deps(life, { setConsent: jest.fn() }, { hasSession: false }));
     expect(noSession.ok).toBe(false);
     expect(life.state.consent.sharingEnabled).toBe(false);
   });
 
   it('granting without a server configured works locally', async () => {
     const life = new LifeApp(emptySnapshot(), clock);
-    const result = await changeSharing(true, deps(life, null));
+    const result = await grantSharing(deps(life, null));
     expect(result.ok).toBe(true);
     expect(life.state.consent.sharingEnabled).toBe(true);
   });
@@ -111,8 +111,8 @@ describe('changeSharing', () => {
       .fn()
       .mockImplementationOnce(() => gate)
       .mockImplementationOnce(async () => ({ ok: true, data: { sharingEnabled: false, revokedAt: 'x' } }));
-    const grant = changeSharing(true, deps(life, { setConsent }));
-    const revoke = changeSharing(false, deps(life, { setConsent }));
+    const grant = grantSharing(deps(life, { setConsent }));
+    const revoke = revokeSharing(deps(life, { setConsent }));
     release({ ok: true, data: { sharingEnabled: true, revokedAt: null } });
     await Promise.all([grant, revoke]);
     expect(life.state.consent.sharingEnabled).toBe(false);

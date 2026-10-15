@@ -59,7 +59,7 @@ export async function runBackgroundHealthSync(deps: BackgroundSyncDeps): Promise
       return 'noop';
     }
     const binding = await deps.tokenStore.getBinding().catch(() => null);
-    if (!binding || !binding.accountId) {
+    if (!binding?.accountId) {
       // Sin sesión, o un token anterior al vínculo con la cuenta: no se sabe de quién es.
       return 'noop';
     }
@@ -103,21 +103,15 @@ async function runInForeground(deps: BackgroundSyncDeps, runtime: ForegroundRunt
 
 async function sessionStillValid(deps: BackgroundSyncDeps, accountId: string): Promise<boolean> {
   const binding = await deps.tokenStore.getBinding().catch(() => null);
-  if (!binding || binding.accountId !== accountId) {
+  if (binding?.accountId !== accountId) {
     return false;
   }
   return !(await deps.tokenStore.isTransitioning().catch(() => true));
 }
 
-async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<BackgroundOutcome> {
-  const snapshot = await deps.persistence.load();
-  if (!snapshot || snapshot.sessionUserId !== accountId || !snapshot.healthSync.accessGranted) {
-    return 'noop';
-  }
-  const scratch = deps.createLife(snapshot);
-  const recorded: BiometricSample[] = [];
+function recordingSource(deps: BackgroundSyncDeps, recorded: BiometricSample[]): HealthDataSource {
   const readGranted = deps.source.readGranted?.bind(deps.source);
-  const recording: HealthDataSource = {
+  return {
     name: deps.source.name,
     availability: () => deps.source.availability(),
     requestAccess: () => deps.source.requestAccess(),
@@ -130,76 +124,117 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
         }
       : undefined,
   };
-  const collected = await collectAndEnqueue({ source: recording, life: scratch, now: deps.now, interactive: false });
+}
+
+/** Se aplica sobre lo ÚLTIMO guardado, no sobre la copia leída al empezar. Devuelve false si la cuenta cambió. */
+async function applyRead(
+  deps: BackgroundSyncDeps,
+  accountId: string,
+  recorded: BiometricSample[],
+  recordRead: string | null,
+): Promise<boolean> {
+  let applied = false;
+  await deps.persistence.update((latest) => {
+    if (latest?.sessionUserId !== accountId) {
+      return null;
+    }
+    const life = deps.createLife(latest);
+    life.addSamples(recorded);
+    if (recordRead) {
+      life.recordHealthRead(recordRead);
+    }
+    applied = true;
+    return life.state;
+  });
+  return applied;
+}
+
+type ChunkResults = { accepted: string[]; rejected: Array<{ id: string; reason: string }>; unauthorized: boolean };
+
+async function sendChunks(
+  deps: BackgroundSyncDeps,
+  accountId: string,
+  client: LifeClient,
+  send: Parameters<typeof chunkForSend>[0],
+): Promise<ChunkResults> {
+  const results: ChunkResults = { accepted: [], rejected: [], unauthorized: false };
+  for (const chunk of chunkForSend(send)) {
+    if (!(await sessionStillValid(deps, accountId))) {
+      break;
+    }
+    // Antes de CADA lote se relee lo último guardado: una revocación (o un cambio de cuenta) hecha
+    // por la app entre lotes detiene el resto del envío.
+    const fresh = await deps.persistence.load();
+    if (fresh?.sessionUserId !== accountId || fresh.consentRevokePending) {
+      break;
+    }
+    try {
+      const result = await client.sync(chunk);
+      if (!result.ok) {
+        results.unauthorized = result.status === 401;
+        break;
+      }
+      results.accepted.push(...result.data.accepted);
+      results.rejected.push(...result.data.rejected);
+    } catch {
+      break;
+    }
+  }
+  return results;
+}
+
+async function sendPending(deps: BackgroundSyncDeps, accountId: string, client: LifeClient): Promise<void> {
+  if (!(await sessionStillValid(deps, accountId))) {
+    return;
+  }
+  const latest = await deps.persistence.load();
+  if (latest?.sessionUserId !== accountId || latest.consentRevokePending) {
+    return;
+  }
+  const decision = deps.createLife(latest).flushDecision(true, true, true);
+  const { accepted, rejected, unauthorized } = await sendChunks(deps, accountId, client, decision.send);
+  if (accepted.length > 0 || rejected.length > 0) {
+    const syncedAt = deps.now().toISOString();
+    await deps.persistence.update((current) => {
+      if (current?.sessionUserId !== accountId) {
+        return null;
+      }
+      const merged = deps.createLife(current);
+      merged.applySyncResult(accepted, rejected, syncedAt);
+      return merged.state;
+    });
+  }
+  if (unauthorized) {
+    await deps.tokenStore.clear();
+  }
+}
+
+async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<BackgroundOutcome> {
+  const snapshot = await deps.persistence.load();
+  if (snapshot?.sessionUserId !== accountId || !snapshot.healthSync.accessGranted) {
+    return 'noop';
+  }
+  const scratch = deps.createLife(snapshot);
+  const recorded: BiometricSample[] = [];
+  const collected = await collectAndEnqueue({
+    source: recordingSource(deps, recorded),
+    life: scratch,
+    now: deps.now,
+    interactive: false,
+  });
   if (collected.status !== 'read') {
     return 'noop';
   }
   const lastReadAt = scratch.state.healthSync.lastReadAt;
 
-  // Se aplica sobre lo ÚLTIMO guardado, no sobre la copia leída al empezar.
-  let applied = false;
-  await deps.persistence.update((latest) => {
-    if (!latest || latest.sessionUserId !== accountId) {
-      return null;
-    }
-    const life = deps.createLife(latest);
-    life.addSamples(recorded);
-    if (!collected.failed && lastReadAt) {
-      life.recordHealthRead(lastReadAt);
-    }
-    applied = true;
-    return life.state;
-  });
-  if (!applied) {
+  const recordRead = !collected.failed && lastReadAt ? lastReadAt : null;
+  if (!(await applyRead(deps, accountId, recorded, recordRead))) {
     return 'noop';
   }
 
   const online = await deps.isOnline().catch(() => false);
-  if (online && (await sessionStillValid(deps, accountId))) {
-    const latest = await deps.persistence.load();
-    if (latest && latest.sessionUserId === accountId && !latest.consentRevokePending) {
-      const life = deps.createLife(latest);
-      const decision = life.flushDecision(true, true, true);
-      const accepted: string[] = [];
-      const rejected: Array<{ id: string; reason: string }> = [];
-      let unauthorized = false;
-      for (const chunk of chunkForSend(decision.send)) {
-        if (!(await sessionStillValid(deps, accountId))) {
-          break;
-        }
-        // Antes de CADA lote se relee lo último guardado: una revocación (o un cambio de cuenta) hecha
-        // por la app entre lotes detiene el resto del envío.
-        const fresh = await deps.persistence.load();
-        if (!fresh || fresh.sessionUserId !== accountId || fresh.consentRevokePending) {
-          break;
-        }
-        try {
-          const result = await deps.client!.sync(chunk);
-          if (!result.ok) {
-            unauthorized = result.status === 401;
-            break;
-          }
-          accepted.push(...result.data.accepted);
-          rejected.push(...result.data.rejected);
-        } catch {
-          break;
-        }
-      }
-      if (accepted.length > 0 || rejected.length > 0) {
-        const syncedAt = deps.now().toISOString();
-        await deps.persistence.update((current) => {
-          if (!current || current.sessionUserId !== accountId) {
-            return null;
-          }
-          const merged = deps.createLife(current);
-          merged.applySyncResult(accepted, rejected, syncedAt);
-          return merged.state;
-        });
-      }
-      if (unauthorized) {
-        await deps.tokenStore.clear();
-      }
-    }
+  if (online && deps.client) {
+    await sendPending(deps, accountId, deps.client);
   }
   return collected.failed ? 'failed' : 'success';
 }

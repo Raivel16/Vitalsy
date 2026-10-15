@@ -14,8 +14,8 @@ export function useStaffMembers(enabled: boolean) {
       .then((data) => {
         if (active) setMembers(data);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo cargar el listado de personal."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo cargar el listado de personal."));
       });
     return () => {
       active = false;
@@ -39,10 +39,10 @@ export function useCoverage(enabled: boolean) {
         setRequests(data);
         setError("");
       })
-      .catch((caught) => {
+      .catch((error_) => {
         if (!active) return;
         setRequests([]);
-        setError(errorText(caught, "No se pudo cargar las solicitudes de cobertura."));
+        setError(errorText(error_, "No se pudo cargar las solicitudes de cobertura."));
       });
     return () => {
       active = false;

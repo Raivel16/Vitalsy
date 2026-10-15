@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconPrinter, IconSearch, IconCheck } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -45,7 +45,7 @@ export function AdmissionOrderPage() {
     setAdvanced(Boolean(encounter && encounter.currentStep !== "orden"));
   }, [encounter?.encounterId, encounter?.orderNumber, encounter?.currentStep]);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
@@ -56,8 +56,8 @@ export function AdmissionOrderPage() {
       );
       setResult(data);
       if (encounter) writeDraft(encounter.encounterId, "order", data);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo consultar la orden."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo consultar la orden."));
     } finally {
       setLoading(false);
     }
@@ -74,8 +74,8 @@ export function AdmissionOrderPage() {
       }
       setNotice("Orden confirmada.");
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar la orden."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar la orden."));
     } finally {
       setPending(false);
     }
@@ -127,7 +127,7 @@ export function AdmissionOrderPage() {
           <Button type="submit"><IconSearch size={16} /> Consultar orden</Button>
         </div>
       </form>
-      {loading ? <p role="status">Cargando orden de internamiento.</p> : null}
+      {loading ? <output>Cargando orden de internamiento.</output> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {order ? (

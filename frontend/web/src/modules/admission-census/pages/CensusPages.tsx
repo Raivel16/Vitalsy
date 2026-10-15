@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { api } from "../../../app/api";
-import { ROLE_LABEL } from "../../../app/roles";
+import { ROLE_LABEL, type Role } from "../../../app/roles";
 import { useAuth } from "../../../app/AuthProvider";
 import { isClinicalRole, primaryAttentionPath } from "../../../app/navigation";
 import { errorText } from "../../../app/userMessage";
@@ -37,6 +37,90 @@ function deliverableRatio(encounter: Encounter): { done: number; total: number; 
   return { done, total, label: `${done}/${total}` };
 }
 
+function RowAction({
+  item,
+  role,
+  own,
+  canAttend,
+  nextPath,
+}: Readonly<{ item: Encounter; role: Role; own: boolean; canAttend: boolean; nextPath: string | null }>) {
+  if (own) {
+    return (
+      <ButtonLink to={stepPath(item.currentStep, item.encounterId)} variant="quiet">
+        Continuar
+      </ButtonLink>
+    );
+  }
+  if (canAttend) {
+    return (
+      <ButtonLink to={primaryAttentionPath(role, item.encounterId, nextPath)}>
+        Atención
+      </ButtonLink>
+    );
+  }
+  return <span>{item.nextRole ? `En curso con ${ROLE_LABEL[item.nextRole]}` : item.statusLabel}</span>;
+}
+
+function fileAside(encounter: Encounter, role: Role, own: boolean, canAttend: boolean): ReactNode {
+  if (own) {
+    return (
+      <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
+        {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
+      </ButtonLink>
+    );
+  }
+  if (canAttend) {
+    return (
+      <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
+        Abrir atención en piso
+      </ButtonLink>
+    );
+  }
+  return null;
+}
+
+function CoverageReferralPanel({ encounter }: Readonly<{ encounter: Encounter }>) {
+  const referral = encounter.coverageReferral;
+  if (referral) {
+    return (
+      <Panel title="Derivación de cobertura">
+        <section className="referral-status" aria-label="Estado de la derivación de cobertura">
+          <Feedback tone="info">
+            Trámite derivado a {referral.destinationLabel}. Estado: {referral.status}.
+          </Feedback>
+          <dl className="facts">
+            <div><dt>Destino</dt><dd>{referral.destinationLabel}</dd></div>
+            <div><dt>Estado</dt><dd>{referral.status}</dd></div>
+            <div><dt>Familiar notificado</dt><dd>{referral.relativeName}</dd></div>
+            <div><dt>Teléfono</dt><dd>{referral.relativePhone ?? "No indicado"}</dd></div>
+            {referral.note ? (
+              <div><dt>Observación</dt><dd>{referral.note}</dd></div>
+            ) : null}
+          </dl>
+        </section>
+      </Panel>
+    );
+  }
+  if (encounter.coverage.status !== "aprobada") {
+    return <Feedback tone="info">Aún no hay una derivación registrada para este ingreso.</Feedback>;
+  }
+  return null;
+}
+
+function DeliverablesGrid({ items }: Readonly<{ items: Encounter["deliverables"] }>) {
+  return (
+    <ul className="deliverables deliverables-grid">
+      {items.map((item) => (
+        <li key={item.id} className={item.done ? "done" : undefined}>
+          {item.done ? <IconCircleCheck size={20} stroke={1.75} aria-hidden /> : <IconClock size={20} stroke={1.75} aria-hidden />}
+          <span>{item.label}</span>
+          <strong>{item.done ? "Listo" : "Pendiente"}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function CensusPage() {
   const { user } = useAuth();
   const role = user?.role ?? "admision";
@@ -66,8 +150,8 @@ export function CensusPage() {
         setMeta(data.meta ?? EMPTY_META);
         setError("");
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo cargar el censo."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo cargar el censo."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -180,17 +264,7 @@ export function CensusPage() {
                         <span className="sr-only">{deliverableCount(item)}</span>
                       </td>
                       <td className="col-action">
-                        {own ? (
-                          <ButtonLink to={stepPath(item.currentStep, item.encounterId)} variant="quiet">
-                            Continuar
-                          </ButtonLink>
-                        ) : canAttend ? (
-                          <ButtonLink to={primaryAttentionPath(role, item.encounterId, nextPath)}>
-                            Atención
-                          </ButtonLink>
-                        ) : (
-                          <span>{item.nextRole ? `En curso con ${ROLE_LABEL[item.nextRole]}` : item.statusLabel}</span>
-                        )}
+                        <RowAction item={item} role={role} own={own} canAttend={canAttend} nextPath={nextPath} />
                       </td>
                     </tr>
                   );
@@ -198,9 +272,9 @@ export function CensusPage() {
               </tbody>
             </table>
           <nav className="pagination" aria-label="Paginación del censo">
-            <p role="status">
+            <output>
               Página {meta.page} de {meta.lastPage}
-            </p>
+            </output>
             {meta.lastPage > 1 ? (
               <div className="pager-actions">
                 <Button
@@ -243,8 +317,8 @@ export function EncounterFilePage() {
       .then((data) => {
         if (active) setEncounter(data.encounter);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir la ficha."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir la ficha."));
       });
     return () => {
       active = false;
@@ -272,17 +346,7 @@ export function EncounterFilePage() {
       wide
       framed
       clinic="file"
-      aside={
-        own ? (
-          <ButtonLink to={stepPath(encounter.currentStep, encounter.encounterId)}>
-            {encounter.currentStep === "derivacion" ? "Revisar cobertura" : encounter.currentStepLabel}
-          </ButtonLink>
-        ) : canAttend ? (
-          <ButtonLink to={primaryAttentionPath(role, encounter.encounterId)}>
-            Abrir atención en piso
-          </ButtonLink>
-        ) : null
-      }
+      aside={fileAside(encounter, role, own, canAttend)}
     >
       <p className="lead file-status">
         <StatusPill tone={statusTone(encounter.statusLabel, encounter.currentStep)}>{encounter.statusLabel}</StatusPill>
@@ -323,39 +387,12 @@ export function EncounterFilePage() {
           </div>
         </dl>
       </Panel>
-      {encounter.coverageReferral ? (
-        <Panel title="Derivación de cobertura">
-          <section className="referral-status" aria-label="Estado de la derivación de cobertura">
-            <Feedback tone="info">
-              Trámite derivado a {encounter.coverageReferral.destinationLabel}. Estado: {encounter.coverageReferral.status}.
-            </Feedback>
-            <dl className="facts">
-              <div><dt>Destino</dt><dd>{encounter.coverageReferral.destinationLabel}</dd></div>
-              <div><dt>Estado</dt><dd>{encounter.coverageReferral.status}</dd></div>
-              <div><dt>Familiar notificado</dt><dd>{encounter.coverageReferral.relativeName}</dd></div>
-              <div><dt>Teléfono</dt><dd>{encounter.coverageReferral.relativePhone ?? "No indicado"}</dd></div>
-              {encounter.coverageReferral.note ? (
-                <div><dt>Observación</dt><dd>{encounter.coverageReferral.note}</dd></div>
-              ) : null}
-            </dl>
-          </section>
-        </Panel>
-      ) : encounter.coverage.status !== "aprobada" ? (
-        <Feedback tone="info">Aún no hay una derivación registrada para este ingreso.</Feedback>
-      ) : null}
+      <CoverageReferralPanel encounter={encounter} />
       <Panel
         title="Entregables del ingreso"
         aside={`${ratio.done} de ${ratio.total} listos`}
       >
-        <ul className="deliverables deliverables-grid">
-          {encounter.deliverables.map((item) => (
-            <li key={item.id} className={item.done ? "done" : undefined}>
-              {item.done ? <IconCircleCheck size={20} stroke={1.75} aria-hidden /> : <IconClock size={20} stroke={1.75} aria-hidden />}
-              <span>{item.label}</span>
-              <strong>{item.done ? "Listo" : "Pendiente"}</strong>
-            </li>
-          ))}
-        </ul>
+        <DeliverablesGrid items={encounter.deliverables} />
       </Panel>
       <p><Link to="/pacientes">Volver al censo</Link></p>
     </Sheet>

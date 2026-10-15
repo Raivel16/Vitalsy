@@ -42,11 +42,11 @@ export function useBedBoard(role: string) {
         loading: false,
         error: "",
       });
-    } catch (caught) {
+    } catch (error_) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: errorText(caught, "No se pudo cargar el censo de camas."),
+        error: errorText(error_, "No se pudo cargar el censo de camas."),
       }));
     }
   }, [role]);

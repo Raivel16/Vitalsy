@@ -47,7 +47,7 @@ import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
-function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: string; children: ReactNode }) {
+function Guard({ roles, requirement, children }: Readonly<{ roles: Role[]; requirement?: string; children: ReactNode }>) {
   const { user } = useAuth();
   if (user && roles.includes(user.role)) return children;
   return (
@@ -57,7 +57,7 @@ function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: 
   );
 }
 
-function ShellNavLink({ item }: { item: NavItem }) {
+function ShellNavLink({ item }: Readonly<{ item: NavItem }>) {
   const navigate = useNavigate();
   const Icon = item.icon;
 

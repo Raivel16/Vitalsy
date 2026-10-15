@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -10,6 +10,7 @@ import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
+import { createRowKeys } from "../../../shared/list/rowKeys";
 
 type Item = { drugName: string; dose: string; route: string; frequency: string };
 type ActiveItem = Item & { id: number; drugBarcode?: string };
@@ -28,6 +29,7 @@ export function CpoePage() {
   const encounter = useEncounter();
   const [active, setActive] = useState<ActivePrescription | null>(null);
   const [kardexMeds, setKardexMeds] = useState<string[]>([]);
+  const rowKeys = useMemo(createRowKeys, []);
   const [newLines, setNewLines] = useState<Item[]>([emptyItem()]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Item>(emptyItem());
@@ -59,10 +61,10 @@ export function CpoePage() {
   }, [ingreso]);
 
   function updateNewLine(index: number, patch: Partial<Item>) {
-    setNewLines((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+    setNewLines((prev) => prev.map((item, i) => (i === index ? rowKeys.carry(item, { ...item, ...patch }) : item)));
   }
 
-  async function onCreatePlan(event: FormEvent) {
+  async function onCreatePlan(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const cleaned = newLines
@@ -89,14 +91,14 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setNewLines([emptyItem()]);
       setNotice("Prescripción CPOE registrada. La enfermera verá las dosis en e-MAR del turno.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la prescripción."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la prescripción."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function onSaveEdit(event: FormEvent) {
+  async function onSaveEdit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso || editingId == null) return;
     setSaving(true);
@@ -109,8 +111,8 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setEditingId(null);
       setNotice("Medicamento actualizado.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo actualizar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo actualizar el medicamento."));
     } finally {
       setSaving(false);
     }
@@ -127,14 +129,14 @@ export function CpoePage() {
       );
       applyPlan(data.prescription, data.kardex.medications);
       setNotice("Medicamento eliminado del plan.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo eliminar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo eliminar el medicamento."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function onAddItem(event: FormEvent) {
+  async function onAddItem(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     if (!addForm.drugName.trim() || !addForm.dose.trim() || !addForm.route.trim() || !addForm.frequency.trim()) {
@@ -152,8 +154,8 @@ export function CpoePage() {
       applyPlan(data.prescription, data.kardex.medications);
       setAddForm(emptyItem());
       setNotice("Medicamento agregado al plan activo.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo agregar el medicamento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo agregar el medicamento."));
     } finally {
       setSaving(false);
     }
@@ -256,7 +258,7 @@ export function CpoePage() {
         <Panel title="Nueva prescripción">
         <form className="stack" onSubmit={onCreatePlan} noValidate aria-label="Nueva prescripción">
           {newLines.map((item, index) => (
-            <div className="form-grid" key={index}>
+            <div className="form-grid" key={rowKeys.keyOf(item)}>
               <TextField id={`drug-${index}`} label="Medicamento" value={item.drugName} onChange={(e) => updateNewLine(index, { drugName: e.target.value })} required />
               <TextField id={`dose-${index}`} label="Dosis" value={item.dose} onChange={(e) => updateNewLine(index, { dose: e.target.value })} required />
               <TextField id={`route-${index}`} label="Vía" value={item.route} onChange={(e) => updateNewLine(index, { route: e.target.value })} required placeholder="VO, IV…" />

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { Button } from "../../../shared/ui/Button";
 import { Panel } from "../../../shared/ui/clinical";
@@ -14,6 +14,12 @@ function toIso(local: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function projectedDischargeError(iso: string | null): string | undefined {
+  if (!iso) return "Indique la fecha y hora previstas de alta.";
+  if (new Date(iso).getTime() <= Date.now()) return "La fecha prevista debe ser futura.";
+  return undefined;
+}
+
 /** Proyección de altas (RF-71): la supervisora alimenta la disponibilidad futura del censo. */
 export function ProjectionPanel({
   canWrite,
@@ -21,13 +27,13 @@ export function ProjectionPanel({
   projections,
   busy,
   onSubmit,
-}: {
+}: Readonly<{
   canWrite: boolean;
   occupants: Occupant[];
   projections: Projection[];
   busy: boolean;
   onSubmit: (encounterId: string, projectedAt: string) => Promise<boolean>;
-}) {
+}>) {
   const [encounterId, setEncounterId] = useState("");
   const [when, setWhen] = useState("");
 
@@ -38,15 +44,11 @@ export function ProjectionPanel({
     return {
       iso,
       patient: encounterId === "" ? "Seleccione al paciente internado." : undefined,
-      when: !iso
-        ? "Indique la fecha y hora previstas de alta."
-        : new Date(iso).getTime() <= Date.now()
-          ? "La fecha prevista debe ser futura."
-          : undefined,
+      when: projectedDischargeError(iso),
     };
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SyntheticEvent) {
     event.preventDefault();
     const result = validate();
     setErrors({ patient: result.patient, when: result.when });

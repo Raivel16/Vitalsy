@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  */
 class LifeLinking
 {
-    /** Misma ventana que BaselineCalculator (14 días): evita cargar todo el historial. */
+    /** Misma ventana que BaselineCalculator (14 días): evita cargar el historial completo. */
     private const WINDOW_DAYS = 14;
 
     public function __construct(private readonly BaselineCalculator $calculator) {}
@@ -35,24 +35,11 @@ class LifeLinking
             }
 
             if (LifeBaselineImport::query()->where('encounter_id', $encounterId)->exists()) {
-                throw new ClinicalRuleException('Este ingreso ya tiene una línea de base importada.', 'already_linked');
+                throw self::alreadyLinked();
             }
 
-            $link = LifeLinkCode::query()->where('code', strtoupper(trim($code)))->lockForUpdate()->first();
-            if (! $link) {
-                throw new ClinicalRuleException('El código no es válido. Verifíquelo con el paciente.', 'code_not_found');
-            }
-            if ($link->consumed_at !== null) {
-                throw new ClinicalRuleException('Este código ya fue utilizado. Solicite uno nuevo al paciente.', 'code_consumed');
-            }
-            if ($link->expires_at === null || ! $link->expires_at->isFuture()) {
-                throw new ClinicalRuleException('El código venció. Solicite uno nuevo al paciente.', 'code_expired');
-            }
-
-            $consent = LifeConsent::query()->where('life_account_id', $link->life_account_id)->first();
-            if (! $consent || ! $consent->sharing_enabled) {
-                throw new ClinicalRuleException('El paciente no tiene activado compartir datos con el hospital.', 'sharing_closed');
-            }
+            $link = $this->usableCode($code);
+            $this->assertSharingEnabled($link);
 
             $samples = LifeBiometricSample::query()->where('life_account_id', $link->life_account_id)
                 ->where('started_at', '>=', now()->subDays(self::WINDOW_DAYS))
@@ -68,7 +55,7 @@ class LifeLinking
                     'imported_at' => now(),
                 ]);
             } catch (UniqueConstraintViolationException) {
-                throw new ClinicalRuleException('Este ingreso ya tiene una línea de base importada.', 'already_linked');
+                throw self::alreadyLinked();
             }
 
             $link->forceFill(['consumed_at' => now(), 'consumed_encounter_id' => $encounterId])->save();
@@ -79,5 +66,35 @@ class LifeLinking
                 'baselineSummary' => ['metrics' => $metrics],
             ];
         });
+    }
+
+    private static function alreadyLinked(): ClinicalRuleException
+    {
+        return new ClinicalRuleException('Este ingreso ya tiene una línea de base importada.', 'already_linked');
+    }
+
+    /** Código existente, sin consumir y vigente (bloqueado para la transacción). */
+    private function usableCode(string $code): LifeLinkCode
+    {
+        $link = LifeLinkCode::query()->where('code', strtoupper(trim($code)))->lockForUpdate()->first();
+        if (! $link) {
+            throw new ClinicalRuleException('El código no es válido. Verifíquelo con el paciente.', 'code_not_found');
+        }
+        if ($link->consumed_at !== null) {
+            throw new ClinicalRuleException('Este código ya fue utilizado. Solicite uno nuevo al paciente.', 'code_consumed');
+        }
+        if ($link->expires_at === null || ! $link->expires_at->isFuture()) {
+            throw new ClinicalRuleException('El código venció. Solicite uno nuevo al paciente.', 'code_expired');
+        }
+
+        return $link;
+    }
+
+    private function assertSharingEnabled(LifeLinkCode $link): void
+    {
+        $consent = LifeConsent::query()->where('life_account_id', $link->life_account_id)->first();
+        if (! $consent || ! $consent->sharing_enabled) {
+            throw new ClinicalRuleException('El paciente no tiene activado compartir datos con el hospital.', 'sharing_closed');
+        }
     }
 }

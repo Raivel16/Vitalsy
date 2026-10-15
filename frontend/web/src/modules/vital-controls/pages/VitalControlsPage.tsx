@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -68,7 +68,7 @@ export function VitalControlsPage() {
   function load() {
     api<{ controls: ControlRow[] }>("/api/v1/inpatient-care/monitoring-controls")
       .then((data) => setControls(data.controls))
-      .catch((caught) => setError(errorText(caught, "No se pudo cargar la bandeja de controles.")));
+      .catch((error_) => setError(errorText(error_, "No se pudo cargar la bandeja de controles.")));
   }
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export function VitalControlsPage() {
     setConfusionOnset("new");
   }
 
-  async function onComplete(event: FormEvent) {
+  async function onComplete(event: SyntheticEvent) {
     event.preventDefault();
     if (!selected) return;
     setSubmitted(true);
@@ -128,8 +128,8 @@ export function VitalControlsPage() {
       setSelected(null);
       resetForm();
       load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el control."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el control."));
     } finally {
       setSaving(false);
     }
@@ -292,9 +292,9 @@ export function VitalControlsPage() {
             </SelectField>
           ) : null}
           {preview ? (
-            <p role="status" className={`news news-${preview.visual}`}>
+            <output className={`news news-${preview.visual}`}>
               Vista previa NEWS2: {preview.total} · {preview.visualLabel}
-            </p>
+            </output>
           ) : null}
           <FormActions>
             <Button type="button" variant="quiet" onClick={() => setSelected(null)}>

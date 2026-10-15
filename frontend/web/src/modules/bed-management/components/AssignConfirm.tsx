@@ -13,13 +13,13 @@ export function AssignConfirm({
   onChangeRequest,
   onConfirm,
   onCancel,
-}: {
+}: Readonly<{
   draft: AssignDraft;
   busy: boolean;
   onChangeRequest: (requestId: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
-}) {
+}>) {
   const { request, bed, options } = draft;
 
   return (

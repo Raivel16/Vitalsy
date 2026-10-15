@@ -70,6 +70,25 @@ function footnote(metric: MetricBaseline): string {
   return `Rango usual (${low}–${high})`;
 }
 
+function statusCopy(status: string): { headline: string; summary: string } {
+  if (status === 'sustained_deviation') {
+    return {
+      headline: 'Un cambio sostenido respecto a tu ritmo',
+      summary: 'Varias lecturas se alejan de tu línea de base personal. Es información preventiva, no un diagnóstico.',
+    };
+  }
+  if (status === 'within') {
+    return {
+      headline: 'Ritmo armónico y en calma',
+      summary: 'Tus lecturas recientes se mantienen dentro de tu promedio usual.',
+    };
+  }
+  return {
+    headline: 'Estamos conociendo tu ritmo',
+    summary: 'Hacen falta unos días de lecturas para calcular tu línea de base personal.',
+  };
+}
+
 export function buildToday(samples: BiometricSample[], now: Date): TodaySnapshot {
   const kinds = [...PRIMARY_KINDS];
   for (const extra of ['hrv', 'skin_temperature', 'body_temperature'] as BiometricKind[]) {
@@ -90,18 +109,8 @@ export function buildToday(samples: BiometricSample[], now: Date): TodaySnapshot
   return {
     empty: visible.length === 0,
     status,
-    headline:
-      status === 'sustained_deviation'
-        ? 'Un cambio sostenido respecto a tu ritmo'
-        : status === 'within'
-          ? 'Ritmo armónico y en calma'
-          : 'Estamos conociendo tu ritmo',
-    summary:
-      status === 'sustained_deviation'
-        ? 'Varias lecturas se alejan de tu línea de base personal. Es información preventiva, no un diagnóstico.'
-        : status === 'within'
-          ? 'Tus lecturas recientes se mantienen dentro de tu promedio usual.'
-          : 'Hacen falta unos días de lecturas para calcular tu línea de base personal.',
+    headline: statusCopy(status).headline,
+    summary: statusCopy(status).summary,
     metrics: visible.map((item) => {
       const formatted = formatMetricValue(item.kind, item.latest!);
       return {

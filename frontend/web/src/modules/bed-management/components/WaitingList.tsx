@@ -10,12 +10,12 @@ export function WaitingList({
   canAssign,
   onAssign,
   onNewRequest,
-}: {
+}: Readonly<{
   items: WaitingItem[];
   canAssign: boolean;
   onAssign: (item: WaitingItem) => void;
   onNewRequest?: () => void;
-}) {
+}>) {
   return (
     <Panel
       title="Lista de espera priorizada"
@@ -27,9 +27,9 @@ export function WaitingList({
       }
     >
       {items.length === 0 ? (
-        <p className="banner banner-info" role="status">
+        <output className="banner banner-info">
           No hay solicitudes en espera. Cuando urgencias, quirófano o admisión pidan una cama aparecerán aquí, ordenadas por gravedad.
-        </p>
+        </output>
       ) : (
         <ul className="work-queue">
           {items.map(({ request, suggestion }) => {

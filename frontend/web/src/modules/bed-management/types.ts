@@ -1,4 +1,4 @@
-import type { Checklist, CleaningStatus } from "./domain/cleaningStage";
+import type { Checklist } from "./domain/cleaningStage";
 
 export type Bed = {
   id: number;
@@ -45,7 +45,7 @@ export type CleaningOrder = {
   ward?: string | null;
   isolation?: boolean;
   protocol: string;
-  status: CleaningStatus | string;
+  status: string;
   checklist?: Partial<Checklist>;
   dispatchedAt?: string | null;
   completedAt?: string | null;

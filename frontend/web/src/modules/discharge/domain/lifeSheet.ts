@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import { lifePlanCode, lifePlanValidUntil, type DischargeCase } from "./discharge";
 
 function esc(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
 /** Cuerpo HTML de la ficha de alta imprimible; incluye el QR de Vitalsy Life solo si el servidor emitió un código. */

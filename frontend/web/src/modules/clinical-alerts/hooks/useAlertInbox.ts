@@ -28,6 +28,11 @@ function sharedEchoClient(): RealtimeClient {
   return defaultClient;
 }
 
+function resolveClient(options: AlertInboxOptions): RealtimeClient | null {
+  if (options.client !== undefined) return options.client;
+  return import.meta.env.MODE === "test" ? null : sharedEchoClient();
+}
+
 export type AlertInbox = {
   alerts: ClinicalAlert[];
   pending: number;
@@ -50,9 +55,7 @@ export function useAlertInbox(enabled: boolean, options: AlertInboxOptions = {})
   const lastRefreshRef = useRef(0);
   const pollingEnabled = enabled && (import.meta.env.MODE !== "test" || sessionStorage.getItem("vitalsy-alert-inbox") === "1");
   const userId = options.userId ?? null;
-  const client = options.client !== undefined
-    ? options.client
-    : (import.meta.env.MODE === "test" ? null : sharedEchoClient());
+  const client = resolveClient(options);
   const realtime = pollingEnabled && userId !== null && client !== null ? client : null;
 
   const refresh = useCallback(async () => {

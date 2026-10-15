@@ -14,7 +14,7 @@ type Lane = {
 };
 
 /** Dos escalas separadas: el pulso (lpm) no aplasta el NEWS2. */
-export function VitalSignsChart({ series }: Props) {
+export function VitalSignsChart({ series }: Readonly<Props>) {
   const lanes = useMemo<Lane[]>(() => [
     {
       label: "Pulso",
@@ -41,7 +41,7 @@ export function VitalSignsChart({ series }: Props) {
   );
 }
 
-function VitalLane({ lane, series }: { lane: Lane; series: ChartPoint[] }) {
+function VitalLane({ lane, series }: Readonly<{ lane: Lane; series: ChartPoint[] }>) {
   const width = 960;
   const height = 168;
   const padX = 36;
@@ -75,7 +75,7 @@ function VitalLane({ lane, series }: { lane: Lane; series: ChartPoint[] }) {
         <span>{lane.label}</span>
         <span>{lane.unit}</span>
       </figcaption>
-      <svg className="vitals-chart" viewBox={`0 0 ${width} ${height}`} role="presentation">
+      <svg className="vitals-chart" viewBox={`0 0 ${width} ${height}`}>
         <line x1={padX} y1={padY} x2={padX} y2={height - padY} stroke="#d1d6dc" />
         <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="#d1d6dc" />
         <text x={8} y={padY + 4} className="vitals-chart-axis">{max}</text>

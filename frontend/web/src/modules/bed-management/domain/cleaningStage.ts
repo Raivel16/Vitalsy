@@ -43,9 +43,9 @@ const STATUS_LABEL: Record<CleaningStatus, string> = {
 };
 
 /** Acción que corresponde a un rol sobre una orden; `null` si no le toca actuar. */
-export function actionFor(role: Role | string, status: CleaningStatus): CleaningAction | null {
+export function actionFor(role: string, status: CleaningStatus): CleaningAction | null {
   const step = ACTION_BY_STATUS[status];
-  return step && step.role === role ? step.action : null;
+  return step?.role === role ? step.action : null;
 }
 
 /** Quién debe actuar a continuación sobre la orden (para el texto «Esperando a…»). */

@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aire, font } from '../../shared/theme/tokens';
 
@@ -12,10 +12,17 @@ const tabs = [
   { name: 'perfil', title: 'Perfil', icon: 'person' },
 ] as const;
 
+function renderTabIcon(name: (typeof tabs)[number]['icon']) {
+  return function TabIcon({ color }: Readonly<{ color: ColorValue }>) {
+    return <MaterialIcons color={color} name={name} size={20} />;
+  };
+}
+
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const measuredBottom = Math.max(insets.bottom, initialWindowMetrics?.insets.bottom ?? 0);
-  const bottom = measuredBottom > 0 ? measuredBottom : Platform.OS === 'android' ? 48 : 0;
+  const fallbackBottom = Platform.OS === 'android' ? 48 : 0;
+  const bottom = measuredBottom > 0 ? measuredBottom : fallbackBottom;
   return (
     <Tabs
       safeAreaInsets={{ top: insets.top, right: insets.right, bottom, left: insets.left }}
@@ -39,7 +46,7 @@ export default function TabsLayout() {
           name={tab.name}
           options={{
             title: tab.title,
-            tabBarIcon: ({ color }) => <MaterialIcons color={color} name={tab.icon} size={20} />,
+            tabBarIcon: renderTabIcon(tab.icon),
           }}
         />
       ))}

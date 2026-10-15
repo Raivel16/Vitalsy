@@ -18,11 +18,11 @@ export function useCleaningOrders() {
     try {
       const data = await bedApi.cleaningOrders();
       setState({ orders: data.orders, loadedAt: new Date().toISOString(), loading: false, error: "" });
-    } catch (caught) {
+    } catch (error_) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: errorText(caught, "No se pudieron cargar las órdenes de limpieza."),
+        error: errorText(error_, "No se pudieron cargar las órdenes de limpieza."),
       }));
     }
   }, []);

@@ -10,8 +10,22 @@ type Props = {
   loading?: boolean;
 };
 
-export function Button({ label, onPress, palette, tone = 'primary', disabled, loading }: Props) {
-  const background = tone === 'primary' ? palette.accent : tone === 'soft' ? palette.soft : 'transparent';
+function backgroundFor(tone: NonNullable<Props['tone']>, palette: Palette): string {
+  if (tone === 'primary') {
+    return palette.accent;
+  }
+  return tone === 'soft' ? palette.soft : 'transparent';
+}
+
+function opacityFor(disabled: boolean | undefined, pressed: boolean): number {
+  if (disabled) {
+    return 0.5;
+  }
+  return pressed ? 0.9 : 1;
+}
+
+export function Button({ label, onPress, palette, tone = 'primary', disabled, loading }: Readonly<Props>) {
+  const background = backgroundFor(tone, palette);
   const color = tone === 'primary' ? palette.onAccent : palette.accent;
   return (
     <Pressable
@@ -22,7 +36,7 @@ export function Button({ label, onPress, palette, tone = 'primary', disabled, lo
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: background, borderColor: tone === 'ghost' ? palette.border : 'transparent', opacity: disabled ? 0.5 : pressed ? 0.9 : 1 },
+        { backgroundColor: background, borderColor: tone === 'ghost' ? palette.border : 'transparent', opacity: opacityFor(disabled, pressed) },
       ]}
     >
       {loading ? <ActivityIndicator color={color} /> : <Text style={[styles.label, { color, fontFamily: font.semibold }]}>{label}</Text>}

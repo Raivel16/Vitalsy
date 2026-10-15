@@ -93,7 +93,7 @@ export class LifeApp {
 
   constructor(
     snapshot: LifeSnapshot,
-    private clock: Clock,
+    private readonly clock: Clock,
   ) {
     const consent = { ...CLOSED_CONSENT, ...snapshot.consent };
     // Un código sin vencimiento es un código local anterior a la integración: el servidor nunca lo conoció.
@@ -104,7 +104,7 @@ export class LifeApp {
       consent: legacyCode ? { ...consent, linkingCode: null, linkingIssuedAt: null, linkingExpiresAt: null } : consent,
       consentRevokePending: snapshot.consentRevokePending ?? false,
       pendingRevokes: snapshot.pendingRevokes ?? [],
-      healthSync: { ...emptySnapshot().healthSync, ...(snapshot.healthSync ?? {}) },
+      healthSync: { ...emptySnapshot().healthSync, ...snapshot.healthSync },
       queue: (snapshot.queue ?? []).filter((item) => item.kind !== ('consent' as SyncItem['kind'])),
       notices: (snapshot.notices ?? []).slice(0, MAX_NOTICES),
       dismissedNoticeIds: (snapshot.dismissedNoticeIds ?? []).slice(-MAX_DISMISSED),
@@ -281,7 +281,7 @@ export class LifeApp {
     const changed: BiometricSample[] = [];
     for (const sample of samples) {
       const previous = known.get(sample.id);
-      if (!previous || previous.value !== sample.value || previous.endedAt !== sample.endedAt) {
+      if (previous?.value !== sample.value || previous.endedAt !== sample.endedAt) {
         known.set(sample.id, sample);
         changed.push(sample);
       }

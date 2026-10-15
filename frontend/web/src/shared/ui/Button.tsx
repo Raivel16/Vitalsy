@@ -30,12 +30,12 @@ export function ButtonLink({
   variant = "primary",
   className,
   children,
-}: {
+}: Readonly<{
   to: string;
   variant?: Variant;
   className?: string;
   children: ReactNode;
-}) {
+}>) {
   return (
     <Link to={to} className={buttonClass(variant, className)}>
       {children}

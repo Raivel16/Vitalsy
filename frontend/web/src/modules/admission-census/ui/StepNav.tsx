@@ -18,7 +18,7 @@ export function StepNav({
   viewingStep,
   canContinue = false,
   continueLabel,
-}: Props) {
+}: Readonly<Props>) {
   const back = previousRoleStep(role, viewingStep);
   const nextPath = nextContinuePath(encounter, role);
   const label = continueLabel

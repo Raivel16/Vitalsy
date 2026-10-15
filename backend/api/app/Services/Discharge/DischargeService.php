@@ -292,11 +292,8 @@ class DischargeService
         return [
             'encounterId' => $encounterId,
             'patientName' => $encounter->patient_name,
-            'location' => trim(implode(', ', array_filter([
-                $encounter->room ? "Habitación {$encounter->room}" : null,
-                $encounter->bed ? "lecho {$encounter->bed}" : null,
-            ]))) ?: null,
-            'nextAction' => $this->nextAction($order, $epicrisis, $prescription, $social, $reconciliation, $nursing, $receipt, $account, $pass, $exit, $viewer),
+            'location' => $this->locationOf($encounter),
+            'nextAction' => (new DischargeNextAction)->resolve(array_column($deliverables, 'done', 'id'), $viewer?->role),
             'deliverables' => $deliverables,
             'order' => $order ? [
                 'status' => $order->status,
@@ -349,68 +346,14 @@ class DischargeService
         ];
     }
 
-    private function nextAction(
-        ?DischargeOrder $order,
-        ?EpicrisisDocument $epicrisis,
-        ?AmbulatoryPrescription $prescription,
-        ?SocialAssessment $social,
-        ?PharmaDischargeReconciliation $reconciliation,
-        ?NursingDischargeReport $nursing,
-        ?DischargeIndicationReceipt $receipt,
-        ?AccountVerification $account,
-        ?ExitPass $pass,
-        ?PatientExit $exit,
-        ?User $viewer,
-    ): ?string {
-        if ($exit) {
-            return null;
-        }
-        if ($pass) {
-            return match ($viewer?->role) {
-                'enfermera_piso' => 'exit',
-                'camillero' => 'transfer',
-                default => 'await_exit',
-            };
-        }
-        if ($account?->status === 'conforme' && $nursing && $receipt && $social) {
-            return 'pass';
-        }
-        if ($viewer?->role === 'trabajo_social' && ! $social) {
-            return 'social';
-        }
-        if ($viewer?->role === 'altas_caja') {
-            return $account?->status === 'conforme' ? 'pass' : 'account';
-        }
-        if (in_array($viewer?->role, ['medico_residente', 'medico_tratante'], true)) {
-            if (! $order) {
-                return 'order';
-            }
-            if (! $epicrisis) {
-                return 'epicrisis';
-            }
-            if (! $prescription) {
-                return 'prescriptions';
-            }
-        }
-        if ($viewer?->role === 'enfermera_piso') {
-            if (! $reconciliation) {
-                return 'reconciliation';
-            }
-            if (! $nursing) {
-                return 'nursing';
-            }
-            if (! $receipt) {
-                return 'receipt';
-            }
-        }
-        if (! $social) {
-            return 'social';
-        }
-        if (! $reconciliation) {
-            return 'reconciliation';
-        }
+    private function locationOf(AdmissionEncounter $encounter): ?string
+    {
+        $parts = array_filter([
+            $encounter->room ? "Habitación {$encounter->room}" : null,
+            $encounter->bed ? "lecho {$encounter->bed}" : null,
+        ]);
 
-        return 'account';
+        return trim(implode(', ', $parts)) ?: null;
     }
 
     private function assertReadyForPass(string $encounterId): void

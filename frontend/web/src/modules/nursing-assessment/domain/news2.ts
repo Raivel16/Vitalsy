@@ -24,7 +24,7 @@ export type News2Input = {
 export type News2Parameter = {
   id: string;
   label: string;
-  score: 0 | 1 | 2 | 3;
+  score: Score;
 };
 
 export type News2Result = {
@@ -43,7 +43,9 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function scoreRespiration(rate: number): 0 | 1 | 2 | 3 {
+type Score = 0 | 1 | 2 | 3;
+
+function scoreRespiration(rate: number): Score {
   const value = Math.round(rate);
   if (value <= 8 || value >= 25) return 3;
   if (value <= 11) return 1;
@@ -51,7 +53,7 @@ function scoreRespiration(rate: number): 0 | 1 | 2 | 3 {
   return 2;
 }
 
-function scoreSpo2Scale1(saturation: number): 0 | 1 | 2 | 3 {
+function scoreSpo2Scale1(saturation: number): Score {
   const value = Math.round(saturation);
   if (value <= 91) return 3;
   if (value <= 93) return 2;
@@ -59,7 +61,7 @@ function scoreSpo2Scale1(saturation: number): 0 | 1 | 2 | 3 {
   return 0;
 }
 
-function scoreSpo2Scale2(saturation: number, onOxygen: boolean): 0 | 1 | 2 | 3 {
+function scoreSpo2Scale2(saturation: number, onOxygen: boolean): Score {
   const value = Math.round(saturation);
   if (value <= 83) return 3;
   if (value <= 85) return 2;
@@ -71,7 +73,7 @@ function scoreSpo2Scale2(saturation: number, onOxygen: boolean): 0 | 1 | 2 | 3 {
   return 3;
 }
 
-function scoreSystolic(pressure: number): 0 | 1 | 2 | 3 {
+function scoreSystolic(pressure: number): Score {
   const value = Math.round(pressure);
   if (value <= 90 || value >= 220) return 3;
   if (value <= 100) return 2;
@@ -79,7 +81,7 @@ function scoreSystolic(pressure: number): 0 | 1 | 2 | 3 {
   return 0;
 }
 
-function scorePulse(pulse: number): 0 | 1 | 2 | 3 {
+function scorePulse(pulse: number): Score {
   const value = Math.round(pulse);
   if (value <= 40 || value >= 131) return 3;
   if (value <= 50) return 1;
@@ -89,7 +91,7 @@ function scorePulse(pulse: number): 0 | 1 | 2 | 3 {
   return 3;
 }
 
-function scoreTemperature(temperature: number): 0 | 1 | 2 | 3 {
+function scoreTemperature(temperature: number): Score {
   const value = round1(temperature);
   if (value <= 35) return 3;
   if (value <= 36) return 1;
@@ -101,7 +103,7 @@ function scoreTemperature(temperature: number): 0 | 1 | 2 | 3 {
 function scoreConsciousness(
   consciousness: Consciousness,
   onset?: ConfusionOnset,
-): 0 | 1 | 2 | 3 {
+): Score {
   if (consciousness === "alert") return 0;
   if (consciousness === "confusion" && onset === "chronic") return 0;
   return 3;

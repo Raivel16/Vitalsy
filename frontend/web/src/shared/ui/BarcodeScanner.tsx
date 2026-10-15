@@ -20,7 +20,7 @@ const BARCODE_FORMATS = [
   Html5QrcodeSupportedFormats.EAN_8,
 ];
 
-export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant = "quiet" }: Props) {
+export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant = "quiet" }: Readonly<Props>) {
   const reactId = useId().replaceAll(":", "");
   const elementId = `scanner-${reactId}`;
   const [open, setOpen] = useState(false);

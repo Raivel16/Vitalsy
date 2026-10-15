@@ -45,10 +45,10 @@ function parseBinding(raw: string | null): SessionBinding | null {
   return { token: raw, accountId: null };
 }
 
-export function createTokenStore(backend?: SecureBackend | null): TokenStore {
+export function createTokenStore(backend: SecureBackend | null = null): TokenStore {
   let memory: SessionBinding | null = null;
   let memoryTransition = false;
-  let secure = backend ?? null;
+  let secure = backend;
 
   async function read(): Promise<SessionBinding | null> {
     if (secure) {

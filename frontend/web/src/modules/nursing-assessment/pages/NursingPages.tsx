@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconDeviceHeartMonitor, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -84,7 +84,7 @@ export function NursingAssessmentPage() {
     setSaved("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const complaintIssue = requiredText(complaint, "El motivo de consulta es obligatorio.");
@@ -113,8 +113,8 @@ export function NursingAssessmentPage() {
         applyEncounter(nextEncounter);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo guardar la valoración."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo guardar la valoración."));
     } finally {
       setPending(false);
     }
@@ -301,7 +301,7 @@ export function VitalSignsPage() {
     setFields((current) => ({ ...current, [key]: value }));
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setSubmitted(true);
     if (!ready || !news2) return;
@@ -332,8 +332,8 @@ export function VitalSignsPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las constantes."));
     } finally {
       setPending(false);
     }

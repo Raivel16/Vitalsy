@@ -31,8 +31,8 @@ export function UserCreatePage() {
     try {
       const result = await createUser(values);
       setCreated({ email: result.user.email, password: result.temporaryPassword });
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo crear la cuenta."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo crear la cuenta."));
     } finally {
       setPending(false);
     }

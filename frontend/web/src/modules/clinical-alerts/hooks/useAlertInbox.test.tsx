@@ -63,7 +63,7 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
     });
     await flush();
 
-    expect(apiMock.mock.calls.length).toBe(before + 1);
+    expect(apiMock.mock.calls).toHaveLength(before + 1);
     expect(result.current.alerts.map((alert) => alert.id)).toEqual([1, 2]);
   });
 
@@ -92,12 +92,12 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30000);
     });
-    expect(apiMock.mock.calls.length).toBe(connectedBase);
+    expect(apiMock.mock.calls).toHaveLength(connectedBase);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(31000);
     });
-    expect(apiMock.mock.calls.length).toBe(connectedBase + 1);
+    expect(apiMock.mock.calls).toHaveLength(connectedBase + 1);
 
     act(() => client.handlers?.onDisconnected());
     await flush();
@@ -127,7 +127,7 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
       client.handlers?.onConnected();
     });
     await flush();
-    expect(apiMock.mock.calls.length).toBe(callsBefore + 1);
+    expect(apiMock.mock.calls).toHaveLength(callsBefore + 1);
     expect(String(apiMock.mock.calls.at(-1)?.[0])).toContain("/clinical-alerts/inbox");
   });
 
@@ -185,7 +185,7 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
     });
 
     expect(client.unsubscribed).toBe(1);
-    expect(apiMock.mock.calls.length).toBe(calls);
+    expect(apiMock.mock.calls).toHaveLength(calls);
     expect(client.reconnects).toBe(reconnects);
   });
 
@@ -198,6 +198,6 @@ describe("useAlertInbox con canal en tiempo real (RNF-01, RNF-12, RF-53)", () =>
       await vi.advanceTimersByTimeAsync(15500);
     });
 
-    expect(apiMock.mock.calls.length).toBe(base + 1);
+    expect(apiMock.mock.calls).toHaveLength(base + 1);
   });
 });

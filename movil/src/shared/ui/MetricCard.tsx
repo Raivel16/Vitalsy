@@ -7,13 +7,13 @@ export function MetricCard({
   value,
   unit,
   footnote,
-}: {
+}: Readonly<{
   palette: Palette;
   label: string;
   value: string;
   unit: string;
   footnote: string;
-}) {
+}>) {
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <Text style={[styles.label, { color: palette.muted, fontFamily: font.semibold }]}>{label.toUpperCase()}</Text>

@@ -9,7 +9,7 @@ import { approveAssignments, suggestAssignments } from "../staffApi";
 import type { NurseLoad, ProposedAssignment, StaffMember } from "../types";
 
 /** RF-79/80: sugerencia por NEWS2, edición de la propuesta y aprobación. */
-export function AssignmentPanel({ members }: { members: StaffMember[] }) {
+export function AssignmentPanel({ members }: Readonly<{ members: StaffMember[] }>) {
   const [date, setDate] = useState(todayIso());
   const [selected, setSelected] = useState<number[]>([]);
   const [assignments, setAssignments] = useState<ProposedAssignment[] | null>(null);
@@ -38,8 +38,8 @@ export function AssignmentPanel({ members }: { members: StaffMember[] }) {
       setAssignments(result.assignments);
       setLoads(result.loads);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo calcular la distribución."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo calcular la distribución."));
     } finally {
       setPending(false);
     }
@@ -53,8 +53,8 @@ export function AssignmentPanel({ members }: { members: StaffMember[] }) {
       setError("");
       setNotice("Asignación diaria aprobada.");
       setAssignments(null);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo aprobar la asignación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo aprobar la asignación."));
     } finally {
       setPending(false);
     }

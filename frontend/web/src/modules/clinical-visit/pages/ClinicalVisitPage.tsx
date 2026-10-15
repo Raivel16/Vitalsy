@@ -33,8 +33,8 @@ export function ClinicalVisitPage() {
       .then((data) => {
         if (active) setBoard(data);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir la visita consolidada."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir la visita consolidada."));
       })
       .finally(() => {
         if (active) setLoading(false);

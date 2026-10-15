@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { errorText } from "../../../app/userMessage";
-import { ButtonLink } from "../../../shared/ui/Button";
-import { Button } from "../../../shared/ui/Button";
+import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { Panel, StatusPill } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { LoadingState } from "../../../shared/ui/LoadingState";
@@ -17,6 +16,36 @@ const FILTERS: Array<{ id: UserStatusFilter; label: string }> = [
   { id: "inactive", label: "Inactivos" },
 ];
 
+function UsersResult({ users }: Readonly<{ users: UserAccount[] }>) {
+  if (users.length === 0) return <p className="hint">No hay cuentas que coincidan con el filtro.</p>;
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Correo</th>
+          <th scope="col">Rol</th>
+          <th scope="col">Estado</th>
+          <th scope="col"><span className="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {users.map((account) => (
+          <tr key={account.id}>
+            <td>{account.name}</td>
+            <td>{account.email}</td>
+            <td>{account.roleLabel}</td>
+            <td>
+              <StatusPill tone={account.isActive ? "success" : "neutral"}>{statusLabel(account.isActive)}</StatusPill>
+            </td>
+            <td><Link to={`/usuarios/${account.id}`}>Editar</Link></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export function UsersListPage() {
   const [status, setStatus] = useState<UserStatusFilter>("all");
   const [search, setSearch] = useState("");
@@ -28,8 +57,8 @@ export function UsersListPage() {
       const data = await listUsers(search, status);
       setUsers(data.data);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo cargar el listado de cuentas."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo cargar el listado de cuentas."));
       setUsers([]);
     }
   }, [search, status]);
@@ -51,7 +80,7 @@ export function UsersListPage() {
       <Panel
         title="Cuentas"
         aside={
-          <div className="filter-row" role="group" aria-label="Filtrar por estado">
+          <fieldset className="filter-row" aria-label="Filtrar por estado">
             {FILTERS.map((filter) => (
               <Button
                 key={filter.id}
@@ -63,7 +92,7 @@ export function UsersListPage() {
                 {filter.label}
               </Button>
             ))}
-          </div>
+          </fieldset>
         }
       >
         <TextField
@@ -72,36 +101,7 @@ export function UsersListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {users === null ? (
-          <LoadingState label="Cargando cuentas…" />
-        ) : users.length === 0 ? (
-          <p className="hint">No hay cuentas que coincidan con el filtro.</p>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Nombre</th>
-                <th scope="col">Correo</th>
-                <th scope="col">Rol</th>
-                <th scope="col">Estado</th>
-                <th scope="col"><span className="sr-only">Acciones</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((account) => (
-                <tr key={account.id}>
-                  <td>{account.name}</td>
-                  <td>{account.email}</td>
-                  <td>{account.roleLabel}</td>
-                  <td>
-                    <StatusPill tone={account.isActive ? "success" : "neutral"}>{statusLabel(account.isActive)}</StatusPill>
-                  </td>
-                  <td><Link to={`/usuarios/${account.id}`}>Editar</Link></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        {users === null ? <LoadingState label="Cargando cuentas…" /> : <UsersResult users={users} />}
       </Panel>
     </Sheet>
   );

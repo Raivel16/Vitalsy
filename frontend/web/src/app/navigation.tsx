@@ -41,6 +41,7 @@ export type NavGroup = {
 };
 
 const CLINICAL: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "medico_residente", "medico_tratante"];
+const CLINICAL_SET: ReadonlySet<Role> = new Set<Role>(CLINICAL);
 
 /** Perfiles que intervienen en el proceso 3 de gestión de alertas. */
 export const ALERT_ROLES: Role[] = [
@@ -165,7 +166,7 @@ export function withIngreso(path: string): string {
 }
 
 export function isClinicalRole(role: Role): boolean {
-  return CLINICAL.includes(role);
+  return CLINICAL_SET.has(role);
 }
 
 export function canOpenPatientWorklist(role: Role): boolean {
@@ -192,19 +193,18 @@ export function isStaffRole(role: Role): boolean {
   return STAFF_ROLES.includes(role);
 }
 
+function attentionBasePath(role: Role): string {
+  if (role === "medico_tratante" || role === "medico_residente") return "/atencion/chart";
+  if (role === "auxiliar_enfermeria") return "/atencion/constantes";
+  if (role === "enfermera_piso") return "/atencion/emar";
+  return "/pacientes";
+}
+
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {
   const safeNext = safeNextPath(next);
   if (safeNext) {
     const sep = safeNext.includes("?") ? "&" : "?";
     return `${safeNext}${sep}ingreso=${encodeURIComponent(encounterId)}`;
   }
-  const base =
-    role === "medico_tratante" || role === "medico_residente"
-      ? "/atencion/chart"
-      : role === "auxiliar_enfermeria"
-        ? "/atencion/constantes"
-        : role === "enfermera_piso"
-          ? "/atencion/emar"
-          : "/pacientes";
-  return `${base}?ingreso=${encodeURIComponent(encounterId)}`;
+  return `${attentionBasePath(role)}?ingreso=${encodeURIComponent(encounterId)}`;
 }

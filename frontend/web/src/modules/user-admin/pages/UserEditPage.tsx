@@ -28,8 +28,8 @@ export function UserEditPage() {
         if (found) setAccount(found);
         else setMissing(true);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo cargar la cuenta."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo cargar la cuenta."));
       });
     return () => {
       active = false;
@@ -45,8 +45,8 @@ export function UserEditPage() {
       const result = await updateUser(account.id, values);
       setAccount(result.user);
       setNotice("Cambios guardados.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron guardar los cambios."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron guardar los cambios."));
     } finally {
       setPending(false);
     }
@@ -61,8 +61,8 @@ export function UserEditPage() {
       setAccount(result.user);
       setConfirming(false);
       setNotice("Cuenta desactivada. La persona ya no puede iniciar sesión.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo desactivar la cuenta."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo desactivar la cuenta."));
     } finally {
       setPending(false);
     }

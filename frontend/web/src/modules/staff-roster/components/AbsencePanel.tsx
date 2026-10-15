@@ -20,7 +20,7 @@ function resultText(result: AbsenceResult): string {
 }
 
 /** RF-84/85: registra la contingencia y muestra qué ocurrió con sus pacientes. */
-export function AbsencePanel({ members, onRecorded }: { members: StaffMember[]; onRecorded: () => void }) {
+export function AbsencePanel({ members, onRecorded }: Readonly<{ members: StaffMember[]; onRecorded: () => void }>) {
   const [person, setPerson] = useState<StaffMember | null>(null);
   const [date, setDate] = useState(todayIso());
   const [reason, setReason] = useState("");
@@ -46,8 +46,8 @@ export function AbsencePanel({ members, onRecorded }: { members: StaffMember[]; 
       setPerson(null);
       setReason("");
       onRecorded();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la inasistencia."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la inasistencia."));
     } finally {
       setPending(false);
     }

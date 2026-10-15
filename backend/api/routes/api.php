@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdmissionCensusController;
+use App\Http\Controllers\Api\AdmissionNursingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BedManagementController;
 use App\Http\Controllers\Api\ClinicalAlertsController;
@@ -103,15 +104,15 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:enfermera_piso')->group(function () {
                 Route::post('floor-receptions', [HospitalAdmissionController::class, 'confirmReception']);
                 Route::post('relocations', [HospitalAdmissionController::class, 'relocate']);
-                Route::post('nursing-assessments', [HospitalAdmissionController::class, 'storeAssessment']);
-                Route::post('medication-reconciliations', [HospitalAdmissionController::class, 'storeReconciliation']);
-                Route::post('risk-scales', [HospitalAdmissionController::class, 'storeRiskScales']);
-                Route::get('kardex/{encounterId}', [HospitalAdmissionController::class, 'showKardex']);
+                Route::post('nursing-assessments', [AdmissionNursingController::class, 'storeAssessment']);
+                Route::post('medication-reconciliations', [AdmissionNursingController::class, 'storeReconciliation']);
+                Route::post('risk-scales', [AdmissionNursingController::class, 'storeRiskScales']);
+                Route::get('kardex/{encounterId}', [AdmissionNursingController::class, 'showKardex']);
             });
 
             // RF-12: constantes basales — enfermera de piso o auxiliar de enfermería.
             Route::middleware('role:enfermera_piso,auxiliar_enfermeria')->group(function () {
-                Route::post('vital-signs', [HospitalAdmissionController::class, 'storeVitalSigns']);
+                Route::post('vital-signs', [AdmissionNursingController::class, 'storeVitalSigns']);
             });
 
             Route::middleware('role:medico_residente,medico_tratante')->group(function () {

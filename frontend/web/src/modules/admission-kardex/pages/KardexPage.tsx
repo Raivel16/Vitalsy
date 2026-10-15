@@ -25,7 +25,7 @@ type Kardex = {
 };
 
 function news2Parts(label: string) {
-  const match = label.match(/^(\d+)\s*puntos/i);
+  const match = /^(\d+)\s*puntos/i.exec(label);
   const total = match ? Number(match[1]) : 0;
   return { total, text: label, pct: Math.min(100, Math.round((total / 20) * 100)) };
 }
@@ -56,8 +56,8 @@ export function KardexPage() {
       .then((data) => {
         if (active) setKardex(data.kardex);
       })
-      .catch((caught: unknown) => {
-        if (active) setError(errorText(caught, "No se pudo cargar el Kardex."));
+      .catch((error_: unknown) => {
+        if (active) setError(errorText(error_, "No se pudo cargar el Kardex."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -87,8 +87,8 @@ export function KardexPage() {
       }
       setNotice("Kardex revisado.");
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar el Kardex."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar el Kardex."));
     } finally {
       setPending(false);
     }

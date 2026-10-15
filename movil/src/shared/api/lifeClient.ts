@@ -5,6 +5,8 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; code?: string; message: string; errors?: Record<string, string> };
 
+type ApiFailure = Extract<ApiResult<never>, { ok: false }>;
+
 export type ServerNotice = {
   id: string;
   kind: 'preventivo' | 'habito';
@@ -102,6 +104,23 @@ function parseJson(text: string): Record<string, unknown> | null {
   }
 }
 
+function failureResult(status: number, text: string, auth: boolean): ApiFailure {
+  const parsed = parseJson(text);
+  const code = typeof parsed?.code === 'string' ? parsed.code : undefined;
+  const serverMessage = typeof parsed?.message === 'string' ? parsed.message : undefined;
+  if (!auth && status === 401 && !code) {
+    return { ok: false, status: 401, message: 'Correo o contraseña incorrectos.' };
+  }
+  const errors = status === 422 ? fieldErrors(parsed?.errors) : undefined;
+  return {
+    ok: false,
+    status,
+    code,
+    message: lifeErrorMessage(status, code, serverMessage),
+    ...(errors ? { errors } : {}),
+  };
+}
+
 export function createLifeClient(baseUrl: string, getToken: () => Promise<string | null>) {
   async function request<T>(path: string, options: Options): Promise<ApiResult<T>> {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -127,20 +146,7 @@ export function createLifeClient(baseUrl: string, getToken: () => Promise<string
     }
     const text = await response.text().catch(() => '');
     if (!response.ok) {
-      const parsed = parseJson(text);
-      const code = typeof parsed?.code === 'string' ? parsed.code : undefined;
-      const serverMessage = typeof parsed?.message === 'string' ? parsed.message : undefined;
-      if (!options.auth && response.status === 401 && !code) {
-        return { ok: false, status: 401, message: 'Correo o contraseña incorrectos.' };
-      }
-      const errors = response.status === 422 ? fieldErrors(parsed?.errors) : undefined;
-      return {
-        ok: false,
-        status: response.status,
-        code,
-        message: lifeErrorMessage(response.status, code, serverMessage),
-        ...(errors ? { errors } : {}),
-      };
+      return failureResult(response.status, text, options.auth);
     }
     if (options.raw) {
       return { ok: true, data: text as unknown as T };

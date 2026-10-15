@@ -6,7 +6,8 @@ export function listUsers(search: string, status: UserStatusFilter): Promise<{ d
   if (search.trim()) params.set("search", search.trim());
   if (status !== "all") params.set("status", status);
   const query = params.toString();
-  return api(`/api/v1/users${query ? `?${query}` : ""}`);
+  const suffix = query ? `?${query}` : "";
+  return api(`/api/v1/users${suffix}`);
 }
 
 export function createUser(values: { name: string; email: string; role: string }) {

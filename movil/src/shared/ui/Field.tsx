@@ -15,7 +15,7 @@ type Props = {
   autoCapitalize?: 'none' | 'words' | 'sentences';
 };
 
-export function Field({ label, value, onChangeText, palette, error, secureTextEntry, revealable, keyboardType, autoCapitalize }: Props) {
+export function Field({ label, value, onChangeText, palette, error, secureTextEntry, revealable, keyboardType, autoCapitalize }: Readonly<Props>) {
   const [hidden, setHidden] = useState(true);
   const isSecure = revealable ? hidden : secureTextEntry;
   return (

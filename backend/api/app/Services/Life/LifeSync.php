@@ -22,7 +22,17 @@ class LifeSync
 
     private const FUTURE_TOLERANCE_MINUTES = 5;
 
+    private const MAX_ID_LENGTH = 64;
+
+    private const KIND_BIOMETRICS = 'biometrics';
+
     private const ORIGINS = ['health_connect', 'health_kit', 'manual'];
+
+    /** Zona horaria final opcional de un ISO-8601 (Z, +hh:mm o +hhmm). */
+    private const ISO_TIMEZONE_SUFFIX = '/(Z|[+-]\d{2}:?\d{2})$/';
+
+    /** Solo ISO-8601 con fecha y hora (sin zona): se rechazan textos relativos como "now". */
+    private const ISO_DATETIME = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/';
 
     /**
      * Rangos de plausibilidad por tipo. heart_rate y spo2 reflejan `validateManual` de
@@ -52,11 +62,41 @@ class LifeSync
         $rejected = [];
 
         // Pasada previa: decodifica cada cuerpo una sola vez y aplica el tope agregado
-        // antes de almacenar nada (todo-o-nada a nivel de petición).
+        // antes de almacenar nada (atómico a nivel de petición).
+        $decodedBodies = $this->decodeBodies($items);
+
+        foreach ($items as $index => $item) {
+            $id = $item['id'] ?? null;
+
+            if (! $this->isValidId($id)) {
+                $rejected[] = ['id' => (string) $index, 'reason' => 'Identificador de ítem inválido (1 a 64 caracteres).'];
+
+                continue;
+            }
+
+            $reason = $this->processItem($account, $item['kind'] ?? null, $decodedBodies[$index] ?? null);
+            if ($reason === null) {
+                $accepted[] = $id;
+            } else {
+                $rejected[] = ['id' => $id, 'reason' => $reason];
+            }
+        }
+
+        return ['accepted' => $accepted, 'rejected' => $rejected];
+    }
+
+    /**
+     * Decodifica los cuerpos de los ítems biométricos y aplica el tope agregado por petición.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array<int|string, list<mixed>|string>
+     */
+    private function decodeBodies(array $items): array
+    {
         $decodedBodies = [];
         $total = 0;
         foreach ($items as $index => $item) {
-            if (($item['kind'] ?? null) !== 'biometrics') {
+            if (($item['kind'] ?? null) !== self::KIND_BIOMETRICS) {
                 continue;
             }
             $decoded = $this->decodeBody($item['body'] ?? null);
@@ -69,41 +109,44 @@ class LifeSync
             $decodedBodies[$index] = $decoded;
         }
 
-        foreach ($items as $index => $item) {
-            $id = $item['id'] ?? null;
-            $kind = $item['kind'] ?? null;
+        return $decodedBodies;
+    }
 
-            if (! is_string($id) || $id === '' || strlen($id) > 64) {
-                $rejected[] = ['id' => (string) $index, 'reason' => 'Identificador de ítem inválido (1 a 64 caracteres).'];
+    private function isValidId(mixed $id): bool
+    {
+        return is_string($id) && $id !== '' && strlen($id) <= self::MAX_ID_LENGTH;
+    }
 
-                continue;
-            }
-
-            if ($kind === 'consent' || $kind === 'plan') {
-                // Sin efecto clínico: el consentimiento real se gestiona con PUT /life/consent.
-                $accepted[] = $id;
-
-                continue;
-            }
-
-            if ($kind !== 'biometrics') {
-                $rejected[] = ['id' => $id, 'reason' => 'Tipo de ítem no soportado.'];
-
-                continue;
-            }
-
-            $samples = $this->parseSamples($decodedBodies[$index]);
-            if (is_string($samples)) {
-                $rejected[] = ['id' => $id, 'reason' => $samples];
-
-                continue;
-            }
-
-            $this->store($account, $samples);
-            $accepted[] = $id;
+    /**
+     * Procesa un ítem con id válido; devuelve el motivo de rechazo o null si fue aceptado.
+     *
+     * @param  list<mixed>|string|null  $decoded
+     */
+    private function processItem(LifeAccount $account, mixed $kind, array|string|null $decoded): ?string
+    {
+        if ($kind === 'consent' || $kind === 'plan') {
+            // Sin efecto clínico: el consentimiento real se gestiona con PUT /life/consent.
+            return null;
         }
 
-        return ['accepted' => $accepted, 'rejected' => $rejected];
+        if ($kind !== self::KIND_BIOMETRICS) {
+            return 'Tipo de ítem no soportado.';
+        }
+
+        return $this->ingestBiometrics($account, $decoded);
+    }
+
+    /** @param  list<mixed>|string|null  $decoded */
+    private function ingestBiometrics(LifeAccount $account, array|string|null $decoded): ?string
+    {
+        $samples = $this->parseSamples($decoded);
+        if (is_string($samples)) {
+            return $samples;
+        }
+
+        $this->store($account, $samples);
+
+        return null;
     }
 
     /**
@@ -120,23 +163,20 @@ class LifeSync
         if (! is_array($decoded) || ! array_is_list($decoded)) {
             return 'El cuerpo del ítem no es una lista JSON válida.';
         }
-        if (count($decoded) > self::MAX_SAMPLES_PER_ITEM) {
-            return 'El ítem contiene demasiadas muestras.';
-        }
 
-        return $decoded;
+        return count($decoded) > self::MAX_SAMPLES_PER_ITEM ? 'El ítem contiene demasiadas muestras.' : $decoded;
     }
 
     /**
-     * Devuelve las muestras normalizadas o un motivo de rechazo (todo-o-nada por ítem).
+     * Devuelve las muestras normalizadas o un motivo de rechazo (atómico por ítem).
      *
-     * @param  list<mixed>|string  $decoded
+     * @param  list<mixed>|string|null  $decoded
      * @return list<array<string, mixed>>|string
      */
-    private function parseSamples(array|string $decoded): array|string
+    private function parseSamples(array|string|null $decoded): array|string
     {
-        if (is_string($decoded)) {
-            return $decoded;
+        if (! is_array($decoded)) {
+            return (string) $decoded;
         }
 
         $samples = [];
@@ -154,25 +194,56 @@ class LifeSync
     /** @return array<string, mixed>|string */
     private function normalize(array $raw): array|string
     {
-        $clientId = $raw['id'] ?? null;
-        $kind = $raw['kind'] ?? null;
-        $value = $raw['value'] ?? null;
-        $unit = $raw['unit'] ?? null;
-        $origin = $raw['origin'] ?? null;
+        $error = $this->identityError($raw) ?? $this->valueError($raw) ?? $this->metadataError($raw);
+        if ($error !== null) {
+            return $error;
+        }
 
-        if (! is_string($clientId) || $clientId === '' || strlen($clientId) > 64) {
+        $start = $this->parseDate($raw['startedAt'] ?? null);
+        $end = $this->parseDate($raw['endedAt'] ?? null);
+        $error = $this->dateError($start, $end);
+        if ($error !== null) {
+            return $error;
+        }
+
+        return [
+            'client_id' => $raw['id'], 'kind' => $raw['kind'], 'value' => $raw['value'], 'unit' => $raw['unit'],
+            'started_at' => $start, 'ended_at' => $end, 'origin' => $raw['origin'],
+        ];
+    }
+
+    private function identityError(array $raw): ?string
+    {
+        if (! $this->isValidId($raw['id'] ?? null)) {
             return 'Identificador de muestra inválido.';
         }
+        $kind = $raw['kind'] ?? null;
         if (! is_string($kind) || ! isset(self::RANGES[$kind])) {
             return 'Tipo de muestra no soportado.';
         }
+
+        return null;
+    }
+
+    /** Se invoca con el tipo ya validado por identityError. */
+    private function valueError(array $raw): ?string
+    {
+        $value = $raw['value'] ?? null;
         if (! is_int($value) && ! is_float($value)) {
             return 'El valor de la muestra debe ser numérico.';
         }
-        [$min, $max] = self::RANGES[$kind];
+        [$min, $max] = self::RANGES[$raw['kind']];
         if ($value < $min || $value > $max) {
-            return "Valor fuera de rango para {$kind}.";
+            return "Valor fuera de rango para {$raw['kind']}.";
         }
+
+        return null;
+    }
+
+    private function metadataError(array $raw): ?string
+    {
+        $unit = $raw['unit'] ?? null;
+        $origin = $raw['origin'] ?? null;
         if (! is_string($unit) || $unit === '' || strlen($unit) > 16) {
             return 'Unidad inválida.';
         }
@@ -180,8 +251,11 @@ class LifeSync
             return 'Origen de la muestra inválido.';
         }
 
-        $start = $this->parseDate($raw['startedAt'] ?? null);
-        $end = $this->parseDate($raw['endedAt'] ?? null);
+        return null;
+    }
+
+    private function dateError(?Carbon $start, ?Carbon $end): ?string
+    {
         if ($start === null || $end === null || $end->lt($start)) {
             return 'Fechas de la muestra inválidas.';
         }
@@ -189,20 +263,12 @@ class LifeSync
             return 'La muestra tiene una fecha futura.';
         }
 
-        return [
-            'client_id' => $clientId, 'kind' => $kind, 'value' => $value, 'unit' => $unit,
-            'started_at' => $start, 'ended_at' => $end, 'origin' => $origin,
-        ];
+        return null;
     }
 
     private function parseDate(mixed $value): ?Carbon
     {
-        if (! is_string($value) || $value === '') {
-            return null;
-        }
-        // Solo ISO-8601 con fecha y hora; se rechazan textos relativos como "now".
-        $iso = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/';
-        if (preg_match($iso, $value) !== 1) {
+        if (! is_string($value) || ! $this->isIsoDateTime($value)) {
             return null;
         }
         try {
@@ -210,6 +276,13 @@ class LifeSync
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function isIsoDateTime(string $value): bool
+    {
+        $withoutZone = preg_replace(self::ISO_TIMEZONE_SUFFIX, '', $value);
+
+        return $value !== '' && preg_match(self::ISO_DATETIME, (string) $withoutZone) === 1;
     }
 
     /** @param  list<array<string, mixed>>  $samples */

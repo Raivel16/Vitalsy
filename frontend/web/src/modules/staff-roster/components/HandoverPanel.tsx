@@ -26,10 +26,10 @@ export function HandoverPanel() {
       .then((data) => {
         if (active) setCandidates(data);
       })
-      .catch((caught) => {
+      .catch((error_) => {
         if (!active) return;
         setCandidates([]);
-        setError(errorText(caught, "No se pudo consultar el cambio de turno."));
+        setError(errorText(error_, "No se pudo consultar el cambio de turno."));
       });
     return () => {
       active = false;
@@ -46,9 +46,9 @@ export function HandoverPanel() {
     try {
       setSummary(await previewHandover(date, fromId));
       setError("");
-    } catch (caught) {
+    } catch (error_) {
       setSummary(null);
-      setError(errorText(caught, "No se pudo consolidar el handover."));
+      setError(errorText(error_, "No se pudo consolidar el handover."));
     } finally {
       setPending(false);
     }
@@ -64,8 +64,8 @@ export function HandoverPanel() {
       setSummary(null);
       setFromId(null);
       setVersion((current) => current + 1);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo firmar el handover."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo firmar el handover."));
     } finally {
       setPending(false);
     }
@@ -78,7 +78,7 @@ export function HandoverPanel() {
 
       {candidates === null ? <LoadingState label="Consultando el cambio de turno…" /> : null}
 
-      {candidates && candidates.length === 0 ? (
+      {candidates?.length === 0 ? (
         <div className="handover-empty">
           <p><strong>No hay un relevo disponible ahora.</strong></p>
           <p className="hint">

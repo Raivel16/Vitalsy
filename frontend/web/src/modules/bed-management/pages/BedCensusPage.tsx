@@ -21,22 +21,57 @@ import { toPayload, type RequestForm } from "../domain/requests";
 import { useBedBoard, type WaitingItem } from "../hooks/useBedBoard";
 import type { AssignmentNotification, Bed, PatientOption, WardCensus } from "../types";
 
-export function BedCensusPage() {
-  const { user } = useAuth();
-  const role = user?.role ?? "gestion_camas";
-  const caps = capabilitiesFor(role);
-  const board = useBedBoard(role);
+function specialtiesOf(wards: WardCensus[]): string[] {
+  return [...new Set(wards.map((ward) => ward.specialty).filter((value): value is string => Boolean(value)))];
+}
+
+function occupantsOf(wards: WardCensus[]): Occupant[] {
+  return wards.flatMap((ward) =>
+    ward.beds
+      .filter((bed) => bed.status === "occupied" && bed.occupant)
+      .map((bed) => ({
+        encounterId: bed.occupant!.encounterId,
+        patientName: bed.occupant!.patientName ?? bed.occupant!.encounterId,
+        location: `${bed.room}-${bed.bedCode}`,
+      })),
+  );
+}
+
+function pillClass(active: boolean): string {
+  return `filter-pill${active ? " is-active" : ""}`;
+}
+
+function WardFilter({
+  wards,
+  value,
+  onChange,
+}: Readonly<{ wards: WardCensus[]; value: string; onChange: (value: string) => void }>) {
+  return (
+    <fieldset className="filter-pills" aria-label="Filtrar pabellones">
+      <button type="button" className={pillClass(value === "todos")} aria-pressed={value === "todos"} onClick={() => onChange("todos")}>
+        Todos los pabellones
+      </button>
+      {wards.map((ward) => (
+        <button
+          key={ward.code}
+          type="button"
+          className={pillClass(value === ward.code)}
+          aria-pressed={value === ward.code}
+          onClick={() => onChange(ward.code)}
+        >
+          {ward.name}
+        </button>
+      ))}
+    </fieldset>
+  );
+}
+
+/** Ejecuta una acción con bloqueo de doble envío y feedback de éxito/error. */
+function useRunAction(reload: () => Promise<unknown>) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [wardFilter, setWardFilter] = useState("todos");
-  const [draft, setDraft] = useState<AssignDraft | null>(null);
-  const [requestOpen, setRequestOpen] = useState(false);
-  const closeRequest = useCallback(() => setRequestOpen(false), []);
 
-  const searchPatients = useCallback(async (query: string): Promise<PatientOption[]> => (await bedApi.patients(query)).patients, []);
-
-  /** Ejecuta una acción con bloqueo de doble envío y feedback de éxito/error. */
   async function run(kind: string, action: () => Promise<unknown>, success: string, failure: string): Promise<boolean> {
     if (busy !== null) return false;
     setBusy(kind);
@@ -45,36 +80,117 @@ export function BedCensusPage() {
       await action();
       setError("");
       setNotice(success);
-      await board.reload();
+      await reload();
       return true;
-    } catch (caught) {
+    } catch (error_) {
       setNotice("");
-      setError(errorText(caught, failure));
+      setError(errorText(error_, failure));
       return false;
     } finally {
       setBusy(null);
     }
   }
 
+  return { notice, error, busy, run };
+}
+
+function PageFeedback({ boardError, error, notice }: Readonly<{ boardError: string; error: string; notice: string }>) {
+  return (
+    <>
+      {boardError ? <Feedback tone="error">{boardError}</Feedback> : null}
+      {error ? <Feedback tone="error">{error}</Feedback> : null}
+      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
+    </>
+  );
+}
+
+function BedSide({
+  draft,
+  setDraft,
+  caps,
+  board,
+  busy,
+  occupants,
+  onConfirmAssign,
+  onAssignWaiting,
+  onNewRequest,
+  onAcknowledge,
+  onSubmitProjection,
+}: Readonly<{
+  draft: AssignDraft | null;
+  setDraft: (draft: AssignDraft | null) => void;
+  caps: ReturnType<typeof capabilitiesFor>;
+  board: ReturnType<typeof useBedBoard>;
+  busy: string | null;
+  occupants: Occupant[];
+  onConfirmAssign: () => void;
+  onAssignWaiting: (item: WaitingItem) => void;
+  onNewRequest: () => void;
+  onAcknowledge: (item: AssignmentNotification) => void;
+  onSubmitProjection: (encounterId: string, projectedAt: string) => Promise<boolean>;
+}>) {
+  return (
+    <aside className="bed-side">
+      {draft ? (
+        <AssignConfirm
+          draft={draft}
+          busy={busy === "assign"}
+          onChangeRequest={(requestId) => {
+            const next = draft.options.find((option) => option.id === requestId);
+            if (next) setDraft({ ...draft, request: next });
+          }}
+          onConfirm={onConfirmAssign}
+          onCancel={() => setDraft(null)}
+        />
+      ) : null}
+
+      {caps.seesWaitingList ? (
+        <WaitingList
+          items={board.waiting}
+          canAssign={caps.canAssign}
+          onAssign={onAssignWaiting}
+          onNewRequest={caps.canRequest ? onNewRequest : undefined}
+        />
+      ) : null}
+
+      {caps.seesNotifications ? (
+        <NotificationsPanel
+          items={board.notifications}
+          busyId={busy?.startsWith("ack-") ? Number(busy.slice(4)) : null}
+          onAcknowledge={onAcknowledge}
+        />
+      ) : null}
+
+      {caps.seesProjections ? (
+        <ProjectionPanel
+          canWrite={caps.canProject}
+          occupants={occupants}
+          projections={board.projections}
+          busy={busy === "projection"}
+          onSubmit={onSubmitProjection}
+        />
+      ) : null}
+    </aside>
+  );
+}
+
+export function BedCensusPage() {
+  const { user } = useAuth();
+  const role = user?.role ?? "gestion_camas";
+  const caps = capabilitiesFor(role);
+  const board = useBedBoard(role);
+  const { notice, error, busy, run } = useRunAction(board.reload);
+  const [wardFilter, setWardFilter] = useState("todos");
+  const [draft, setDraft] = useState<AssignDraft | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const closeRequest = useCallback(() => setRequestOpen(false), []);
+
+  const searchPatients = useCallback(async (query: string): Promise<PatientOption[]> => (await bedApi.patients(query)).patients, []);
+
   const waitingRequests = useMemo(() => board.waiting.map((item) => item.request), [board.waiting]);
   const totals = useMemo(() => censusTotals(board.wards), [board.wards]);
-  const specialties = useMemo(
-    () => [...new Set(board.wards.map((ward) => ward.specialty).filter((value): value is string => Boolean(value)))],
-    [board.wards],
-  );
-  const occupants = useMemo<Occupant[]>(
-    () =>
-      board.wards.flatMap((ward) =>
-        ward.beds
-          .filter((bed) => bed.status === "occupied" && bed.occupant)
-          .map((bed) => ({
-            encounterId: bed.occupant!.encounterId,
-            patientName: bed.occupant!.patientName ?? bed.occupant!.encounterId,
-            location: `${bed.room}-${bed.bedCode}`,
-          })),
-      ),
-    [board.wards],
-  );
+  const specialties = useMemo(() => specialtiesOf(board.wards), [board.wards]);
+  const occupants = useMemo(() => occupantsOf(board.wards), [board.wards]);
   const visibleWards = wardFilter === "todos" ? board.wards : board.wards.filter((ward) => ward.code === wardFilter);
 
   function draftFromWaiting(item: WaitingItem) {
@@ -122,9 +238,7 @@ export function BedCensusPage() {
   return (
     <Sheet kicker="Gestión de camas" title="Censo hospitalario" wide clinic="board" className="floor-care ops-board">
       <p className="lead">Disponibilidad de lechos por servicio, lista de espera y asignación.</p>
-      {board.error ? <Feedback tone="error">{board.error}</Feedback> : null}
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
+      <PageFeedback boardError={board.error} error={error} notice={notice} />
 
       <div className="ops-toolbar">
         <span className="sync-chip">Sincronizado: {elapsedLabel(board.loadedAt).toLowerCase()}</span>
@@ -135,22 +249,7 @@ export function BedCensusPage() {
 
       <BedKpiStrip totals={totals} />
 
-      <div className="filter-pills" role="group" aria-label="Filtrar pabellones">
-        <button type="button" className={`filter-pill${wardFilter === "todos" ? " is-active" : ""}`} aria-pressed={wardFilter === "todos"} onClick={() => setWardFilter("todos")}>
-          Todos los pabellones
-        </button>
-        {board.wards.map((ward) => (
-          <button
-            key={ward.code}
-            type="button"
-            className={`filter-pill${wardFilter === ward.code ? " is-active" : ""}`}
-            aria-pressed={wardFilter === ward.code}
-            onClick={() => setWardFilter(ward.code)}
-          >
-            {ward.name}
-          </button>
-        ))}
-      </div>
+      <WardFilter wards={board.wards} value={wardFilter} onChange={setWardFilter} />
 
       <div className="chip-row bed-legend" aria-label="Leyenda de estados">
         <StatusMark tone="available" />
@@ -162,47 +261,19 @@ export function BedCensusPage() {
       <div className="bed-layout">
         <WardBoard wards={visibleWards} waiting={waitingRequests} canAssign={caps.canAssign} onAssign={draftFromBed} />
 
-        <aside className="bed-side">
-          {draft ? (
-            <AssignConfirm
-              draft={draft}
-              busy={busy === "assign"}
-              onChangeRequest={(requestId) => {
-                const next = draft.options.find((option) => option.id === requestId);
-                if (next) setDraft({ ...draft, request: next });
-              }}
-              onConfirm={() => void confirmAssignment()}
-              onCancel={() => setDraft(null)}
-            />
-          ) : null}
-
-          {caps.seesWaitingList ? (
-            <WaitingList
-              items={board.waiting}
-              canAssign={caps.canAssign}
-              onAssign={draftFromWaiting}
-              onNewRequest={caps.canRequest ? () => setRequestOpen(true) : undefined}
-            />
-          ) : null}
-
-          {caps.seesNotifications ? (
-            <NotificationsPanel
-              items={board.notifications}
-              busyId={busy?.startsWith("ack-") ? Number(busy.slice(4)) : null}
-              onAcknowledge={(item) => void acknowledge(item)}
-            />
-          ) : null}
-
-          {caps.seesProjections ? (
-            <ProjectionPanel
-              canWrite={caps.canProject}
-              occupants={occupants}
-              projections={board.projections}
-              busy={busy === "projection"}
-              onSubmit={submitProjection}
-            />
-          ) : null}
-        </aside>
+        <BedSide
+          draft={draft}
+          setDraft={setDraft}
+          caps={caps}
+          board={board}
+          busy={busy}
+          occupants={occupants}
+          onConfirmAssign={() => void confirmAssignment()}
+          onAssignWaiting={draftFromWaiting}
+          onNewRequest={() => setRequestOpen(true)}
+          onAcknowledge={(item) => void acknowledge(item)}
+          onSubmitProjection={submitProjection}
+        />
       </div>
 
       {caps.canRequest && requestOpen ? (
