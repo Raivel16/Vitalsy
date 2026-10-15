@@ -4,16 +4,18 @@ import { IconBell, IconBellRinging } from "@tabler/icons-react";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { STATUS_LABEL, severityVisual, type ClinicalAlert } from "../domain/alert";
 
+function bellLabel(worklist: number, urgent: number): string {
+  if (worklist === 0) return "Sin alertas pendientes";
+  if (urgent > 0) return `${urgent} ${urgent === 1 ? "alerta urgente" : "alertas urgentes"}`;
+  return `${worklist} ${worklist === 1 ? "alerta en seguimiento" : "alertas en seguimiento"}`;
+}
+
 export function AlertBell({ alerts }: Readonly<{ alerts: ClinicalAlert[] }>) {
   const [open, setOpen] = useState(false);
   const worklist = alerts.length;
   const urgent = alerts.filter((alert) => alert.needsSiren).length;
 
-  const label = worklist === 0
-    ? "Sin alertas pendientes"
-    : urgent > 0
-      ? `${urgent} ${urgent === 1 ? "alerta urgente" : "alertas urgentes"}`
-      : `${worklist} ${worklist === 1 ? "alerta en seguimiento" : "alertas en seguimiento"}`;
+  const label = bellLabel(worklist, urgent);
 
   const Icon = urgent > 0 ? IconBellRinging : IconBell;
 
