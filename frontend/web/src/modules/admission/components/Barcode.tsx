@@ -86,20 +86,13 @@ export function printBarcodeOnly(elementId = "wristband-barcode") {
   frame.style.width = "0";
   frame.style.height = "0";
   frame.style.border = "0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return;
-  }
-  doc.open();
-  doc.write(`<!doctype html><html><head><title>Brazalete</title>
-    <style>body{margin:0;display:grid;place-items:center;min-height:100vh}svg{width:90mm;height:auto}</style>
-    </head><body>${markup}</body></html>`);
-  doc.close();
   frame.onload = () => {
     frame.contentWindow?.focus();
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 500);
   };
+  frame.srcdoc = `<!doctype html><html><head><title>Brazalete</title>
+    <style>body{margin:0;display:grid;place-items:center;min-height:100vh}svg{width:90mm;height:auto}</style>
+    </head><body>${markup}</body></html>`;
+  document.body.appendChild(frame);
 }

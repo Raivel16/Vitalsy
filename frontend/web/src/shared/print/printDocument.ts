@@ -8,14 +8,12 @@ export function printClinicalDocument(title: string, bodyHtml: string) {
   frame.style.width = "0";
   frame.style.height = "0";
   frame.style.border = "0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return;
-  }
-  doc.open();
-  doc.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>${title}</title>
+  frame.onload = () => {
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+    setTimeout(() => frame.remove(), 500);
+  };
+  frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>${title}</title>
     <style>
       body { margin: 24px; font: 14px/1.45 "Source Sans 3", "Segoe UI", sans-serif; color: #1b2228; }
       h1 { font-size: 22px; margin: 0 0 4px; }
@@ -30,11 +28,6 @@ export function printClinicalDocument(title: string, bodyHtml: string) {
     <h1>${title}</h1>
     ${bodyHtml}
     <footer>Documento generado para impresión institucional.</footer>
-  </body></html>`);
-  doc.close();
-  frame.onload = () => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    setTimeout(() => frame.remove(), 500);
-  };
+  </body></html>`;
+  document.body.appendChild(frame);
 }
