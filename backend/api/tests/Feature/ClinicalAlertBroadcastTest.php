@@ -226,7 +226,12 @@ class ClinicalAlertBroadcastTest extends TestCase
         $this->assertSame('alert.raised', (new ClinicalAlertRaised(1, []))->broadcastAs());
         $this->assertSame('alert.updated', (new ClinicalAlertUpdated(1, []))->broadcastAs());
 
-        $frontend = file_get_contents(base_path('../../frontend/web/src/modules/clinical-alerts/realtime/alertEvents.ts'));
+        $frontendFile = base_path('../../frontend/web/src/modules/clinical-alerts/realtime/alertEvents.ts');
+        if (! is_file($frontendFile)) {
+            $this->markTestSkipped('El frontend no esta presente (imagen backend aislada).');
+        }
+
+        $frontend = file_get_contents($frontendFile);
         $this->assertStringContainsString('"alert.raised"', $frontend);
         $this->assertStringContainsString('"alert.updated"', $frontend);
     }
