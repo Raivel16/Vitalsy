@@ -122,7 +122,8 @@ export function MedicalEvolutionPage() {
               </li>
             ))}
           </ul>
-      ) : notes?.length === 0 ? (
+      ) : null}
+      {notes?.length === 0 ? (
         <Feedback tone="info">Aún no hay notas de evolución en este ingreso.</Feedback>
       ) : null}
       </section>

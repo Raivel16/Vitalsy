@@ -30,6 +30,46 @@ const emptyFields = {
   temperature: "",
 };
 
+function EvolutionSection({ series }: Readonly<{ series: ChartPoint[] }>) {
+  return (
+    <section className="result-block" aria-label="Gráfica evolutiva">
+      <h3>Gráfica evolutiva</h3>
+      {series.length === 0 ? (
+        <Feedback tone="info">Aún no hay lecturas para graficar.</Feedback>
+      ) : (
+        <>
+          <VitalSignsChart series={series} />
+          <div className="table-wrap">
+            <table>
+              <caption>Historial reciente</caption>
+              <thead>
+                <tr>
+                  <th>Fecha y hora</th>
+                  <th>Pulso</th>
+                  <th>FR</th>
+                  <th>SpO₂</th>
+                  <th>NEWS2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keyByContent(series, (point) => `${point.recordedAt}|${point.pulse}|${point.respiratoryRate}|${point.oxygenSaturation}|${point.news2}`).map(({ key, item: point }) => (
+                  <tr key={key}>
+                    <td>{formatDateTime(point.recordedAt)}</td>
+                    <td>{point.pulse ?? "—"}</td>
+                    <td>{point.respiratoryRate ?? "—"}</td>
+                    <td>{point.oxygenSaturation ?? "—"}</td>
+                    <td>{point.news2 ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function VitalMonitoringPage() {
   const [params] = useSearchParams();
   const ingreso = params.get("ingreso");
@@ -193,41 +233,7 @@ export function VitalMonitoringPage() {
           <Button type="submit" disabled={saving}>{saving ? "Registrando…" : "Registrar constantes"}</Button>
         </FormActions>
       </form>
-      <section className="result-block" aria-label="Gráfica evolutiva">
-        <h3>Gráfica evolutiva</h3>
-        {series.length === 0 ? (
-          <Feedback tone="info">Aún no hay lecturas para graficar.</Feedback>
-        ) : (
-          <>
-            <VitalSignsChart series={series} />
-            <div className="table-wrap">
-              <table>
-                <caption>Historial reciente</caption>
-                <thead>
-                  <tr>
-                    <th>Fecha y hora</th>
-                    <th>Pulso</th>
-                    <th>FR</th>
-                    <th>SpO₂</th>
-                    <th>NEWS2</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {keyByContent(series, (point) => `${point.recordedAt}|${point.pulse}|${point.respiratoryRate}|${point.oxygenSaturation}|${point.news2}`).map(({ key, item: point }) => (
-                    <tr key={key}>
-                      <td>{formatDateTime(point.recordedAt)}</td>
-                      <td>{point.pulse ?? "—"}</td>
-                      <td>{point.respiratoryRate ?? "—"}</td>
-                      <td>{point.oxygenSaturation ?? "—"}</td>
-                      <td>{point.news2 ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </section>
+      <EvolutionSection series={series} />
     </Sheet>
   );
 }
