@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { errorText } from "../../../app/userMessage";
-import { ButtonLink } from "../../../shared/ui/Button";
-import { Button } from "../../../shared/ui/Button";
+import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { Panel, StatusPill } from "../../../shared/ui/clinical";
 import { TextField } from "../../../shared/ui/Field";
 import { LoadingState } from "../../../shared/ui/LoadingState";

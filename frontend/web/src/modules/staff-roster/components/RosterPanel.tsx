@@ -185,7 +185,7 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
         </div>
         <p className="hint roster-status">
           {plan
-            ? `Publicado el ${formatDate(plan.publishedAt)}${plan.publishedByName ? ` por ${plan.publishedByName}` : ""}.`
+            ? `Publicado el ${formatDate(plan.publishedAt)}${plan.publishedByName ? " por " + plan.publishedByName : ""}.`
             : `Aún no hay un rol publicado para ${monthLabel(month)}.`}
           {dirty ? " Tiene cambios sin publicar." : ""}
         </p>

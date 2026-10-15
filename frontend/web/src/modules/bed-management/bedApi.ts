@@ -20,11 +20,17 @@ function post<T>(path: string, body?: unknown) {
 /** Única puerta de entrada HTTP del módulo de camas: facilita sustituirla en pruebas. */
 export const bedApi = {
   census: () => api<{ wards: WardCensus[] }>(`${base}/census`),
-  requests: (status?: string) => api<{ requests: BedRequest[] }>(`${base}/requests${status ? `?status=${status}` : ""}`),
+  requests: (status?: string) => {
+    const statusQuery = status ? `?status=${status}` : "";
+    return api<{ requests: BedRequest[] }>(`${base}/requests${statusQuery}`);
+  },
   suggestions: (requestId: number) => api<{ suggestions: Bed[] }>(`${base}/requests/${requestId}/suggestions`),
   createRequest: (payload: RequestPayload) => post<{ request: BedRequest; suggestions: Bed[] }>("/requests", payload),
   assign: (requestId: number, bedId: number) => post<{ assignment: { id: number; bedId: number } }>(`/requests/${requestId}/assign`, { bedId }),
-  patients: (query = "") => api<{ patients: PatientOption[] }>(`${base}/patients${query ? `?query=${encodeURIComponent(query)}` : ""}`),
+  patients: (query = "") => {
+    const patientQuery = query ? `?query=${encodeURIComponent(query)}` : "";
+    return api<{ patients: PatientOption[] }>(`${base}/patients${patientQuery}`);
+  },
   projections: () => api<{ projections: Projection[] }>(`${base}/projections`),
   createProjection: (encounterId: string, projectedAt: string) => post<{ projection: Projection }>("/projections", { encounterId, projectedAt }),
   notifications: () => api<{ notifications: AssignmentNotification[] }>(`${base}/assignments/notifications`),
