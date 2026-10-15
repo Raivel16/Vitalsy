@@ -67,56 +67,60 @@ function softFail<T>(promise: Promise<T>, fallback: T): Promise<T> {
   return promise.catch(() => fallback);
 }
 
-export function HomePage() {
-  const { user } = useAuth();
-  const role = user?.role ?? "admision";
-  const { kicker, title } = area(role);
+type HomeTask = { to: string; label: string; hint: string };
 
-  const tasks = [
+function bedsPath(role: Role): string {
+  return role === "servicios_generales" || role === "auxiliar_enfermeria" ? "/camas/limpieza" : "/camas";
+}
+
+function homeTasks(role: Role): HomeTask[] {
+  const tasks: Array<HomeTask | null> = [
     canOpenPatientWorklist(role) ? { to: "/pacientes", label: "Ver pacientes en curso", hint: "Cola del turno" } : null,
     role === "admision" ? { to: "/pacientes/nuevo", label: "Registrar un ingreso manual", hint: "Ingreso sin orden previa" } : null,
     isDischargeRole(role) ? { to: "/egreso", label: "Abrir altas y egresos", hint: "Pacientes en proceso de alta" } : null,
-    isBedRole(role) ? {
-      to: role === "servicios_generales" || role === "auxiliar_enfermeria" ? "/camas/limpieza" : "/camas",
-      label: "Abrir gestión de camas",
-      hint: "Censo y habilitación",
-    } : null,
+    isBedRole(role) ? { to: bedsPath(role), label: "Abrir gestión de camas", hint: "Censo y habilitación" } : null,
     isAdminRole(role) ? { to: "/usuarios", label: "Abrir administración de usuarios", hint: "Cuentas, roles y accesos" } : null,
     isStaffRole(role) ? { to: "/personal", label: "Abrir turnos y cobertura", hint: "Rol y asignación del día" } : null,
-  ].filter((item): item is { to: string; label: string; hint: string } => item !== null);
+  ];
+  return tasks.filter((item): item is HomeTask => item !== null);
+}
 
-  const primary = tasks[0] ?? null;
-  const secondary = tasks.slice(1);
+function loadPatientTotal(role: Role): Promise<number | null> {
+  if (!canOpenPatientWorklist(role)) return Promise.resolve(null);
+  return softFail(
+    api<{ meta: { total: number } }>("/api/v1/hospital-admission/encounters?page=1&per_page=1").then((data) => data.meta.total),
+    null,
+  );
+}
 
+function loadOverdueControls(role: Role): Promise<ControlRow[]> {
+  if (!CONTROL_ROLES.has(role)) return Promise.resolve([]);
+  return softFail(
+    api<{ controls: ControlRow[] }>("/api/v1/inpatient-care/monitoring-controls").then((data) =>
+      data.controls.filter((row) => row.overdue),
+    ),
+    [],
+  );
+}
+
+function loadAlerts(role: Role): Promise<ClinicalAlert[]> {
+  if (!isAlertRole(role)) return Promise.resolve([]);
+  return softFail(api<{ alerts: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox").then((data) => data.alerts), []);
+}
+
+function useHomeData(role: Role) {
   const [patientTotal, setPatientTotal] = useState<number | null>(null);
   const [overdueControls, setOverdueControls] = useState<ControlRow[]>([]);
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
-  const showDashboard = isClinicalRole(role) || isAlertRole(role) || CONTROL_ROLES.has(role);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const nextPatients = canOpenPatientWorklist(role)
-        ? softFail(
-            api<{ meta: { total: number } }>("/api/v1/hospital-admission/encounters?page=1&per_page=1").then((data) => data.meta.total),
-            null,
-          )
-        : Promise.resolve(null);
-
-      const nextControls = CONTROL_ROLES.has(role)
-        ? softFail(
-            api<{ controls: ControlRow[] }>("/api/v1/inpatient-care/monitoring-controls").then((data) =>
-              data.controls.filter((row) => row.overdue),
-            ),
-            [],
-          )
-        : Promise.resolve([]);
-
-      const nextAlerts = isAlertRole(role)
-        ? softFail(api<{ alerts: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox").then((data) => data.alerts), [])
-        : Promise.resolve([]);
-
-      const [patients, controls, inbox] = await Promise.all([nextPatients, nextControls, nextAlerts]);
+      const [patients, controls, inbox] = await Promise.all([
+        loadPatientTotal(role),
+        loadOverdueControls(role),
+        loadAlerts(role),
+      ]);
       if (!active) return;
       setPatientTotal(patients);
       setOverdueControls(controls);
@@ -128,38 +132,111 @@ export function HomePage() {
     };
   }, [role]);
 
+  return { patientTotal, overdueControls, alerts };
+}
+
+function buildQueue(alerts: ClinicalAlert[], overdueControls: ControlRow[]): QueueItem[] {
+  const rows: QueueItem[] = [];
+  for (const alert of alerts) {
+    rows.push({
+      key: `alert-${alert.id}`,
+      name: alert.patientName ?? alert.encounterId,
+      meta: alert.location ?? "Ubicación no registrada",
+      tone: "danger",
+      chip: alert.news2Total === null ? "Alerta abierta" : `NEWS2 ${alert.news2Total}`,
+      action: { to: `/alertas/${alert.id}`, label: "Abrir alerta" },
+      actionTone: "danger",
+    });
+  }
+  for (const control of overdueControls) {
+    if (rows.some((row) => row.name === control.patientName && row.action.to.includes("controles"))) continue;
+    rows.push({
+      key: `control-${control.encounterId}`,
+      name: control.patientName,
+      meta: control.location ?? "Ubicación no registrada",
+      tone: "warning",
+      chip: "Control vencido",
+      action: { to: `/atencion/controles?ingreso=${encodeURIComponent(control.encounterId)}`, label: "Registrar constantes" },
+      actionTone: "quiet",
+    });
+  }
+  return rows;
+}
+
+function HomeActions({ tasks }: Readonly<{ tasks: HomeTask[] }>) {
+  const primary = tasks[0] ?? null;
+  const secondary = tasks.slice(1);
+  return (
+    <div className="home-actions">
+      {primary ? <PrimaryAction task={primary} /> : null}
+      {secondary.length > 0 ? (
+        <div className="home-actions-links">
+          {secondary.map((task, index) => (
+            <span key={task.to}>
+              {index > 0 ? <span className="home-actions-sep" aria-hidden> | </span> : null}
+              <Link to={task.to}>{task.label}</Link>
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PrimaryAction({ task }: Readonly<{ task: HomeTask }>) {
+  if (task.to === "/pacientes/nuevo") {
+    return <Link className="button" to={task.to}>{task.label}</Link>;
+  }
+  return <ButtonLink to={task.to}>{task.label}</ButtonLink>;
+}
+
+function WorkQueue({ queue, hasTasks }: Readonly<{ queue: QueueItem[]; hasTasks: boolean }>) {
+  return (
+    <Panel
+      title="Cola de trabajo"
+      aside={queue.length > 0 ? `${queue.length} pendientes inmediatos` : undefined}
+    >
+      {queue.length > 0 ? (
+        <ul className="queue-list">
+          {queue.map((item) => (
+            <QueueRow
+              key={item.key}
+              name={item.name}
+              meta={item.meta}
+              tone={item.tone}
+              chip={item.chip}
+              action={item.action}
+              actionTone={item.actionTone}
+            />
+          ))}
+        </ul>
+      ) : (
+        <div className="work-queue">
+          <p className="hint">
+            {hasTasks
+              ? "No hay pendientes inmediatos de alertas o controles. Use los accesos del turno para continuar."
+              : "Sin tareas pendientes para su perfil."}
+          </p>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+export function HomePage() {
+  const { user } = useAuth();
+  const role = user?.role ?? "admision";
+  const { kicker, title } = area(role);
+  const tasks = homeTasks(role);
+  const { patientTotal, overdueControls, alerts } = useHomeData(role);
+  const showDashboard = isClinicalRole(role) || isAlertRole(role) || CONTROL_ROLES.has(role);
+  const alertRole = isAlertRole(role);
+
   const emarOverdue = useMemo(
     () => alerts.filter((alert) => alert.source === "emar").length,
     [alerts],
   );
-
-  const queue = useMemo(() => {
-    const rows: QueueItem[] = [];
-    for (const alert of alerts) {
-      rows.push({
-        key: `alert-${alert.id}`,
-        name: alert.patientName ?? alert.encounterId,
-        meta: alert.location ?? "Ubicación no registrada",
-        tone: "danger",
-        chip: alert.news2Total !== null ? `NEWS2 ${alert.news2Total}` : "Alerta abierta",
-        action: { to: `/alertas/${alert.id}`, label: "Abrir alerta" },
-        actionTone: "danger",
-      });
-    }
-    for (const control of overdueControls) {
-      if (rows.some((row) => row.name === control.patientName && row.action.to.includes("controles"))) continue;
-      rows.push({
-        key: `control-${control.encounterId}`,
-        name: control.patientName,
-        meta: control.location ?? "Ubicación no registrada",
-        tone: "warning",
-        chip: "Control vencido",
-        action: { to: `/atencion/controles?ingreso=${encodeURIComponent(control.encounterId)}`, label: "Registrar constantes" },
-        actionTone: "quiet",
-      });
-    }
-    return rows;
-  }, [alerts, overdueControls]);
+  const queue = useMemo(() => buildQueue(alerts, overdueControls), [alerts, overdueControls]);
 
   return (
     <section className="home">
@@ -182,13 +259,13 @@ export function HomePage() {
           />
           <StatTile
             label="Alertas abiertas"
-            value={isAlertRole(role) ? alerts.length : "—"}
+            value={alertRole ? alerts.length : "—"}
             hint="activas"
             tone={alerts.length > 0 ? "danger" : "neutral"}
           />
           <StatTile
             label="Dosis e-MAR vencidas"
-            value={isAlertRole(role) ? emarOverdue : "—"}
+            value={alertRole ? emarOverdue : "—"}
             hint="tras gracia"
             tone={emarOverdue > 0 ? "warning" : "neutral"}
           />
@@ -196,57 +273,12 @@ export function HomePage() {
       ) : null}
 
       {tasks.length > 0 ? (
-        <div className="home-actions">
-          {primary ? (
-            primary.to === "/pacientes/nuevo" ? (
-              <Link className="button" to={primary.to}>{primary.label}</Link>
-            ) : (
-              <ButtonLink to={primary.to}>{primary.label}</ButtonLink>
-            )
-          ) : null}
-          {secondary.length > 0 ? (
-            <div className="home-actions-links">
-              {secondary.map((task, index) => (
-                <span key={task.to}>
-                  {index > 0 ? <span className="home-actions-sep" aria-hidden> | </span> : null}
-                  <Link to={task.to}>{task.label}</Link>
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <HomeActions tasks={tasks} />
       ) : (
         <p className="hint">Su espacio de trabajo estará disponible cuando se publique su módulo.</p>
       )}
 
-      <Panel
-        title="Cola de trabajo"
-        aside={queue.length > 0 ? `${queue.length} pendientes inmediatos` : undefined}
-      >
-        {queue.length > 0 ? (
-          <ul className="queue-list">
-            {queue.map((item) => (
-              <QueueRow
-                key={item.key}
-                name={item.name}
-                meta={item.meta}
-                tone={item.tone}
-                chip={item.chip}
-                action={item.action}
-                actionTone={item.actionTone}
-              />
-            ))}
-          </ul>
-        ) : (
-          <div className="work-queue">
-            <p className="hint">
-              {tasks.length > 0
-                ? "No hay pendientes inmediatos de alertas o controles. Use los accesos del turno para continuar."
-                : "Sin tareas pendientes para su perfil."}
-            </p>
-          </div>
-        )}
-      </Panel>
+      <WorkQueue queue={queue} hasTasks={tasks.length > 0} />
 
       {isClinicalRole(role) ? (
         <p className="hint">Primero abra un paciente hospitalizado; el menú lateral conservará ese ingreso al cambiar de pantalla.</p>
