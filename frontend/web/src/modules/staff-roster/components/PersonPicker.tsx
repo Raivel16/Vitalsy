@@ -111,7 +111,7 @@ export function PersonPicker({
       {open ? (
         <ul id={listId} role="listbox" className="person-picker-list" aria-label={`Resultados de ${label}`}>
           {matches.length === 0 ? (
-            <li className="person-picker-empty" role="presentation">Ninguna persona coincide con la búsqueda.</li>
+            <li className="person-picker-empty">Ninguna persona coincide con la búsqueda.</li>
           ) : (
             matches.map((member, index) => (
               <li
