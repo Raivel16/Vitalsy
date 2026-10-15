@@ -20,6 +20,12 @@ const COPY: Record<CoverageStatus, string> = {
   rechazada: "La cobertura fue rechazada. Registre el estado, derive el trámite y espere la resolución. No se emite brazalete mientras esté rechazada.",
 };
 
+const VALIDITY: Record<CoverageStatus, string> = {
+  aprobada: "Vigente",
+  pendiente: "Pendiente de verificación",
+  rechazada: "Sin vigencia",
+};
+
 export function CoveragePage() {
   const { encounter, coverageStatus, setCoverageStatus, applyEncounter } = useEncounterState();
   const { user } = useAuth();
@@ -115,7 +121,7 @@ export function CoveragePage() {
         <dl className="admit-tiles">
           <div className="admit-tile">
             <dt>Vigencia del seguro</dt>
-            <dd>{status === "aprobada" ? "Vigente" : status === "pendiente" ? "Pendiente de verificación" : "Sin vigencia"}</dd>
+            <dd>{VALIDITY[status]}</dd>
             <p className="hint">{encounter.coverage.plan}</p>
           </div>
           <div className="admit-tile">
