@@ -98,8 +98,8 @@ trait Immutable
         return $original === null || ! DB::table($tables[$column])->where('id', $original)->exists();
     }
 
-    /** @param  array<string, mixed>  $values */
-    public function assertMassUpdateAllowed(array $values): void
+    /** Por defecto toda actualización masiva se rechaza; los modelos con excepciones lo sobrescriben recibiendo los valores. */
+    public function assertMassUpdateAllowed(): void
     {
         throw ImmutableRecordException::forAction(class_basename($this), 'modificación masiva');
     }

@@ -45,7 +45,7 @@ class MedicationAdministration extends Model
     }
 
     /** Solo se admite la cancelación masiva de dosis pendientes (el trigger protege las firmadas). */
-    public function assertMassUpdateAllowed(array $values): void
+    public function assertMassUpdateAllowed(array $values = []): void
     {
         if (array_keys($values) === ['status'] && $values['status'] === 'cancelado') {
             return;
