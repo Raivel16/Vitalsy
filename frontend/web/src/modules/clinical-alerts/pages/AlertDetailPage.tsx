@@ -360,13 +360,13 @@ export function AlertDetailPage() {
       <p className="lead">
         {alert.patientName ?? alert.encounterId} · {alert.location ?? "Ubicación no registrada"}
       </p>
-      <p className={`news news-${severityVisual(alert.severity)}`} role="status" aria-label="Estado de la alerta">
+      <output className={`news news-${severityVisual(alert.severity)}`} aria-label="Estado de la alerta">
         {alert.news2Total !== null ? `NEWS2 ${alert.news2Total} · ` : ""}
         {STATUS_LABEL[alert.status]}
         {alert.followUpDueAt && alert.status === "en_atencion"
           ? ` · Completar antes de ${formatDateTime(alert.followUpDueAt)}`
           : ""}
-      </p>
+      </output>
       {pageError ? <Feedback tone="error">{pageError}</Feedback> : null}
       <p className="hint">
         <Link to={`/atencion/chart?ingreso=${encodeURIComponent(alert.encounterId)}`}>Ver en el expediente clínico</Link>

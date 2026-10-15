@@ -27,9 +27,9 @@ export function WaitingList({
       }
     >
       {items.length === 0 ? (
-        <p className="banner banner-info" role="status">
+        <output className="banner banner-info">
           No hay solicitudes en espera. Cuando urgencias, quirófano o admisión pidan una cama aparecerán aquí, ordenadas por gravedad.
-        </p>
+        </output>
       ) : (
         <ul className="work-queue">
           {items.map(({ request, suggestion }) => {

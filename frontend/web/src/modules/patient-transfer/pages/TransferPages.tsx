@@ -147,7 +147,7 @@ export function TransferOrderPage() {
           </Button>
         </div>
       </form>
-      {loading ? <p role="status">Cargando orden de traslado.</p> : null}
+      {loading ? <output>Cargando orden de traslado.</output> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {result ? (

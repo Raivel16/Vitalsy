@@ -182,7 +182,7 @@ export function MedicalOrdersPage() {
   return (
     <Sheet kicker="Médico · Hospitalización" title="Indicaciones médicas basales" clinic="file">
       <p className="lead">Revisión final y firma electrónica de las prescripciones médicas basales de ingreso al servicio{service ? ` · ${service}` : ""}.</p>
-      <p role="status" aria-label="Estado del documento">{statusLabel}</p>
+      <output aria-label="Estado del documento">{statusLabel}</output>
       <section className="orders-nursing-review" aria-label="Revisión de enfermería">
         <h3>Revisión de enfermería</h3>
         <div className="orders-snapshot">

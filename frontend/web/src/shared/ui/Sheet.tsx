@@ -107,8 +107,8 @@ export function Feedback({
     );
   }
   return (
-    <p className={`banner banner-${tone}`} role="status" aria-label={label}>
+    <output className={`banner banner-${tone}`} aria-label={label}>
       {children}
-    </p>
+    </output>
   );
 }

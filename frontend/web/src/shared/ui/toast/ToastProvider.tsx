@@ -108,7 +108,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
     <ToastContext.Provider value={value}>
       {children}
       {toasts.length > 0 ? (
-        <div className="toast-stack" role="region" aria-label="Avisos de alertas" aria-live="assertive">
+        <section className="toast-stack" aria-label="Avisos de alertas" aria-live="assertive">
           {toasts.map((toast) => {
             const acknowledged = acknowledgedIds.has(toast.id);
             return (
@@ -118,9 +118,9 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
                 {toast.note ? <p className="toast-note">{toast.note}</p> : null}
                 <p className="toast-body">{toast.body}</p>
                 {acknowledged ? (
-                  <p className="toast-note" role="status">
+                  <output className="toast-note">
                     Lectura confirmada. Continúe con la atención del evento.
-                  </p>
+                  </output>
                 ) : null}
                 {errorById[toast.id] ? <p className="toast-error" role="alert">{errorById[toast.id]}</p> : null}
                 {acknowledged && toast.followUpHref ? (
@@ -153,7 +153,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
               </article>
             );
           })}
-        </div>
+        </section>
       ) : null}
     </ToastContext.Provider>
   );

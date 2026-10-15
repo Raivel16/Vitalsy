@@ -143,9 +143,9 @@ export function RiskScalesPage() {
             <label className={mentalStatus === "oriented" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "oriented"} onChange={() => setMentalStatus("oriented")} aria-label="Conoce sus límites" /> Conoce sus límites (0 pts)</label>
             <label className={mentalStatus === "overestimates" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "overestimates"} onChange={() => setMentalStatus("overestimates")} aria-label="Sobreestima o olvida límites" /> Olvida limitaciones (15 pts)</label>
           </ScaleRow>
-          <div className="nursing-banner" role="status" aria-label="Resultado de caídas">
+          <output className="nursing-banner" aria-label="Resultado de caídas">
             {morse.total} puntos. {morse.levelLabel}. {morse.recommendations.join(" ")}
-          </div>
+          </output>
         </fieldset>
         <fieldset className="risk-card">
           <legend className="sr-only">Escala de Braden</legend>
@@ -170,9 +170,9 @@ export function RiskScalesPage() {
             <ScoreSelect id="nutrition" label="Nutrición" max={4} value={braden.nutrition} labels={BRADEN_LABELS.nutrition} onChange={(value) => setBraden({ ...braden, nutrition: value as BradenScore4 })} />
             <ScoreSelect id="friction" label="Fricción y cizallamiento" max={3} value={braden.frictionShear} labels={BRADEN_LABELS.friction} onChange={(value) => setBraden({ ...braden, frictionShear: value as BradenFriction })} />
           </div>
-          <div className="nursing-banner" role="status" aria-label="Resultado de úlceras">
+          <output className="nursing-banner" aria-label="Resultado de úlceras">
             {pressure.total} puntos. {pressure.levelLabel}. {pressure.recommendations.join(" ")}
-          </div>
+          </output>
         </fieldset>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success" label="Resultado del registro">{saved}</Feedback> : null}
@@ -194,9 +194,9 @@ function ScaleRow({ id, title, hint, children }: Readonly<{ id: string; title: s
         <p className="scale-question" id={id}>{title}</p>
         <p className="hint">{hint}</p>
       </div>
-      <div className="scale-options" role="group" aria-labelledby={id}>
+      <fieldset className="scale-options" aria-labelledby={id}>
         {children}
-      </div>
+      </fieldset>
     </div>
   );
 }

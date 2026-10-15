@@ -171,12 +171,12 @@ export function EmarPage() {
         </aside>
       ) : null}
       {notice ? (
-        <aside className="state-card state-success" role="status" aria-label="Resultado de administración">
+        <output className="state-card state-success" aria-label="Resultado de administración">
           <div>
             <p className="state-card-title">Dosis administrada y firmada digitalmente <span className="status-pill pill-success">Sincronizado</span></p>
             <p>{notice}</p>
           </div>
-        </aside>
+        </output>
       ) : null}
 
       {!hasActivePrescription ? (
