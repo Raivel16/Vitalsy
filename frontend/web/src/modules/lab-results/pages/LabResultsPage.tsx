@@ -93,7 +93,7 @@ export function LabResultsPage() {
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
       <Feedback tone="info" label="Origen">Integración LIS / FHIR</Feedback>
-      {results && results.length === 0 ? (
+      {results?.length === 0 ? (
         <Feedback tone="info">Aún no hay resultados integrados para este ingreso.</Feedback>
       ) : null}
       {results && results.length > 0 ? (

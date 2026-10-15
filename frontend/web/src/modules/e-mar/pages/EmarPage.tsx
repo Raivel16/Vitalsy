@@ -101,7 +101,7 @@ export function EmarPage() {
   const patientOk = Boolean(
     selected?.expectedPatientBarcode && patientBarcode.trim() === selected.expectedPatientBarcode,
   );
-  const drugOk = Boolean(selected && drugBarcode.trim() === selected.expectedDrugBarcode);
+  const drugOk = drugBarcode.trim() === selected?.expectedDrugBarcode;
 
   const activeCount = useMemo(
     () => doses.filter((dose) => dose.status === "pendiente").length,

@@ -76,7 +76,7 @@ export function CoveragePanel({
         </div>
       ) : null}
       {requests === null ? <LoadingState label="Cargando coberturas…" /> : null}
-      {requests && requests.length === 0 ? (
+      {requests?.length === 0 ? (
         <p className="hint">
           No hay solicitudes de cobertura. Cuando la supervisora registre una inasistencia que lo requiera, aparecerá aquí con
           el motivo, la persona ausente y el estado del trámite.

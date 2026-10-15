@@ -111,7 +111,6 @@ export function MedicalEvolutionPage() {
         <h3>Historial de notas anteriores</h3>
       {notes === null && !error ? <LoadingState label="Cargando evoluciones…" /> : null}
       {notes && notes.length > 0 ? (
-        <>
           <ul className="note-feed-list">
             {notes.map((item) => (
               <li key={item.id} className="note-card">
@@ -123,8 +122,7 @@ export function MedicalEvolutionPage() {
               </li>
             ))}
           </ul>
-        </>
-      ) : notes && notes.length === 0 ? (
+      ) : notes?.length === 0 ? (
         <Feedback tone="info">Aún no hay notas de evolución en este ingreso.</Feedback>
       ) : null}
       </section>

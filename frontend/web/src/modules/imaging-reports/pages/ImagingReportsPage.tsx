@@ -94,7 +94,7 @@ export function ImagingReportsPage() {
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado de integración">{notice}</Feedback> : null}
       <Feedback tone="info" label="Origen">Integración PACS / FHIR</Feedback>
-      {reports && reports.length === 0 ? (
+      {reports?.length === 0 ? (
         <Feedback tone="info">Aún no hay informes integrados para este ingreso.</Feedback>
       ) : null}
       {reports && reports.length > 0 ? (

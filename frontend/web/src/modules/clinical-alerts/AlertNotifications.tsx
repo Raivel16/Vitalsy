@@ -79,13 +79,13 @@ export function AlertNotifications({ enabled, userId }: Readonly<{ enabled: bool
     for (const id of announced.current) {
       if (confirming.current.has(id)) continue;
       const alert = alerts.find((item) => item.id === id);
-      if (!alert || !alert.needsSiren) {
+      if (!alert?.needsSiren) {
         announced.current.delete(id);
       }
     }
 
     // Si la alerta salió del inbox (cerrada), retirar el aviso.
-    for (const id of [...toastAlertIds.current]) {
+    for (const id of toastAlertIds.current) {
       if (inboxIds.has(id)) continue;
       toastAlertIds.current.delete(id);
       announced.current.delete(id);

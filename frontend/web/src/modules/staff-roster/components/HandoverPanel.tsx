@@ -78,7 +78,7 @@ export function HandoverPanel() {
 
       {candidates === null ? <LoadingState label="Consultando el cambio de turno…" /> : null}
 
-      {candidates && candidates.length === 0 ? (
+      {candidates?.length === 0 ? (
         <div className="handover-empty">
           <p><strong>No hay un relevo disponible ahora.</strong></p>
           <p className="hint">
