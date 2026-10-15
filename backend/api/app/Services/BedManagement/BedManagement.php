@@ -29,6 +29,9 @@ class BedManagement
     public function __construct(
         private readonly CleaningWorkflow $cleaning,
         private readonly BedCompatibility $compatibility,
+        private readonly BedPresenter $presenter,
+        private readonly BedOccupancy $occupancy,
+        private readonly PatientSex $sex,
     ) {}
 
     public function available(): array
@@ -42,15 +45,15 @@ class BedManagement
 
         return [
             'count' => $beds->count(),
-            'beds' => $beds->map(fn (Bed $bed) => $this->presentBed($bed))->values()->all(),
+            'beds' => $beds->map(fn (Bed $bed) => $this->presenter->bed($bed))->values()->all(),
         ];
     }
 
     public function census(): array
     {
-        $occupants = $this->occupants();
+        $occupants = $this->occupancy->byBed();
         $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) use ($occupants) {
-            $beds = $ward->beds->map(fn (Bed $bed) => $this->presentBed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
+            $beds = $ward->beds->map(fn (Bed $bed) => $this->presenter->bed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
 
             return [
                 'id' => $ward->id,
@@ -78,7 +81,7 @@ class BedManagement
         $isolation = (bool) ($data['isolation'] ?? false) || in_array($isolationType, self::ISOLATING_TYPES, true);
         $profile = [
             'isolation' => $isolation,
-            'gender' => $data['gender'] ?? ($encounter ? $this->genderOf($encounter) : null),
+            'gender' => $data['gender'] ?? ($encounter ? $this->sex->genderOf($encounter) : null),
             'specialty' => $data['specialty'] ?? null,
         ];
 
@@ -98,7 +101,7 @@ class BedManagement
             'requested_at' => now(),
         ]);
 
-        return ['request' => $this->presentRequest($request), 'suggestions' => $suggestions];
+        return ['request' => $this->presenter->request($request), 'suggestions' => $suggestions];
     }
 
     /** Estados separados por coma, p. ej. `pendiente,en_espera`. */
@@ -112,7 +115,7 @@ class BedManagement
         $requests = $query->get()
             ->sortByDesc(fn (BedRequest $request) => self::PRIORITY_WEIGHT[$request->priority] ?? 0)
             ->values()
-            ->map(fn (BedRequest $request) => $this->presentRequest($request));
+            ->map(fn (BedRequest $request) => $this->presenter->request($request));
 
         return ['requests' => $requests];
     }
@@ -199,7 +202,7 @@ class BedManagement
         return ['notifications' => $rows->map(fn (BedAssignment $assignment) => [
             'id' => $assignment->id,
             'encounterId' => $assignment->encounter_id,
-            'patientName' => $this->patientNameFor($assignment->encounter_id),
+            'patientName' => $this->occupancy->patientNameFor($assignment->encounter_id),
             'ward' => $assignment->bed?->ward?->name,
             'room' => $assignment->bed?->room,
             'bedCode' => $assignment->bed?->bed_code,
@@ -253,7 +256,7 @@ class BedManagement
             'patientName' => $encounter->patient_name,
             'documentNumber' => $encounter->document_number,
             'originService' => $encounter->origin_service,
-            'gender' => $this->normalizeGender($sexByDocument[$encounter->document_type.'|'.$encounter->document_number] ?? null),
+            'gender' => $this->sex->normalize($sexByDocument[$encounter->document_type.'|'.$encounter->document_number] ?? null),
         ])->values()->all()];
     }
 
@@ -281,7 +284,7 @@ class BedManagement
     {
         $order = $this->cleaning->complete($orderId, $checklist, $user);
 
-        return ['order' => $this->presentCleaning($order->load('bed.ward'))];
+        return ['order' => $this->presenter->cleaning($order->load('bed.ward'))];
     }
 
     public function markEquipped(int $bedId, User $user): array
@@ -290,8 +293,8 @@ class BedManagement
         $result = $this->cleaning->equip($bed, $user);
 
         return [
-            'bed' => $this->presentBed($bed->fresh('ward')),
-            'order' => $this->presentCleaning($result['order']->load('bed.ward')),
+            'bed' => $this->presenter->bed($bed->fresh('ward')),
+            'order' => $this->presenter->cleaning($result['order']->load('bed.ward')),
         ];
     }
 
@@ -301,8 +304,8 @@ class BedManagement
         $order = $this->cleaning->enable($bed, $user);
 
         return [
-            'bed' => $this->presentBed($bed->fresh('ward')),
-            'order' => $this->presentCleaning($order->load('bed.ward')),
+            'bed' => $this->presenter->bed($bed->fresh('ward')),
+            'order' => $this->presenter->cleaning($order->load('bed.ward')),
         ];
     }
 
@@ -327,7 +330,7 @@ class BedManagement
     public function listCleaning(): array
     {
         $orders = CleaningOrder::query()->with('bed.ward')->orderByDesc('id')->get()
-            ->map(fn (CleaningOrder $order) => $this->presentCleaning($order));
+            ->map(fn (CleaningOrder $order) => $this->presenter->cleaning($order));
 
         return ['orders' => $orders->values()];
     }
@@ -358,128 +361,7 @@ class BedManagement
     /** @param array<string, mixed> $profile */
     private function suggestBeds(array $profile): array
     {
-        return array_map(fn (Bed $bed) => $this->presentBed($bed), $this->compatibility->suggest($profile));
-    }
-
-    private function genderOf(AdmissionEncounter $encounter): ?string
-    {
-        $sex = Patient::query()
-            ->where('document_type', $encounter->document_type)
-            ->where('document_number', $encounter->document_number)
-            ->value('sex');
-
-        return $this->normalizeGender($sex);
-    }
-
-    /** `Femenino`/`F`/`female` → `female`; `Masculino`/`M`/`male` → `male`; otro → null. */
-    private function normalizeGender(?string $sex): ?string
-    {
-        $initial = strtolower(substr(trim((string) $sex), 0, 1));
-
-        return match ($initial) {
-            'f' => 'female',
-            'm' => 'male',
-            default => null,
-        };
-    }
-
-    /**
-     * Ocupante vigente por cama (una sola consulta por tabla, sin N+1).
-     *
-     * @return array<int, array{encounterId: string, patientName: ?string, since: ?string}>
-     */
-    private function occupants(): array
-    {
-        $assignments = BedAssignment::query()->whereNull('released_at')->orderBy('id')->get();
-        if ($assignments->isEmpty()) {
-            return [];
-        }
-
-        $encounterIds = $assignments->pluck('encounter_id');
-        $encounterNames = AdmissionEncounter::query()
-            ->whereIn('encounter_id', $encounterIds->all())
-            ->pluck('patient_name', 'encounter_id');
-        $requestIds = $encounterIds
-            ->filter(fn (string $id) => str_starts_with($id, 'REQ-'))
-            ->map(fn (string $id) => (int) substr($id, 4))
-            ->all();
-        $requestNames = $requestIds === []
-            ? collect()
-            : BedRequest::query()->whereIn('id', $requestIds)->pluck('patient_name', 'id');
-
-        $occupants = [];
-        foreach ($assignments as $assignment) {
-            $name = $encounterNames[$assignment->encounter_id]
-                ?? (str_starts_with($assignment->encounter_id, 'REQ-')
-                    ? ($requestNames[(int) substr($assignment->encounter_id, 4)] ?? null)
-                    : null);
-            $occupants[$assignment->bed_id] = [
-                'encounterId' => $assignment->encounter_id,
-                'patientName' => $name,
-                'since' => optional($assignment->assigned_at)?->toIso8601String(),
-            ];
-        }
-
-        return $occupants;
-    }
-
-    private function patientNameFor(string $encounterId): ?string
-    {
-        if (str_starts_with($encounterId, 'REQ-')) {
-            return BedRequest::query()->find((int) substr($encounterId, 4))?->patient_name;
-        }
-
-        return AdmissionEncounter::query()->where('encounter_id', $encounterId)->value('patient_name');
-    }
-
-    private function presentBed(Bed $bed): array
-    {
-        return [
-            'id' => $bed->id,
-            'ward' => $bed->ward?->name,
-            'room' => $bed->room,
-            'bedCode' => $bed->bed_code,
-            'genderPolicy' => $bed->gender_policy,
-            'isolation' => $bed->isolation,
-            'status' => $bed->status,
-        ];
-    }
-
-    private function presentRequest(BedRequest $request): array
-    {
-        return [
-            'id' => $request->id,
-            'encounterId' => $request->encounter_id,
-            'patientName' => $request->patient_name,
-            'source' => $request->source,
-            'priority' => $request->priority,
-            'specialty' => $request->specialty,
-            'gender' => $request->gender,
-            'isolation' => $request->isolation,
-            'isolationType' => $request->isolation_type,
-            'equipment' => $request->equipment ?? [],
-            'status' => $request->status,
-            'requestedAt' => optional($request->requested_at)?->toIso8601String(),
-        ];
-    }
-
-    private function presentCleaning(CleaningOrder $order): array
-    {
-        return [
-            'id' => $order->id,
-            'bedId' => $order->bed_id,
-            'room' => $order->bed?->room,
-            'bedCode' => $order->bed?->bed_code,
-            'ward' => $order->bed?->ward?->name,
-            'isolation' => (bool) $order->bed?->isolation,
-            'protocol' => $order->protocol,
-            'status' => $order->status,
-            'checklist' => $order->checklist ?? (object) [],
-            'dispatchedAt' => optional($order->dispatched_at)?->toIso8601String(),
-            'completedAt' => optional($order->completed_at)?->toIso8601String(),
-            'equippedAt' => optional($order->equipped_at)?->toIso8601String(),
-            'enabledAt' => optional($order->enabled_at)?->toIso8601String(),
-        ];
+        return array_map(fn (Bed $bed) => $this->presenter->bed($bed), $this->compatibility->suggest($profile));
     }
 
     private function requireRequest(int $id): BedRequest
