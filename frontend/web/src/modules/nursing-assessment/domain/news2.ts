@@ -44,9 +44,8 @@ function round1(value: number): number {
 }
 
 type Score = 0 | 1 | 2 | 3;
-type RespirationScore = Score;
 
-function scoreRespiration(rate: number): RespirationScore {
+function scoreRespiration(rate: number): Score {
   const value = Math.round(rate);
   if (value <= 8 || value >= 25) return 3;
   if (value <= 11) return 1;
