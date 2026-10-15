@@ -2,13 +2,14 @@
 
 namespace App\Services\Interoperability;
 
+use App\Exceptions\InteropConfigurationException;
 use App\Exceptions\InteropUnavailableException;
+use App\Exceptions\InvalidFhirBundleException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
  * Base de los clientes FHIR R4 (RNF-17). Destino y token salen solo de config/interop.php
@@ -23,7 +24,7 @@ abstract class FhirHttpClient
     {
         $base = trim((string) ($config['base_url'] ?? ''));
         if ($base === '' || ! str_starts_with($base, 'http')) {
-            throw new RuntimeException('INTEROP_FHIR_BASE_URL no esta configurada para el driver FHIR.');
+            throw new InteropConfigurationException('INTEROP_FHIR_BASE_URL no esta configurada para el driver FHIR.');
         }
         $this->baseUrl = rtrim($base, '/');
     }
@@ -96,18 +97,26 @@ abstract class FhirHttpClient
             $response = $this->request()->get($url, $query === [] ? null : $query);
             $json = $response->json();
             if (! is_array($json) || ($json['resourceType'] ?? null) !== 'Bundle') {
-                throw new RuntimeException('invalid_bundle');
+                throw new InvalidFhirBundleException('invalid_bundle');
             }
 
             return $json;
-        } catch (ConnectionException|RequestException|RuntimeException $e) {
-            $code = $e instanceof RequestException ? 'http_'.$e->response->status()
-                : ($e instanceof ConnectionException ? 'connection' : 'invalid_bundle');
+        } catch (ConnectionException|RequestException|InvalidFhirBundleException $e) {
+            $code = $this->failureCode($e);
             $this->metrics->record($this->system(), $resourceType, false, null, $code, (int) ((microtime(true) - $started) * 1000));
             Log::warning('interop.request_failed', ['system' => $this->system(), 'resource' => $resourceType, 'code' => $code]);
 
             throw new InteropUnavailableException($this->unavailableMessage(), 'interop_'.$this->system().'_unavailable');
         }
+    }
+
+    private function failureCode(\Throwable $e): string
+    {
+        if ($e instanceof RequestException) {
+            return 'http_'.$e->response->status();
+        }
+
+        return $e instanceof ConnectionException ? 'connection' : 'invalid_bundle';
     }
 
     private function request(): PendingRequest
