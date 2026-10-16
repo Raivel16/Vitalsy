@@ -15,6 +15,7 @@ import { clearForegroundRuntime, setForegroundRuntime } from '../health-sync/bac
 import { setHealthBackgroundSync } from '../health-sync/backgroundScheduling';
 import { collectAndEnqueue } from '../health-sync/collectAndEnqueue';
 import { createHealthSource } from '../health-sync/createHealthSource';
+import { startForegroundHealthPolling } from '../health-sync/foregroundPolling';
 import type { HealthStatus } from '../health-sync/HealthDataSource';
 import { emptySnapshot, LifeApp, type LifeSnapshot } from './lifeApp';
 import { reconcileSessionStartup } from './sessionStartup';
@@ -246,6 +247,35 @@ export function LifeProvider({
     }
     void setHealthBackgroundSync(backgroundEnabled);
   }, [ready, sessionKnown, backgroundEnabled]);
+
+  // Con la app abierta se lee Health Connect cada 60 s, sin diálogos. En segundo plano sigue la tarea de 15 min.
+  const pollHealthQuietly = useCallback(async () => {
+    const collected = await collectAndEnqueue({
+      source: createHealthSource(),
+      life,
+      now: () => new Date(),
+      interactive: false,
+    });
+    if (collected.status !== 'read') {
+      return;
+    }
+    try {
+      await serverSyncRef.current();
+    } finally {
+      await refresh();
+    }
+  }, [life, refresh]);
+  const pollImplRef = useRef(pollHealthQuietly);
+  useLayoutEffect(() => {
+    pollImplRef.current = pollHealthQuietly;
+  }, [pollHealthQuietly]);
+
+  useEffect(() => {
+    if (!ready || !backgroundEnabled) {
+      return;
+    }
+    return startForegroundHealthPolling({ run: () => pollImplRef.current(), appState: AppState });
+  }, [ready, backgroundEnabled]);
 
   const consentDeps = useCallback(async () => {
     const session = Boolean(await tokenStore.get().catch(() => null));
