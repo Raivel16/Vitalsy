@@ -210,4 +210,11 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Docs actualizados: `modulo-1-admision.md`, `modulo-4-alta.md`, `modulo-7-vitalsy-life.md`, `modelo-datos.md` y colección `docs/api/yaak-vitalsy-life.postman_collection.json`.
 - No verificado en ejecución: app móvil contra servidor real, Reverb/wss, pg_dump/k6/Playwright reales, servidor FHIR real.
 
+### Nota — lectura de Health Connect en primer plano (RNF-19)
+
+- `movil/src/modules/health-sync/foregroundPolling.ts` lee cada 60 s con la app abierta (silencioso, `interactive: false`), se pausa en segundo plano y no solapa lecturas. Se activa desde `LifeProvider` con sesión y permiso concedido. La tarea de 15 min en segundo plano no cambia.
+- Pruebas: `foregroundPolling.test.ts` (7 casos, fake timers). `LifeProvider` no tiene pruebas de render en el repo, así que el efecto de cableado no tiene prueba propia.
+- `expo lint` ya reportaba 2 errores `react-hooks/refs` en `LifeProvider.tsx` antes de este cambio.
+- No verificado en un dispositivo real.
+
 <!-- END AGENT ANNOTATIONS -->

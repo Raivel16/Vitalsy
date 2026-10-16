@@ -118,7 +118,7 @@ Cubren línea de base, avisos, cola offline, consentimiento, plan, mapeo de Heal
 
 Estado: implementado y probado con fakes; **no verificado en un dispositivo**. Criterio RNF-19: la app consume ≤5 % de batería al día.
 
-Diseño: sin sondeo; una tarea de `expo-background-task` con intervalo mínimo de 15 minutos (el sistema operativo la ejecuta cuando quiere) que lee solo lo nuevo desde la última lectura (primera lectura limitada a 14 días) y no hace nada sin sesión, sin permiso o sin API.
+Diseño: con la app abierta se lee cada 60 s (`foregroundPolling.ts`: al activarse y luego cada minuto, en pausa en segundo plano, sin solapar lecturas ni abrir diálogos, y solo con sesión y permiso concedido). Con la app en segundo plano, una tarea de `expo-background-task` con intervalo mínimo de 15 minutos (el sistema operativo la ejecuta cuando quiere) que lee solo lo nuevo desde la última lectura (primera lectura limitada a 14 días) y no hace nada sin sesión, sin permiso o sin API.
 
 Procedimiento manual (development build, `eas build --profile development`):
 1. Instala el build en un teléfono real (iPhone con Apple Health o Android con Health Connect y datos), inicia sesión y concede la lectura en Dispositivos.
