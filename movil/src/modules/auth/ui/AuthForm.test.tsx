@@ -11,8 +11,10 @@ describe('AuthForm', () => {
         onRegister={() => done}
       />,
     );
-    fireEvent.press(screen.getByText('Iniciar sesión'));
-    expect(await screen.findByText('Escribe tu correo.')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText('Iniciar sesión'));
+    });
+    expect(screen.getByText('Escribe tu correo.')).toBeTruthy();
     expect(screen.getByText('Escribe tu contraseña.')).toBeTruthy();
   });
 
@@ -32,8 +34,10 @@ describe('AuthForm', () => {
   it('in local-only mode shows the banner and explains that recovery cannot send an email', async () => {
     await render(<AuthForm localOnly onLogin={() => done} onRegister={() => done} />);
     expect(screen.getByText('Cuenta solo en este teléfono')).toBeTruthy();
-    fireEvent.press(screen.getByText('¿Olvidaste tu contraseña?'));
-    expect(await screen.findByText(/no puede enviar un correo/i)).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText('¿Olvidaste tu contraseña?'));
+    });
+    expect(screen.getByText(/no puede enviar un correo/i)).toBeTruthy();
   });
 
   it('with a server there is no local-only banner nor local recovery message', async () => {
@@ -60,10 +64,14 @@ describe('AuthForm', () => {
   it('shows notices after success and waits for Continuar', async () => {
     const onDone = jest.fn();
     await render(<AuthForm onDone={onDone} onLogin={() => ({ errors: {}, notices: ['Se cambió de cuenta; los datos locales anteriores se borraron.'] })} onRegister={() => done} />);
-    fireEvent.press(screen.getByText('Iniciar sesión'));
-    expect(await screen.findByText(/Se cambió de cuenta/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText('Iniciar sesión'));
+    });
+    expect(screen.getByText(/Se cambió de cuenta/)).toBeTruthy();
     expect(onDone).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByText('Continuar'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('Continuar'));
+    });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
@@ -74,8 +82,10 @@ describe('AuthForm', () => {
     await render(
       <AuthForm onDone={onDone} onLogin={() => ({ errors: {}, confirmation: { pendingCount: 3, confirm, cancel } })} onRegister={() => done} />,
     );
-    fireEvent.press(screen.getByText('Iniciar sesión'));
-    expect(await screen.findByText('Hay 3 lecturas sin enviar de la otra cuenta. Si continúas, se borrarán de este teléfono.')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText('Iniciar sesión'));
+    });
+    expect(screen.getByText('Hay 3 lecturas sin enviar de la otra cuenta. Si continúas, se borrarán de este teléfono.')).toBeTruthy();
     expect(onDone).not.toHaveBeenCalled();
     await act(async () => {
       fireEvent.press(screen.getByText('Cancelar'));
@@ -95,9 +105,11 @@ describe('AuthForm', () => {
         onRegister={() => done}
       />,
     );
-    fireEvent.press(screen.getByText('Iniciar sesión'));
     await act(async () => {
-      fireEvent.press(await screen.findByText('Continuar y borrar'));
+      fireEvent.press(screen.getByText('Iniciar sesión'));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText('Continuar y borrar'));
     });
     expect(confirm).toHaveBeenCalledTimes(1);
     expect(onDone).toHaveBeenCalledTimes(1);
