@@ -13,17 +13,24 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Crucial: Desactiva el clonado superficial para que Sonar asocie autores y ramas
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/web/package-lock.json
+          cache-dependency-path: |
+            frontend/web/package-lock.json
+            movil/package-lock.json
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -57,10 +64,26 @@ jobs:
           mkdir -p database
           touch database/testing.sqlite
 
-      - name: Run backend tests
+      # Genera backend/api/coverage.xml (Clover) con PCOV para SonarQube.
+      - name: Run backend tests with coverage
         working-directory: backend/api
-        run: php artisan test
+        run: php artisan test --coverage-clover coverage.xml
 
       - name: Run backend lint or static checks
         working-directory: backend/api
         run: ./vendor/bin/pint --test
+
+      - name: Install mobile dependencies
+        working-directory: movil
+        run: npm ci
+
+      # Genera movil/coverage/lcov.info para SonarQube.
+      - name: Run mobile tests with coverage
+        working-directory: movil
+        run: npx jest --ci --coverage
+
+      # Análisis de SonarQube Cloud. Acción fijada al commit del tag v8.3.0.
+      - name: SonarQube Cloud Scan
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
