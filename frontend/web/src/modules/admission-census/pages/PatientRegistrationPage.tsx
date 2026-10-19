@@ -90,7 +90,7 @@ export function PatientRegistrationPage() {
           source: "manual",
         }),
       });
-      navigate(stepPath(data.encounter.currentStep, data.encounter.encounterId));
+      void navigate(stepPath(data.encounter.currentStep, data.encounter.encounterId));
     } catch (error_) {
       setError(errorText(error_, "No se pudo registrar el ingreso."));
     } finally {
