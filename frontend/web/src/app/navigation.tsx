@@ -18,6 +18,7 @@ import {
   IconBed,
   IconSparkles,
   IconCalendarEvent,
+  IconUserCog,
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
@@ -40,6 +41,7 @@ export type NavGroup = {
 };
 
 const CLINICAL: Role[] = ["enfermera_piso", "auxiliar_enfermeria", "medico_residente", "medico_tratante"];
+const CLINICAL_SET: ReadonlySet<Role> = new Set<Role>(CLINICAL);
 
 /** Perfiles que intervienen en el proceso 3 de gestión de alertas. */
 export const ALERT_ROLES: Role[] = [
@@ -54,6 +56,8 @@ export const ALERT_ROLES: Role[] = [
 /** Perfiles del proceso 4 de alta y egreso. */
 export const BED_ROLES: Role[] = ["gestion_camas", "enfermera_supervisora"];
 export const CLEANING_ROLES: Role[] = ["servicios_generales", "auxiliar_enfermeria", "enfermera_supervisora"];
+/** RF-101–104: administración de cuentas y accesos. */
+export const ADMIN_ROLES: Role[] = ["administrador_accesos"];
 export const STAFF_ROLES: Role[] = ["jefatura_enfermeria", "enfermera_supervisora", "enfermera_piso", "recursos_humanos"];
 
 export const DISCHARGE_ROLES: Role[] = [
@@ -138,6 +142,13 @@ export const NAV: NavGroup[] = [
       { to: "/personal", label: "Turnos y cobertura", icon: IconCalendarEvent, roles: STAFF_ROLES, end: true },
     ],
   },
+  {
+    id: "administracion",
+    label: "Administración",
+    items: [
+      { to: "/usuarios", label: "Usuarios", icon: IconUserCog, roles: ADMIN_ROLES },
+    ],
+  },
 ];
 
 export function navFor(role: Role): NavGroup[] {
@@ -155,7 +166,7 @@ export function withIngreso(path: string): string {
 }
 
 export function isClinicalRole(role: Role): boolean {
-  return CLINICAL.includes(role);
+  return CLINICAL_SET.has(role);
 }
 
 export function canOpenPatientWorklist(role: Role): boolean {
@@ -174,8 +185,19 @@ export function isBedRole(role: Role): boolean {
   return BED_ROLES.includes(role) || CLEANING_ROLES.includes(role);
 }
 
+export function isAdminRole(role: Role): boolean {
+  return ADMIN_ROLES.includes(role);
+}
+
 export function isStaffRole(role: Role): boolean {
   return STAFF_ROLES.includes(role);
+}
+
+function attentionBasePath(role: Role): string {
+  if (role === "medico_tratante" || role === "medico_residente") return "/atencion/chart";
+  if (role === "auxiliar_enfermeria") return "/atencion/constantes";
+  if (role === "enfermera_piso") return "/atencion/emar";
+  return "/pacientes";
 }
 
 export function primaryAttentionPath(role: Role, encounterId: string, next?: string | null): string {
@@ -184,13 +206,5 @@ export function primaryAttentionPath(role: Role, encounterId: string, next?: str
     const sep = safeNext.includes("?") ? "&" : "?";
     return `${safeNext}${sep}ingreso=${encodeURIComponent(encounterId)}`;
   }
-  const base =
-    role === "medico_tratante" || role === "medico_residente"
-      ? "/atencion/chart"
-      : role === "auxiliar_enfermeria"
-        ? "/atencion/constantes"
-        : role === "enfermera_piso"
-          ? "/atencion/emar"
-          : "/pacientes";
-  return `${base}?ingreso=${encodeURIComponent(encounterId)}`;
+  return `${attentionBasePath(role)}?ingreso=${encodeURIComponent(encounterId)}`;
 }

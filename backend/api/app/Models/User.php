@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -25,6 +24,7 @@ class User extends Authenticatable
         'role',
         'is_active',
         'deactivated_at',
+        'must_change_password',
     ];
 
     /**
@@ -49,6 +49,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'deactivated_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 }

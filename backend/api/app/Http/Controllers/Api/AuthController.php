@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -19,6 +21,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
         $credentials['email'] = mb_strtolower(trim($credentials['email']));
+
+        $credentials['is_active'] = true;
 
         if (! Auth::attempt($credentials, false)) {
             throw ValidationException::withMessages([
@@ -36,6 +40,34 @@ class AuthController extends Controller
         return response()->json(['user' => $this->payload($request->user())]);
     }
 
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'currentPassword' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', Password::min(10)->letters()->numbers()],
+        ]);
+
+        if (! Hash::check($data['currentPassword'], $user->password)) {
+            throw ValidationException::withMessages([
+                'currentPassword' => 'La contraseña actual no es correcta.',
+            ]);
+        }
+        if (Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => 'La nueva contraseña debe ser distinta de la actual.',
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => $data['password'],
+            'must_change_password' => false,
+        ])->save();
+        $request->session()->regenerate();
+
+        return response()->json(['user' => $this->payload($user->fresh())]);
+    }
+
     public function logout(Request $request): Response
     {
         Auth::guard('web')->logout();
@@ -47,14 +79,16 @@ class AuthController extends Controller
     }
 
     /**
-     * @return array{name: string, email: string, role: string}
+     * @return array{name: string, email: string, role: string, mustChangePassword: bool}
      */
     private function payload(User $user): array
     {
         return [
+            'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
+            'mustChangePassword' => (bool) $user->must_change_password,
         ];
     }
 }

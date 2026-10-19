@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\InpatientCare\MonitoringControlsBoard;
+use App\Support\Security\DegradedRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,7 @@ class MonitoringControlsController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json($this->board->board($request->user()));
+        return DegradedRead::json(fn () => $this->board->board($request->user()));
     }
 
     public function complete(Request $request, string $encounterId): JsonResponse

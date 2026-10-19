@@ -10,6 +10,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - reverb
 
   frontend:
     build:
@@ -20,6 +21,7 @@ services:
       PORT: "5173"
       VITE_PROXY_TARGET: http://backend:8000
       VITE_HMR_CLIENT_PORT: "8080"
+      VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-vitalsy-local-key}
       CHOKIDAR_USEPOLLING: "true"
     volumes:
       - ./frontend/web:/app
@@ -31,6 +33,9 @@ services:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
+    # Solo desarrollo: el entrypoint ejecuta `composer install` sobre el volumen anonimo de
+    # vendor. Como root no depende del dueno que traiga ese volumen (imagen vieja o recreada).
+    user: root
     command: ["sh", "/usr/local/bin/dev-entrypoint.sh"]
     ports:
       - "8000:8000"
@@ -59,8 +64,36 @@ services:
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
+      # RNF-01: el backend publica en Reverb por la red interna; los navegadores entran por Nginx (/app).
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-vitalsy}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-vitalsy-local-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-vitalsy-local-secret}
+      REVERB_HOST: reverb
+      REVERB_PORT: "8080"
+      REVERB_SCHEME: http
     depends_on:
       - postgres
+      - reverb
+
+  reverb:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    user: root
+    # Comparte el codigo del backend; espera a que el servicio backend instale vendor.
+    command: ["sh", "-c", "until [ -f vendor/autoload.php ]; do sleep 2; done; php artisan reverb:start --host=0.0.0.0 --port=8080"]
+    volumes:
+      - ./backend/api:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_KEY: ${APP_KEY}
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-vitalsy}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-vitalsy-local-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-vitalsy-local-secret}
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: "8080"
 
   postgres:
     image: postgres:16-alpine

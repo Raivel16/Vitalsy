@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 
-function FallbackBars({ value }: { value: string }) {
-  const widths = value.split("").map((char) => (char.charCodeAt(0) % 3) + 1);
+function FallbackBars({ value }: Readonly<{ value: string }>) {
+  const widths = value.split("").map((char) => ((char.codePointAt(0) ?? 0) % 3) + 1);
   let x = 4;
-  const bars = widths.map((width, index) => {
-    const rect = <rect key={index} x={x} y="4" width={width} height="40" fill="#0E4C92" />;
+  const bars = widths.map((width) => {
+    const rect = <rect key={`bar-${x}`} x={x} y="4" width={width} height="40" fill="#0E4C92" />;
     x += width + 1;
     return rect;
   });
@@ -30,7 +30,7 @@ function canUseJsBarcode() {
   }
 }
 
-export function Barcode({ value, id = "wristband-barcode" }: { value: string; id?: string }) {
+export function Barcode({ value, id = "wristband-barcode" }: Readonly<{ value: string; id?: string }>) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [mode, setMode] = useState<"js" | "fallback">(() => (canUseJsBarcode() ? "js" : "fallback"));
 
@@ -86,20 +86,13 @@ export function printBarcodeOnly(elementId = "wristband-barcode") {
   frame.style.width = "0";
   frame.style.height = "0";
   frame.style.border = "0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return;
-  }
-  doc.open();
-  doc.write(`<!doctype html><html><head><title>Brazalete</title>
-    <style>body{margin:0;display:grid;place-items:center;min-height:100vh}svg{width:90mm;height:auto}</style>
-    </head><body>${markup}</body></html>`);
-  doc.close();
   frame.onload = () => {
     frame.contentWindow?.focus();
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 500);
   };
+  frame.srcdoc = `<!doctype html><html><head><title>Brazalete</title>
+    <style>body{margin:0;display:grid;place-items:center;min-height:100vh}svg{width:90mm;height:auto}</style>
+    </head><body>${markup}</body></html>`;
+  document.body.appendChild(frame);
 }

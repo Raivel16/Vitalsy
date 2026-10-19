@@ -74,8 +74,10 @@ describe("e-MAR (RF-32–35)", () => {
     expect(screen.getByRole("button", { name: /escanear brazalete/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /escanear medicamento/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/código paciente/i)).toHaveValue("");
-    await user.type(screen.getByLabelText(/código paciente/i), "BRZ-EMAR-0001");
-    await user.type(screen.getByLabelText(/código medicamento/i), "DRUG-PARACETAMOL-1G");
+    await user.click(screen.getByLabelText(/código paciente/i));
+    await user.paste("BRZ-EMAR-0001");
+    await user.click(screen.getByLabelText(/código medicamento/i));
+    await user.paste("DRUG-PARACETAMOL-1G");
     await user.click(screen.getByRole("button", { name: /confirmar administración/i }));
     expect(await screen.findByRole("status", { name: /resultado de administración/i })).toHaveTextContent(/dosis administrada/i);
   });

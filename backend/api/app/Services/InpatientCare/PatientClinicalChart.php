@@ -8,6 +8,7 @@ use App\Models\CareActivityCompletion;
 use App\Models\ClinicalAlert;
 use App\Models\ImagingReport;
 use App\Models\LabResult;
+use App\Models\LifeBaselineImport;
 use App\Models\MedicalEvolutionNote;
 use App\Models\MedicationAdministration;
 use App\Models\NursingEvolutionNote;
@@ -31,6 +32,88 @@ class PatientClinicalChart
             throw new NotFoundHttpException('No se encontró el ingreso.');
         }
 
+        return [
+            'encounter' => $this->encounterSection($encounter),
+            'admission' => $this->admissionSection($encounter),
+            'lifeBaseline' => LifeBaselineImport::presentFor($encounterId),
+            'activePrescription' => $this->activePrescription($encounterId),
+            'vitalSigns' => $this->vitalSigns($encounterId, $from, $to),
+            'labResults' => $this->labResults($encounterId, $from, $to),
+            'imagingReports' => $this->imagingReports($encounterId, $from, $to),
+            'medicalEvolutionNotes' => $this->medicalNotes($encounterId, $from, $to),
+            'nursingEvolutionNotes' => $this->nursingNotes($encounterId, $from, $to),
+            'careActivities' => $this->careActivities($encounterId, $from, $to),
+            'medicationAdministrations' => $this->medicationAdministrations($encounterId, $from, $to),
+            'clinicalAlerts' => $this->clinicalAlerts($encounterId),
+            'filters' => [
+                'from' => $from?->toDateString(),
+                'to' => $to?->toDateString(),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function encounterSection(AdmissionEncounter $encounter): array
+    {
+        return [
+            'encounterId' => $encounter->encounter_id,
+            'patientName' => $encounter->patient_name,
+            'documentType' => $encounter->document_type,
+            'documentNumber' => $encounter->document_number,
+            'recordId' => $encounter->record_id,
+            'wristbandCode' => $encounter->wristband_code,
+            'originService' => $encounter->origin_service,
+            'room' => $encounter->room,
+            'bed' => $encounter->bed,
+            'service' => $encounter->service,
+            'coveragePayer' => $encounter->coverage_payer,
+            'coverageStatus' => $encounter->coverage_status,
+            'currentStep' => $encounter->current_step,
+            'createdAt' => optional($encounter->created_at)?->toIso8601String(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function admissionSection(AdmissionEncounter $encounter): array
+    {
+        $unreadable = $encounter->payloadUnreadable();
+        $payload = $this->readablePayload($encounter, $unreadable);
+        $section = fn (string $key): ?array => is_array($payload[$key] ?? null) ? $payload[$key] : null;
+        $reconciliation = $section('reconciliation');
+        $admissionMeds = [];
+        foreach ($reconciliation['medications'] ?? [] as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $admissionMeds[] = trim(($item['name'] ?? '').' '.($item['dose'] ?? '').' '.($item['frequency'] ?? ''));
+        }
+
+        return [
+            'unreadable' => $unreadable,
+            'deliverables' => $encounter->deliverables ?? [],
+            'assessment' => $section('assessment'),
+            'vitalsBasal' => $section('vitals'),
+            'reconciliation' => $reconciliation,
+            'risks' => $section('risks'),
+            'medicalOrders' => $section('medicalOrders'),
+            'consent' => $section('consent'),
+            'kardexMedications' => array_values(array_filter($admissionMeds)),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function readablePayload(AdmissionEncounter $encounter, bool $unreadable): array
+    {
+        if ($unreadable || ! is_array($encounter->clinical_payload)) {
+            return [];
+        }
+
+        return $encounter->clinical_payload;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function activePrescription(string $encounterId): ?array
+    {
         $prescription = Prescription::query()
             ->with('items')
             ->where('encounter_id', $encounterId)
@@ -38,7 +121,28 @@ class PatientClinicalChart
             ->latest('id')
             ->first();
 
-        $vitals = VitalSignReading::query()
+        if (! $prescription) {
+            return null;
+        }
+
+        return [
+            'id' => $prescription->id,
+            'status' => $prescription->status,
+            'signedAt' => optional($prescription->signed_at)?->toIso8601String(),
+            'items' => $prescription->items->map(fn ($item) => [
+                'drugName' => $item->drug_name,
+                'dose' => $item->dose,
+                'route' => $item->route,
+                'frequency' => $item->frequency,
+                'drugBarcode' => CpoeService::drugBarcodeFor($item->drug_name, $item->dose),
+            ])->all(),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function vitalSigns(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return VitalSignReading::query()
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'recorded_at', $from, $to))
             ->orderByDesc('recorded_at')
@@ -54,8 +158,12 @@ class PatientClinicalChart
                 'news2' => $row->news2_total,
             ])
             ->all();
+    }
 
-        $labs = LabResult::query()
+    /** @return list<array<string, mixed>> */
+    private function labResults(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return LabResult::query()
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'resulted_at', $from, $to))
             ->orderByDesc('resulted_at')
@@ -67,8 +175,12 @@ class PatientClinicalChart
                 'resultedAt' => optional($row->resulted_at)?->toIso8601String(),
             ])
             ->all();
+    }
 
-        $imaging = ImagingReport::query()
+    /** @return list<array<string, mixed>> */
+    private function imagingReports(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return ImagingReport::query()
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'reported_at', $from, $to))
             ->orderByDesc('reported_at')
@@ -81,8 +193,12 @@ class PatientClinicalChart
                 'reportedAt' => optional($row->reported_at)?->toIso8601String(),
             ])
             ->all();
+    }
 
-        $medicalNotes = MedicalEvolutionNote::query()
+    /** @return list<array<string, mixed>> */
+    private function medicalNotes(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return MedicalEvolutionNote::query()
             ->with('author')
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'signed_at', $from, $to))
@@ -96,8 +212,12 @@ class PatientClinicalChart
                 'authorName' => $row->author?->name,
             ])
             ->all();
+    }
 
-        $nursingNotes = NursingEvolutionNote::query()
+    /** @return list<array<string, mixed>> */
+    private function nursingNotes(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return NursingEvolutionNote::query()
             ->with('author')
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'created_at', $from, $to))
@@ -111,8 +231,12 @@ class PatientClinicalChart
                 'authorName' => $row->author?->name,
             ])
             ->all();
+    }
 
-        $careActivities = CareActivityCompletion::query()
+    /** @return list<array<string, mixed>> */
+    private function careActivities(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return CareActivityCompletion::query()
             ->with('completer')
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'completed_at', $from, $to))
@@ -126,8 +250,12 @@ class PatientClinicalChart
                 'completedByName' => $row->completer?->name,
             ])
             ->all();
+    }
 
-        $emar = MedicationAdministration::query()
+    /** @return list<array<string, mixed>> */
+    private function medicationAdministrations(string $encounterId, ?Carbon $from, ?Carbon $to): array
+    {
+        return MedicationAdministration::query()
             ->with('prescriptionItem')
             ->where('encounter_id', $encounterId)
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'scheduled_at', $from, $to))
@@ -144,8 +272,12 @@ class PatientClinicalChart
                 'administeredAt' => optional($dose->administered_at)?->toIso8601String(),
             ])
             ->all();
+    }
 
-        $clinicalAlerts = ClinicalAlert::query()
+    /** @return list<array<string, mixed>> */
+    private function clinicalAlerts(string $encounterId): array
+    {
+        return ClinicalAlert::query()
             ->with(['events' => fn ($q) => $q->with('user')->orderBy('occurred_at')->orderBy('id')])
             ->where('encounter_id', $encounterId)
             ->orderByDesc('generated_at')
@@ -170,74 +302,6 @@ class PatientClinicalChart
                 ])->all(),
             ])
             ->all();
-
-        $payload = is_array($encounter->clinical_payload) ? $encounter->clinical_payload : [];
-        $assessment = is_array($payload['assessment'] ?? null) ? $payload['assessment'] : null;
-        $vitalsBasal = is_array($payload['vitals'] ?? null) ? $payload['vitals'] : null;
-        $reconciliation = is_array($payload['reconciliation'] ?? null) ? $payload['reconciliation'] : null;
-        $risks = is_array($payload['risks'] ?? null) ? $payload['risks'] : null;
-        $medicalOrders = is_array($payload['medicalOrders'] ?? null) ? $payload['medicalOrders'] : null;
-        $consent = is_array($payload['consent'] ?? null) ? $payload['consent'] : null;
-        $admissionMeds = [];
-        foreach ($reconciliation['medications'] ?? [] as $item) {
-            if (! is_array($item)) {
-                continue;
-            }
-            $admissionMeds[] = trim(($item['name'] ?? '').' '.($item['dose'] ?? '').' '.($item['frequency'] ?? ''));
-        }
-
-        return [
-            'encounter' => [
-                'encounterId' => $encounter->encounter_id,
-                'patientName' => $encounter->patient_name,
-                'documentType' => $encounter->document_type,
-                'documentNumber' => $encounter->document_number,
-                'recordId' => $encounter->record_id,
-                'wristbandCode' => $encounter->wristband_code,
-                'originService' => $encounter->origin_service,
-                'room' => $encounter->room,
-                'bed' => $encounter->bed,
-                'service' => $encounter->service,
-                'coveragePayer' => $encounter->coverage_payer,
-                'coverageStatus' => $encounter->coverage_status,
-                'currentStep' => $encounter->current_step,
-                'createdAt' => optional($encounter->created_at)?->toIso8601String(),
-            ],
-            'admission' => [
-                'deliverables' => $encounter->deliverables ?? [],
-                'assessment' => $assessment,
-                'vitalsBasal' => $vitalsBasal,
-                'reconciliation' => $reconciliation,
-                'risks' => $risks,
-                'medicalOrders' => $medicalOrders,
-                'consent' => $consent,
-                'kardexMedications' => array_values(array_filter($admissionMeds)),
-            ],
-            'activePrescription' => $prescription ? [
-                'id' => $prescription->id,
-                'status' => $prescription->status,
-                'signedAt' => optional($prescription->signed_at)?->toIso8601String(),
-                'items' => $prescription->items->map(fn ($item) => [
-                    'drugName' => $item->drug_name,
-                    'dose' => $item->dose,
-                    'route' => $item->route,
-                    'frequency' => $item->frequency,
-                    'drugBarcode' => CpoeService::drugBarcodeFor($item->drug_name, $item->dose),
-                ])->all(),
-            ] : null,
-            'vitalSigns' => $vitals,
-            'labResults' => $labs,
-            'imagingReports' => $imaging,
-            'medicalEvolutionNotes' => $medicalNotes,
-            'nursingEvolutionNotes' => $nursingNotes,
-            'careActivities' => $careActivities,
-            'medicationAdministrations' => $emar,
-            'clinicalAlerts' => $clinicalAlerts,
-            'filters' => [
-                'from' => $from?->toDateString(),
-                'to' => $to?->toDateString(),
-            ],
-        ];
     }
 
     private function applyDateRange(Builder $query, string $column, ?Carbon $from, ?Carbon $to): void

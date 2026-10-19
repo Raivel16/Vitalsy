@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Discharge\DischargeService;
+use App\Services\Life\DischargeLifePlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DischargeController extends Controller
 {
@@ -21,9 +23,9 @@ class DischargeController extends Controller
         return response()->json($this->discharge->authorizedExits());
     }
 
-    public function show(string $encounterId): JsonResponse
+    public function show(Request $request, string $encounterId): JsonResponse
     {
-        return response()->json($this->discharge->show($encounterId));
+        return response()->json($this->discharge->show($encounterId, $request->user()));
     }
 
     public function storeOrder(Request $request, string $encounterId): JsonResponse
@@ -138,5 +140,23 @@ class DischargeController extends Controller
     public function confirmExit(Request $request, string $encounterId): JsonResponse
     {
         return response()->json($this->discharge->confirmExit($encounterId, $request->user()), 201);
+    }
+
+    /** RF-96: emite el plan estructurado para Vitalsy Life; «rechaza» se persiste sin plan ni códigos. */
+    public function storeLifePlan(Request $request, string $encounterId, DischargeLifePlan $lifePlans): JsonResponse
+    {
+        $data = $request->validate([
+            'mode' => ['required', 'string', Rule::in(DischargeLifePlan::MODES)],
+        ], [
+            'mode.required' => 'Indique si el paciente usa Vitalsy Life, recibe invitación o rechaza.',
+            'mode.in' => 'Indique si el paciente usa Vitalsy Life, recibe invitación o rechaza.',
+        ]);
+
+        $plan = $lifePlans->issue($encounterId, $data['mode'], $request->user());
+        if ($plan->mode === 'rechaza') {
+            return response()->json(['lifePlan' => $lifePlans->present($plan)]);
+        }
+
+        return response()->json(['lifePlan' => $lifePlans->present($plan)], 201);
     }
 }

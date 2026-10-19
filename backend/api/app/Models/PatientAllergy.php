@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +18,8 @@ class PatientAllergy extends Model
     protected function casts(): array
     {
         return [
+            'notes' => EncryptedText::class,
+            'substance' => EncryptedText::class,
             'is_optional' => 'boolean',
         ];
     }

@@ -17,6 +17,7 @@ describe("roles operativos", () => {
       "servicios_generales",
       "jefatura_enfermeria",
       "recursos_humanos",
+      "administrador_accesos",
     ]);
     expect(ROLES).not.toContain("enfermeria");
     expect(ROLES).not.toContain("medico");

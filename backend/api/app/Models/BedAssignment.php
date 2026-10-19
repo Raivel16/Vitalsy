@@ -12,6 +12,10 @@ class BedAssignment extends Model
         'encounter_id',
         'assigned_at',
         'released_at',
+        'notified_at',
+        'notified_role',
+        'acknowledged_at',
+        'acknowledged_by',
     ];
 
     protected function casts(): array
@@ -19,6 +23,8 @@ class BedAssignment extends Model
         return [
             'assigned_at' => 'datetime',
             'released_at' => 'datetime',
+            'notified_at' => 'datetime',
+            'acknowledged_at' => 'datetime',
         ];
     }
 

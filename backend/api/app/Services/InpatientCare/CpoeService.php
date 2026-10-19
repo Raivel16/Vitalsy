@@ -213,7 +213,7 @@ class CpoeService
         $kardex = $this->kardexFromPrescription($prescription);
 
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->firstOrFail();
-        $payload = $encounter->clinical_payload ?? [];
+        $payload = $encounter->readablePayload();
         $payload['cpoeKardex'] = $kardex;
         $encounter->clinical_payload = $payload;
         $encounter->save();

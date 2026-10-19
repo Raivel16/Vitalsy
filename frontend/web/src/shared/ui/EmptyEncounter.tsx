@@ -8,13 +8,13 @@ export function EmptyEncounter({
   to = "/pacientes",
   ctaLabel = "Ir a pacientes",
   returnTo,
-}: {
+}: Readonly<{
   message: string;
   to?: string;
   ctaLabel?: string;
   /** Ruta a la que volver tras elegir paciente. Por defecto, la pantalla actual. */
   returnTo?: string;
-}) {
+}>) {
   const location = useLocation();
   const intended = returnTo ?? location.pathname;
   const href = withNextParam(to, intended);

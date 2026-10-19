@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -19,6 +19,7 @@ import { FormActions } from "../../../shared/ui/FormActions";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { VitalSignsChart } from "../ui/VitalSignsChart";
 import type { ChartPoint } from "../ui/types";
+import { keyByContent } from "../../../shared/list/rowKeys";
 
 const emptyFields = {
   respiratoryRate: "",
@@ -28,6 +29,46 @@ const emptyFields = {
   pulse: "",
   temperature: "",
 };
+
+function EvolutionSection({ series }: Readonly<{ series: ChartPoint[] }>) {
+  return (
+    <section className="result-block" aria-label="Gráfica evolutiva">
+      <h3>Gráfica evolutiva</h3>
+      {series.length === 0 ? (
+        <Feedback tone="info">Aún no hay lecturas para graficar.</Feedback>
+      ) : (
+        <>
+          <VitalSignsChart series={series} />
+          <div className="table-wrap">
+            <table>
+              <caption>Historial reciente</caption>
+              <thead>
+                <tr>
+                  <th>Fecha y hora</th>
+                  <th>Pulso</th>
+                  <th>FR</th>
+                  <th>SpO₂</th>
+                  <th>NEWS2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keyByContent(series, (point) => `${point.recordedAt}|${point.pulse}|${point.respiratoryRate}|${point.oxygenSaturation}|${point.news2}`).map(({ key, item: point }) => (
+                  <tr key={key}>
+                    <td>{formatDateTime(point.recordedAt)}</td>
+                    <td>{point.pulse ?? "—"}</td>
+                    <td>{point.respiratoryRate ?? "—"}</td>
+                    <td>{point.oxygenSaturation ?? "—"}</td>
+                    <td>{point.news2 ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
 
 export function VitalMonitoringPage() {
   const [params] = useSearchParams();
@@ -77,7 +118,7 @@ export function VitalMonitoringPage() {
     setFields((current) => ({ ...current, [key]: value }));
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     setSubmitted(true);
@@ -118,8 +159,8 @@ export function VitalMonitoringPage() {
       setConsciousness("alert");
       setSpo2Scale("scale1");
       loadChart();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las constantes."));
     } finally {
       setSaving(false);
     }
@@ -144,7 +185,7 @@ export function VitalMonitoringPage() {
       </p>
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success" label="Resultado del registro">{notice}</Feedback> : null}
-      {news2Label ? <p role="status" className={`news news-${news2Label.includes(" 0") ? "green" : "yellow"}`}>{news2Label}</p> : null}
+      {news2Label ? <output className={`news news-${news2Label.includes(" 0") ? "green" : "yellow"}`}>{news2Label}</output> : null}
       <form className="stack clinical-panel" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
           <UnitField id="rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={fields.respiratoryRate} onChange={(e) => update("respiratoryRate", e.target.value)} error={visibleErrors.respiratoryRate} />
@@ -166,6 +207,7 @@ export function VitalMonitoringPage() {
         </SelectField>
         <label className="check">
           <input type="checkbox" checked={supplementalOxygen} onChange={(e) => setSupplementalOxygen(e.target.checked)} />
+          {" "}
           Oxígeno suplementario
         </label>
         <SelectField id="consciousness" label="Conciencia" value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>
@@ -191,41 +233,7 @@ export function VitalMonitoringPage() {
           <Button type="submit" disabled={saving}>{saving ? "Registrando…" : "Registrar constantes"}</Button>
         </FormActions>
       </form>
-      <section className="result-block" aria-label="Gráfica evolutiva">
-        <h3>Gráfica evolutiva</h3>
-        {series.length === 0 ? (
-          <Feedback tone="info">Aún no hay lecturas para graficar.</Feedback>
-        ) : (
-          <>
-            <VitalSignsChart series={series} />
-            <div className="table-wrap">
-              <table>
-                <caption>Historial reciente</caption>
-                <thead>
-                  <tr>
-                    <th>Fecha y hora</th>
-                    <th>Pulso</th>
-                    <th>FR</th>
-                    <th>SpO₂</th>
-                    <th>NEWS2</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {series.map((point, index) => (
-                    <tr key={index}>
-                      <td>{formatDateTime(point.recordedAt)}</td>
-                      <td>{point.pulse ?? "—"}</td>
-                      <td>{point.respiratoryRate ?? "—"}</td>
-                      <td>{point.oxygenSaturation ?? "—"}</td>
-                      <td>{point.news2 ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </section>
+      <EvolutionSection series={series} />
     </Sheet>
   );
 }

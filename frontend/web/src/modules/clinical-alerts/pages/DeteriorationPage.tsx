@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -20,7 +20,7 @@ export function DeteriorationPage() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
 
@@ -41,8 +41,8 @@ export function DeteriorationPage() {
       setNotice("Se registró el deterioro y se notificó a la enfermera de piso responsable.");
       setNote("");
       setSeverity("media");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el deterioro observado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el deterioro observado."));
     } finally {
       setSaving(false);
     }

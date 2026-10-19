@@ -4,6 +4,49 @@ namespace App\Services\Clinical;
 
 class News2Calculator
 {
+    private const EVERY_HOUR = 'Mínimo cada 1 hora';
+
+    private const LOW_MEDIUM = 'Riesgo bajo-medio';
+
+    /** Clasificación NEWS2: alto, medio, un parámetro en 3, bajo-medio y bajo. */
+    private const BANDS = [
+        'high' => [
+            'band' => 'high',
+            'visual' => 'red',
+            'visualLabel' => 'Riesgo alto',
+            'clinicalResponse' => 'Riesgo alto. Evaluación de emergencia por el equipo clínico y considerar traslado a un nivel de cuidado superior.',
+            'monitoring' => 'Monitoreo continuo',
+        ],
+        'medium' => [
+            'band' => 'medium',
+            'visual' => 'yellow',
+            'visualLabel' => 'Riesgo medio',
+            'clinicalResponse' => 'Riesgo medio. Revisión urgente por un clínico competente en enfermedad aguda.',
+            'monitoring' => self::EVERY_HOUR,
+        ],
+        'single' => [
+            'band' => 'low-medium',
+            'visual' => 'yellow',
+            'visualLabel' => self::LOW_MEDIUM,
+            'clinicalResponse' => 'Riesgo bajo-medio con puntuación de 3 en un parámetro. Revisión urgente por enfermería registrada y considerar evaluación clínica.',
+            'monitoring' => self::EVERY_HOUR,
+        ],
+        'low-medium' => [
+            'band' => 'low-medium',
+            'visual' => 'yellow',
+            'visualLabel' => self::LOW_MEDIUM,
+            'clinicalResponse' => 'Riesgo bajo-medio. Valoración por enfermería registrada.',
+            'monitoring' => 'Mínimo cada 4 a 6 horas',
+        ],
+        'low' => [
+            'band' => 'low',
+            'visual' => 'green',
+            'visualLabel' => 'Riesgo bajo',
+            'clinicalResponse' => 'Riesgo bajo. Continuar cuidados rutinarios de sala.',
+            'monitoring' => 'Mínimo cada 12 horas',
+        ],
+    ];
+
     /**
      * NEWS2 chart 1, Royal College of Physicians 2017.
      *
@@ -43,58 +86,44 @@ class News2Calculator
         ];
     }
 
+    /**
+     * Puntaje del primer umbral superior alcanzado (límites inclusivos y ascendentes).
+     *
+     * @param  array<int, int>  $upperBounds  límite superior => puntaje
+     */
+    private function bandScore(int|float $value, array $upperBounds, int $above): int
+    {
+        foreach ($upperBounds as $limit => $score) {
+            if ($value <= $limit) {
+                return $score;
+            }
+        }
+
+        return $above;
+    }
+
     private function respiration(int $value): int
     {
         if ($value <= 8 || $value >= 25) {
             return 3;
         }
-        if ($value <= 11) {
-            return 1;
-        }
-        if ($value <= 20) {
-            return 0;
-        }
 
-        return 2;
+        return $this->bandScore($value, [11 => 1, 20 => 0], 2);
     }
 
     private function spo2Scale1(int $value): int
     {
-        if ($value <= 91) {
-            return 3;
-        }
-        if ($value <= 93) {
-            return 2;
-        }
-        if ($value <= 95) {
-            return 1;
-        }
-
-        return 0;
+        return $this->bandScore($value, [91 => 3, 93 => 2, 95 => 1], 0);
     }
 
     private function spo2Scale2(int $value, bool $onOxygen): int
     {
-        if ($value <= 83) {
-            return 3;
-        }
-        if ($value <= 85) {
-            return 2;
-        }
-        if ($value <= 87) {
-            return 1;
-        }
-        if ($value <= 92 || ! $onOxygen) {
+        // Sin oxígeno suplementario, por encima de 87 % no puntúa (solo puntúa la hipoxemia).
+        if (! $onOxygen && $value > 87) {
             return 0;
         }
-        if ($value <= 94) {
-            return 1;
-        }
-        if ($value <= 96) {
-            return 2;
-        }
 
-        return 3;
+        return $this->bandScore($value, [83 => 3, 85 => 2, 87 => 1, 92 => 0, 94 => 1, 96 => 2], 3);
     }
 
     private function systolic(int $value): int
@@ -102,14 +131,8 @@ class News2Calculator
         if ($value <= 90 || $value >= 220) {
             return 3;
         }
-        if ($value <= 100) {
-            return 2;
-        }
-        if ($value <= 110) {
-            return 1;
-        }
 
-        return 0;
+        return $this->bandScore($value, [100 => 2, 110 => 1], 0);
     }
 
     private function pulse(int $value): int
@@ -117,39 +140,13 @@ class News2Calculator
         if ($value <= 40 || $value >= 131) {
             return 3;
         }
-        if ($value <= 50) {
-            return 1;
-        }
-        if ($value <= 90) {
-            return 0;
-        }
-        if ($value <= 110) {
-            return 1;
-        }
-        if ($value <= 130) {
-            return 2;
-        }
 
-        return 3;
+        return $this->bandScore($value, [50 => 1, 90 => 0, 110 => 1, 130 => 2], 3);
     }
 
     private function temperature(float $value): int
     {
-        $value = round($value, 1);
-        if ($value <= 35) {
-            return 3;
-        }
-        if ($value <= 36) {
-            return 1;
-        }
-        if ($value <= 38) {
-            return 0;
-        }
-        if ($value <= 39) {
-            return 1;
-        }
-
-        return 2;
+        return $this->bandScore(round($value, 1), [35 => 3, 36 => 1, 38 => 0, 39 => 1], 2);
     }
 
     private function consciousness(string $consciousness, ?string $onset): int
@@ -169,52 +166,14 @@ class News2Calculator
      */
     private function classify(int $total, bool $single): array
     {
-        if ($total >= 7) {
-            return [
-                'band' => 'high',
-                'visual' => 'red',
-                'visualLabel' => 'Riesgo alto',
-                'clinicalResponse' => 'Riesgo alto. Evaluación de emergencia por el equipo clínico y considerar traslado a un nivel de cuidado superior.',
-                'monitoring' => 'Monitoreo continuo',
-            ];
-        }
+        $key = match (true) {
+            $total >= 7 => 'high',
+            $total >= 5 => 'medium',
+            $single => 'single',
+            $total >= 1 => 'low-medium',
+            default => 'low',
+        };
 
-        if ($total >= 5) {
-            return [
-                'band' => 'medium',
-                'visual' => 'yellow',
-                'visualLabel' => 'Riesgo medio',
-                'clinicalResponse' => 'Riesgo medio. Revisión urgente por un clínico competente en enfermedad aguda.',
-                'monitoring' => 'Mínimo cada 1 hora',
-            ];
-        }
-
-        if ($single) {
-            return [
-                'band' => 'low-medium',
-                'visual' => 'yellow',
-                'visualLabel' => 'Riesgo bajo-medio',
-                'clinicalResponse' => 'Riesgo bajo-medio con puntuación de 3 en un parámetro. Revisión urgente por enfermería registrada y considerar evaluación clínica.',
-                'monitoring' => 'Mínimo cada 1 hora',
-            ];
-        }
-
-        if ($total >= 1) {
-            return [
-                'band' => 'low-medium',
-                'visual' => 'yellow',
-                'visualLabel' => 'Riesgo bajo-medio',
-                'clinicalResponse' => 'Riesgo bajo-medio. Valoración por enfermería registrada.',
-                'monitoring' => 'Mínimo cada 4 a 6 horas',
-            ];
-        }
-
-        return [
-            'band' => 'low',
-            'visual' => 'green',
-            'visualLabel' => 'Riesgo bajo',
-            'clinicalResponse' => 'Riesgo bajo. Continuar cuidados rutinarios de sala.',
-            'monitoring' => 'Mínimo cada 12 horas',
-        ];
+        return self::BANDS[$key];
     }
 }

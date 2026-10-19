@@ -49,3 +49,13 @@ Este proyecto exige metodología TDD en frontend y backend.
 - [ ] Documentación actualizada
 - [ ] Requerimientos revisados
 - [ ] PR con descripción clara y evidencia de pruebas
+
+## Pruebas del backend en paralelo
+
+`php artisan test` usa SQLite (`backend/api/database/testing.sqlite`). Si varias ejecuciones corren a la vez (varios agentes o terminales) compiten por ese archivo. Defina `VITALSY_TEST_SQLITE` con la ruta de un archivo temporal propio para aislar la base de pruebas:
+
+```bash
+VITALSY_TEST_SQLITE=/tmp/vitalsy-test-a.sqlite php artisan test
+```
+
+En PowerShell: `$env:VITALSY_TEST_SQLITE = "$env:TEMP\vitalsy-test-a.sqlite"; php artisan test`. Es opcional; sin la variable se usa el archivo por defecto.

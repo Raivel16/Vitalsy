@@ -2,13 +2,11 @@
 
 namespace App\Providers;
 
-use App\Events\PatientExited;
-use App\Listeners\DispatchCleaningOnPatientExit;
 use App\Services\Interoperability\LisClient;
 use App\Services\Interoperability\PacsClient;
 use App\Services\Interoperability\StubLisClient;
 use App\Services\Interoperability\StubPacsClient;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,9 +22,15 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     *
+     * Los listeners de app/Listeners (p. ej. PatientExited) se descubren solos; registrarlos
+     * a mano los ejecutaría dos veces.
      */
     public function boot(): void
     {
-        Event::listen(PatientExited::class, DispatchCleaningOnPatientExit::class);
+        // RNF-05: toda URL generada en produccion es https (el proxy termina TLS 1.3).
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }

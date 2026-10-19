@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\InpatientCare\PatientClinicalChart;
+use App\Support\Security\DegradedRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,6 +23,6 @@ class PatientClinicalChartController extends Controller
         $from = isset($data['from']) ? Carbon::parse($data['from'])->startOfDay() : null;
         $to = isset($data['to']) ? Carbon::parse($data['to'])->endOfDay() : null;
 
-        return response()->json($this->chart->forEncounter($encounterId, $from, $to));
+        return DegradedRead::json(fn () => $this->chart->forEncounter($encounterId, $from, $to));
     }
 }

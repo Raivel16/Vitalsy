@@ -1,6 +1,6 @@
 # Módulo 7 — Vitalsy Life (app móvil)
 
-Cliente ciudadano en `services/movil`. Vitalsy Clinical no se modifica en este corte. Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
+Cliente ciudadano en `movil`. La integración con Vitalsy Clinical (backend Laravel y web) está definida en [contrato-clinical-life.md](contrato-clinical-life.md). Life es software de bienestar: compara lecturas con la línea de base personal y no calcula NEWS2 ni emite diagnósticos.
 
 ## Flujo
 
@@ -16,24 +16,28 @@ Cliente ciudadano en `services/movil`. Vitalsy Clinical no se modifica en este c
 
 ## Contrato con Clinical
 
-Life emite el código de vinculación (RF-94). Clinical lo consume en admisión (RF-95); esa lectura no está en la app.
+Life emite el código de vinculación (RF-94). Clinical lo consume en admisión (RF-95); esa lectura no está en la app. El detalle de endpoints, errores y TTL está en [contrato-clinical-life.md](contrato-clinical-life.md).
 
 Clinical emite el QR de alta (RF-96). Life lo acepta así:
 
 - JSON con `medications` (`name`, `dose`, `schedule` `HH:mm`), `comfortSigns`, `homeCare` y `validUntil`, o
-- un código opaco que el servidor resuelve en `GET {EXPO_PUBLIC_API_URL}/api/life/discharge-plans/{code}`.
+- un código opaco que el servidor resuelve en `GET {EXPO_PUBLIC_API_URL}/api/v1/life/discharge-plans/{code}`.
 
-La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/life/sync` con `{ items: [{ id, kind, body, status }] }`. Esos endpoints todavía no existen en Laravel. La app no simula una respuesta correcta.
+La ingesta sale por `POST {EXPO_PUBLIC_API_URL}/api/v1/life/sync` con `{ items: [{ id, kind, body, status }] }`. Todas las llamadas (salvo registro e inicio de sesión) llevan `Authorization: Bearer <token>` de la cuenta Life; la app rechaza URLs `http` fuera de desarrollo. La respuesta `{ accepted, rejected }` es la única fuente de verdad: un item pasa a `synced` solo si su `id` está en `accepted`; los `rejected` quedan en estado terminal `rejected` (no se reintentan) y cualquier otro fallo (sin red, 401, 422 `batch_too_large`, 5xx) los deja `pending`. La cola se envía en lotes de hasta 100 items y 1 000 000 de caracteres. Un 401 borra el token guardado. La app no simula una respuesta correcta si el servidor no responde.
 
 ## Salud
 
 | Origen | Plataforma | Comportamiento |
 |---|---|---|
 | Health Connect | Android, development build | Lectura real de los tipos autorizados |
-| Apple Health | iOS | No conectado en este corte |
+| Apple Health | iOS, development build | Lectura de solo lectura con `@kingstinct/react-native-healthkit` (frecuencia cardíaca, reposo, HRV SDNN, SpO2, pasos, sueño, temperatura corporal). Sin development build (Expo Go) queda «no disponible». Por verificar en dispositivo |
 | Manual | Ambas | Pulso y SpO2 validados en el teléfono |
 
 Tipos de Health Connect: frecuencia cardíaca, pulso en reposo, HRV, SpO2, pasos, sueño, temperatura cutánea y corporal. Solo lectura.
+
+Apple Health lee los mismos tipos salvo temperatura cutánea (HealthKit solo expone la temperatura de muñeca durante el sueño y no se usa en este corte); la HRV es SDNN, no RMSSD. Solo lectura: `NSHealthShareUsageDescription` sin descripción de escritura.
+
+
 
 ## Calidad
 
@@ -41,4 +45,21 @@ Las reglas de dominio tienen pruebas Jest antes de la interfaz. El cifrado local
 
 ## Cómo probar
 
-La guía operativa está en `services/movil/documento.md`.
+La guía operativa está en `movil/documento.md`.
+
+## Integridad de la lectura en segundo plano
+
+- **Permisos ampliados a propósito:** `HealthConnectSource.ts` y `plugins/withHealthConnectPermissions.js` se extendieron para la lectura en segundo plano (`READ_HEALTH_DATA_IN_BACKGROUND` y la solicitud `BackgroundAccessPermission`, soportada por `react-native-health-connect@4.1.3`). Esa solicitud se hace una sola vez por cuenta (`healthSync.backgroundAccessRequested`), no en cada lectura.
+- **Sin pérdida silenciosa:** la lectura pagina con `pageToken` (tope de seguridad de 50 páginas por tipo). Si un tipo requerido falla, o todos, la lectura se marca `failed` y `lastReadAt` no avanza; la ventana se relee (el id determinista deduplica). Con el dispositivo bloqueado HealthKit rechaza las consultas: se trata igual, como fallida y sin avanzar la ventana.
+- **Cuenta y token:** el token se guarda junto con el id de la cuenta; en un arranque en frío la tarea solo actúa si `sessionUserId` de la instantánea coincide con la cuenta del token y no hay una marca durable de «cambio de cuenta en curso». Un token sin cuenta (versiones anteriores) se trata como no vinculado y la tarea no hace nada.
+- **Escritores concurrentes:** la tarea en frío escribe con `persistence.update` (lee-modifica-escribe en una transacción exclusiva de SQLite) sobre lo último guardado y nunca sobrescribe la instantánea completa. Limitación: la app en primer plano sigue guardando su instantánea completa; si la tarea corrió en otro contexto JS, la app puede reescribir esas lecturas, que se vuelven a leer y deduplican por id.
+- **Estado por cuenta:** `healthSync` (permiso, última lectura, permiso de fondo solicitado) se reinicia al cerrar sesión y al cambiar de cuenta.
+- **Sueño HealthKit:** el id es `hk:sleep:<día en que termina la noche>`; si la noche crece, la muestra nueva reemplaza a la anterior (local) y se reenvía con el mismo id. Por verificar: que el servidor trate el reenvío con el mismo id como reemplazo y no como duplicado.
+- La tarea en frío no reintenta revocaciones pendientes ni trae avisos: eso lo hace la sincronización del primer plano.
+
+
+## Cierre de la integración Clinical-Life (RF-89–98)
+
+El recorrido completo está cubierto por `backend/api/tests/Feature/LifeEndToEndTest.php`: registro ciudadano, consentimiento, sincronización de biometría, código de vinculación, importación en admisión, plan de alta, salida efectiva con custodia y reclamo del plan por el ciudadano. Las peticiones de API para `life/*`, admisión y alta están en `docs/api/yaak-vitalsy-life.postman_collection.json`.
+
+No verificado en ejecución: app móvil real contra un servidor desplegado, Reverb/wss y latencias en staging.

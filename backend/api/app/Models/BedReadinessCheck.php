@@ -8,6 +8,7 @@ class BedReadinessCheck extends Model
 {
     protected $fillable = [
         'bed_id',
+        'cleaning_order_id',
         'linen_ok',
         'supplies_ok',
         'confirmed_by',

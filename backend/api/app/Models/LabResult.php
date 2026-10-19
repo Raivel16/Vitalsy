@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
+use App\Casts\EncryptedText;
 use Illuminate\Database\Eloquent\Model;
 
 class LabResult extends Model
@@ -17,7 +19,8 @@ class LabResult extends Model
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
+            'payload' => EncryptedArray::class,
+            'summary' => EncryptedText::class,
             'resulted_at' => 'datetime',
         ];
     }

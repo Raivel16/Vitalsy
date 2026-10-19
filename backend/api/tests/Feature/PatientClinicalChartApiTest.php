@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\AdmissionEncounter;
 use App\Models\CareActivityCompletion;
 use App\Models\LabResult;
+use App\Models\LifeAccount;
+use App\Models\LifeBaselineImport;
 use App\Models\MedicalEvolutionNote;
 use App\Models\User;
 use App\Models\VitalSignReading;
@@ -92,6 +94,42 @@ class PatientClinicalChartApiTest extends TestCase
             ->assertJsonPath('labResults.0.summary', 'Hemograma normal')
             ->assertJsonPath('medicalEvolutionNotes.0.body', 'Evolución favorable.')
             ->assertJsonPath('clinicalAlerts', []);
+    }
+
+    public function test_chart_includes_life_baseline_when_imported(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-HOSP-0001',
+            'order_number' => 'OI-2026-CHART-LIFE',
+            'source' => 'manual',
+            'patient_name' => 'Paciente Chart Demo',
+            'document_type' => 'DNI',
+            'document_number' => '11223344',
+            'origin_service' => 'Medicina',
+            'coverage_payer' => 'Essalud',
+            'coverage_status' => 'aprobada',
+            'coverage_plan' => 'Regular',
+            'current_step' => 'cerrado',
+            'deliverables' => [],
+            'clinical_payload' => [],
+        ]);
+        $this->actingAs(User::factory()->create(['role' => 'medico_tratante']));
+
+        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+            ->assertOk()->assertJsonPath('lifeBaseline', null);
+
+        $account = LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
+        LifeBaselineImport::query()->create([
+            'encounter_id' => 'ENC-HOSP-0001',
+            'life_account_id' => $account->id,
+            'baseline' => [['kind' => 'heart_rate', 'low' => 58.0, 'high' => 82.0, 'days' => 9]],
+            'imported_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+            ->assertOk()
+            ->assertJsonPath('lifeBaseline.metrics.0.kind', 'heart_rate')
+            ->assertJsonPath('lifeBaseline.metrics.0.high', 82);
     }
 
     public function test_admission_role_cannot_read_clinical_chart(): void

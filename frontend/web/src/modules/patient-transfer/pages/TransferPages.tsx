@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   IconAlertTriangle,
@@ -61,7 +61,7 @@ function bedKey(bed: AvailableBed) {
   return `${bed.room}|${bed.bedCode}`;
 }
 
-function NeedPatient({ title }: { title: string }) {
+function NeedPatient({ title }: Readonly<{ title: string }>) {
   return (
     <Sheet kicker="Celador / Camillero" title={title} clinic="form">
       <EmptyEncounter message="Abra un paciente desde el censo para trabajar este paso con su código propio." />
@@ -94,7 +94,7 @@ export function TransferOrderPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
@@ -104,9 +104,9 @@ export function TransferOrderPage() {
         `/api/v1/hospital-admission/transfer-orders/${encodeURIComponent(orderNumber.trim())}`,
       );
       setResult(data);
-    } catch (caught) {
+    } catch (error_) {
       setResult(null);
-      setError(errorText(caught, "No se pudo consultar el traslado."));
+      setError(errorText(error_, "No se pudo consultar el traslado."));
     } finally {
       setLoading(false);
     }
@@ -122,8 +122,8 @@ export function TransferOrderPage() {
       }
       setNotice("Traslado confirmado.");
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar el traslado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar el traslado."));
     } finally {
       setPending(false);
     }
@@ -147,7 +147,7 @@ export function TransferOrderPage() {
           </Button>
         </div>
       </form>
-      {loading ? <p role="status">Cargando orden de traslado.</p> : null}
+      {loading ? <output>Cargando orden de traslado.</output> : null}
       {error ? <Feedback tone="error">{error}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {result ? (
@@ -264,8 +264,8 @@ export function WristbandVerifyPage() {
       const notice = await verifyWristbandCode(trimmed, encounter, applyEncounter);
       setMessage(notice);
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo verificar el brazalete."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo verificar el brazalete."));
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -280,7 +280,7 @@ export function WristbandVerifyPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     await runVerify(code);
   }
@@ -353,7 +353,7 @@ export function FloorReceptionPage() {
   const assignedBed = [room ? `Habitación ${room}` : null, bed ? `lecho ${bed}` : null].filter(Boolean).join("-")
     || "el lecho asignado";
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -373,8 +373,8 @@ export function FloorReceptionPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo confirmar la recepción."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo confirmar la recepción."));
     } finally {
       setPending(false);
     }
@@ -478,8 +478,8 @@ export function RelocationPage() {
         setBeds((data.beds ?? []).filter((bed) => bed.status === "available"));
         setBedsError("");
       })
-      .catch((caught: unknown) => {
-        if (active) setBedsError(errorText(caught, "No se pudieron cargar los lechos disponibles."));
+      .catch((error_: unknown) => {
+        if (active) setBedsError(errorText(error_, "No se pudieron cargar los lechos disponibles."));
       });
     return () => {
       active = false;
@@ -502,7 +502,7 @@ export function RelocationPage() {
   ].filter(Boolean).join(" · ") || "Sin ubicación asignada";
   const chosen = beds.find((bed) => bedKey(bed) === selected);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!reason.trim()) next.reason = "El motivo de la discrepancia es obligatorio.";
@@ -523,8 +523,8 @@ export function RelocationPage() {
       });
       setNotice(`Reubicación notificada a la central. Habitación ${chosen.room}, lecho ${chosen.bedCode}.`);
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la reubicación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la reubicación."));
     } finally {
       setPending(false);
     }

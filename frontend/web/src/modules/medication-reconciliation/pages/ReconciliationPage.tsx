@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type SyntheticEvent, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -21,6 +21,12 @@ const ROUTE_LABEL: Record<string, string> = {
   subcutánea: "Subcutánea",
   inhalatoria: "Inhalatoria",
 };
+
+function reviewTone(status: string): "success" | "warning" | "neutral" {
+  if (status === "validada") return "success";
+  if (status === "con_observaciones") return "warning";
+  return "neutral";
+}
 
 export function ReconciliationPage() {
   const encounter = useEncounter();
@@ -68,7 +74,7 @@ export function ReconciliationPage() {
     setResult("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -94,8 +100,8 @@ export function ReconciliationPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la conciliación."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la conciliación."));
     } finally {
       setPending(false);
     }
@@ -181,11 +187,11 @@ export function ReconciliationPage() {
           onChange={(event) => setAllergies(event.target.value)}
           hint="Puede dejarse vacío si no hay alergias."
         />
-        <p role="status" aria-label="Estado de conciliación">
-          <StatusPill tone={review.status === "validada" ? "success" : review.status === "con_observaciones" ? "warning" : "neutral"}>
+        <output aria-label="Estado de conciliación">
+          <StatusPill tone={reviewTone(review.status)}>
             {review.label}
           </StatusPill>
-        </p>
+        </output>
         {review.alerts.map((alert) => (
           <p key={alert} className="nursing-banner nursing-banner-warn" role="alert">
             <IconAlertTriangle size={18} aria-hidden /> {alert}

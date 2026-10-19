@@ -15,43 +15,93 @@ use App\Models\StaffShift;
 use App\Models\StaffShiftPlan;
 use App\Models\User;
 use App\Models\VitalSignReading;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class StaffRoster
 {
+    /** Roles que pueden recibir pacientes o cubrir un turno. */
+    public const CARE_ROLES = ['enfermera_piso', 'auxiliar_enfermeria'];
+
+    /** Peso de carga según NEWS2: crítico 3, riesgo 2, estable 1. */
+    private function newsWeight(int $news2): int
+    {
+        if ($news2 >= 7) {
+            return 3;
+        }
+
+        return $news2 >= 1 ? 2 : 1;
+    }
+
     /** @param array<string, mixed> $data */
     public function publishPlan(array $data, User $user): array
     {
-        $plan = StaffShiftPlan::query()->updateOrCreate(
-            ['year_month' => $data['yearMonth']],
-            [
-                'published_at' => now(),
-                'published_by' => $user->id,
-            ],
-        );
+        $plan = DB::transaction(function () use ($data, $user) {
+            $plan = StaffShiftPlan::query()->updateOrCreate(
+                ['year_month' => $data['yearMonth']],
+                [
+                    'published_at' => now(),
+                    'published_by' => $user->id,
+                ],
+            );
 
-        StaffShift::query()->where('plan_id', $plan->id)->delete();
-        foreach ($data['shifts'] as $shift) {
-            StaffShift::query()->create([
-                'plan_id' => $plan->id,
-                'user_id' => $shift['userId'],
-                'starts_at' => $shift['startsAt'],
-                'ends_at' => $shift['endsAt'],
-                'unit' => $shift['unit'] ?? null,
-            ]);
-        }
+            StaffShift::query()->where('plan_id', $plan->id)->delete();
+            foreach ($data['shifts'] as $shift) {
+                StaffShift::query()->create([
+                    'plan_id' => $plan->id,
+                    'user_id' => $shift['userId'],
+                    'starts_at' => $shift['startsAt'],
+                    'ends_at' => $shift['endsAt'],
+                    'unit' => $shift['unit'] ?? null,
+                ]);
+            }
+
+            return $plan;
+        });
 
         return ['plan' => $this->presentPlan($plan->fresh())];
     }
 
-    public function showPlan(string $yearMonth): array
+    /** Roles publicados de los últimos 12 meses (y futuros), del más reciente al más antiguo. */
+    public function listPlans(): array
+    {
+        $since = now()->subMonths(12)->format('Y-m');
+        $names = User::query()->pluck('name', 'id');
+
+        $plans = StaffShiftPlan::query()
+            ->where('year_month', '>=', $since)
+            ->orderByDesc('year_month')
+            ->get()
+            ->map(function (StaffShiftPlan $plan) use ($names) {
+                $shifts = StaffShift::query()->where('plan_id', $plan->id)->get();
+
+                return [
+                    'yearMonth' => $plan->year_month,
+                    'publishedAt' => optional($plan->published_at)?->toIso8601String(),
+                    'publishedByName' => $plan->published_by ? ($names[$plan->published_by] ?? null) : null,
+                    'shiftCount' => $shifts->count(),
+                    'staffCount' => $shifts->pluck('user_id')->unique()->count(),
+                ];
+            });
+
+        return ['plans' => $plans->values()];
+    }
+
+    public function showPlan(string $yearMonth, ?User $viewer = null): array
     {
         $plan = StaffShiftPlan::query()->where('year_month', $yearMonth)->first();
         if (! $plan) {
             throw new NotFoundHttpException('No hay un rol publicado para ese mes.');
         }
 
-        return ['plan' => $this->presentPlan($plan)];
+        return ['plan' => $this->presentPlan($plan, $this->mayReadCoverage($viewer))];
+    }
+
+    /** Mismos perfiles que `GET coverage-requests`: los retenes derivan de ausencias. */
+    private function mayReadCoverage(?User $viewer): bool
+    {
+        return $viewer !== null && in_array($viewer->role, ['jefatura_enfermeria', 'enfermera_supervisora', 'recursos_humanos'], true);
     }
 
     /** @param array<string, mixed> $data */
@@ -76,7 +126,7 @@ class StaffRoster
                 'encounterId' => $encounter->encounter_id,
                 'patientName' => $encounter->patient_name,
                 'news2' => $news2,
-                'weight' => $news2 >= 7 ? 3 : ($news2 >= 1 ? 2 : 1),
+                'weight' => $this->newsWeight($news2),
             ];
         })->sortByDesc('weight')->values();
 
@@ -94,6 +144,7 @@ class StaffRoster
             $assignments[] = [
                 'nurseUserId' => $targetId,
                 'encounterId' => $patient['encounterId'],
+                'patientName' => $patient['patientName'],
                 'news2Weight' => $patient['news2'],
             ];
         }
@@ -110,24 +161,34 @@ class StaffRoster
     /** @param array<string, mixed> $data */
     public function approve(array $data): array
     {
-        DailyPatientAssignment::query()->where('shift_date', $data['shiftDate'])->delete();
-        foreach ($data['assignments'] as $item) {
-            DailyPatientAssignment::query()->create([
-                'shift_date' => $data['shiftDate'],
-                'nurse_user_id' => $item['nurseUserId'],
-                'encounter_id' => $item['encounterId'],
-                'news2_weight' => $item['news2Weight'] ?? null,
-            ]);
-        }
+        DB::transaction(function () use ($data) {
+            DailyPatientAssignment::query()->whereDate('shift_date', $data['shiftDate'])->delete();
+            foreach ($data['assignments'] as $item) {
+                DailyPatientAssignment::query()->create([
+                    'shift_date' => $data['shiftDate'],
+                    'nurse_user_id' => $item['nurseUserId'],
+                    'encounter_id' => $item['encounterId'],
+                    'news2_weight' => $item['news2Weight'] ?? null,
+                ]);
+            }
+        });
 
         return ['approved' => true];
     }
 
-    public function handoverPreview(User $user, string $shiftDate): array
+    /** Consolida los pacientes de la enfermera saliente (por defecto, quien consulta). */
+    public function handoverPreview(User $viewer, string $shiftDate, ?int $fromUserId = null): array
     {
+        $from = $fromUserId !== null && $fromUserId !== $viewer->id
+            ? User::query()->findOrFail($fromUserId)
+            : $viewer;
+        if (! $from->is($viewer)) {
+            app(ShiftRelief::class)->assertSameUnit($viewer, $from, $shiftDate);
+        }
+
         $ids = DailyPatientAssignment::query()
             ->whereDate('shift_date', $shiftDate)
-            ->where('nurse_user_id', $user->id)
+            ->where('nurse_user_id', $from->id)
             ->pluck('encounter_id');
 
         $patients = $ids->map(function (string $encounterId) {
@@ -151,26 +212,40 @@ class StaffRoster
             ];
         });
 
-        return ['handover' => ['shiftDate' => $shiftDate, 'patients' => $patients->values()]];
+        return ['handover' => [
+            'shiftDate' => $shiftDate,
+            'fromUserId' => $from->id,
+            'fromName' => $from->name,
+            'patients' => $patients->values(),
+        ]];
     }
 
     /** @param array<string, mixed> $data */
     public function signHandover(array $data, User $incoming): array
     {
-        $preview = $this->handoverPreview(User::query()->findOrFail($data['fromUserId']), $data['shiftDate']);
+        if ((int) $data['fromUserId'] === $incoming->id) {
+            throw new ClinicalRuleException('No puede firmar una entrega de turno consigo misma.');
+        }
+        $preview = $this->handoverPreview($incoming, $data['shiftDate'], (int) $data['fromUserId']);
+        $shown = collect($preview['handover']['patients'])->pluck('encounterId')->all();
 
-        $handover = Handover::query()->create([
-            'from_user_id' => $data['fromUserId'],
-            'to_user_id' => $incoming->id,
-            'encounter_id' => null,
-            'payload' => $preview['handover'],
-            'signed_at' => now(),
-        ]);
+        $handover = DB::transaction(function () use ($data, $incoming, $preview, $shown) {
+            $handover = Handover::query()->create([
+                'from_user_id' => $data['fromUserId'],
+                'to_user_id' => $incoming->id,
+                'encounter_id' => null,
+                'payload' => $preview['handover'] + ['encounterIds' => $shown],
+                'signed_at' => now(),
+            ]);
 
-        DailyPatientAssignment::query()
-            ->whereDate('shift_date', $data['shiftDate'])
-            ->where('nurse_user_id', $data['fromUserId'])
-            ->update(['nurse_user_id' => $incoming->id]);
+            DailyPatientAssignment::query()
+                ->whereDate('shift_date', $data['shiftDate'])
+                ->where('nurse_user_id', $data['fromUserId'])
+                ->whereIn('encounter_id', $shown)
+                ->update(['nurse_user_id' => $incoming->id]);
+
+            return $handover;
+        });
 
         return [
             'handover' => [
@@ -184,45 +259,75 @@ class StaffRoster
     /** @param array<string, mixed> $data */
     public function recordAbsence(array $data, User $supervisor): array
     {
-        $absence = StaffAbsence::query()->create([
-            'user_id' => $data['userId'],
-            'shift_date' => $data['shiftDate'],
-            'reason' => $data['reason'] ?? null,
-            'recorded_by' => $supervisor->id,
-        ]);
+        return DB::transaction(function () use ($data, $supervisor) {
+            $duplicate = StaffAbsence::query()
+                ->where('user_id', $data['userId'])
+                ->whereDate('shift_date', $data['shiftDate'])
+                ->exists();
+            if ($duplicate) {
+                throw new ClinicalRuleException('La inasistencia de esa persona ya fue registrada para el día indicado.');
+            }
 
-        $critical = DailyPatientAssignment::query()
-            ->whereDate('shift_date', $data['shiftDate'])
-            ->where('nurse_user_id', $data['userId'])
-            ->where('news2_weight', '>=', 7)
-            ->exists();
-
-        $coverage = null;
-        if ($critical) {
-            $coverage = CoverageRequest::query()->create([
-                'absence_id' => $absence->id,
-                'status' => 'solicitada',
+            $absence = StaffAbsence::query()->create([
+                'user_id' => $data['userId'],
+                'shift_date' => $data['shiftDate'],
+                'reason' => $data['reason'],
+                'recorded_by' => $supervisor->id,
             ]);
-        } else {
-            $this->rebalance($data['shiftDate'], (int) $data['userId']);
-        }
 
-        return [
-            'absence' => ['id' => $absence->id],
-            'coverage' => [
-                'required' => (bool) $coverage,
-                'requestId' => $coverage?->id,
-            ],
-        ];
+            $orphans = DailyPatientAssignment::query()
+                ->whereDate('shift_date', $data['shiftDate'])
+                ->where('nurse_user_id', $data['userId'])
+                ->get();
+            $critical = $orphans->contains(fn (DailyPatientAssignment $row) => (int) $row->news2_weight >= 7);
+
+            $reassignments = [];
+            $unassigned = 0;
+            if (! $critical && $orphans->isNotEmpty()) {
+                [$reassignments, $unassigned] = $this->rebalance($orphans, $data['shiftDate'], (int) $data['userId']);
+            }
+
+            $coverage = null;
+            if ($critical || $unassigned > 0) {
+                $coverage = CoverageRequest::query()->create([
+                    'absence_id' => $absence->id,
+                    'status' => 'solicitada',
+                ]);
+            }
+
+            return [
+                'absence' => ['id' => $absence->id],
+                'coverage' => [
+                    'required' => (bool) $coverage,
+                    'requestId' => $coverage?->id,
+                ],
+                'reassignments' => $reassignments,
+                'unassigned' => $unassigned,
+            ];
+        });
     }
 
     public function listCoverage(): array
     {
-        $requests = CoverageRequest::query()->orderByDesc('id')->get()->map(fn (CoverageRequest $request) => [
-            'id' => $request->id,
-            'absenceId' => $request->absence_id,
-            'status' => $request->status,
-        ]);
+        $names = User::query()->pluck('name', 'id');
+        $retainers = RetainerConfirmation::query()->pluck('user_id', 'coverage_request_id');
+
+        $requests = CoverageRequest::query()->orderByDesc('id')->get()->map(function (CoverageRequest $request) use ($names, $retainers) {
+            $absence = $request->absence_id ? StaffAbsence::query()->find($request->absence_id) : null;
+
+            return [
+                'id' => $request->id,
+                'absenceId' => $request->absence_id,
+                'status' => $request->status,
+                'absentUserId' => $absence?->user_id,
+                'absentName' => $absence ? ($names[$absence->user_id] ?? null) : null,
+                'shiftDate' => $absence?->shift_date?->toDateString(),
+                'reason' => $absence?->reason,
+                'approvedByName' => $request->approved_by ? ($names[$request->approved_by] ?? null) : null,
+                'authorizedByName' => $request->authorized_by_hr ? ($names[$request->authorized_by_hr] ?? null) : null,
+                'retainerName' => isset($retainers[$request->id]) ? ($names[$retainers[$request->id]] ?? null) : null,
+            ];
+        });
 
         return ['requests' => $requests->values()];
     }
@@ -230,6 +335,9 @@ class StaffRoster
     public function approveCoverage(int $id, User $user): array
     {
         $request = $this->requireCoverage($id);
+        if ($request->status !== 'solicitada') {
+            throw new ClinicalRuleException('Esta convocatoria ya fue gestionada por la jefatura.');
+        }
         $request->update([
             'status' => 'aprobada_jefatura',
             'approved_by' => $user->id,
@@ -256,15 +364,19 @@ class StaffRoster
     {
         $request = $this->requireCoverage($id);
         if ($request->status !== 'autorizada') {
-            throw new ClinicalRuleException('Recursos humanos aún no autorizó la cobertura.');
+            throw new ClinicalRuleException('Recursos humanos aún no autorizó la cobertura o el retén ya fue confirmado.');
         }
 
-        $confirmation = RetainerConfirmation::query()->create([
-            'coverage_request_id' => $request->id,
-            'user_id' => $userId,
-            'confirmed_at' => now(),
-        ]);
-        $request->update(['status' => 'confirmada']);
+        $confirmation = DB::transaction(function () use ($request, $userId) {
+            $confirmation = RetainerConfirmation::query()->create([
+                'coverage_request_id' => $request->id,
+                'user_id' => $userId,
+                'confirmed_at' => now(),
+            ]);
+            $request->update(['status' => 'confirmada']);
+
+            return $confirmation;
+        });
 
         return [
             'confirmation' => [
@@ -283,31 +395,94 @@ class StaffRoster
             ->value('nurse_user_id');
     }
 
-    private function rebalance(string $shiftDate, int $absentId): void
+    /**
+     * Reparte los pacientes de la ausente entre las enfermeras con asignación ese día,
+     * del más al menos grave, siempre a la de menor carga NEWS2 acumulada.
+     *
+     * @param  Collection<int, DailyPatientAssignment>  $orphans
+     * @return array{0: list<array{nurseUserId: int, nurseName: string, patients: int}>, 1: int}
+     */
+    private function rebalance(Collection $orphans, string $shiftDate, int $absentId): array
     {
-        $orphans = DailyPatientAssignment::query()
-            ->where('shift_date', $shiftDate)
-            ->where('nurse_user_id', $absentId)
-            ->get();
-        $active = DailyPatientAssignment::query()
-            ->where('shift_date', $shiftDate)
-            ->where('nurse_user_id', '!=', $absentId)
-            ->pluck('nurse_user_id')
-            ->unique()
-            ->values();
-        if ($active->isEmpty()) {
-            return;
+        $absentToday = StaffAbsence::query()->whereDate('shift_date', $shiftDate)->pluck('user_id')->all();
+        $receivers = User::query()
+            ->where('is_active', true)
+            ->whereIn('role', self::CARE_ROLES)
+            ->whereNotIn('id', array_merge($absentToday, [$absentId]))
+            ->whereIn('id', DailyPatientAssignment::query()
+                ->whereDate('shift_date', $shiftDate)
+                ->pluck('nurse_user_id'))
+            ->get()
+            ->keyBy('id');
+        if ($receivers->isEmpty()) {
+            return [[], $orphans->count()];
         }
 
-        foreach ($orphans as $index => $row) {
-            $row->update(['nurse_user_id' => $active[$index % $active->count()]]);
+        $loads = [];
+        foreach ($receivers as $id => $nurse) {
+            $own = DailyPatientAssignment::query()->whereDate('shift_date', $shiftDate)->where('nurse_user_id', $id);
+            $loads[$id] = [
+                'weight' => (int) (clone $own)->sum('news2_weight'),
+                'patients' => (clone $own)->count(),
+                'moved' => 0,
+            ];
         }
+
+        foreach ($orphans->sortByDesc(fn ($row) => (int) $row->news2_weight) as $row) {
+            uasort($loads, fn (array $l, array $r) => [$l['weight'], $l['patients']] <=> [$r['weight'], $r['patients']]);
+            $targetId = array_key_first($loads);
+            $row->update(['nurse_user_id' => $targetId]);
+            $loads[$targetId]['weight'] += (int) $row->news2_weight;
+            $loads[$targetId]['patients']++;
+            $loads[$targetId]['moved']++;
+        }
+
+        $reassignments = [];
+        foreach ($loads as $id => $load) {
+            if ($load['moved'] > 0) {
+                $reassignments[] = [
+                    'nurseUserId' => $id,
+                    'nurseName' => $receivers[$id]->name,
+                    'patients' => $load['moved'],
+                ];
+            }
+        }
+
+        return [$reassignments, 0];
     }
 
-    private function presentPlan(StaffShiftPlan $plan): array
+    /** Enfermeras a las que la persona puede relevar ahora (misma regla que firmar la entrega). */
+    public function handoverCandidates(User $incoming, string $shiftDate): array
     {
+        $candidates = [];
+        $nurses = User::query()->where('is_active', true)->whereIn('role', self::CARE_ROLES)
+            ->whereKeyNot($incoming->id)->orderBy('name')->get();
+
+        foreach ($nurses as $nurse) {
+            $boundary = app(ShiftRelief::class)->boundary($incoming, $nurse, $shiftDate);
+            if ($boundary === null) {
+                continue;
+            }
+            $candidates[] = [
+                'userId' => $nurse->id,
+                'name' => $nurse->name,
+                'unit' => $boundary['unit'],
+                'endsAt' => $boundary['endsAt']->toIso8601String(),
+                'patients' => DailyPatientAssignment::query()
+                    ->whereDate('shift_date', $shiftDate)->where('nurse_user_id', $nurse->id)->count(),
+            ];
+        }
+
+        return ['candidates' => $candidates];
+    }
+
+    private function presentPlan(StaffShiftPlan $plan, bool $withRetainers = false): array
+    {
+        $users = User::query()->get(['id', 'name', 'role'])->keyBy('id');
         $shifts = StaffShift::query()->where('plan_id', $plan->id)->get()->map(fn (StaffShift $shift) => [
             'userId' => $shift->user_id,
+            'userName' => $users[$shift->user_id]->name ?? null,
+            'userRole' => $users[$shift->user_id]->role ?? null,
             'startsAt' => optional($shift->starts_at)?->toIso8601String(),
             'endsAt' => optional($shift->ends_at)?->toIso8601String(),
             'unit' => $shift->unit,
@@ -316,8 +491,40 @@ class StaffRoster
         return [
             'yearMonth' => $plan->year_month,
             'published' => (bool) $plan->published_at,
+            'publishedAt' => optional($plan->published_at)?->toIso8601String(),
+            'publishedByName' => $plan->published_by ? ($users[$plan->published_by]->name ?? null) : null,
             'shifts' => $shifts->values(),
+            'retainers' => $withRetainers ? $this->retainersOfMonth($plan->year_month, $users) : [],
         ];
+    }
+
+    /**
+     * Retenes confirmados cuyo día de cobertura cae en el mes (pinta «R» en la matriz).
+     *
+     * @param  Collection<int, User>  $users
+     * @return list<array{userId: int, userName: string|null, date: string}>
+     */
+    private function retainersOfMonth(string $yearMonth, Collection $users): array
+    {
+        $start = $yearMonth.'-01';
+        $end = date('Y-m-t', strtotime($start));
+        $absences = StaffAbsence::query()->whereDate('shift_date', '>=', $start)->whereDate('shift_date', '<=', $end)->get()->keyBy('id');
+        if ($absences->isEmpty()) {
+            return [];
+        }
+        $coverage = CoverageRequest::query()->whereIn('absence_id', $absences->keys())->get()->keyBy('id');
+        if ($coverage->isEmpty()) {
+            return [];
+        }
+
+        return RetainerConfirmation::query()
+            ->whereIn('coverage_request_id', $coverage->keys())
+            ->get()
+            ->map(fn (RetainerConfirmation $row) => [
+                'userId' => $row->user_id,
+                'userName' => $users[$row->user_id]->name ?? null,
+                'date' => $absences[$coverage[$row->coverage_request_id]->absence_id]->shift_date->toDateString(),
+            ])->values()->all();
     }
 
     private function requireCoverage(int $id): CoverageRequest

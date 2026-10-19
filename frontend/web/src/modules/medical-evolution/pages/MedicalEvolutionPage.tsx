@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -37,15 +37,15 @@ export function MedicalEvolutionPage() {
       .then((data) => {
         if (active) setNotes(data.notes);
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar las notas."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar las notas."));
       });
     return () => {
       active = false;
     };
   }, [ingreso]);
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const message = requiredText(body, "La nota de evolución es obligatoria.") ?? "";
@@ -63,8 +63,8 @@ export function MedicalEvolutionPage() {
       setNotes((prev) => [data.note, ...(prev ?? [])]);
       setBody("");
       setNotice("Evolución registrada.");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la evolución."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la evolución."));
     } finally {
       setSaving(false);
     }
@@ -100,6 +100,7 @@ export function MedicalEvolutionPage() {
         />
         <label className="check">
           <input type="checkbox" checked={sign} onChange={(event) => setSign(event.target.checked)} />
+          {" "}
           Firmar digitalmente la nota
         </label>
         <FormActions align="center">
@@ -110,7 +111,6 @@ export function MedicalEvolutionPage() {
         <h3>Historial de notas anteriores</h3>
       {notes === null && !error ? <LoadingState label="Cargando evoluciones…" /> : null}
       {notes && notes.length > 0 ? (
-        <>
           <ul className="note-feed-list">
             {notes.map((item) => (
               <li key={item.id} className="note-card">
@@ -122,8 +122,8 @@ export function MedicalEvolutionPage() {
               </li>
             ))}
           </ul>
-        </>
-      ) : notes && notes.length === 0 ? (
+      ) : null}
+      {notes?.length === 0 ? (
         <Feedback tone="info">Aún no hay notas de evolución en este ingreso.</Feedback>
       ) : null}
       </section>

@@ -41,12 +41,19 @@ describe("valoración inicial de enfermería", () => {
 
   it("exige la anamnesis, guarda con el paciente y permite continuar", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(jsonResponse(200, { encounter: nursing }))
-      .mockResolvedValueOnce(jsonResponse(201, { assessment: { status: "registrada" } }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        encounter: { ...nursing, currentStep: "constantes", nextRole: "enfermera_piso", statusLabel: "Constantes por registrar" },
-      }));
+    const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/life-baseline")) return jsonResponse(200, { baseline: null });
+      if (url.includes("/nursing-assessments") && init?.method === "POST") {
+        return jsonResponse(201, { assessment: { status: "registrada" } });
+      }
+      if (url.includes("/advance")) {
+        return jsonResponse(200, {
+          encounter: { ...nursing, currentStep: "constantes", nextRole: "enfermera_piso", statusLabel: "Constantes por registrar" },
+        });
+      }
+      return jsonResponse(200, { encounter: nursing });
+    });
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/enfermeria/valoracion?ingreso=ENC-0001");
 
@@ -55,9 +62,12 @@ describe("valoración inicial de enfermería", () => {
     expect(screen.getByLabelText(/motivo de consulta/i)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText(/antecedentes son obligatorios/i)).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/motivo de consulta/i), "Disnea de dos días");
-    await user.type(screen.getByLabelText(/^antecedentes$/i), "HTA controlada");
-    await user.type(screen.getByLabelText(/alergia/i), "Penicilina");
+    await user.click(screen.getByLabelText(/motivo de consulta/i));
+    await user.paste("Disnea de dos días");
+    await user.click(screen.getByLabelText(/^antecedentes$/i));
+    await user.paste("HTA controlada");
+    await user.click(screen.getByLabelText(/alergia/i));
+    await user.paste("Penicilina");
     await user.click(screen.getByRole("button", { name: /agregar alergia/i }));
     expect(screen.getByText("Penicilina")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /guardar valoración/i }));
@@ -143,7 +153,8 @@ describe("valoración inicial de enfermería", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { encounter: nursing })));
     renderApp("/enfermeria/valoracion?ingreso=ENC-0001");
     await screen.findByText(/anamnesis/i);
-    await user.type(screen.getByLabelText(/alergia/i), "Penicilina");
+    await user.click(screen.getByLabelText(/alergia/i));
+    await user.paste("Penicilina");
     await user.click(screen.getByRole("button", { name: /agregar alergia/i }));
     const chips = screen.getByRole("list", { name: /alergias registradas/i });
     expect(chips).toHaveClass("allergy-chips");

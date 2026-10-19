@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { type SyntheticEvent, type ReactNode, useMemo, useState } from "react";
 import { IconCheck, IconWalk } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -22,6 +22,22 @@ const BRADEN_LABELS: Record<string, Record<number, string>> = {
   nutrition: { 1: "1 — Muy pobre", 2: "2 — Probablemente inadecuada", 3: "3 — Adecuada", 4: "4 — Excelente" },
   friction: { 1: "1 — Problema", 2: "2 — Problema potencial", 3: "3 — No hay problema aparente" },
 };
+
+function selectedClass(selected: boolean): string | undefined {
+  return selected ? "is-selected" : undefined;
+}
+
+function morseTone(level: string): "danger" | "warning" | "success" {
+  if (level === "high") return "danger";
+  if (level === "moderate") return "warning";
+  return "success";
+}
+
+function pressureTone(level: string): "success" | "warning" | "danger" {
+  if (level === "none" || level === "mild") return "success";
+  if (level === "moderate") return "warning";
+  return "danger";
+}
 
 export function RiskScalesPage() {
   const encounter = useEncounter();
@@ -63,7 +79,7 @@ export function RiskScalesPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -89,8 +105,8 @@ export function RiskScalesPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las escalas."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las escalas."));
     } finally {
       setPending(false);
     }
@@ -112,40 +128,40 @@ export function RiskScalesPage() {
             <div className="risk-score">
               <span className="hint">Puntaje calculado</span>
               <strong>{morse.total} pts</strong>
-              <StatusPill tone={morse.level === "high" ? "danger" : morse.level === "moderate" ? "warning" : "success"}>
+              <StatusPill tone={morseTone(morse.level)}>
                 {morse.levelLabel}
               </StatusPill>
             </div>
           </header>
           <ScaleRow id="q-falls" title="Antecedentes de caídas (últimos 3 meses)" hint="¿Se ha caído antes del ingreso hospitalario?">
-            <label className={!historyOfFalling ? "is-selected" : undefined}><input type="radio" name="falls" checked={!historyOfFalling} onChange={() => setHistoryOfFalling(false)} aria-label="Antecedente de caídas: no" /> No (0 pts)</label>
-            <label className={historyOfFalling ? "is-selected" : undefined}><input type="radio" name="falls" checked={historyOfFalling} onChange={() => setHistoryOfFalling(true)} aria-label="Antecedente de caídas: sí" /> Sí (25 pts)</label>
+            <label className={selectedClass(!historyOfFalling)}><input type="radio" name="falls" checked={!historyOfFalling} onChange={() => setHistoryOfFalling(false)} aria-label="Antecedente de caídas: no" /> No (0 pts)</label>
+            <label className={selectedClass(historyOfFalling)}><input type="radio" name="falls" checked={historyOfFalling} onChange={() => setHistoryOfFalling(true)} aria-label="Antecedente de caídas: sí" /> Sí (25 pts)</label>
           </ScaleRow>
           <ScaleRow id="q-dx" title="Diagnóstico secundario" hint="Más de un diagnóstico activo en la historia clínica.">
-            <label className={!secondaryDiagnosis ? "is-selected" : undefined}><input type="radio" name="dx" checked={!secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(false)} aria-label="Diagnóstico secundario: no" /> No (0 pts)</label>
-            <label className={secondaryDiagnosis ? "is-selected" : undefined}><input type="radio" name="dx" checked={secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(true)} aria-label="Diagnóstico secundario: sí" /> Sí (15 pts)</label>
+            <label className={selectedClass(!secondaryDiagnosis)}><input type="radio" name="dx" checked={!secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(false)} aria-label="Diagnóstico secundario: no" /> No (0 pts)</label>
+            <label className={selectedClass(secondaryDiagnosis)}><input type="radio" name="dx" checked={secondaryDiagnosis} onChange={() => setSecondaryDiagnosis(true)} aria-label="Diagnóstico secundario: sí" /> Sí (15 pts)</label>
           </ScaleRow>
           <ScaleRow id="q-aid" title="Ayuda para deambular" hint="Uso de soportes de marcha, muletas o apoyo físico.">
-            <label className={ambulatoryAid === "none" ? "is-selected" : undefined}><input type="radio" name="aid" checked={ambulatoryAid === "none"} onChange={() => setAmbulatoryAid("none")} /> Ninguna / reposo (0 pts)</label>
-            <label className={ambulatoryAid === "device" ? "is-selected" : undefined}><input type="radio" name="aid" checked={ambulatoryAid === "device"} onChange={() => setAmbulatoryAid("device")} /> Muletas / bastón (15 pts)</label>
-            <label className={ambulatoryAid === "furniture" ? "is-selected" : undefined}><input type="radio" name="aid" checked={ambulatoryAid === "furniture"} onChange={() => setAmbulatoryAid("furniture")} /> Se apoya en muebles (30 pts)</label>
+            <label className={selectedClass(ambulatoryAid === "none")}><input type="radio" name="aid" checked={ambulatoryAid === "none"} onChange={() => setAmbulatoryAid("none")} /> Ninguna / reposo (0 pts)</label>
+            <label className={selectedClass(ambulatoryAid === "device")}><input type="radio" name="aid" checked={ambulatoryAid === "device"} onChange={() => setAmbulatoryAid("device")} /> Muletas / bastón (15 pts)</label>
+            <label className={selectedClass(ambulatoryAid === "furniture")}><input type="radio" name="aid" checked={ambulatoryAid === "furniture"} onChange={() => setAmbulatoryAid("furniture")} /> Se apoya en muebles (30 pts)</label>
           </ScaleRow>
           <ScaleRow id="q-iv" title="Vía endovenosa / catéter heparinizado" hint="Presencia de perfusión o acceso venoso activo.">
-            <label className={!intravenousAccess ? "is-selected" : undefined}><input type="radio" name="iv" checked={!intravenousAccess} onChange={() => setIntravenousAccess(false)} aria-label="Vía intravenosa: no" /> No (0 pts)</label>
-            <label className={intravenousAccess ? "is-selected" : undefined}><input type="radio" name="iv" checked={intravenousAccess} onChange={() => setIntravenousAccess(true)} aria-label="Vía intravenosa: sí" /> Sí (20 pts)</label>
+            <label className={selectedClass(!intravenousAccess)}><input type="radio" name="iv" checked={!intravenousAccess} onChange={() => setIntravenousAccess(false)} aria-label="Vía intravenosa: no" /> No (0 pts)</label>
+            <label className={selectedClass(intravenousAccess)}><input type="radio" name="iv" checked={intravenousAccess} onChange={() => setIntravenousAccess(true)} aria-label="Vía intravenosa: sí" /> Sí (20 pts)</label>
           </ScaleRow>
           <ScaleRow id="q-gait" title="Marcha / traslado" hint="Calidad del paso, zancada y equilibrio al incorporarse.">
-            <label className={gait === "normal" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "normal"} onChange={() => setGait("normal")} aria-label="Marcha: normal" /> Normal / inmóvil (0 pts)</label>
-            <label className={gait === "weak" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "weak"} onChange={() => setGait("weak")} aria-label="Marcha: débil" /> Débil (10 pts)</label>
-            <label className={gait === "impaired" ? "is-selected" : undefined}><input type="radio" name="gait" checked={gait === "impaired"} onChange={() => setGait("impaired")} aria-label="Marcha: alterada" /> Alterada (20 pts)</label>
+            <label className={selectedClass(gait === "normal")}><input type="radio" name="gait" checked={gait === "normal"} onChange={() => setGait("normal")} aria-label="Marcha: normal" /> Normal / inmóvil (0 pts)</label>
+            <label className={selectedClass(gait === "weak")}><input type="radio" name="gait" checked={gait === "weak"} onChange={() => setGait("weak")} aria-label="Marcha: débil" /> Débil (10 pts)</label>
+            <label className={selectedClass(gait === "impaired")}><input type="radio" name="gait" checked={gait === "impaired"} onChange={() => setGait("impaired")} aria-label="Marcha: alterada" /> Alterada (20 pts)</label>
           </ScaleRow>
           <ScaleRow id="q-mental" title="Estado mental" hint="Autopercepción de la propia capacidad física.">
-            <label className={mentalStatus === "oriented" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "oriented"} onChange={() => setMentalStatus("oriented")} aria-label="Conoce sus límites" /> Conoce sus límites (0 pts)</label>
-            <label className={mentalStatus === "overestimates" ? "is-selected" : undefined}><input type="radio" name="mental" checked={mentalStatus === "overestimates"} onChange={() => setMentalStatus("overestimates")} aria-label="Sobreestima o olvida límites" /> Olvida limitaciones (15 pts)</label>
+            <label className={selectedClass(mentalStatus === "oriented")}><input type="radio" name="mental" checked={mentalStatus === "oriented"} onChange={() => setMentalStatus("oriented")} aria-label="Conoce sus límites" /> Conoce sus límites (0 pts)</label>
+            <label className={selectedClass(mentalStatus === "overestimates")}><input type="radio" name="mental" checked={mentalStatus === "overestimates"} onChange={() => setMentalStatus("overestimates")} aria-label="Sobreestima o olvida límites" /> Olvida limitaciones (15 pts)</label>
           </ScaleRow>
-          <div className="nursing-banner" role="status" aria-label="Resultado de caídas">
+          <output className="nursing-banner" aria-label="Resultado de caídas">
             {morse.total} puntos. {morse.levelLabel}. {morse.recommendations.join(" ")}
-          </div>
+          </output>
         </fieldset>
         <fieldset className="risk-card">
           <legend className="sr-only">Escala de Braden</legend>
@@ -157,7 +173,7 @@ export function RiskScalesPage() {
             <div className="risk-score">
               <span className="hint">Puntaje calculado</span>
               <strong>{pressure.total} pts</strong>
-              <StatusPill tone={pressure.level === "none" || pressure.level === "mild" ? "success" : pressure.level === "moderate" ? "warning" : "danger"}>
+              <StatusPill tone={pressureTone(pressure.level)}>
                 {pressure.levelLabel}
               </StatusPill>
             </div>
@@ -170,9 +186,9 @@ export function RiskScalesPage() {
             <ScoreSelect id="nutrition" label="Nutrición" max={4} value={braden.nutrition} labels={BRADEN_LABELS.nutrition} onChange={(value) => setBraden({ ...braden, nutrition: value as BradenScore4 })} />
             <ScoreSelect id="friction" label="Fricción y cizallamiento" max={3} value={braden.frictionShear} labels={BRADEN_LABELS.friction} onChange={(value) => setBraden({ ...braden, frictionShear: value as BradenFriction })} />
           </div>
-          <div className="nursing-banner" role="status" aria-label="Resultado de úlceras">
+          <output className="nursing-banner" aria-label="Resultado de úlceras">
             {pressure.total} puntos. {pressure.levelLabel}. {pressure.recommendations.join(" ")}
-          </div>
+          </output>
         </fieldset>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {saved ? <Feedback tone="success" label="Resultado del registro">{saved}</Feedback> : null}
@@ -187,30 +203,30 @@ export function RiskScalesPage() {
   );
 }
 
-function ScaleRow({ id, title, hint, children }: { id: string; title: string; hint: string; children: ReactNode }) {
+function ScaleRow({ id, title, hint, children }: Readonly<{ id: string; title: string; hint: string; children: ReactNode }>) {
   return (
     <div className="scale-row">
       <div>
         <p className="scale-question" id={id}>{title}</p>
         <p className="hint">{hint}</p>
       </div>
-      <div className="scale-options" role="group" aria-labelledby={id}>
+      <fieldset className="scale-options" aria-labelledby={id}>
         {children}
-      </div>
+      </fieldset>
     </div>
   );
 }
 
 function ScoreSelect({
   id, label, max, value, labels, onChange,
-}: {
+}: Readonly<{
   id: string;
   label: string;
   max: 3 | 4;
   value: number;
   labels: Record<number, string>;
   onChange: (value: number) => void;
-}) {
+}>) {
   return (
     <SelectField id={id} label={label} value={String(value)} onChange={(event) => onChange(Number(event.target.value))} compact>
       {Array.from({ length: max }, (_, index) => index + 1).map((score) => (

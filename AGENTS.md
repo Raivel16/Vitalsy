@@ -146,4 +146,75 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - El lector de códigos abre en un modal. En egreso, el escaneo abre la ficha del hospitalizado.
 - Rama: `chore/ui-procesos-4-5-6-pizarra`.
 
+### 2026-10-09 — Proceso 5 camas: flujo completo y fidelidad al diseño
+
+- Ciclo de la orden de limpieza cerrado: `pendiente → completada → equipada → habilitada`, con guardas de estado, checklist obligatorio y chequeo de equipamiento ligado a la orden (`CleaningWorkflow`). Migraciones aditivas `2026_10_09_100000` y `2026_10_09_100100`.
+- `assign` es atómico y valida compatibilidad (aislamiento, especialidad, género) con `BedCompatibility`; deja la asignación notificada a la supervisora hasta que la reconoce (RF-73).
+- Nuevos endpoints de lectura: `GET beds/patients`, `GET beds/projections`, `GET beds/assignments/notifications`; el censo expone `occupant` por cama.
+- `/camas` y `/camas/limpieza` rehechas según `screen_3_censo_hospitalario_corregido` y `screen_4_limpieza_habilitaci_n_de_unidades`; se agrega `FlowGuide` («Tu siguiente paso» por rol). La solicitud ya no envía especialidad/género ocultos.
+- Pendiente fuera de alcance: bloques del diseño sin RF (personal operativo, tiempo de rotación, insumos, bitácora, avería). Proceso 6 (`/personal`) sigue con las brechas detectadas en la revisión (selectores de enfermeras, confirmar retén RF-88, resultado de ausencias).
+- Rama: `bugfix/RF-68-77-camas-flujo-e-interfaz`.
+
+- Camas (UI): se retira `FlowGuide` (guía de pasos) de `/camas` y `/camas/limpieza`; el panel lateral de `/camas` queda sticky y «Nueva solicitud» abre `BedRequestDrawer` (cajón) desde la lista de espera.
+### 2026-10-09 — Administración de usuarios (RF-101–104)
+
+- Decisión: rol 15 `administrador_accesos` en `RoleCatalog.php` y `roles.ts` (cuenta demo `administrador_accesos@vitalsy.local`).
+- Backend: `UserAdminController` + `UserAdministration` (transacciones con bloqueo de administradores), `StoreUserRequest`/`UpdateUserRequest`, middleware `active` (cuenta inactiva → 401), login rechaza inactivos, tabla `access_audit_logs`, `users.must_change_password`.
+- `GET /staff/members` queda disponible para los selectores de `/personal` (Parte B).
+- Frontend: `modules/user-admin` (`/usuarios`, `/usuarios/nuevo`, `/usuarios/:userId`).
+- Rama: `feature/RF-101-104-administracion-usuarios`.
+
+### 2026-10-09 — Proceso 6 personal: interfaces y reglas (RF-78–88)
+
+- Backend: validación `exists` con rol asistencial activo, motivo obligatorio, ausencia sin duplicados, transiciones de cobertura validadas, `whereDate` y transacciones; rebalanceo por carga NEWS2; `recordAbsence` devuelve `reassignments`/`unassigned`; `listCoverage` incluye nombres, fecha, motivo y responsables; handover de la saliente (`fromUserId`) con control de mismo servicio.
+- Frontend: `modules/staff-roster` dividido en `staffApi.ts`, `domain/` (`coverage`, `capabilities`), `hooks/` y paneles por responsabilidad; sin IDs tecleados, con fechas por control y estado por panel; RF-88 disponible en UI.
+- Rulings: no se partió `StaffRoster` en cuatro servicios (queda como deuda de refactor); `suggest` no filtra por fecha/servicio ni excluye ya asignados; sin notificación persistente (RF-80) ni validación formal del reporte (RF-82).
+- Fuera de alcance (sin RF): montos, planilla, SBAR, checklist, KPIs de horas, exportar matriz.
+- Rama: `bugfix/RF-78-88-interfaces-personal` (basada en `feature/RF-101-104-administracion-usuarios`).
+
+### 2026-10-09 — /personal: matriz mensual de turnos y buscador de personas
+
+- Jefatura: `RosterPanel` ahora es la matriz colaborador × día (frame 6A) con leyenda D/N/L/R, navegador de meses (12 atrás), estado «Publicado el … por …» y confirmación al reemplazar un mes. El rol publicado ya no desaparece.
+- `PersonPicker` (nombre, correo, rol) reemplaza a los `<select>` de colaborador, quien falta, saliente y retén. `email` solo se expone a jefatura y supervisora.
+- Backend: `GET staff/shift-plans`; `showPlan` con nombres, publicador y retenes (retenes ocultos para quien no puede leer coberturas).
+- Fuera de alcance: horas totales, descanso normativo, exportar matriz, versiones por publicación. R solo se pinta; no se edita.
+- /usuarios: la barra de acciones del formulario ocupa su propia fila (`form-span-2 form-actions-bar`).
+
+### 2026-10-09 — /personal: rediseño de vistas y personas de prueba
+
+- Jefatura: «Agregar colaborador» es un panel aparte encima del rol (elegir persona + botón «Agregar al rol»); «Servicio del rol» es un selector (catálogo de wards) porque el relevo exige el mismo servicio; chevrones y mes alineados; botón de publicar separado.
+- Supervisora: asignación a la izquierda y contingencias + coberturas en columna lateral fija (sin scroll entre formularios).
+- RRHH: guía «Cómo llega una solicitud» y contadores por estado. Enfermera de piso: `GET handover/candidates` muestra a quién releva ahora o explica por qué no hay relevo.
+- Seeder `DemoPeopleSeeder`: 22 personas ficticias (`nombre.apellido@vitalsy.local`, contraseña `DEMO_PASSWORD`) y un escenario de práctica de relevo (Rosa Quispe → Lucía Mendoza, 3 pacientes ENC-PRAC-*) válido ~3 h desde `db:seed`.
+
+- Rotación obligatoria (RF-102): middleware `password.rotated` bloquea la API con 403 `password_change_required` mientras `must_change_password`; `POST auth/change-password` (mínimo 10 caracteres, letras y números, distinta de la actual) y pantalla `ChangePasswordPage` en el `Gate`.
+
+### 2026-10-10 — Calidad: SonarQube local y cobertura global
+
+- SonarQube Community local (Docker, puerto 9000) analiza `dev`; configuración en `sonar-project.properties` (fuentes `frontend/web/src`, `backend/api/app`, `movil`). El escaneo desde una worktree usa `-Dsonar.scm.disabled=true`.
+- Cobertura global pasó de 71 % a 83,1 % alimentando los tres reportes: `frontend/web/coverage/lcov.info`, `movil/coverage/lcov.info` (`npx jest --coverage`) y `backend/api/coverage.xml` (PCOV en la imagen Docker del backend; requiere `.env` + `key:generate` como en CI).
+- Corregidos 2 bugs y 4 vulnerabilidades: `randomHex` móvil usa `Crypto.getRandomBytes`, comparador explícito en `today.ts`, base `https` ficticia en `returnTo.ts`, visor de escáner con `<dialog>` nativo. 0 bugs, 0 vulnerabilidades, Quality Gate OK.
+- Nota: `npm run lint` del frontend ya tenía 40 errores previos en `dev`; no se corrigieron aquí.
+- Rama: `chore/calidad-sonarqube`.
+
+- Fiabilidad (MQR) llevada a A: 20 incidencias corregidas (regex sin retroceso en correo y etiquetas de riesgo, `codePointAt`/`replaceAll`, espacios JSX explícitos, `<dialog>` nativo y fondo con botón en cajón de camas y visor del escáner). Las pruebas largas usan `user.paste`. Si `npm test` da timeouts, es carga de la máquina (antivirus/SonarQube): detener `sonarqube` y reintentar.
+### 2026-10-10 — Calidad (2): código nuevo de personal y usuarios
+
+- Tras integrar RF-78–88 y RF-101–104, SonarQube marcó Reliability D: `RosterPanel` ordena meses con `orderMonthOptions` (comparador explícito), `userForm` valida correo sin backtracking, `PersonPicker` expone `aria-activedescendant` y teclado en opciones, `HandoverPanel` simplifica el radio de enfermera saliente.
+- `sonar-project.properties` excluye `movil/android/**`, `movil/ios/**`, `**/build/**` y `**/.expo/**`: son salidas de `expo prebuild`; analizadas con `-Dsonar.scm.disabled=true` (que no respeta `.gitignore`) sumaban 23 vulnerabilidades ajenas al código.
+- El reporte clover del backend generado en Docker trae rutas `/var/www/html/`; hay que reescribirlas a `backend/api/` antes de escanear o el backend cuenta como 0 % de cobertura.
+- Rama: `chore/calidad-sonarqube-2`.
+### 2026-10-14 — Cierre de la integración Clinical-Life (RF-89–98)
+
+- `LifeEndToEndTest` recorre el flujo completo (registro, consentimiento, sync, código, importación en admisión, plan de alta, salida con custodia, reclamo). La línea base exige al menos 7 días de historia.
+- Docs actualizados: `modulo-1-admision.md`, `modulo-4-alta.md`, `modulo-7-vitalsy-life.md`, `modelo-datos.md` y colección `docs/api/yaak-vitalsy-life.postman_collection.json`.
+- No verificado en ejecución: app móvil contra servidor real, Reverb/wss, pg_dump/k6/Playwright reales, servidor FHIR real.
+
+### Nota — lectura de Health Connect en primer plano (RNF-19)
+
+- `movil/src/modules/health-sync/foregroundPolling.ts` lee cada 60 s con la app abierta (silencioso, `interactive: false`), se pausa en segundo plano y no solapa lecturas. Se activa desde `LifeProvider` con sesión y permiso concedido. La tarea de 15 min en segundo plano no cambia.
+- Pruebas: `foregroundPolling.test.ts` (7 casos, fake timers). `LifeProvider` no tiene pruebas de render en el repo, así que el efecto de cableado no tiene prueba propia.
+- `expo lint` ya reportaba 2 errores `react-hooks/refs` en `LifeProvider.tsx` antes de este cambio.
+- No verificado en un dispositivo real.
+
 <!-- END AGENT ANNOTATIONS -->

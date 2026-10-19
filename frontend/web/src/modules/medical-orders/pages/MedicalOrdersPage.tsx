@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useSearchParams } from "react-router";
 import { api } from "../../../app/api";
@@ -12,6 +12,7 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
+import { createRowKeys } from "../../../shared/list/rowKeys";
 
 type OrderItem = { title: string; detail: string; category: string };
 
@@ -46,6 +47,194 @@ function filledItems(items: OrderItem[]) {
   return items.filter((item) => item.title.trim());
 }
 
+function signatureErrors({
+  ready,
+  physicianName,
+  credential,
+  confirmed,
+}: Readonly<{ ready: OrderItem[]; physicianName: string; credential: string; confirmed: boolean }>): Record<string, string> {
+  const next: Record<string, string> = {};
+  if (ready.length === 0) next.items = "Debe registrar al menos una indicación.";
+  if (!physicianName.trim()) next.physicianName = "El nombre del médico es obligatorio.";
+  if (!credential.trim()) next.credential = "La colegiatura es obligatoria.";
+  if (!confirmed) next.confirmed = "Debe confirmar la firma de las indicaciones.";
+  return next;
+}
+
+function NursingReview({ orders }: Readonly<{ orders: Orders }>) {
+  const allergies = orders.allergies ?? [];
+  const medications = (orders.reconciliation?.medications ?? []).filter((item) => item.name?.trim());
+  const interactionAlerts = orders.reconciliation?.alerts ?? [];
+  const history = orders.history?.trim() ?? "";
+  const vitalsSummary = orders.vitals?.summary?.trim() ?? "";
+  const news2Label = orders.vitals?.news2Label?.trim() ?? "";
+  const notes = orders.reconciliation?.notes?.trim() ?? "";
+  const fallRisk = orders.risks?.fallRisk?.trim() ?? "";
+  const pressureRisk = orders.risks?.pressureRisk?.trim() ?? "";
+
+  return (
+    <section className="orders-nursing-review" aria-label="Revisión de enfermería">
+      <h3>Revisión de enfermería</h3>
+      <div className="orders-snapshot">
+        <div>
+          <span>Motivo de consulta</span>
+          <strong>{orders.chiefComplaint?.trim() || "Sin valoración registrada"}</strong>
+        </div>
+        <div className={allergies.length > 0 ? "orders-allergies" : undefined}>
+          <span>
+            <IconAlertTriangle size={16} aria-hidden /> Alergias confirmadas
+          </span>
+          <strong>{allergies.length > 0 ? allergies.join(", ") : "Sin alergias registradas"}</strong>
+        </div>
+        {history ? (
+          <div>
+            <span>Antecedentes</span>
+            <strong>{history}</strong>
+          </div>
+        ) : null}
+        {vitalsSummary || news2Label ? (
+          <div>
+            <span>Constantes</span>
+            {vitalsSummary ? <strong>{vitalsSummary}</strong> : null}
+            {news2Label ? <strong>NEWS2 {news2Label}</strong> : null}
+          </div>
+        ) : null}
+        <div>
+          <span>Medicación habitual</span>
+          {orders.reconciliation?.noHomeMedications ? <strong>Sin medicación habitual</strong> : null}
+          {medications.length > 0 ? (
+            <ul>
+              {medications.map((item) => (
+                <li key={`${item.name}-${item.dose}-${item.frequency}`}>
+                  {[item.name, item.dose, item.route, item.frequency].filter(Boolean).join(" · ")}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {notes ? <p>{notes}</p> : null}
+          {interactionAlerts.length > 0 ? (
+            <ul aria-label="Alertas de interacción">
+              {interactionAlerts.map((alert) => <li key={alert}>{alert}</li>)}
+            </ul>
+          ) : null}
+        </div>
+        {fallRisk ? (
+          <div>
+            <span>Riesgo de caída</span>
+            <strong>{fallRisk}</strong>
+          </div>
+        ) : null}
+        {pressureRisk ? (
+          <div>
+            <span>Riesgo de úlcera por presión</span>
+            <strong>{pressureRisk}</strong>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function OrdersEditor({
+  items,
+  rowKeys,
+  updateItem,
+  setItems,
+}: Readonly<{
+  items: OrderItem[];
+  rowKeys: ReturnType<typeof createRowKeys>;
+  updateItem: (index: number, patch: Partial<OrderItem>) => void;
+  setItems: Dispatch<SetStateAction<OrderItem[]>>;
+}>) {
+  return (
+    <div className="stack">
+      {items.map((item, index) => (
+        <div key={rowKeys.keyOf(item)} className="order-edit">
+          <TextField
+            id={`order-title-${index}`}
+            label={`Indicación ${index + 1}`}
+            value={item.title}
+            onChange={(event) => updateItem(index, { title: event.target.value })}
+          />
+          <TextField
+            id={`order-category-${index}`}
+            label="Categoría"
+            value={item.category}
+            onChange={(event) => updateItem(index, { category: event.target.value })}
+          />
+          <TextAreaField
+            id={`order-detail-${index}`}
+            label="Detalle"
+            value={item.detail}
+            onChange={(event) => updateItem(index, { detail: event.target.value })}
+            rows={2}
+            wide
+          />
+          <Button
+            type="button"
+            variant="quiet"
+            onClick={() => setItems((current) => current.filter((_, position) => position !== index))}
+          >
+            <IconTrash size={16} /> Quitar
+          </Button>
+        </div>
+      ))}
+      <Button type="button" variant="quiet" onClick={() => setItems((current) => [...current, { title: "", detail: "", category: "" }])}>
+        <IconPlus size={16} /> Agregar indicación
+      </Button>
+    </div>
+  );
+}
+
+function OrderCards({ visible }: Readonly<{ visible: OrderItem[] }>) {
+  return (
+    <ol className="order-cards">
+      {visible.map((item, index) => (
+        <li key={`${item.title}-${index}`} className="order-card">
+          <span className="order-card-num">{index + 1}</span>
+          <div>
+            <div className="order-card-head">
+              <strong>{item.title}</strong>
+              {item.category ? <span>{item.category}</span> : null}
+            </div>
+            {item.detail ? <p>{item.detail}</p> : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function OrdersSummary({
+  editing,
+  items,
+  visible,
+  rowKeys,
+  updateItem,
+  setItems,
+}: Readonly<{
+  editing: boolean;
+  items: OrderItem[];
+  visible: OrderItem[];
+  rowKeys: ReturnType<typeof createRowKeys>;
+  updateItem: (index: number, patch: Partial<OrderItem>) => void;
+  setItems: Dispatch<SetStateAction<OrderItem[]>>;
+}>) {
+  return (
+    <section className="orders-list" aria-label="Resumen de prescripciones basales">
+      <header>
+        <h3>Resumen de prescripciones basales</h3>
+        <span>{visible.length} {visible.length === 1 ? "ítem activo" : "ítems activos"}</span>
+      </header>
+      {editing ? <OrdersEditor items={items} rowKeys={rowKeys} updateItem={updateItem} setItems={setItems} /> : null}
+      {!editing && visible.length > 0 ? <OrderCards visible={visible} /> : null}
+      {!editing && visible.length === 0 ? (
+        <p className="empty">No hay prescripciones. Use Editar prescripciones para registrarlas.</p>
+      ) : null}
+    </section>
+  );
+}
+
 export function MedicalOrdersPage() {
   const encounter = useEncounter();
   const { applyEncounter } = useEncounterState();
@@ -54,6 +243,7 @@ export function MedicalOrdersPage() {
   const ingreso = params.get("ingreso");
   const role = user?.role ?? "medico_residente";
   const [orders, setOrders] = useState<Orders | null>(null);
+  const rowKeys = useMemo(createRowKeys, []);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [statusLabel, setStatusLabel] = useState("");
   const [physicianName, setPhysicianName] = useState("");
@@ -84,8 +274,8 @@ export function MedicalOrdersPage() {
         setItems(asItems(data.orders.items));
         setStatusLabel(data.orders.statusLabel);
       })
-      .catch((caught: unknown) => {
-        if (active) setError(errorText(caught, "No se pudieron cargar las indicaciones."));
+      .catch((error_: unknown) => {
+        if (active) setError(errorText(error_, "No se pudieron cargar las indicaciones."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -108,7 +298,7 @@ export function MedicalOrdersPage() {
   const visible = filledItems(items);
 
   function updateItem(index: number, patch: Partial<OrderItem>) {
-    setItems((current) => current.map((item, position) => (position === index ? { ...item, ...patch } : item)));
+    setItems((current) => current.map((item, position) => (position === index ? rowKeys.carry(item, { ...item, ...patch }) : item)));
   }
 
   async function persistDraft(nextItems: OrderItem[]) {
@@ -128,8 +318,8 @@ export function MedicalOrdersPage() {
         await persistDraft(items);
         setEditing(false);
         setError("");
-      } catch (caught) {
-        setError(errorText(caught, "No se pudieron guardar las indicaciones."));
+      } catch (error_) {
+        setError(errorText(error_, "No se pudieron guardar las indicaciones."));
       }
       return;
     }
@@ -137,14 +327,10 @@ export function MedicalOrdersPage() {
     if (items.length === 0) setItems([{ title: "", detail: "", category: "" }]);
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const ready = filledItems(items);
-    const next: Record<string, string> = {};
-    if (ready.length === 0) next.items = "Debe registrar al menos una indicación.";
-    if (!physicianName.trim()) next.physicianName = "El nombre del médico es obligatorio.";
-    if (!credential.trim()) next.credential = "La colegiatura es obligatoria.";
-    if (!confirmed) next.confirmed = "Debe confirmar la firma de las indicaciones.";
+    const next = signatureErrors({ ready, physicianName, credential, confirmed });
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -161,148 +347,27 @@ export function MedicalOrdersPage() {
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo firmar."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo firmar."));
     }
   }
 
   if (loading) return <LoadingState label="Cargando indicaciones…" />;
   if (!orders) return <Feedback tone="error">{error || "Indicaciones no disponibles."}</Feedback>;
 
-  const allergies = orders.allergies ?? [];
-  const medications = (orders.reconciliation?.medications ?? []).filter((item) => item.name?.trim());
-  const interactionAlerts = orders.reconciliation?.alerts ?? [];
-  const history = orders.history?.trim() ?? "";
-  const vitalsSummary = orders.vitals?.summary?.trim() ?? "";
-  const news2Label = orders.vitals?.news2Label?.trim() ?? "";
-  const notes = orders.reconciliation?.notes?.trim() ?? "";
-  const fallRisk = orders.risks?.fallRisk?.trim() ?? "";
-  const pressureRisk = orders.risks?.pressureRisk?.trim() ?? "";
-
   return (
     <Sheet kicker="Médico · Hospitalización" title="Indicaciones médicas basales" clinic="file">
       <p className="lead">Revisión final y firma electrónica de las prescripciones médicas basales de ingreso al servicio{service ? ` · ${service}` : ""}.</p>
-      <p role="status" aria-label="Estado del documento">{statusLabel}</p>
-      <section className="orders-nursing-review" aria-label="Revisión de enfermería">
-        <h3>Revisión de enfermería</h3>
-        <div className="orders-snapshot">
-          <div>
-            <span>Motivo de consulta</span>
-            <strong>{orders.chiefComplaint?.trim() || "Sin valoración registrada"}</strong>
-          </div>
-          <div className={allergies.length > 0 ? "orders-allergies" : undefined}>
-            <span>
-              <IconAlertTriangle size={16} aria-hidden /> Alergias confirmadas
-            </span>
-            <strong>{allergies.length > 0 ? allergies.join(", ") : "Sin alergias registradas"}</strong>
-          </div>
-          {history ? (
-            <div>
-              <span>Antecedentes</span>
-              <strong>{history}</strong>
-            </div>
-          ) : null}
-          {vitalsSummary || news2Label ? (
-            <div>
-              <span>Constantes</span>
-              {vitalsSummary ? <strong>{vitalsSummary}</strong> : null}
-              {news2Label ? <strong>NEWS2 {news2Label}</strong> : null}
-            </div>
-          ) : null}
-          <div>
-            <span>Medicación habitual</span>
-            {orders.reconciliation?.noHomeMedications ? <strong>Sin medicación habitual</strong> : null}
-            {medications.length > 0 ? (
-              <ul>
-                {medications.map((item) => (
-                  <li key={`${item.name}-${item.dose}-${item.frequency}`}>
-                    {[item.name, item.dose, item.route, item.frequency].filter(Boolean).join(" · ")}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {notes ? <p>{notes}</p> : null}
-            {interactionAlerts.length > 0 ? (
-              <ul aria-label="Alertas de interacción">
-                {interactionAlerts.map((alert) => <li key={alert}>{alert}</li>)}
-              </ul>
-            ) : null}
-          </div>
-          {fallRisk ? (
-            <div>
-              <span>Riesgo de caída</span>
-              <strong>{fallRisk}</strong>
-            </div>
-          ) : null}
-          {pressureRisk ? (
-            <div>
-              <span>Riesgo de úlcera por presión</span>
-              <strong>{pressureRisk}</strong>
-            </div>
-          ) : null}
-        </div>
-      </section>
-      <section className="orders-list" aria-label="Resumen de prescripciones basales">
-        <header>
-          <h3>Resumen de prescripciones basales</h3>
-          <span>{visible.length} {visible.length === 1 ? "ítem activo" : "ítems activos"}</span>
-        </header>
-        {editing ? (
-          <div className="stack">
-            {items.map((item, index) => (
-              <div key={`order-edit-${index}`} className="order-edit">
-                <TextField
-                  id={`order-title-${index}`}
-                  label={`Indicación ${index + 1}`}
-                  value={item.title}
-                  onChange={(event) => updateItem(index, { title: event.target.value })}
-                />
-                <TextField
-                  id={`order-category-${index}`}
-                  label="Categoría"
-                  value={item.category}
-                  onChange={(event) => updateItem(index, { category: event.target.value })}
-                />
-                <TextAreaField
-                  id={`order-detail-${index}`}
-                  label="Detalle"
-                  value={item.detail}
-                  onChange={(event) => updateItem(index, { detail: event.target.value })}
-                  rows={2}
-                  wide
-                />
-                <Button
-                  type="button"
-                  variant="quiet"
-                  onClick={() => setItems((current) => current.filter((_, position) => position !== index))}
-                >
-                  <IconTrash size={16} /> Quitar
-                </Button>
-              </div>
-            ))}
-            <Button type="button" variant="quiet" onClick={() => setItems((current) => [...current, { title: "", detail: "", category: "" }])}>
-              <IconPlus size={16} /> Agregar indicación
-            </Button>
-          </div>
-        ) : visible.length > 0 ? (
-          <ol className="order-cards">
-            {visible.map((item, index) => (
-              <li key={`${item.title}-${index}`} className="order-card">
-                <span className="order-card-num">{index + 1}</span>
-                <div>
-                  <div className="order-card-head">
-                    <strong>{item.title}</strong>
-                    {item.category ? <span>{item.category}</span> : null}
-                  </div>
-                  {item.detail ? <p>{item.detail}</p> : null}
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="empty">No hay prescripciones. Use Editar prescripciones para registrarlas.</p>
-        )}
-      </section>
+      <output aria-label="Estado del documento">{statusLabel}</output>
+      <NursingReview orders={orders} />
+      <OrdersSummary
+        editing={editing}
+        items={items}
+        visible={visible}
+        rowKeys={rowKeys}
+        updateItem={updateItem}
+        setItems={setItems}
+      />
       <form className="orders-sign stack" onSubmit={onSubmit} noValidate>
         <div className="orders-sign-head">
           <h3>Bloque de firma electrónica y validación profesional</h3>

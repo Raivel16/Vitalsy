@@ -2,28 +2,26 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\GuardsAdmissionBoard;
 use App\Http\Controllers\Controller;
 use App\Models\AdmissionEncounter;
+use App\Models\LifeBaselineImport;
 use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
-use App\Services\Clinical\BradenScale;
-use App\Services\Clinical\MorseFallScale;
-use App\Services\Clinical\News2Calculator;
 use App\Services\InpatientCare\CpoeService;
-use App\Services\InpatientCare\VitalSignsMonitoring;
+use App\Services\Life\LifeLinking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use InvalidArgumentException;
 
 class HospitalAdmissionController extends Controller
 {
+    use GuardsAdmissionBoard;
+
+    private const ORDER_NOT_FOUND = 'No se encontró la orden.';
+
     public function __construct(
         private readonly AdmissionBoard $board,
-        private readonly News2Calculator $news2,
-        private readonly MorseFallScale $morse,
-        private readonly BradenScale $braden,
-        private readonly VitalSignsMonitoring $monitoring,
         private readonly CpoeService $cpoe,
     ) {}
 
@@ -31,7 +29,7 @@ class HospitalAdmissionController extends Controller
     {
         $order = $this->board->findOrder($orderNumber);
         if (! $order) {
-            return $this->missing('No se encontró la orden.');
+            return response()->json(['message' => self::ORDER_NOT_FOUND], 404);
         }
 
         return response()->json(['order' => $order]);
@@ -67,7 +65,7 @@ class HospitalAdmissionController extends Controller
         $data = $request->validate(['orderNumber' => ['required', 'string']]);
         $order = $this->board->findOrder($data['orderNumber']);
         if (! $order) {
-            return $this->missing('No se encontró la orden.');
+            return response()->json(['message' => self::ORDER_NOT_FOUND], 404);
         }
 
         return response()->json(['coverage' => $order['coverage']]);
@@ -130,14 +128,33 @@ class HospitalAdmissionController extends Controller
             'signerName' => ['required', 'string'],
             'accepted' => ['accepted'],
             'relationship' => ['nullable', 'string'],
+            'lifeUser' => ['nullable', 'boolean'],
         ]);
 
         return $this->guard(fn () => response()->json([
             'consent' => $this->board->storeConsent($data['encounterId'], [
                 'signerName' => $data['signerName'],
                 'relationship' => $data['relationship'] ?? null,
+                'lifeUser' => (bool) ($data['lifeUser'] ?? false),
             ]),
         ], 201));
+    }
+
+    public function linkLife(Request $request, LifeLinking $linking): JsonResponse
+    {
+        $data = $request->validate([
+            'encounterId' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:32'],
+        ]);
+
+        return response()->json([
+            'link' => $linking->link($data['encounterId'], $data['code'], $request->user()),
+        ], 201);
+    }
+
+    public function showLifeBaseline(string $encounterId): JsonResponse
+    {
+        return response()->json(['baseline' => LifeBaselineImport::presentFor($encounterId)]);
     }
 
     public function showTransferOrder(string $orderNumber): JsonResponse
@@ -196,181 +213,6 @@ class HospitalAdmissionController extends Controller
         });
     }
 
-    public function storeAssessment(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'encounterId' => ['nullable', 'string'],
-            'chiefComplaint' => ['required', 'string'],
-            'allergies' => ['nullable', 'array'],
-            'history' => ['nullable', 'string'],
-        ]);
-
-        if (! empty($data['encounterId'])) {
-            return $this->guard(function () use ($data) {
-                $this->board->putClinical($data['encounterId'], 'assessment', [
-                    'chiefComplaint' => $data['chiefComplaint'],
-                    'allergies' => $data['allergies'] ?? [],
-                    'history' => $data['history'] ?? null,
-                    'status' => 'registrada',
-                ]);
-
-                return response()->json(['assessment' => ['status' => 'registrada']], 201);
-            });
-        }
-
-        return response()->json(['assessment' => ['status' => 'registrada']], 201);
-    }
-
-    public function storeVitalSigns(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'encounterId' => ['nullable', 'string'],
-            'respiratoryRate' => ['required', 'numeric'],
-            'oxygenSaturation' => ['required', 'numeric'],
-            'systolicBloodPressure' => ['required', 'numeric'],
-            'diastolicBloodPressure' => ['required', 'numeric'],
-            'pulse' => ['required', 'numeric'],
-            'temperature' => ['required', 'numeric'],
-            'spo2Scale' => ['nullable', 'in:scale1,scale2'],
-            'supplementalOxygen' => ['nullable', 'boolean'],
-            'consciousness' => ['nullable', 'in:alert,confusion,voice,pain,unresponsive'],
-            'confusionOnset' => ['nullable', 'in:new,chronic'],
-        ], [
-            'respiratoryRate.required' => 'La frecuencia respiratoria es obligatoria.',
-            'oxygenSaturation.required' => 'La saturación es obligatoria.',
-            'systolicBloodPressure.required' => 'La presión sistólica es obligatoria.',
-            'diastolicBloodPressure.required' => 'La presión diastólica es obligatoria.',
-            'pulse.required' => 'El pulso es obligatorio.',
-            'temperature.required' => 'La temperatura es obligatoria.',
-        ]);
-
-        if ($message = $this->implausible($data)) {
-            return response()->json(['message' => $message], 422);
-        }
-
-        $news2 = $this->news2->calculate($data);
-        $alertActivated = false;
-        $nextControlAt = null;
-        if (! empty($data['encounterId'])) {
-            $summary = sprintf(
-                'FR %s, SpO2 %s %%, PA %s/%s, pulso %s, %s °C',
-                $data['respiratoryRate'],
-                $data['oxygenSaturation'],
-                $data['systolicBloodPressure'],
-                $data['diastolicBloodPressure'],
-                $data['pulse'],
-                $data['temperature'],
-            );
-            // El ingreso debe existir antes de persistir la lectura (storeManual).
-            $this->board->putClinical($data['encounterId'], 'vitals', [
-                'input' => $data,
-                'news2' => $news2,
-                'summary' => $summary,
-                'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
-            ]);
-
-            $actor = $request->user();
-            $stored = $this->monitoring->storeManual(
-                $data['encounterId'],
-                $data,
-                $actor instanceof User ? $actor : null,
-            );
-            $news2 = $stored['reading']['news2'];
-            $alertActivated = (bool) $stored['alertActivated'];
-            $nextControlAt = $stored['nextControlAt'];
-            $this->board->putClinical($data['encounterId'], 'vitals', [
-                'input' => $data,
-                'news2' => $news2,
-                'summary' => $summary,
-                'news2Label' => ($news2['total'] ?? 0).' puntos, '.strtolower((string) ($news2['visualLabel'] ?? 'riesgo')),
-            ]);
-        }
-
-        return response()->json([
-            'news2' => $news2,
-            'alertActivated' => $alertActivated,
-            'nextControlAt' => $nextControlAt,
-        ], 201);
-    }
-
-    public function storeReconciliation(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'encounterId' => ['nullable', 'string'],
-            'allergies' => ['nullable', 'string'],
-            'medications' => ['present', 'array'],
-            'medications.*.name' => ['required', 'string'],
-            'noHomeMedications' => ['sometimes', 'boolean'],
-            'notes' => ['nullable', 'string'],
-        ]);
-
-        $alerts = [];
-        foreach ($data['medications'] as $medication) {
-            if (preg_match('/penicil/i', (string) ($data['allergies'] ?? '')) && preg_match('/amoxicil|ampicil|penicil/i', $medication['name'])) {
-                $alerts[] = 'Posible alergia: '.$medication['name'].' coincide con alergia a penicilina.';
-            }
-        }
-
-        $noneDeclared = (bool) ($data['noHomeMedications'] ?? false);
-        $status = $alerts === [] ? 'validada' : 'con_observaciones';
-        $statusLabel = $status === 'validada'
-            ? ($noneDeclared && $data['medications'] === [] ? 'Validada: sin medicación habitual' : 'Validada')
-            : 'Con observaciones';
-        $reconciliation = [
-            'status' => $status,
-            'statusLabel' => $statusLabel,
-            'alerts' => $alerts,
-            'allergies' => $data['allergies'] ?? null,
-            'medications' => $data['medications'],
-            'noHomeMedications' => $noneDeclared,
-            'notes' => $data['notes'] ?? null,
-        ];
-
-        if (! empty($data['encounterId'])) {
-            $this->board->putClinical($data['encounterId'], 'reconciliation', $reconciliation);
-        }
-
-        return response()->json(['reconciliation' => $reconciliation], 201);
-    }
-
-    public function storeRiskScales(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'encounterId' => ['nullable', 'string'],
-            'morse' => ['required', 'array'],
-            'braden' => ['required', 'array'],
-        ]);
-
-        try {
-            $pressure = $this->braden->calculate($data['braden']);
-        } catch (InvalidArgumentException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 422);
-        }
-
-        $morse = $this->morse->calculate($data['morse']);
-        if (! empty($data['encounterId'])) {
-            $this->board->putClinical($data['encounterId'], 'risks', [
-                'morse' => $morse,
-                'braden' => $pressure,
-                'fallRisk' => ($morse['levelLabel'] ?? 'Riesgo').', '.($morse['total'] ?? 0).' puntos',
-                'pressureRisk' => ($pressure['levelLabel'] ?? 'Riesgo').', '.($pressure['total'] ?? 0).' puntos',
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'registrada',
-            'morse' => $morse,
-            'braden' => $pressure,
-        ], 201);
-    }
-
-    public function showKardex(string $encounterId): JsonResponse
-    {
-        return $this->guard(fn () => response()->json([
-            'kardex' => $this->board->kardex($encounterId),
-        ]));
-    }
-
     public function showMedicalOrders(string $encounterId): JsonResponse
     {
         return $this->guard(fn () => response()->json([
@@ -427,7 +269,7 @@ class HospitalAdmissionController extends Controller
         }
 
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
-        $reconciliation = $encounter?->clinical_payload['reconciliation'] ?? null;
+        $reconciliation = $encounter?->readablePayload()['reconciliation'] ?? null;
         if (! is_array($reconciliation) || ! empty($reconciliation['noHomeMedications'])) {
             return;
         }
@@ -455,43 +297,5 @@ class HospitalAdmissionController extends Controller
         }
 
         $this->cpoe->prescribe($encounterId, $actor, $items);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function implausible(array $data): ?string
-    {
-        $limits = [
-            'respiratoryRate' => [4, 60, 'La frecuencia respiratoria no es posible.'],
-            'oxygenSaturation' => [50, 100, 'La saturación no es posible.'],
-            'systolicBloodPressure' => [40, 280, 'La presión sistólica no es posible.'],
-            'diastolicBloodPressure' => [30, 160, 'La presión diastólica no es posible.'],
-            'pulse' => [20, 250, 'El pulso no es posible.'],
-            'temperature' => [30, 43, 'La temperatura no es posible.'],
-        ];
-
-        foreach ($limits as $key => [$min, $max, $message]) {
-            $value = (float) $data[$key];
-            if ($value < $min || $value > $max) {
-                return $message;
-            }
-        }
-
-        return null;
-    }
-
-    private function missing(string $message): JsonResponse
-    {
-        return response()->json(['message' => $message], 404);
-    }
-
-    private function guard(callable $action): JsonResponse
-    {
-        try {
-            return $action();
-        } catch (AdmissionBoardException $exception) {
-            return response()->json(['message' => $exception->getMessage()], $exception->status);
-        }
     }
 }

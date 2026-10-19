@@ -24,6 +24,7 @@ final class RoleCatalog
         'servicios_generales' => 'Servicios generales / Limpieza',
         'jefatura_enfermeria' => 'Jefatura de enfermería',
         'recursos_humanos' => 'Recursos humanos',
+        'administrador_accesos' => 'Administrador de accesos',
     ];
 
     /** @return list<string> */

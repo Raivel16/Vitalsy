@@ -1,147 +1,142 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../../../app/api";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../app/AuthProvider";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
-import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { TextField } from "../../../shared/ui/Field";
 import { LoadingState } from "../../../shared/ui/LoadingState";
+import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { bedApi } from "../bedApi";
+import { CleaningOrderCard } from "../components/CleaningOrderCard";
+import { CleaningStageStrip } from "../components/CleaningStageStrip";
+import { stageCounts, unitTitle, type Checklist, type CleaningStatus } from "../domain/cleaningStage";
+import { elapsedLabel } from "../domain/flowGuide";
+import { useCleaningOrders } from "../hooks/useCleaningOrders";
+import type { CleaningOrder } from "../types";
 
-type CleaningOrder = {
-  id: number;
-  bedId: number;
-  room: string | null;
-  bedCode: string | null;
-  protocol: string;
-  status: string;
-};
+type StageFilter = CleaningStatus | "todas";
+
+const FILTERS: ReadonlyArray<{ id: StageFilter; label: (counts: Record<CleaningStatus, number>, total: number) => string }> = [
+  { id: "todas", label: (_counts, total) => `Todas las órdenes (${total})` },
+  { id: "pendiente", label: (counts) => `Desinfección pendiente (${counts.pendiente})` },
+  { id: "completada", label: (counts) => `Por equipar (${counts.completada})` },
+  { id: "equipada", label: (counts) => `Por habilitar (${counts.equipada})` },
+];
+
+/** Cantidad de unidades ya habilitadas que se muestran en la vista «Todas». */
+const RECENT_ENABLED = 5;
 
 export function CleaningOrdersPage() {
   const { user } = useAuth();
   const role = user?.role ?? "servicios_generales";
-  const [orders, setOrders] = useState<CleaningOrder[]>([]);
-  const [error, setError] = useState("");
+  const board = useCleaningOrders();
+  const { orders } = board;
+  const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"todas" | "pendiente" | "completada">("todas");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [filter, setFilter] = useState<StageFilter>("todas");
+  const [search, setSearch] = useState("");
 
-  const load = useCallback(async () => {
+  async function run(order: CleaningOrder, request: () => Promise<unknown>, success: string, failure: string) {
+    if (busyId !== null) return;
+    setBusyId(order.id);
+    setNotice("");
     try {
-      const data = await api<{ orders: CleaningOrder[] }>("/api/v1/beds/cleaning-orders");
-      setOrders(data.orders);
-      setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron cargar las órdenes de limpieza."));
+      await request();
+      setActionError("");
+      setNotice(success);
+      await board.reload();
+    } catch (error_) {
+      setNotice("");
+      setActionError(errorText(error_, failure));
     } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function complete(order: CleaningOrder) {
-    try {
-      await api(`/api/v1/beds/cleaning-orders/${order.id}/complete`, { method: "POST" });
-      setNotice(`Limpieza ${order.protocol === "deep" ? "profunda" : "estándar"} completada.`);
-      await load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la desinfección."));
+      setBusyId(null);
     }
   }
 
-  async function equip(order: CleaningOrder) {
-    try {
-      await api(`/api/v1/beds/${order.bedId}/equip`, { method: "POST" });
-      setNotice("Unidad equipada con lencería e insumos.");
-      await load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo marcar la unidad como equipada."));
-    }
-  }
+  const disinfect = (order: CleaningOrder, checklist: Checklist) =>
+    run(
+      order,
+      () => bedApi.completeCleaning(order.id, checklist),
+      `Desinfección registrada en ${unitTitle(order)}. Pasa a equipamiento.`,
+      "No se pudo registrar la desinfección.",
+    );
+  const equip = (order: CleaningOrder) =>
+    run(order, () => bedApi.equip(order.bedId), `Unidad equipada: ${unitTitle(order)}. Pasa a validación de la supervisora.`, "No se pudo marcar la unidad como equipada.");
+  const enable = (order: CleaningOrder) =>
+    run(order, () => bedApi.release(order.bedId), `Cama habilitada en el censo central: ${unitTitle(order)}.`, "No se pudo habilitar la cama.");
 
-  async function release(order: CleaningOrder) {
-    try {
-      await api(`/api/v1/beds/${order.bedId}/release`, { method: "POST" });
-      setNotice("Cama habilitada en el censo central.");
-      await load();
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo habilitar la cama."));
-    }
-  }
+  const counts = useMemo(() => stageCounts(orders), [orders]);
 
-  const stages = useMemo(() => ([
-    { id: "pendiente" as const, step: "Etapa 1", label: "Sucia / solicitada", count: orders.filter((order) => order.status === "pendiente").length },
-    { id: "completada" as const, step: "Etapa 2", label: "Por equipar", count: orders.filter((order) => order.status === "completada").length },
-  ]), [orders]);
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const matches = (order: CleaningOrder) =>
+      term === "" || `${order.room ?? ""} ${order.bedCode ?? ""} ${order.ward ?? ""}`.toLowerCase().includes(term);
+    const filtered = orders.filter((order) => (filter === "todas" || order.status === filter) && matches(order));
+    if (filter !== "todas") return filtered;
+    const open = filtered.filter((order) => order.status !== "habilitada");
+    const enabled = filtered.filter((order) => order.status === "habilitada").slice(0, RECENT_ENABLED);
+    return [...open, ...enabled];
+  }, [orders, filter, search]);
 
-  const visible = filter === "todas" ? orders : orders.filter((order) => order.status === filter);
-
-  if (loading) return <LoadingState label="Cargando órdenes de limpieza…" />;
+  if (board.loading) return <LoadingState label="Cargando órdenes de limpieza…" />;
 
   return (
     <Sheet kicker="Gestión de camas" title="Habilitación de unidades y protocolo de higiene" wide clinic="board" className="floor-care ops-board">
-      <p className="lead">Desinfección terminal, equipamiento y confirmación de disponibilidad.</p>
-      {error ? <Feedback tone="error">{error}</Feedback> : null}
+      <p className="lead">Control operativo del circuito de acondicionamiento de camas tras el egreso o traslado de pacientes.</p>
+      {board.error ? <Feedback tone="error">{board.error}</Feedback> : null}
+      {actionError ? <Feedback tone="error">{actionError}</Feedback> : null}
       {notice ? <Feedback tone="success">{notice}</Feedback> : null}
-      <div className="stage-grid" aria-label="Etapas de habilitación">
-        {stages.map((stage) => (
-          <button
-            key={stage.id}
-            type="button"
-            className={`stage-card${filter === stage.id ? " is-active" : ""}`}
-            aria-pressed={filter === stage.id}
-            onClick={() => setFilter(filter === stage.id ? "todas" : stage.id)}
-          >
-            <span>{stage.step}</span>
-            <strong>{stage.count}</strong>
-            <em>{stage.label}</em>
-          </button>
-        ))}
+
+      <CleaningStageStrip counts={counts} active={filter} onSelect={setFilter} />
+
+      <div className="ops-toolbar">
+        <fieldset className="filter-pills" aria-label="Filtrar órdenes">
+          {FILTERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`filter-pill${filter === item.id ? " is-active" : ""}`}
+              aria-pressed={filter === item.id}
+              onClick={() => setFilter(item.id)}
+            >
+              {item.label(counts, orders.length)}
+            </button>
+          ))}
+        </fieldset>
+        <div className="ops-toolbar-tools">
+          <TextField
+            id="cleaning-search"
+            type="search"
+            label="Buscar por habitación o cama"
+            hideLabel
+            compact
+            placeholder="Buscar por habitación o cama…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <span className="sync-chip">Actualizado {elapsedLabel(board.loadedAt).toLowerCase()}</span>
+          <Button type="button" variant="quiet" onClick={() => void board.reload()}>Actualizar</Button>
+        </div>
       </div>
-      <div className="filter-pills" role="group" aria-label="Filtrar órdenes">
-        {(
-          [
-            ["todas", `Todas las órdenes (${orders.length})`],
-            ["pendiente", `Desinfección pendiente (${stages[0]?.count ?? 0})`],
-            ["completada", `Por equipar (${stages[1]?.count ?? 0})`],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={`filter-pill${filter === id ? " is-active" : ""}`}
-            aria-pressed={filter === id}
-            onClick={() => setFilter(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+
       {visible.length === 0 ? (
-        <Feedback tone="info">No hay órdenes de limpieza pendientes.</Feedback>
+        <Feedback tone="info">
+          {orders.length === 0
+            ? "No hay órdenes de limpieza. Se generan automáticamente al registrarse el egreso o traslado de un paciente."
+            : "Ninguna orden coincide con el filtro o la búsqueda."}
+        </Feedback>
       ) : (
         <ul className="pipeline">
           {visible.map((order) => (
-            <li key={order.id} className={`pipeline-card is-${order.status}`}>
-              <div>
-                <h3>Habitación {order.room} · Cama {order.bedCode}</h3>
-                <p className="pipeline-meta">
-                  Protocolo {order.protocol === "deep" ? "profundo" : "estándar"} · {order.status}
-                </p>
-              </div>
-              <div className="pipeline-actions">
-                {role === "servicios_generales" && order.status === "pendiente" ? (
-                  <Button type="button" onClick={() => void complete(order)}>Limpieza completada</Button>
-                ) : null}
-                {role === "auxiliar_enfermeria" && order.status === "completada" ? (
-                  <Button type="button" onClick={() => void equip(order)}>Unidad equipada</Button>
-                ) : null}
-                {role === "enfermera_supervisora" ? (
-                  <Button type="button" onClick={() => void release(order)}>Marcar disponible</Button>
-                ) : null}
-              </div>
-            </li>
+            <CleaningOrderCard
+              key={order.id}
+              order={order}
+              role={role}
+              busy={busyId === order.id}
+              onDisinfect={(target, checklist) => void disinfect(target, checklist)}
+              onEquip={(target) => void equip(target)}
+              onEnable={(target) => void enable(target)}
+            />
           ))}
         </ul>
       )}

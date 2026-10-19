@@ -4,7 +4,7 @@ import type { SessionUser } from "./roles";
 const baseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 function xsrfToken(): string {
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+  const match = /(?:^|; )XSRF-TOKEN=([^;]*)/.exec(document.cookie);
   return match ? decodeURIComponent(match[1]) : "";
 }
 
@@ -15,6 +15,18 @@ function fallbackFor(status: number): string {
   if (status === 419) return "La sesión expiró. Vuelva a intentarlo.";
   if (status === 422) return "Revise los datos e intente de nuevo.";
   return "No se pudo completar la operación. Intente de nuevo.";
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -40,10 +52,15 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   const data = (await response.json().catch(() => ({}))) as {
     message?: string;
+    code?: string;
     errors?: Record<string, string[] | string>;
   };
   if (!response.ok) {
-    throw new Error(apiErrorMessage(data, fallbackFor(response.status)));
+    throw new ApiError(
+      apiErrorMessage(data, fallbackFor(response.status)),
+      response.status,
+      typeof data.code === "string" ? data.code : undefined,
+    );
   }
   return data as T;
 }
@@ -56,5 +73,20 @@ export async function loginRequest(email: string, password: string): Promise<{ u
   return api("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function changePasswordRequest(input: {
+  currentPassword: string;
+  password: string;
+  passwordConfirmation: string;
+}): Promise<{ user: SessionUser }> {
+  return api("/api/v1/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      currentPassword: input.currentPassword,
+      password: input.password,
+      password_confirmation: input.passwordConfirmation,
+    }),
   });
 }

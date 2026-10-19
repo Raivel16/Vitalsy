@@ -15,7 +15,10 @@ class EnsureRequestOrigin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->headers->get('Origin') && ! $request->headers->get('Referer')) {
+        // La app móvil (Bearer, sin cookies ni Origin) no debe pasar por la rama stateful de Sanctum (419 CSRF).
+        $tokenClient = $request->bearerToken() !== null || $request->is('api/v1/life/*');
+
+        if (! $tokenClient && ! $request->headers->get('Origin') && ! $request->headers->get('Referer')) {
             $request->headers->set('Origin', $request->getSchemeAndHttpHost());
         }
 

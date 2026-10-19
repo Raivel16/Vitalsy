@@ -1,6 +1,6 @@
-import { type FormEvent, useEffect, useState } from "react";
-import { IconHeartbeat, IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
-import { api } from "../../../app/api";
+import { type SyntheticEvent, useEffect, useState } from "react";
+import { IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
+import { api, ApiError } from "../../../app/api";
 import { printClinicalDocument } from "../../../shared/print/printDocument";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
 import { errorText } from "../../../app/userMessage";
@@ -10,10 +10,14 @@ import { Button } from "../../../shared/ui/Button";
 import { EmptyEncounter } from "../../../shared/ui/EmptyEncounter";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
+import { LifeWordmark } from "../../../shared/ui/LifeWordmark";
 import { advanceEncounter } from "../../admission-census/domain/advance";
 import { useAuth } from "../../../app/AuthProvider";
 import { useEncounter, useEncounterState } from "../../admission-census/EncounterContext";
 import { StepNav } from "../../admission-census/ui/StepNav";
+import { normalizeLinkCode, validateLinkCode } from "../../../shared/validation/inputRules";
+import { lifeLinkErrorMessage, type LifeMetric } from "../domain/lifeBaseline";
+import { LifeBaselineMetrics } from "../components/LifeBaselineMetrics";
 
 export function WristbandPage() {
   const encounter = useEncounter();
@@ -41,7 +45,7 @@ export function WristbandPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -60,8 +64,8 @@ export function WristbandPage() {
       } else {
         setAdvanced(true);
       }
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo emitir el brazalete."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo emitir el brazalete."));
     } finally {
       setPending(false);
     }
@@ -132,7 +136,7 @@ export function RecordPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setPending(true);
     try {
@@ -147,8 +151,8 @@ export function RecordPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo aperturar el expediente."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo aperturar el expediente."));
     } finally {
       setPending(false);
     }
@@ -214,6 +218,10 @@ export function ConsentPage() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [lifeStatus, setLifeStatus] = useState<"idle" | "linked" | "failed">("idle");
+  const [lifeMessage, setLifeMessage] = useState("");
+  const [lifeMetrics, setLifeMetrics] = useState<LifeMetric[]>([]);
+  const [lifePending, setLifePending] = useState(false);
 
   useEffect(() => {
     if (!encounter) return;
@@ -241,11 +249,58 @@ export function ConsentPage() {
 
   const activeEncounter = encounter;
 
-  async function onSubmit(event: FormEvent) {
+  async function linkLife(): Promise<void> {
+    const codeIssue = validateLinkCode(lifeCode);
+    if (codeIssue) {
+      setErrors((current) => ({ ...current, lifeCode: codeIssue }));
+      return;
+    }
+    setErrors((current) => {
+      const rest = { ...current };
+      delete rest.lifeCode;
+      return rest;
+    });
+    setLifePending(true);
+    try {
+      const data = await api<{ link: { baselineSummary?: { metrics?: LifeMetric[] } } }>(
+        "/api/v1/hospital-admission/life-links",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            encounterId: activeEncounter.encounterId,
+            code: normalizeLinkCode(lifeCode),
+          }),
+        },
+      );
+      setLifeMetrics(data.link?.baselineSummary?.metrics ?? []);
+      setLifeStatus("linked");
+      setLifeMessage("");
+    } catch (error_) {
+      const generic = "No se pudo vincular Vitalsy Life. Intente de nuevo.";
+      let message: string;
+      if (error_ instanceof ApiError) {
+        message = error_.status === 429
+          ? "Demasiados intentos. Espere un minuto e intente de nuevo."
+          : lifeLinkErrorMessage(error_.code) ?? generic;
+      } else {
+        message = errorText(error_, generic);
+      }
+      setLifeStatus("failed");
+      setLifeMessage(message);
+    } finally {
+      setLifePending(false);
+    }
+  }
+
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (!signerName.trim()) next.signerName = "El nombre de quien firma es obligatorio.";
     if (!accepted) next.accepted = "Debe aceptar el consentimiento informado.";
+    if (lifeUser) {
+      const codeIssue = validateLinkCode(lifeCode);
+      if (codeIssue) next.lifeCode = codeIssue;
+    }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -258,18 +313,20 @@ export function ConsentPage() {
           signerName,
           relationship,
           accepted,
+          lifeUser,
         }),
       });
       writeDraft(activeEncounter.encounterId, "consent", { signerName, relationship, accepted: true });
       setSigned(data.consent.status);
       setError("");
+      if (lifeUser) await linkLife();
       if (activeEncounter.currentStep === "consentimiento") {
         const updated = await advanceEncounter(activeEncounter.encounterId, "consentimiento");
         applyEncounter(updated);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el consentimiento."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el consentimiento."));
     } finally {
       setPending(false);
     }
@@ -310,11 +367,8 @@ export function ConsentPage() {
         <section className="life-panel" aria-labelledby="vitalsy-life-title">
           <header className="life-panel-head">
             <div>
-              <p className="life-panel-icon" aria-hidden><IconHeartbeat size={20} /></p>
-              <div>
-                <h3 id="vitalsy-life-title">Vitalsy Life</h3>
-                <p>Vincular registros biométricos del paciente</p>
-              </div>
+              <h3 id="vitalsy-life-title"><LifeWordmark /></h3>
+              <p>Vincular registros biométricos del paciente</p>
             </div>
             <span className="sheet-badge">Ecosistema conectado</span>
           </header>
@@ -324,7 +378,13 @@ export function ConsentPage() {
             label="El paciente es usuario de la app Vitalsy Life"
             description="Permite la importación continua del historial ambulatorio previo a la cama hospitalaria."
             checked={lifeUser}
-            onChange={(event) => setLifeUser(event.target.checked)}
+            onChange={(event) => {
+              setLifeUser(event.target.checked);
+              if (!event.target.checked) {
+                setLifeStatus("idle");
+                setLifeMessage("");
+              }
+            }}
           />
           {lifeUser ? (
             <div className="form-grid">
@@ -332,18 +392,35 @@ export function ConsentPage() {
                 id="vitalsy-life-code"
                 label="Código o QR de autorización"
                 value={lifeCode}
-                onChange={(event) => setLifeCode(event.target.value)}
-                hint="Se registrará cuando el conector transversal esté disponible."
+                onChange={(event) => setLifeCode(event.target.value.toUpperCase())}
+                error={errors.lifeCode}
+                hint="Formato VL-XXXX-XXXX"
               />
               <div className="field">
-                <label>Escanear</label>
-                <BarcodeScanner label="Escanear código" onScan={setLifeCode} />
+                <span className="field-label">Escanear</span>
+                <BarcodeScanner label="Escanear código" onScan={(value) => setLifeCode(normalizeLinkCode(value))} />
               </div>
-              <p className="hint form-span-2"><IconQrcode size={14} /> Sincronización de línea de base domiciliaria pendiente de backend.</p>
+              <p className="hint form-span-2"><IconQrcode size={14} /> El código se vincula al registrar el consentimiento.</p>
             </div>
           ) : (
             <p className="hint">Si se desmarca: el ingreso continúa sin vincular la línea de base domiciliaria.</p>
           )}
+          {lifeStatus === "linked" ? (
+            <div>
+              <Feedback tone="success">Línea de base importada</Feedback>
+              {lifeMetrics.length > 0 ? <LifeBaselineMetrics metrics={lifeMetrics} /> : null}
+            </div>
+          ) : null}
+          {lifeStatus === "failed" ? (
+            <div>
+              <Feedback tone="info">
+                {lifeMessage} El ingreso continúa sin la línea de base domiciliaria.
+              </Feedback>
+              <Button variant="quiet" type="button" pending={lifePending} disabled={lifePending} onClick={() => void linkLife()}>
+                Reintentar vinculación
+              </Button>
+            </div>
+          ) : null}
         </section>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {signed ? <Feedback tone="success">Consentimiento {signed}.</Feedback> : null}

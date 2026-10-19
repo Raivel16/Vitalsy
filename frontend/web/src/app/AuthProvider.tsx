@@ -24,7 +24,7 @@ function testUser(): SessionUser | null {
   return null;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState("");

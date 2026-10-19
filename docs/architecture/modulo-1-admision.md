@@ -106,3 +106,8 @@ Cada pantalla solo se abre con el perfil de esa fila. El menú no lista los paso
 Respuesta `201` con el `encounter` creado en el paso de orden.
 
 `GET /api/v1/beds/available` (autenticado, rol `enfermera_piso`, `gestion_camas` o `enfermera_supervisora`): lista solo lechos `status=available` del censo M5 para que la reubicación (RF-10) notifique un destino real. No asigna la cama.
+
+
+## Integración con Vitalsy Life (RF-95)
+
+`admision` puede vincular al ingreso la línea de base de una cuenta Life con `POST /api/v1/hospital-admission/life-links` (`{encounterId, code}`). El código `VL-XXXX-XXXX` es de un solo uso y vence a los 30 min; se rechaza si la compartición fue revocada. La respuesta no expone nombre ni correo de la cuenta. Enfermería y médicos leen el resultado con `GET .../encounters/{id}/life-baseline` (`{baseline: null}` si no hubo importación). Life no calcula NEWS2: la línea de base es solo referencia. Contrato: [contrato-clinical-life.md](contrato-clinical-life.md). Prueba de recorrido completo: `LifeEndToEndTest`.

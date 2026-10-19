@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { IconAlertTriangle, IconCheck, IconDeviceHeartMonitor, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../app/api";
 import { useAuth } from "../../../app/AuthProvider";
@@ -14,6 +14,9 @@ import { StepNav } from "../../admission-census/ui/StepNav";
 import { calculateNews2, type Consciousness, type Spo2Scale } from "../domain/news2";
 import { validateVitalSigns } from "../domain/vitalSigns";
 import { requiredText } from "../../../shared/validation/inputRules";
+import { LifeBaselineMetrics } from "../../admission/components/LifeBaselineMetrics";
+import { canReadLifeBaseline, type LifeBaseline } from "../../admission/domain/lifeBaseline";
+import { formatDateTime } from "../../../shared/datetime/format";
 
 function draftKey(encounterId: string, step: string) {
   return `vitalsy-draft-${step}-${encounterId}`;
@@ -35,6 +38,26 @@ export function NursingAssessmentPage() {
   const [draftNotice, setDraftNotice] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [baseline, setBaseline] = useState<LifeBaseline | null>(null);
+  const encounterId = encounter?.encounterId;
+  const canReadBaseline = canReadLifeBaseline(role);
+
+  useEffect(() => {
+    if (!encounterId || !canReadBaseline) return;
+    let active = true;
+    api<{ baseline: LifeBaseline | null }>(
+      `/api/v1/hospital-admission/encounters/${encodeURIComponent(encounterId)}/life-baseline`,
+    )
+      .then((payload) => {
+        if (active) setBaseline(payload?.baseline ?? null);
+      })
+      .catch(() => {
+        if (active) setBaseline(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [encounterId, canReadBaseline]);
 
   if (!encounter) {
     return (
@@ -61,7 +84,7 @@ export function NursingAssessmentPage() {
     setSaved("");
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     const complaintIssue = requiredText(complaint, "El motivo de consulta es obligatorio.");
@@ -90,8 +113,8 @@ export function NursingAssessmentPage() {
         applyEncounter(nextEncounter);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo guardar la valoración."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo guardar la valoración."));
     } finally {
       setPending(false);
     }
@@ -106,7 +129,14 @@ export function NursingAssessmentPage() {
         <IconDeviceHeartMonitor size={20} aria-hidden />
         <div>
           <strong>Línea de base Vitalsy Life</strong>
-          <p>Sin datos sincronizados desde la app domiciliaria para este ingreso.</p>
+          {baseline && baseline.metrics.length > 0 ? (
+            <>
+              <LifeBaselineMetrics metrics={baseline.metrics} />
+              {baseline.importedAt ? <p className="hint">Importada el {formatDateTime(baseline.importedAt)}</p> : null}
+            </>
+          ) : (
+            <p>Aún no hay línea de base importada de Vitalsy Life.</p>
+          )}
         </div>
       </div>
       <form className="stack nursing-form" onSubmit={onSubmit} noValidate>
@@ -271,7 +301,7 @@ export function VitalSignsPage() {
     setFields((current) => ({ ...current, [key]: value }));
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
     setSubmitted(true);
     if (!ready || !news2) return;
@@ -302,8 +332,8 @@ export function VitalSignsPage() {
         applyEncounter(next);
       }
       setAdvanced(true);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudieron registrar las constantes."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudieron registrar las constantes."));
     } finally {
       setPending(false);
     }

@@ -3,7 +3,8 @@ import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
-import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, type NavItem } from "./app/navigation";
+import { ChangePasswordPage } from "./app/ChangePasswordPage";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, ADMIN_ROLES, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -35,6 +36,9 @@ import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage
 import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
 import { BedCensusPage } from "./modules/bed-management/pages/BedCensusPage";
 import { CleaningOrdersPage } from "./modules/bed-management/pages/CleaningOrdersPage";
+import { UsersListPage } from "./modules/user-admin/pages/UsersListPage";
+import { UserCreatePage } from "./modules/user-admin/pages/UserCreatePage";
+import { UserEditPage } from "./modules/user-admin/pages/UserEditPage";
 import { StaffBoardPage } from "./modules/staff-roster/pages/StaffBoardPage";
 import { AlertNotifications } from "./modules/clinical-alerts/AlertNotifications";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
@@ -43,7 +47,7 @@ import { LoadingState } from "./shared/ui/LoadingState";
 import { SealIcon } from "./shared/ui/Icons";
 import type { ReactNode } from "react";
 
-function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: string; children: ReactNode }) {
+function Guard({ roles, requirement, children }: Readonly<{ roles: Role[]; requirement?: string; children: ReactNode }>) {
   const { user } = useAuth();
   if (user && roles.includes(user.role)) return children;
   return (
@@ -53,7 +57,7 @@ function Guard({ roles, requirement, children }: { roles: Role[]; requirement?: 
   );
 }
 
-function ShellNavLink({ item }: { item: NavItem }) {
+function ShellNavLink({ item }: Readonly<{ item: NavItem }>) {
   const navigate = useNavigate();
   const Icon = item.icon;
 
@@ -92,7 +96,7 @@ function Shell() {
           </div>
         </div>
         <div className="session-box">
-          <AlertNotifications enabled={isAlertRole(role)} />
+          <AlertNotifications enabled={isAlertRole(role)} userId={user?.id ?? null} />
           <p>{user?.name}<span>{ROLE_LABEL[role]}</span></p>
           <Button variant="quiet" type="button" onClick={() => void logout()}>
             <IconLogout size={18} stroke={1.75} aria-hidden />
@@ -269,6 +273,9 @@ function Shell() {
                 path="/personal"
                 element={<Guard roles={STAFF_ROLES} requirement="un perfil de gestión del personal"><StaffBoardPage /></Guard>}
               />
+              <Route path="/usuarios" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UsersListPage /></Guard>} />
+              <Route path="/usuarios/nuevo" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UserCreatePage /></Guard>} />
+              <Route path="/usuarios/:userId" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UserEditPage /></Guard>} />
             </Routes>
           </CaseBar>
         </main>
@@ -281,6 +288,7 @@ function Gate() {
   const { user, ready } = useAuth();
   if (!ready) return <LoadingState label="Cargando sesión…" />;
   if (!user) return <LoginPage />;
+  if (user.mustChangePassword) return <ChangePasswordPage />;
   return <Shell />;
 }
 

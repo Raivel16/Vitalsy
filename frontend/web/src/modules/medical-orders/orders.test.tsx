@@ -95,8 +95,10 @@ describe("indicaciones médicas basales", () => {
 
     expect(screen.getByRole("button", { name: /firmar indicaciones/i })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: /editar prescripciones/i }));
-    await user.type(screen.getByLabelText(/indicación 1/i), "Reposo relativo");
-    await user.type(screen.getByLabelText(/^detalle$/i), "Cabecera a 30 grados");
+    await user.click(screen.getByLabelText(/indicación 1/i));
+    await user.paste("Reposo relativo");
+    await user.click(screen.getByLabelText(/^detalle$/i));
+    await user.paste("Cabecera a 30 grados");
     await user.click(screen.getByRole("button", { name: /^listo$/i }));
     expect(await screen.findByText("Reposo relativo")).toBeInTheDocument();
 
@@ -105,8 +107,10 @@ describe("indicaciones médicas basales", () => {
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
     expect(screen.getByLabelText(/nombre del médico/i)).toHaveAttribute("aria-invalid", "true");
 
-    await user.type(screen.getByLabelText(/nombre del médico/i), "Dr. Mateo Salas");
-    await user.type(screen.getByLabelText(/colegiatura/i), "CMP 12345");
+    await user.click(screen.getByLabelText(/nombre del médico/i));
+    await user.paste("Dr. Mateo Salas");
+    await user.click(screen.getByLabelText(/colegiatura/i));
+    await user.paste("CMP 12345");
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
 
     await waitFor(() => {
@@ -146,8 +150,10 @@ describe("indicaciones médicas basales", () => {
     renderApp("/medico/indicaciones?ingreso=ENC-0001");
     expect(await screen.findByRole("heading", { name: /indicaciones médicas basales/i })).toBeInTheDocument();
     await user.clear(screen.getByLabelText(/nombre del médico/i));
-    await user.type(screen.getByLabelText(/nombre del médico/i), "Dra. Tratante");
-    await user.type(screen.getByLabelText(/colegiatura/i), "CMP 99887");
+    await user.click(screen.getByLabelText(/nombre del médico/i));
+    await user.paste("Dra. Tratante");
+    await user.click(screen.getByLabelText(/colegiatura/i));
+    await user.paste("CMP 99887");
     await user.click(screen.getByLabelText(/confirmo y firmo las indicaciones/i));
     await user.click(screen.getByRole("button", { name: /firmar indicaciones/i }));
     expect(await screen.findByRole("status", { name: /estado del documento/i })).toHaveTextContent(/firmado/i);

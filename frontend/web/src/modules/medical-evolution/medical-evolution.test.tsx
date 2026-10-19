@@ -65,7 +65,8 @@ describe("nota de evolución médica (RF-24)", () => {
     await user.click(screen.getByRole("button", { name: /registrar evolución/i }));
     expect(screen.getByLabelText(/nota de evolución/i)).toHaveAttribute("aria-invalid", "true");
 
-    await user.type(screen.getByLabelText(/nota de evolución/i), "Evolución favorable. Continuar plan actual.");
+    await user.click(screen.getByLabelText(/nota de evolución/i));
+    await user.paste("Evolución favorable. Continuar plan actual.");
     await user.click(screen.getByLabelText(/firmar digitalmente la nota/i));
     await user.click(screen.getByRole("button", { name: /registrar evolución/i }));
 

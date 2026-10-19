@@ -9,7 +9,7 @@ export function Sheet({
   aside,
   clinic,
   className,
-}: {
+}: Readonly<{
   kicker: string;
   title: string;
   children: ReactNode;
@@ -18,7 +18,7 @@ export function Sheet({
   aside?: ReactNode;
   clinic?: "form" | "board" | "file";
   className?: string;
-}) {
+}>) {
   const head = (
     <header className="page-head">
       <div>
@@ -30,13 +30,7 @@ export function Sheet({
   );
 
   const clinicClass = [
-    clinic === "board"
-      ? "clinic-sheet clinic-board"
-      : clinic === "file"
-        ? "clinic-sheet clinic-file"
-        : clinic === "form"
-          ? "clinic-sheet clinic-form"
-          : "",
+    clinic ? `clinic-sheet clinic-${clinic}` : "",
     className,
   ].filter(Boolean).join(" ");
 
@@ -94,11 +88,11 @@ export function Feedback({
   tone,
   children,
   label,
-}: {
+}: Readonly<{
   tone: "error" | "success" | "info";
   children: ReactNode;
   label?: string;
-}) {
+}>) {
   if (tone === "error") {
     return (
       <p className="banner banner-error" role="alert" aria-label={label}>
@@ -107,8 +101,8 @@ export function Feedback({
     );
   }
   return (
-    <p className={`banner banner-${tone}`} role="status" aria-label={label}>
+    <output className={`banner banner-${tone}`} aria-label={label}>
       {children}
-    </p>
+    </output>
   );
 }

@@ -151,6 +151,7 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 | `servicios_generales` | Personal de servicios generales / limpieza | Desinfección terminal de la unidad (RF-75) |
 | `jefatura_enfermeria` | Jefatura de enfermería / Dirección médica | Rol mensual de turnos (RF-78) y convocatoria de retén (RF-86) |
 | `recursos_humanos` | Personal de recursos humanos | Autorización de cobertura extraordinaria (RF-87) |
+| `administrador_accesos` | Administrador de accesos | Consulta, alta, edición y desactivación de cuentas (RF-101–104) |
 
 RF-99: Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 RF-100: Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.

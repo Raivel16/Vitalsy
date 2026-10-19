@@ -61,8 +61,8 @@ export function DischargeBoardPage() {
         setInpatients((census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado"));
       }
       setError("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo cargar el listado de egresos."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo cargar el listado de egresos."));
     } finally {
       setLoading(false);
     }
@@ -92,8 +92,8 @@ export function DischargeBoardPage() {
         const census = await api<{ encounters?: Inpatient[] }>("/api/v1/hospital-admission/encounters?per_page=50");
         pool = (census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado");
         setInpatients(pool);
-      } catch (caught) {
-        setError(errorText(caught, "No se pudo leer el censo para ese código."));
+      } catch (error_) {
+        setError(errorText(error_, "No se pudo leer el censo para ese código."));
         return;
       }
     }
@@ -195,7 +195,7 @@ export function DischargeBoardPage() {
         <Feedback tone="info">No hay hospitalizados que coincidan con la búsqueda.</Feedback>
       ) : null}
       <div className="ops-toolbar">
-        <div className="filter-pills" role="group" aria-label="Filtrar flujo por estado">
+        <fieldset className="filter-pills" aria-label="Filtrar flujo por estado">
           {(
             [
               ["todas", `Todas ${counts.todas}`],
@@ -214,7 +214,7 @@ export function DischargeBoardPage() {
               {label}
             </button>
           ))}
-        </div>
+        </fieldset>
       </div>
 
       {filtered.length === 0 ? (

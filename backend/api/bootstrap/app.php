@@ -1,7 +1,12 @@
 <?php
 
+use App\Exceptions\ClinicalRuleException;
+use App\Http\Middleware\EnsureActiveAccount;
+use App\Http\Middleware\EnsureLifeAccount;
+use App\Http\Middleware\EnsurePasswordRotated;
 use App\Http\Middleware\EnsureRequestOrigin;
 use App\Http\Middleware\EnsureUserRole;
+use App\Support\TrustedProxies;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -9,6 +14,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -19,13 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Nginx (HTTP/HTTPS) envía X-Forwarded-*; necesario para URL/scheme correctos en LAN.
+        // Nginx (HTTP/HTTPS) envía X-Forwarded-*; solo se confía en TRUSTED_PROXIES (RNF-05).
         $middleware->trustProxies(
-            at: '*',
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_HOST
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PROTO,
+            at: TrustedProxies::fromEnv(env('TRUSTED_PROXIES')),
+            // Solo FOR y PROTO: Host/Port reenviados no se confian (evita envenenar URLs con X-Forwarded-Host).
+            headers: TrustedProxies::HEADERS,
         );
         $middleware->api(prepend: [
             EnsureRequestOrigin::class,
@@ -33,6 +37,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'role' => EnsureUserRole::class,
+            'active' => EnsureActiveAccount::class,
+            'password.rotated' => EnsurePasswordRotated::class,
+            'life' => EnsureLifeAccount::class,
+            'abilities' => CheckAbilities::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -73,8 +81,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $message === ''
                 || preg_match('/SQLSTATE|Exception|Stack trace|Server Error|could not be found/i', $message) === 1;
 
-            return response()->json([
+            $body = [
                 'message' => $technical ? 'No se pudo completar la operación. Intente de nuevo.' : $message,
-            ], $status);
+            ];
+            if ($exception instanceof ClinicalRuleException && $exception->errorCode !== null) {
+                $body['code'] = $exception->errorCode;
+            }
+
+            return response()->json($body, $status);
         });
     })->create();

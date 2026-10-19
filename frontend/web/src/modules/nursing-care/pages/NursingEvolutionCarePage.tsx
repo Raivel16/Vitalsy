@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type SyntheticEvent, useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router";
 import { IconChecklist, IconNotes } from "@tabler/icons-react";
 import { api } from "../../../app/api";
@@ -80,7 +80,7 @@ export function NursingEvolutionCarePage() {
     loadActivities();
   }, [ingreso]);
 
-  async function onNursingNote(event: FormEvent) {
+  async function onNursingNote(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const message = requiredText(body, "La nota de evolución de enfermería es obligatoria.") ?? "";
@@ -103,12 +103,12 @@ export function NursingEvolutionCarePage() {
       setNotes((prev) => [data.note, ...prev]);
       setNotice("Nota de enfermería registrada.");
       setBody("");
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar la nota."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar la nota."));
     }
   }
 
-  async function onCare(event: FormEvent) {
+  async function onCare(event: SyntheticEvent) {
     event.preventDefault();
     if (!ingreso) return;
     const label = careOption === "Otros" ? careOther.trim() : careOption;
@@ -128,8 +128,8 @@ export function NursingEvolutionCarePage() {
       setNotice(`Cuidado directo registrado: ${label}.`);
       setCareOther("");
       setCareOption(CARE_OPTIONS[0]);
-    } catch (caught) {
-      setError(errorText(caught, "No se pudo registrar el cuidado."));
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo registrar el cuidado."));
     }
   }
 

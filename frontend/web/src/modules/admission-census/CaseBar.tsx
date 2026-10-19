@@ -7,6 +7,7 @@ import { isClinicalRole, primaryAttentionPath } from "../../app/navigation";
 import { errorText } from "../../app/userMessage";
 import { Feedback } from "../../shared/ui/Sheet";
 import { LoadingState } from "../../shared/ui/LoadingState";
+import type { Role } from "../../app/roles";
 import { EncounterContext, type CoverageStatus } from "./EncounterContext";
 import type { Encounter } from "./domain/encounter";
 import { AdmissionStepper } from "./ui/AdmissionStepper";
@@ -16,27 +17,120 @@ function asCoverage(status: string | null | undefined): CoverageStatus | null {
   return null;
 }
 
-export function CaseBar({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const location = useLocation();
-  const [params] = useSearchParams();
-  const { encounterId: routeEncounterId } = useParams();
-  const pathId = location.pathname.match(/^\/pacientes\/([^/]+)$/)?.[1];
-  const fileId = routeEncounterId && routeEncounterId !== "nuevo"
-    ? routeEncounterId
-    : pathId && pathId !== "nuevo"
-      ? pathId
-      : null;
-  const fromFile = fileId;
-  const ingreso = params.get("ingreso") ?? fromFile;
+function isAdmitted(encounter: Encounter): boolean {
+  return encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel);
+}
+
+function statusText(encounter: Encounter): string {
+  return isAdmitted(encounter) ? encounter.statusLabel : "En trámite";
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function admissionMeta(encounter: Encounter): string {
+  return [
+    encounter.orderNumber,
+    encounter.originService,
+    encounter.location.room ? `Habitación ${encounter.location.room}` : null,
+    encounter.location.bed ? `Cama ${encounter.location.bed}` : null,
+  ].filter(Boolean).join(" · ") || "Sin ubicación";
+}
+
+function floorPlace(encounter: Encounter): string {
+  return [
+    encounter.location.room ? `Habitación ${encounter.location.room}` : null,
+    encounter.location.bed ? `Lecho ${encounter.location.bed}` : null,
+  ].filter(Boolean).join(" · ") || "Sin ubicación";
+}
+
+function fileIdFrom(routeEncounterId: string | undefined, pathname: string): string | null {
+  if (routeEncounterId && routeEncounterId !== "nuevo") return routeEncounterId;
+  const pathId = /^\/pacientes\/([^/]+)$/.exec(pathname)?.[1];
+  if (pathId && pathId !== "nuevo") return pathId;
+  return null;
+}
+
+function StatusBadge({ encounter }: Readonly<{ encounter: Encounter }>) {
+  return (
+    <span className={`case-bar-status${isAdmitted(encounter) ? " is-hosp" : ""}`}>
+      {statusText(encounter)}
+    </span>
+  );
+}
+
+function CaseBarIdentity({ encounter, floorContext }: Readonly<{ encounter: Encounter; floorContext: boolean }>) {
+  const meta = floorContext
+    ? (encounter.location.service ?? encounter.originService ?? "Hospitalización")
+    : admissionMeta(encounter);
+  return (
+    <>
+      <div className="case-bar-avatar" aria-hidden>
+        {initialsOf(encounter.patientName)}
+      </div>
+      <div className="case-bar-identity">
+        <p className="case-bar-name">
+          <strong>{encounter.patientName}</strong>
+          {floorContext ? (
+            <span className="case-bar-doc">{encounter.documentType} {encounter.documentNumber}</span>
+          ) : (
+            <StatusBadge encounter={encounter} />
+          )}
+        </p>
+        <p className="case-bar-meta">{meta}</p>
+      </div>
+      {floorContext ? (
+        <>
+          <StatusBadge encounter={encounter} />
+          <div className="case-bar-place">
+            <strong>{floorPlace(encounter)}</strong>
+            <span>{encounter.location.service ?? encounter.originService ?? "Servicio no registrado"}</span>
+          </div>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+function CaseBarActions({
+  encounter,
+  role,
+  pathname,
+}: Readonly<{ encounter: Encounter; role: Role | undefined; pathname: string }>) {
+  const clinical = isClinicalRole(role ?? "admision");
+  const canOpenAttention = encounter.currentStep === "cerrado" && role && isClinicalRole(role) && !pathname.startsWith("/atencion");
+  return (
+    <div className="actions case-bar-actions">
+      <Link className="button button-quiet case-bar-btn" to={`/pacientes/${encounter.encounterId}`}>
+        <IconNotes size={16} /> <span>Ver ficha de admisión</span>
+      </Link>
+      {clinical ? (
+        <Link
+          className={pathname.startsWith("/atencion/chart") ? "button case-bar-btn is-current" : "button button-quiet case-bar-btn"}
+          to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}
+        >
+          <IconClipboardList size={16} /> <span>Expediente clínico</span>
+        </Link>
+      ) : null}
+      {canOpenAttention ? (
+        <Link className="button button-quiet case-bar-btn" to={primaryAttentionPath(role, encounter.encounterId)}>
+          <IconStethoscope size={16} /> <span>Atención en piso</span>
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function useCaseEncounter(ingreso: string | null) {
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [coverageStatus, setCoverageStatus] = useState<CoverageStatus | null>(null);
   const [error, setError] = useState("");
-
-  const onAttention = location.pathname.startsWith("/atencion");
-  const onAlerts = location.pathname.startsWith("/alertas");
-  const floorContext = onAttention || onAlerts;
-  const hideAdmissionStepper = onAttention || encounter?.currentStep === "cerrado";
 
   useEffect(() => {
     if (!ingreso) {
@@ -56,13 +150,30 @@ export function CaseBar({ children }: { children: ReactNode }) {
         setEncounter(data.encounter);
         setCoverageStatus(asCoverage(data.encounter.coverage.status));
       })
-      .catch((caught) => {
-        if (active) setError(errorText(caught, "No se pudo abrir el ingreso."));
+      .catch((error_) => {
+        if (active) setError(errorText(error_, "No se pudo abrir el ingreso."));
       });
     return () => {
       active = false;
     };
   }, [ingreso]);
+
+  return { encounter, setEncounter, coverageStatus, setCoverageStatus, error };
+}
+
+export function CaseBar({ children }: Readonly<{ children: ReactNode }>) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const { encounterId: routeEncounterId } = useParams();
+  const fileId = fileIdFrom(routeEncounterId, location.pathname);
+  const ingreso = params.get("ingreso") ?? fileId;
+  const { encounter, setEncounter, coverageStatus, setCoverageStatus, error } = useCaseEncounter(ingreso);
+
+  const onAttention = location.pathname.startsWith("/atencion");
+  const onAlerts = location.pathname.startsWith("/alertas");
+  const floorContext = onAttention || onAlerts;
+  const hideAdmissionStepper = onAttention || encounter?.currentStep === "cerrado";
 
   const value = useMemo(() => ({
     encounter,
@@ -73,7 +184,7 @@ export function CaseBar({ children }: { children: ReactNode }) {
       setEncounter(next);
       setCoverageStatus(asCoverage(next.coverage.status));
     },
-  }), [coverageStatus, encounter]);
+  }), [coverageStatus, encounter, setCoverageStatus, setEncounter]);
 
   // Una sola carga global: no montar pantallas hasta tener el ingreso (evita dobles barras).
   if (ingreso && !encounter && !error) {
@@ -89,92 +200,25 @@ export function CaseBar({ children }: { children: ReactNode }) {
       {ingreso && error ? <Feedback tone="error">{error}</Feedback> : null}
       {ingreso && encounter ? (
         <section className={floorContext ? "case-bar case-bar-clinical case-bar-floor" : "case-bar case-bar-clinical"} aria-label="Ingreso en curso">
-            <div className="case-bar-top">
-              <div className="case-bar-main">
-                <div className={floorContext ? "case-bar-cluster" : undefined}>
-                <div className="case-bar-avatar" aria-hidden>
-                  {encounter.patientName
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((part) => part[0]?.toUpperCase() ?? "")
-                    .join("")}
-                </div>
-                <div className="case-bar-identity">
-                  <p className="case-bar-name">
-                    <strong>{encounter.patientName}</strong>
-                    {floorContext ? (
-                      <span className="case-bar-doc">{encounter.documentType} {encounter.documentNumber}</span>
-                    ) : null}
-                    {!floorContext ? (
-                      <span className={`case-bar-status${encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel) ? " is-hosp" : ""}`}>
-                        {encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel)
-                          ? encounter.statusLabel
-                          : "En trámite"}
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="case-bar-meta">
-                    {floorContext
-                      ? (encounter.location.service ?? encounter.originService ?? "Hospitalización")
-                      : ([
-                        encounter.orderNumber,
-                        encounter.originService,
-                        encounter.location.room ? `Habitación ${encounter.location.room}` : null,
-                        encounter.location.bed ? `Cama ${encounter.location.bed}` : null,
-                      ].filter(Boolean).join(" · ") || "Sin ubicación")}
-                  </p>
-                </div>
-                {floorContext ? (
-                  <>
-                    <span className={`case-bar-status${encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel) ? " is-hosp" : ""}`}>
-                      {encounter.currentStep === "cerrado" || /hospitalizado/i.test(encounter.statusLabel)
-                        ? encounter.statusLabel
-                        : "En trámite"}
-                    </span>
-                    <div className="case-bar-place">
-                      <strong>
-                        {[
-                          encounter.location.room ? `Habitación ${encounter.location.room}` : null,
-                          encounter.location.bed ? `Lecho ${encounter.location.bed}` : null,
-                        ].filter(Boolean).join(" · ") || "Sin ubicación"}
-                      </strong>
-                      <span>{encounter.location.service ?? encounter.originService ?? "Servicio no registrado"}</span>
-                    </div>
-                  </>
-                ) : null}
-                </div>
-              </div>
-              <div className="actions case-bar-actions">
-                <Link className="button button-quiet case-bar-btn" to={`/pacientes/${encounter.encounterId}`}>
-                  <IconNotes size={16} /> <span>Ver ficha de admisión</span>
-                </Link>
-                {isClinicalRole(user?.role ?? "admision") ? (
-                  <Link
-                    className={location.pathname.startsWith("/atencion/chart") ? "button case-bar-btn is-current" : "button button-quiet case-bar-btn"}
-                    to={`/atencion/chart?ingreso=${encodeURIComponent(encounter.encounterId)}`}
-                  >
-                    <IconClipboardList size={16} /> <span>Expediente clínico</span>
-                  </Link>
-                ) : null}
-                {encounter.currentStep === "cerrado" && user && isClinicalRole(user.role) && !location.pathname.startsWith("/atencion") ? (
-                  <Link className="button button-quiet case-bar-btn" to={primaryAttentionPath(user.role, encounter.encounterId)}>
-                    <IconStethoscope size={16} /> <span>Atención en piso</span>
-                  </Link>
-                ) : null}
+          <div className="case-bar-top">
+            <div className="case-bar-main">
+              <div className={floorContext ? "case-bar-cluster" : undefined}>
+                <CaseBarIdentity encounter={encounter} floorContext={floorContext} />
               </div>
             </div>
-            {!hideAdmissionStepper && encounter.progress ? (
-              <div className="case-bar-steps">
-                <AdmissionStepper
-                  steps={encounter.progress}
-                  role={user?.role}
-                  encounterId={encounter.encounterId}
-                  currentStep={encounter.currentStep}
-                />
-              </div>
-            ) : null}
-          </section>
+            <CaseBarActions encounter={encounter} role={user?.role} pathname={location.pathname} />
+          </div>
+          {!hideAdmissionStepper && encounter.progress ? (
+            <div className="case-bar-steps">
+              <AdmissionStepper
+                steps={encounter.progress}
+                role={user?.role}
+                encounterId={encounter.encounterId}
+                currentStep={encounter.currentStep}
+              />
+            </div>
+          ) : null}
+        </section>
       ) : null}
       {children}
     </EncounterContext.Provider>
