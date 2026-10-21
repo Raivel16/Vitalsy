@@ -35,7 +35,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "8.2.35"
           extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, pgsql, pcov
           coverage: pcov
           tools: composer
