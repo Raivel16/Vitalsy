@@ -16,7 +16,7 @@ class UserAdminApiTest extends TestCase
 
     private function admin(): User
     {
-        $user = User::factory()->create(['role' => 'administrador_accesos']);
+        $user = User::factory()->create(['name' => 'Admin Accesos', 'email' => 'admin.accesos@vitalsy.local', 'role' => 'administrador_accesos']);
         $this->actingAs($user);
 
         return $user;
@@ -43,8 +43,8 @@ class UserAdminApiTest extends TestCase
     public function test_admin_searches_and_filters_by_status(): void
     {
         $this->admin();
-        User::factory()->create(['name' => 'Rosa Quispe', 'role' => 'enfermera_piso']);
-        User::factory()->create(['name' => 'Pedro Inactivo', 'role' => 'camillero', 'is_active' => false]);
+        User::factory()->create(['name' => 'Rosa Quispe', 'email' => 'rquispe@vitalsy.local', 'role' => 'enfermera_piso']);
+        User::factory()->create(['name' => 'Pedro Inactivo', 'email' => 'pinactivo@vitalsy.local', 'role' => 'camillero', 'is_active' => false]);
 
         $this->getJson('/api/v1/users?search=rosa')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/users?status=inactive')->assertOk()
