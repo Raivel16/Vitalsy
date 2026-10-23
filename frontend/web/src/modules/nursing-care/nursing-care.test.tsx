@@ -70,7 +70,14 @@ function stubCareApis() {
 }
 
 describe("cuidados y evolución (RF-36–37)", () => {
+  beforeEach(() => {
+    // Los datos de prueba caen dentro del filtro por defecto de 30 días solo con una fecha fija.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T12:00:00Z"));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     sessionStorage.clear();
     vi.unstubAllGlobals();
   });

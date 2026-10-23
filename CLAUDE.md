@@ -9,7 +9,7 @@ Vitalsy es un monorepo hospitalario (documentación y UI en español): ingreso, 
 | Carpeta | Contenido |
 |---|---|
 | `frontend/web/` | React 19 + Vite + TypeScript (Vitest + Testing Library) |
-| `backend/api/` | Laravel (PHP 8.2), API en `/api/v1`, auth con Sanctum |
+| `backend/api/` | Laravel (PHP ≥ 8.2.35; ver `docs/seguridad/AVISO-SEGURIDAD-PHP-CVE-2026-109618-109619.md`), API en `/api/v1`, auth con Sanctum |
 | `movil/` | Vitalsy Life, Expo/React Native (tiene su propio `AGENTS.md`; leerlo antes de tocar APIs de Expo) |
 | `docs/` | `requirements/requerimientos.md` (RF-XX/RNF-XX), `architecture/` (reglas + un doc por módulo), `agent-context.md` |
 | `docker/`, `docker-compose*.yml` | Nginx + frontend + backend + PostgreSQL |

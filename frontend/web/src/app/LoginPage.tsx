@@ -38,7 +38,7 @@ export function LoginPage() {
       const data = await loginRequest(email.trim().toLowerCase(), password);
       setUser(data.user);
       setNotice("");
-      navigate("/");
+      void navigate("/");
     } catch (error_) {
       setError(errorText(error_, "No se pudo iniciar sesión."));
     } finally {
