@@ -217,4 +217,12 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `expo lint` ya reportaba 2 errores `react-hooks/refs` en `LifeProvider.tsx` antes de este cambio.
 - No verificado en un dispositivo real.
 
+### 2026-10-21 — Seguridad: PHP 8.2.35 por CVE-2026-109618/109619 (RF-91)
+
+- php.net publicó versiones de seguridad (8.2.35, 8.3.36, 8.4.27, 8.5.12) para dos RCE sin autenticación (CVSS 9.2). Detalle y guía en `docs/seguridad/AVISO-SEGURIDAD-PHP-CVE-2026-109618-109619.md`.
+- Fijado `php:8.2.35-cli` en `backend/api/Dockerfile`, `php-version: "8.2.35"` en CI y `"php": "^8.2.35"` en `composer.json` (lock regenerado con `--lock`, sin cambios de paquetes).
+- Verificado con PHP 8.2.35 local: `php artisan test` (356 en verde) y `pint --test`. No se construyó la imagen Docker ni se desplegó producción.
+- `composer audit` sigue con 3 avisos ajenos (`league/commonmark`, `symfony/http-foundation`). PHP 8.2 llega a fin de vida el 31/12/2026: planear salto a 8.4.
+- Rama: `hotfix/RF-91-php-cve-2026-109618`.
+
 <!-- END AGENT ANNOTATIONS -->
