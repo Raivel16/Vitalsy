@@ -2,6 +2,14 @@
 
 return [
     /*
+     * RNF-08: intentos de inicio de sesión por minuto y por IP. El entorno
+     * E2E lo eleva para que la suite automática no reciba 429.
+     */
+    'auth' => [
+        'login_throttle_per_minute' => (int) env('VITALSY_LOGIN_THROTTLE_PER_MINUTE', 10),
+    ],
+
+    /*
      * Plazos del proceso 3 (gestión de alertas). El control médico de 15
      * minutos está fijado por el requisito RF-48; los demás son ajustables
      * según la configuración institucional.
