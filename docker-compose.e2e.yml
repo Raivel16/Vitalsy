@@ -18,6 +18,12 @@ services:
       E2E_CLOCK_ENABLED: "true"
       VITALSY_LOGIN_THROTTLE_PER_MINUTE: "1000"
       PHP_CLI_SERVER_WORKERS: "8"
+      # Sesiones y caché en la BD del E2E: storage/ es compartido con el stack de desarrollo y,
+      # con el reloj adelantado, el recolector de sesiones por archivo borraría también las de
+      # desarrollo. La vida útil larga tolera los saltos del reloj E2E.
+      SESSION_DRIVER: database
+      SESSION_LIFETIME: "5256000"
+      CACHE_STORE: database
       SANCTUM_STATEFUL_DOMAINS: localhost,localhost:18080,127.0.0.1:18080,__SANCTUM_CURRENT_REQUEST_HOST__
 
   reverb:

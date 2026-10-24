@@ -40,13 +40,23 @@ export async function suggestAssignments(ctx: Ctx, shiftDate: string, nurseEmail
     .suggestion;
 }
 
-export async function approveAssignments(ctx: Ctx, shiftDate: string, assignments: { nurseUserId: number; encounterId: string }[]): Promise<unknown> {
+export type AssignmentInput = { nurseUserId: number; encounterId: string; news2Weight?: number };
+
+/** RF-80: reemplaza la asignación del día `shiftDate` por la indicada. */
+export async function approveAssignments(ctx: Ctx, shiftDate: string, assignments: AssignmentInput[]): Promise<unknown> {
   return (await ctx.api("enfermera_supervisora")).post(`${STAFF}/assignments/approve`, { shiftDate, assignments });
 }
 
-export async function registerAbsence(ctx: Ctx, email: string, shiftDate: string, reason: string): Promise<Record<string, unknown>> {
+export type AbsenceResult = {
+  absence: { id: number };
+  coverage: { required: boolean; requestId: number | null };
+  reassignments: { encounterId?: string; toUserId?: number; nurseUserId?: number }[];
+  unassigned: number;
+};
+
+export async function registerAbsence(ctx: Ctx, email: string, shiftDate: string, reason: string): Promise<AbsenceResult> {
   const userId = await memberId(ctx, email);
-  return (await ctx.api("enfermera_supervisora")).post<Record<string, unknown>>(`${STAFF}/absences`, { userId, shiftDate, reason });
+  return (await ctx.api("enfermera_supervisora")).post<AbsenceResult>(`${STAFF}/absences`, { userId, shiftDate, reason });
 }
 
 export type CoverageRequest = { id: number; status: string } & Record<string, unknown>;

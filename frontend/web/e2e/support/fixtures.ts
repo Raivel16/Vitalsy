@@ -18,6 +18,9 @@ type Fixtures = {
   data: DataGen;
   api: (role: Role) => Promise<ApiSession>;
   asRole: (role: Role) => Promise<Page>;
+  /** Persona concreta del seeder (p. ej. lucia.mendoza@vitalsy.local) con DEMO_PASSWORD. */
+  apiAs: (email: string) => Promise<ApiSession>;
+  asUser: (email: string) => Promise<Page>;
   freshLogin: (role: Role) => Promise<Page>;
   clock: Clock;
   allowErrors: (pattern: RegExp) => void;
@@ -102,6 +105,31 @@ export const test = base.extend<Fixtures & Internal & Options>({
     const { baseURL, locale, timezoneId } = testInfo.project.use;
     await use(async (role) => {
       const context = await newRoleContext(browser, { baseURL, locale, timezoneId, storageState: sessionFile(role) }, quietAlerts);
+      const page = await context.newPage();
+      if (clockOffsetMs.value !== null) await page.clock.setSystemTime(new Date(Date.now() + clockOffsetMs.value));
+      pages.push(page);
+      return page;
+    });
+  },
+
+  apiAs: async ({}, use) => {
+    const opened = new Map<string, ApiSession>();
+    await use(async (email) => {
+      let session = opened.get(email);
+      if (!session) {
+        session = await ApiSession.login(email, rolePassword());
+        opened.set(email, session);
+      }
+      return session;
+    });
+    for (const session of opened.values()) await session.dispose();
+  },
+
+  asUser: async ({ browser, pages, clockOffsetMs, quietAlerts, apiAs }, use, testInfo) => {
+    const { baseURL, locale, timezoneId } = testInfo.project.use;
+    await use(async (email) => {
+      const storageState = await (await apiAs(email)).storage();
+      const context = await newRoleContext(browser, { baseURL, locale, timezoneId, storageState }, quietAlerts);
       const page = await context.newPage();
       if (clockOffsetMs.value !== null) await page.clock.setSystemTime(new Date(Date.now() + clockOffsetMs.value));
       pages.push(page);

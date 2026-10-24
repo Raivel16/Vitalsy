@@ -34,6 +34,11 @@ export class ApiSession {
     return new ApiSession(await request.newContext({ baseURL: E2E_BASE_URL, extraHTTPHeaders: HEADERS, storageState: file }));
   }
 
+  /** Estado de cookies para abrir un navegador con esta misma sesión. */
+  async storage() {
+    return this.ctx.storageState();
+  }
+
   async save(file: string): Promise<void> {
     await this.ctx.storageState({ path: file });
   }
