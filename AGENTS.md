@@ -234,3 +234,5 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - Rama: `feature/RNF-18-suite-e2e-clinical`.
 
 <!-- END AGENT ANNOTATIONS -->
+
+- 2026-10-24 (RNF-18, corrida completa desde cero, semilla 1674140881): 196 pruebas, 178 en verde y 18 rojas, todas hallazgos registrados salvo E4-01 «el tratante inicia el alta…», que agotó el tiempo esperando la fila del buscador con 4 workers y piso lleno, y pasó 3/3 sola: tratar como intermitente por carga hasta investigarlo.
