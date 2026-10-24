@@ -200,7 +200,7 @@ export function PatientRegistrationPage() {
           />
         </div>
         <Feedback tone="info">
-          Flujo de camas posterior. Al formalizar el registro se generará la solicitud de asignación inmediata para el servicio de destino.
+          Flujo de camas posterior. El registro no asigna ni solicita cama; Gestión de camas la confirma después.
         </Feedback>
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         <div className="form-actions-bar">
