@@ -38,10 +38,25 @@ export async function fillVitals(page: Page, v: Vitals): Promise<void> {
   await form.getByLabel("Presión diastólica").fill(String(v.diastolic));
   await form.getByLabel("Pulso").fill(String(v.pulse));
   await form.getByLabel("Temperatura").fill(String(v.temperature));
-  await form.getByLabel("Escala de SpO2").selectOption(v.spo2Scale === 1 ? "scale1" : "scale2");
+  // La reevaluación de alertas no trae escala ni oxígeno: solo se llenan los campos presentes.
+  const scale = form.getByLabel("Escala de SpO2");
+  if ((await scale.count()) > 0) await scale.selectOption(v.spo2Scale === 1 ? "scale1" : "scale2");
   // Admisión usa un <select>; atención y controles, una casilla.
   const o2 = form.getByLabel("Oxígeno suplementario");
-  if ((await o2.evaluate((el) => el.tagName)) === "SELECT") await o2.selectOption(v.supplementalO2 ? "yes" : "no");
-  else await o2.setChecked(v.supplementalO2);
+  if ((await o2.count()) > 0) {
+    if ((await o2.evaluate((el) => el.tagName)) === "SELECT") await o2.selectOption(v.supplementalO2 ? "yes" : "no");
+    else await o2.setChecked(v.supplementalO2);
+  }
   await form.getByLabel("Conciencia").selectOption(CONSCIOUSNESS_OPTION[v.consciousness]);
+}
+
+/**
+ * Pulsa una acción del detalle de alerta y espera a que la página recargue el evento
+ * (GET …/timeline). Así el aviso de éxito se comprueba después de la recarga y el resultado
+ * no depende de la velocidad del servidor.
+ */
+export async function clickAndAwaitTimeline(page: Page, button: ReturnType<Page["getByRole"]>): Promise<void> {
+  const reloaded = page.waitForResponse((r) => r.url().includes("/timeline") && r.request().method() === "GET");
+  await button.click();
+  await reloaded;
 }

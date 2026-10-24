@@ -36,9 +36,13 @@ export async function raiseAlert(ctx: Ctx, enc: Enc, profile: "news2_medio" | "n
 export const ALERT_STAGES = ["confirmada", "medico", "err", "orden_uci", "uci_autorizada", "en_uci"] as const;
 export type AlertStage = (typeof ALERT_STAGES)[number];
 
-/** Lleva la alerta por el circuito E3-03…E3-10 hasta `until` (incluido). */
-export async function driveAlert(ctx: Ctx, alert: Alert, until: AlertStage): Promise<void> {
+/**
+ * Lleva la alerta por el circuito E3-03…E3-10 hasta `until` (incluido). `from` omite las
+ * etapas previas cuando la prueba ya las hizo por pantalla.
+ */
+export async function driveAlert(ctx: Ctx, alert: Alert, until: AlertStage, opts: { from?: AlertStage } = {}): Promise<void> {
   const stop = ALERT_STAGES.indexOf(until);
+  const first = opts.from ? ALERT_STAGES.indexOf(opts.from) : 0;
   const at = (role: Role) => ctx.api(role);
   const url = `${ALERTS}/${alert.id}`;
   const steps: (() => Promise<unknown>)[] = [
@@ -58,5 +62,5 @@ export async function driveAlert(ctx: Ctx, alert: Alert, until: AlertStage): Pro
     },
     async () => (await at("enfermera_piso")).post(`${url}/icu-transfer`, { service: "UCI", room: "UCI-1", bed: "01" }),
   ];
-  for (let i = 0; i <= stop; i++) await steps[i]();
+  for (let i = first; i <= stop; i++) await steps[i]();
 }
