@@ -63,6 +63,15 @@ class DischargeApiTest extends TestCase
         ]);
     }
 
+    public function test_discharge_order_is_rejected_while_the_admission_is_still_open(): void
+    {
+        $this->inpatientEncounter()->update(['current_step' => 'orden']);
+        $this->asRole('medico_tratante');
+
+        $this->postJson('/api/v1/discharge/encounters/ENC-ALTA-0001/order')->assertStatus(422);
+        $this->assertDatabaseMissing('discharge_orders', ['encounter_id' => 'ENC-ALTA-0001']);
+    }
+
     public function test_order_notifies_social_work_on_the_board(): void
     {
         $this->inpatientEncounter();
