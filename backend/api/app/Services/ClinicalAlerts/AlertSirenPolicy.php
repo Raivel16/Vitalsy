@@ -35,7 +35,13 @@ class AlertSirenPolicy
     public function awaitsAcknowledgement(ClinicalAlert $alert): bool
     {
         if ($this->isRapidResponseStatus($alert)) {
-            return ! $alert->acknowledgements()->where('role', self::RRT_ROLE)->exists();
+            // Solo cuenta el acuse posterior a la última vez que la alerta pasó al ERR.
+            $routedAt = $alert->events()->whereIn('type', ['solicitud_err', 'escalamiento'])->max('created_at');
+
+            return ! $alert->acknowledgements()
+                ->where('role', self::RRT_ROLE)
+                ->when($routedAt, fn ($query) => $query->where('acknowledged_at', '>=', $routedAt))
+                ->exists();
         }
 
         return in_array($alert->status, [

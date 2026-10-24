@@ -445,6 +445,21 @@ class ClinicalAlertsApiTest extends TestCase
         }
     }
 
+    public function test_a_new_rapid_response_request_sounds_again_after_an_earlier_team_acknowledgement(): void
+    {
+        Carbon::setTestNow('2026-09-26 11:00:00');
+        $this->inpatientEncounter();
+        $alert = $this->openAlert(['status' => 'err_solicitado', 'assigned_role' => 'equipo_respuesta_rapida']);
+        $this->asRole('equipo_respuesta_rapida');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")->assertOk()->assertJsonPath('alert.needsSiren', false);
+
+        Carbon::setTestNow('2026-09-26 11:10:00');
+        $this->asRole('medico_residente');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/rapid-response-request", ['reason' => 'Empeora la saturación.'])
+            ->assertOk()
+            ->assertJsonPath('alert.needsSiren', true);
+    }
+
     public function test_rapid_response_team_orders_icu_without_closing_the_case(): void
     {
         Carbon::setTestNow('2026-09-26 11:00:00');
