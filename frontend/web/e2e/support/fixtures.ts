@@ -104,7 +104,12 @@ export const test = base.extend<Fixtures & Internal & Options>({
   asRole: async ({ browser, pages, clockOffsetMs, quietAlerts }, use, testInfo) => {
     const { baseURL, locale, timezoneId } = testInfo.project.use;
     await use(async (role) => {
-      const context = await newRoleContext(browser, { baseURL, locale, timezoneId, storageState: sessionFile(role) }, quietAlerts);
+      // Sesión propia por página: si la página queda inactiva 5 min, el frontend cierra SU
+      // sesión (RNF-09) y no la de las demás pruebas que usan ese rol.
+      const login = await ApiSession.login(roleEmail(role), rolePassword());
+      const storageState = await login.storage();
+      await login.dispose();
+      const context = await newRoleContext(browser, { baseURL, locale, timezoneId, storageState }, quietAlerts);
       const page = await context.newPage();
       if (clockOffsetMs.value !== null) await page.clock.setSystemTime(new Date(Date.now() + clockOffsetMs.value));
       pages.push(page);
