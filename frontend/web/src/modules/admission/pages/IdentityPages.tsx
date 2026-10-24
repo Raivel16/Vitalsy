@@ -1,7 +1,7 @@
 import { type SyntheticEvent, useEffect, useState } from "react";
 import { IconPrinter, IconQrcode, IconFilePlus, IconCheck } from "@tabler/icons-react";
 import { api, ApiError } from "../../../app/api";
-import { printClinicalDocument } from "../../../shared/print/printDocument";
+import { escapeHtml, printClinicalDocument } from "../../../shared/print/printDocument";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
 import { errorText } from "../../../app/userMessage";
 import { Barcode, printBarcodeOnly } from "../components/Barcode";
@@ -427,9 +427,9 @@ export function ConsentPage() {
         <div className="form-actions-bar">
           <Button variant="quiet" type="button" onClick={() => printClinicalDocument("Consentimiento informado", `
             <dl>
-              <dt>Paciente</dt><dd>${activeEncounter.patientName} · ${activeEncounter.documentType} ${activeEncounter.documentNumber}</dd>
-              <dt>Quien firma</dt><dd>${signerName || "—"}</dd>
-              <dt>Relación</dt><dd>${relationship}</dd>
+              <dt>Paciente</dt><dd>${escapeHtml(activeEncounter.patientName)} · ${escapeHtml(activeEncounter.documentType)} ${escapeHtml(activeEncounter.documentNumber)}</dd>
+              <dt>Quien firma</dt><dd>${escapeHtml(signerName || "—")}</dd>
+              <dt>Relación</dt><dd>${escapeHtml(relationship)}</dd>
               <dt>Declaración</dt><dd>Aceptación del ingreso hospitalario y procedimientos médicos reglamentarios.</dd>
             </dl>
           `)}>
