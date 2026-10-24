@@ -34,8 +34,9 @@ describe("toFindingRow", () => {
   });
 
   it("la reproducción incluye la semilla y el título", () => {
+    // PowerShell (la plataforma del usuario): la variable va antes del comando.
     expect(row()["Pasos para reproducir"]).toBe(
-      'E2E_SEED=1234 npm run e2e -- -g "RF-33 · e-MAR · bloquea el medicamento equivocado \\[E2-07\\]"',
+      '$env:E2E_SEED=1234; npm run e2e -- -g "RF-33 · e-MAR · bloquea el medicamento equivocado \\[E2-07\\]"',
     );
   });
 

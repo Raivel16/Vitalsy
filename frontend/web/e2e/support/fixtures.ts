@@ -1,7 +1,7 @@
 import { test as base, expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "../../src/app/roles";
 import { ApiSession } from "./api";
-import { DataGen, runSeed, testSeed } from "./data";
+import { DataGen, runSeed, seedForTest } from "./data";
 import { artisan } from "./env";
 import { roleEmail, rolePassword, sessionFile } from "./sessions";
 
@@ -60,7 +60,7 @@ export const test = base.extend<Fixtures & Internal & Options>({
   quietAlerts: [true, { option: true }],
 
   data: async ({}, use, testInfo) => {
-    const gen = new DataGen(testSeed(runSeed(), testInfo.titlePath));
+    const gen = new DataGen(seedForTest(runSeed(), testInfo.project.name, testInfo.titlePath, testInfo.repeatEachIndex));
     await use(gen);
     await testInfo.attach("datos.json", {
       contentType: "application/json",

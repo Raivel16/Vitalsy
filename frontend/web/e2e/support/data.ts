@@ -120,6 +120,11 @@ export function testSeed(runSeed: number, titlePath: string[]): number {
   return h;
 }
 
+/** Semilla de una prueba concreta: incluye el proyecto (navegador) y la repetición. */
+export function seedForTest(runSeed: number, project: string, titlePath: string[], repeatEachIndex: number): number {
+  return testSeed(runSeed, [project, String(repeatEachIndex), ...titlePath]);
+}
+
 export function runSeed(): number {
   const raw = process.env.E2E_SEED;
   const seed = raw === undefined ? NaN : Number(raw);
@@ -158,6 +163,7 @@ export class DataGen {
   readonly tracked: Record<string, unknown> = {};
   private readonly f: Faker;
   private dniCounter = 0;
+  private orderCounter = 0;
 
   constructor(seed: number) {
     this.seed = seed;
@@ -186,7 +192,8 @@ export class DataGen {
   }
 
   orderNumber(): string {
-    return `OI-E2E-${String(testSeed(this.seed, ["orden", String(this.dniCounter++)]) % 1_000_000).padStart(6, "0")}`;
+    // Semilla completa de la prueba (base 36) + contador: único por prueba e ingreso.
+    return `OI-E2E-${this.seed.toString(36)}-${this.orderCounter++}`;
   }
 
   phone(): string {

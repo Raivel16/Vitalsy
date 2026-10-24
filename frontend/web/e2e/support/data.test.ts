@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DataGen, news2, news2Breakdown, testSeed, type Vitals, type VitalsProfile } from "./data";
+import { DataGen, news2, news2Breakdown, seedForTest, testSeed, type Vitals, type VitalsProfile } from "./data";
 
 const e3_01: Vitals = {
   respiratoryRate: 28,
@@ -88,6 +88,23 @@ describe("DataGen", () => {
       expect(age).toBeGreaterThanOrEqual(18);
       expect(age).toBeLessThanOrEqual(96);
     }
+  });
+
+  it("números de orden únicos en 3 000 pruebas con 3 ingresos cada una", () => {
+    const orders = new Set<string>();
+    for (let i = 0; i < 3000; i++) {
+      const gen = new DataGen(seedForTest(7, "parallel", ["archivo.spec.ts", `prueba ${i}`], 0));
+      for (let k = 0; k < 3; k++) orders.add(gen.orderNumber());
+    }
+    expect(orders.size).toBe(9000);
+    for (const o of orders) expect(o.length).toBeLessThanOrEqual(40);
+  });
+
+  it("la misma prueba en otro proyecto o repetición recibe otra semilla", () => {
+    const title = ["a.spec.ts", "x"];
+    expect(seedForTest(7, "firefox", title, 0)).not.toBe(seedForTest(7, "webkit", title, 0));
+    expect(seedForTest(7, "firefox", title, 0)).not.toBe(seedForTest(7, "firefox", title, 1));
+    expect(seedForTest(7, "firefox", title, 0)).toBe(seedForTest(7, "firefox", title, 0));
   });
 
   it("testSeed es estable para el mismo título y cambia con otro", () => {

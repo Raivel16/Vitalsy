@@ -54,7 +54,7 @@ export function toFindingRow(input: FindingInput, ctx: RowContext): string[] {
     Módulo: module,
     "Rol / cuenta": "",
     "Paso de la guía": step,
-    "Pasos para reproducir": `E2E_SEED=${ctx.seed} npm run e2e -- -g "${escapeRegExp(title)}"`,
+    "Pasos para reproducir": `$env:E2E_SEED=${ctx.seed}; npm run e2e -- -g "${escapeRegExp(title)}"`,
     "Resultado esperado": expected ?? "",
     "Resultado obtenido": expected !== undefined && received !== undefined ? received : message.split("\n")[0].replace(/^Error: /, ""),
     "Severidad (Bloqueante/Mayor/Menor/Mejora)": "",

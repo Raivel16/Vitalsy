@@ -1,5 +1,5 @@
 import { expect, test } from "../support/fixtures";
-import { DataGen, runSeed, testSeed } from "../support/data";
+import { DataGen, runSeed, seedForTest } from "../support/data";
 import { advanceDischarge, hospitalize, raiseAlert, type Hosp } from "../support/scenarios";
 import { ApiSession } from "../support/api";
 import { sessionFile } from "../support/sessions";
@@ -11,14 +11,14 @@ test.describe.configure({ mode: "serial" });
 
 const floor: { patients: Hosp[]; withAlert: Hosp[]; inDischarge: Hosp[] } = { patients: [], withAlert: [], inDischarge: [] };
 
-test.beforeAll(async () => {
+test.beforeAll(async ({}, testInfo) => {
   test.setTimeout(15 * 60_000);
   const sessions = new Map<Role, ApiSession>();
   const api = async (role: Role) => {
     if (!sessions.has(role)) sessions.set(role, await ApiSession.fromStorage(sessionFile(role)));
     return sessions.get(role)!;
   };
-  const data = new DataGen(testSeed(runSeed(), ["piso-lleno"]));
+  const data = new DataGen(seedForTest(runSeed(), testInfo.project.name, ["piso-lleno"], 0));
   const ctx = { api, data };
   for (let i = 0; i < 25; i++) {
     const hosp = await hospitalize(ctx, { withBed: i < 3 });

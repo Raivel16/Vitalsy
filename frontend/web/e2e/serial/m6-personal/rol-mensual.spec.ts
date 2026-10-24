@@ -50,9 +50,12 @@ test.describe("rol mensual (RF-78)", () => {
     await expect(matrix.getByRole("button", { name: /^Rosa Quispe[^,]*, día 4: D/ })).toBeVisible();
     await page.getByLabel("Servicio del rol").selectOption({ label: UNIT });
     await page.getByRole("button", { name: "Publicar rol mensual oficial" }).click();
+    // Esperar a que aparezca el diálogo o el resultado antes de decidir (sin carrera).
     const confirm = page.getByRole("button", { name: "Confirmar reemplazo" });
+    const published = page.getByText("Rol mensual de turnos publicado.");
+    await expect(published.or(confirm)).toBeVisible();
     if (await confirm.isVisible()) await confirm.click();
-    await expect(page.getByText("Rol mensual de turnos publicado.")).toBeVisible();
+    await expect(published).toBeVisible();
     await expect(page.getByText(/^Publicado el .+ por .+\.$/)).toBeVisible();
   });
 
