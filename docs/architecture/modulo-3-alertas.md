@@ -49,6 +49,8 @@ abierta ──ack──> en_atencion ──┬── NEWS2 0 + programacion ─�
                                retorno a sala ──> cerrada <───────────────────┘
 ```
 
+**Acuse del ERR (RF-49):** al confirmar la lectura de una alerta en `err_solicitado` o `escalada_err`, el ERR calla la sirena y la alerta conserva su estado; el caso sigue en manos del ERR hasta su evaluación. El acuse queda en el timeline como `recepcion`.
+
 ## Ciclo UCI (ERR)
 
 1. ERR registra evaluación con `transferToIcu: true` → estado `orden_uci` (**no cierra**).

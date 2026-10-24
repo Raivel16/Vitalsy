@@ -423,6 +423,28 @@ class ClinicalAlertsApiTest extends TestCase
         $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'solicitud_err']);
     }
 
+    public function test_rapid_response_acknowledgement_silences_the_siren_and_keeps_the_case_with_the_team(): void
+    {
+        $this->inpatientEncounter();
+        foreach (['err_solicitado', 'escalada_err'] as $status) {
+            $alert = $this->openAlert(['status' => $status, 'assigned_role' => 'equipo_respuesta_rapida']);
+            $this->asRole('equipo_respuesta_rapida');
+
+            $this->postJson("/api/v1/clinical-alerts/{$alert->id}/acknowledge")
+                ->assertOk()
+                ->assertJsonPath('alert.status', $status)
+                ->assertJsonPath('alert.needsSiren', false);
+
+            $this->assertDatabaseHas('alert_acknowledgements', ['alert_id' => $alert->id, 'role' => 'equipo_respuesta_rapida']);
+            $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'recepcion']);
+
+            $this->postJson("/api/v1/clinical-alerts/{$alert->id}/err-assessment", [
+                'assessment' => 'Paciente estable tras evaluación del equipo.',
+                'transferToIcu' => false,
+            ])->assertCreated()->assertJsonPath('alert.status', 'cerrada');
+        }
+    }
+
     public function test_rapid_response_team_orders_icu_without_closing_the_case(): void
     {
         Carbon::setTestNow('2026-09-26 11:00:00');
