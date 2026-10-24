@@ -30,13 +30,18 @@ const CONSCIOUSNESS_OPTION = { A: "alert", C: "confusion", V: "voice", P: "pain"
 
 /** Llena el formulario de constantes (admisión y atención comparten etiquetas). */
 export async function fillVitals(page: Page, v: Vitals): Promise<void> {
-  await page.getByLabel("Frecuencia respiratoria").fill(String(v.respiratoryRate));
-  await page.getByLabel("Saturación").fill(String(v.spo2));
-  await page.getByLabel("Presión sistólica").fill(String(v.systolic));
-  await page.getByLabel("Presión diastólica").fill(String(v.diastolic));
-  await page.getByLabel("Pulso").fill(String(v.pulse));
-  await page.getByLabel("Temperatura").fill(String(v.temperature));
-  await page.getByLabel("Escala de SpO2").selectOption(v.spo2Scale === 1 ? "scale1" : "scale2");
-  await page.getByLabel("Oxígeno suplementario").selectOption(v.supplementalO2 ? "yes" : "no");
-  await page.getByLabel("Conciencia").selectOption(CONSCIOUSNESS_OPTION[v.consciousness]);
+  // Solo dentro del formulario: la gráfica evolutiva repite etiquetas como «Pulso».
+  const form = page.locator("form").filter({ has: page.getByLabel("Frecuencia respiratoria") }).first();
+  await form.getByLabel("Frecuencia respiratoria").fill(String(v.respiratoryRate));
+  await form.getByLabel("Saturación").fill(String(v.spo2));
+  await form.getByLabel("Presión sistólica").fill(String(v.systolic));
+  await form.getByLabel("Presión diastólica").fill(String(v.diastolic));
+  await form.getByLabel("Pulso").fill(String(v.pulse));
+  await form.getByLabel("Temperatura").fill(String(v.temperature));
+  await form.getByLabel("Escala de SpO2").selectOption(v.spo2Scale === 1 ? "scale1" : "scale2");
+  // Admisión usa un <select>; atención y controles, una casilla.
+  const o2 = form.getByLabel("Oxígeno suplementario");
+  if ((await o2.evaluate((el) => el.tagName)) === "SELECT") await o2.selectOption(v.supplementalO2 ? "yes" : "no");
+  else await o2.setChecked(v.supplementalO2);
+  await form.getByLabel("Conciencia").selectOption(CONSCIOUSNESS_OPTION[v.consciousness]);
 }

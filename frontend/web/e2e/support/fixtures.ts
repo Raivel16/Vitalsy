@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "../../src/app/roles";
 import { ApiSession } from "./api";
 import { DataGen, runSeed, testSeed } from "./data";
@@ -34,8 +34,28 @@ function parseClock(output: string): Date {
 }
 
 type Internal = { clockOffsetMs: { value: number | null }; allowedErrors: RegExp[] };
+type Options = { quietAlerts: boolean };
 
-export const test = base.extend<Fixtures & Internal>({
+// Las alertas que generan otras pruebas en paralelo aparecen como avisos emergentes para
+// todos los roles de alertas y tapan los controles. Fuera de las pruebas de alertas
+// (test.use({ quietAlerts: false })) se ocultan y se desactivan las animaciones.
+const QUIET_CSS = ".toast-stack{display:none!important}*,*::before,*::after{animation:none!important;transition:none!important}";
+
+async function newRoleContext(browser: Browser, options: BrowserContextOptions, quiet: boolean): Promise<BrowserContext> {
+  const context = await browser.newContext(options);
+  if (quiet) {
+    await context.addInitScript((css) => {
+      const style = () => document.head.appendChild(Object.assign(document.createElement("style"), { textContent: css }));
+      if (document.head) style();
+      else document.addEventListener("DOMContentLoaded", style);
+    }, QUIET_CSS);
+  }
+  return context;
+}
+
+export const test = base.extend<Fixtures & Internal & Options>({
+  quietAlerts: [true, { option: true }],
+
   data: async ({}, use, testInfo) => {
     const gen = new DataGen(testSeed(runSeed(), testInfo.titlePath));
     await use(gen);
@@ -78,10 +98,10 @@ export const test = base.extend<Fixtures & Internal>({
     await use({ value: null });
   },
 
-  asRole: async ({ browser, pages, clockOffsetMs }, use, testInfo) => {
+  asRole: async ({ browser, pages, clockOffsetMs, quietAlerts }, use, testInfo) => {
     const { baseURL, locale, timezoneId } = testInfo.project.use;
     await use(async (role) => {
-      const context = await browser.newContext({ baseURL, locale, timezoneId, storageState: sessionFile(role) });
+      const context = await newRoleContext(browser, { baseURL, locale, timezoneId, storageState: sessionFile(role) }, quietAlerts);
       const page = await context.newPage();
       if (clockOffsetMs.value !== null) await page.clock.setSystemTime(new Date(Date.now() + clockOffsetMs.value));
       pages.push(page);
@@ -89,10 +109,10 @@ export const test = base.extend<Fixtures & Internal>({
     });
   },
 
-  freshLogin: async ({ browser, pages }, use, testInfo) => {
+  freshLogin: async ({ browser, pages, quietAlerts }, use, testInfo) => {
     const { baseURL, locale, timezoneId } = testInfo.project.use;
     await use(async (role) => {
-      const context = await browser.newContext({ baseURL, locale, timezoneId });
+      const context = await newRoleContext(browser, { baseURL, locale, timezoneId }, quietAlerts);
       const page = await context.newPage();
       pages.push(page);
       await page.goto("/");
