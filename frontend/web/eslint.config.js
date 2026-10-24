@@ -20,13 +20,15 @@ export default defineConfig([
     },
   },
   {
-    // RNF-18: los fixtures de Playwright llaman a `use(...)`, que no es un hook de React.
+    // RNF-18: los fixtures de Playwright llaman a `use(...)`, que no es un hook de React, y
+    // declaran sin dependencias con `async ({}, use) => …`.
     files: ['e2e/**/*.ts', 'playwright.config.ts'],
     languageOptions: {
       globals: globals.node,
     },
     rules: {
       'react-hooks/rules-of-hooks': 'off',
+      'no-empty-pattern': 'off',
     },
   },
 ])
