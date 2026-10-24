@@ -257,7 +257,7 @@ class ClinicalAlertBroadcastTest extends TestCase
     {
         $routes = app('router')->getRoutes();
         $auth = $routes->match(Request::create('/api/v1/broadcasting/auth', 'POST'));
-        $me = $routes->match(Request::create('/api/v1/hospital-admission/encounters', 'GET'));
+        $me = $routes->match(Request::create('/api/v1/hospital-admission/encounters/ENC-0001', 'GET'));
 
         $this->assertSame(
             app('router')->gatherRouteMiddleware($me),

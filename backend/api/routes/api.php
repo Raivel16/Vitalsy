@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
+use App\Support\RoleCatalog;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -73,7 +74,9 @@ Route::prefix('v1')->group(function () {
         require base_path('routes/channels.php');
 
         Route::prefix('hospital-admission')->group(function () {
-            Route::get('encounters', [AdmissionCensusController::class, 'index']);
+            // N-17: el censo de ingresos lo consulta todo el personal clínico y operativo, no la administración de accesos.
+            Route::get('encounters', [AdmissionCensusController::class, 'index'])
+                ->middleware('role:'.implode(',', array_diff(RoleCatalog::all(), ['administrador_accesos'])));
             Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
             Route::post('encounters/{encounterId}/advance', [AdmissionCensusController::class, 'advance']);
 
