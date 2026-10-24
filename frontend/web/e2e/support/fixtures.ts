@@ -58,8 +58,20 @@ export const test = base.extend<Fixtures & Internal>({
     for (const session of opened.values()) await session.dispose();
   },
 
-  pages: async ({}, use) => {
-    await use([]);
+  pages: async ({ page }, use, testInfo) => {
+    const pages: Page[] = [];
+    await use(pages);
+    const failed = testInfo.status !== testInfo.expectedStatus;
+    for (const [i, p] of pages.entries()) {
+      if (p === page || p.isClosed()) continue;
+      if (failed) {
+        const body = await p.screenshot({ fullPage: true }).catch(() => null);
+        if (body) await testInfo.attach(`pantalla-${i + 1}.png`, { body, contentType: "image/png" });
+      }
+      // Los contextos de asRole/freshLogin son propios de la prueba: se cierran al terminar
+      // (si no, se acumulan en el worker y las capturas de fallo mezclan pruebas).
+      await p.context().close();
+    }
   },
 
   clockOffsetMs: async ({}, use) => {
