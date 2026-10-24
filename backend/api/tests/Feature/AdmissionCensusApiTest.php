@@ -322,6 +322,7 @@ class AdmissionCensusApiTest extends TestCase
         $this->asRole('administrador_accesos');
 
         $this->getJson('/api/v1/hospital-admission/encounters')->assertForbidden();
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')->assertForbidden();
     }
 
     public function test_registering_survives_another_registration_taking_the_same_encounter_number(): void
