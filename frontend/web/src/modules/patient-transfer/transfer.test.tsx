@@ -128,6 +128,8 @@ describe("traslado y recepción en piso", () => {
     expect(await screen.findByText(/identidad confirmada/i)).toBeInTheDocument();
     await waitFor(() => {
       expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/wristbands/verify"))).toBe(true);
+      const verifyCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/wristbands/verify"));
+      expect(JSON.parse(String((verifyCall?.[1] as RequestInit).body))).toEqual({ code: "BRZ-0001-ANA", encounterId: "ENC-0001" });
       expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/advance"))).toBe(true);
     });
     expect(screen.getByRole("button", { name: /verificar brazalete/i })).toBeDisabled();

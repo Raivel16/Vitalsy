@@ -328,12 +328,15 @@ class AdmissionBoard
     /**
      * @return array<string, mixed>
      */
-    public function verifyWristband(string $code): array
+    public function verifyWristband(string $code, ?string $expectedEncounterId = null): array
     {
         $this->ensureDemo();
         $encounter = AdmissionEncounter::query()->where('wristband_code', $code)->first();
         if (! $encounter) {
             throw new AdmissionBoardException('El código no corresponde al paciente.', 422);
+        }
+        if ($expectedEncounterId !== null && $encounter->encounter_id !== $expectedEncounterId) {
+            throw new AdmissionBoardException('El brazalete no corresponde al paciente del ingreso abierto.', 422);
         }
 
         return [
