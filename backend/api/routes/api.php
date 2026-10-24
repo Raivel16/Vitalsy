@@ -75,9 +75,10 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('hospital-admission')->group(function () {
             // N-17: el censo de ingresos lo consulta todo el personal clínico y operativo, no la administración de accesos.
-            Route::get('encounters', [AdmissionCensusController::class, 'index'])
-                ->middleware('role:'.implode(',', array_diff(RoleCatalog::all(), ['administrador_accesos'])));
-            Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
+            Route::middleware('role:'.implode(',', array_diff(RoleCatalog::all(), ['administrador_accesos'])))->group(function () {
+                Route::get('encounters', [AdmissionCensusController::class, 'index']);
+                Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
+            });
             Route::post('encounters/{encounterId}/advance', [AdmissionCensusController::class, 'advance']);
 
             Route::middleware('role:admision')->group(function () {
