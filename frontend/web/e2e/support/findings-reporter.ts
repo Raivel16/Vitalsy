@@ -30,7 +30,9 @@ export type FindingInput = {
 
 type RowContext = { id: string; seed: number | string; date: string; cwd: string };
 
-const ANSI = /\u001b\[[0-9;]*m/g;
+// ESC + secuencia de color: se construye así para no escribir un carácter de control literal.
+const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+const BOM = String.fromCharCode(0xfeff);
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -92,7 +94,7 @@ export default class FindingsReporter implements Reporter {
     if (this.rows.length === 0) return;
     mkdirSync(join(this.outputFile, ".."), { recursive: true });
     const lines = [CSV_HEADER as unknown as string[], ...this.rows].map(toCsvLine);
-    writeFileSync(this.outputFile, `﻿${lines.join("\r\n")}\r\n`, "utf8");
+    writeFileSync(this.outputFile, `${BOM}${lines.join("\r\n")}\r\n`, "utf8");
     if (!this.phase) console.log(`Hallazgos: ${this.outputFile} (${this.rows.length} filas)`);
   }
 
