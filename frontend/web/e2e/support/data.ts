@@ -68,13 +68,13 @@ const REASONS = [
 ];
 const ALLERGIES = ["Penicilina", "Sulfas", "AINEs", "Látex", "Yodo"];
 const HOME_MEDS: HomeMed[] = [
-  { name: "Metformina", dose: "850 mg", frequency: "cada 12 horas", route: "Oral" },
-  { name: "Losartán", dose: "50 mg", frequency: "cada 24 horas", route: "Oral" },
-  { name: "Atorvastatina", dose: "20 mg", frequency: "cada 24 horas", route: "Oral" },
-  { name: "Amoxicilina", dose: "500 mg", frequency: "cada 8 horas", route: "Oral" },
-  { name: "Omeprazol", dose: "20 mg", frequency: "cada 24 horas", route: "Oral" },
-  { name: "Enalapril", dose: "10 mg", frequency: "cada 12 horas", route: "Oral" },
-  { name: "Levotiroxina", dose: "50 mcg", frequency: "cada 24 horas", route: "Oral" },
+  { name: "Metformina", dose: "850 mg", frequency: "cada 12 horas", route: "oral" },
+  { name: "Losartán", dose: "50 mg", frequency: "cada 24 horas", route: "oral" },
+  { name: "Atorvastatina", dose: "20 mg", frequency: "cada 24 horas", route: "oral" },
+  { name: "Amoxicilina", dose: "500 mg", frequency: "cada 8 horas", route: "oral" },
+  { name: "Omeprazol", dose: "20 mg", frequency: "cada 24 horas", route: "oral" },
+  { name: "Enalapril", dose: "10 mg", frequency: "cada 12 horas", route: "oral" },
+  { name: "Levotiroxina", dose: "50 mcg", frequency: "cada 24 horas", route: "oral" },
 ];
 const PERU_SURNAMES = [
   "Quispe", "Mamani", "Huamán", "Flores", "Rojas", "Vargas", "Chávez", "Condori", "Ramos", "Castillo",
