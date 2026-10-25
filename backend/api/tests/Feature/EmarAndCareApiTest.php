@@ -90,6 +90,42 @@ class EmarAndCareApiTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_emar_does_not_reveal_the_expected_barcodes(): void
+    {
+        Carbon::setTestNow('2026-09-21 14:30:00');
+        $this->inpatientEncounter();
+        $prescriber = User::factory()->create(['role' => 'medico_tratante']);
+        $this->seedDose('ENC-HOSP-0001', $prescriber);
+        $this->asRole('enfermera_piso');
+
+        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')->assertOk();
+
+        $this->assertStringNotContainsString('DRUG-PARACETAMOL-1G', $response->getContent());
+        $this->assertStringNotContainsString('BRZ-EMAR-0001', $response->getContent());
+        $this->assertArrayNotHasKey('expectedDrugBarcode', $response->json('doses.0'));
+        $this->assertArrayNotHasKey('expectedPatientBarcode', $response->json('doses.0'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_emar_codes_command_lists_the_codes_testers_need_to_scan(): void
+    {
+        Carbon::setTestNow('2026-09-21 14:30:00');
+        $this->inpatientEncounter();
+        $this->seedDose('ENC-HOSP-0001', User::factory()->create(['role' => 'medico_tratante']));
+
+        $this->artisan('emar:codes', ['encounter' => 'ENC-HOSP-0001'])
+            ->expectsOutputToContain('BRZ-EMAR-0001')
+            ->expectsOutputToContain('DRUG-PARACETAMOL-1G')
+            ->assertExitCode(0);
+
+        $this->artisan('emar:codes', ['encounter' => 'ENC-NO-EXISTE'])
+            ->expectsOutputToContain('No se encontró el ingreso')
+            ->assertExitCode(1);
+
+        Carbon::setTestNow();
+    }
+
     public function test_five_rights_block_on_mismatch_and_allow_signed_admin(): void
     {
         Carbon::setTestNow('2026-09-21 14:05:00');
