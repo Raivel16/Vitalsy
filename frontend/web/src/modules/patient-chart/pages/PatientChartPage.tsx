@@ -64,7 +64,7 @@ type ChartPayload = {
     signedAt: string | null;
     items: { drugName: string; dose: string; route: string; frequency: string; drugBarcode?: string }[];
   } | null;
-  vitalSigns: { recordedAt: string | null; pulse: number | null; news2: number | null; respiratoryRate: number | null; oxygenSaturation: number | null }[];
+  vitalSigns: { recordedAt: string | null; pulse: number | null; news2: number | null; respiratoryRate: number | null; oxygenSaturation: number | null; authorName?: string | null; authorRole?: string | null }[];
   labResults: { id: number; summary: string; resultedAt: string | null }[];
   imagingReports: { id: number; modality: string | null; summary: string; reportedAt: string | null }[];
   medicalEvolutionNotes: { id: number; body: string; authoredAt: string | null; authorName: string | null }[];
@@ -313,7 +313,7 @@ function VitalsPanel({
         <DayTable
           groups={groups}
           empty="No hay constantes en el rango seleccionado."
-          head={<tr><th>Hora</th><th>Pulso</th><th>FR</th><th>SpO2</th><th>NEWS2</th></tr>}
+          head={<tr><th>Hora</th><th>Pulso</th><th>FR</th><th>SpO2</th><th>NEWS2</th><th>Registró</th></tr>}
           rowKey={(_row, index, day) => `${day}-${index}`}
           renderRow={(row) => (
             <>
@@ -322,6 +322,7 @@ function VitalsPanel({
               <td>{row.respiratoryRate ?? "—"}</td>
               <td>{row.oxygenSaturation ?? "—"}</td>
               <td>{row.news2 ?? "—"}</td>
+              <td>{row.authorName ? `${row.authorName}${row.authorRole ? ` · ${row.authorRole}` : ""}` : "—"}</td>
             </>
           )}
         />
