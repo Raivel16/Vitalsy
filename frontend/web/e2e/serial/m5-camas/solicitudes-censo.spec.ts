@@ -14,7 +14,7 @@ test.describe("solicitudes y asignación por pantalla (RF-68/73)", () => {
 
   test("RF-73 · Camas · registrar, asignar y confirmar la recepción de la asignación [E1b-02][E1b-04][E1b-05]", async ({ asRole, api, data }) => {
     test.slow();
-    const enc = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "consentimiento");
+    const enc = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "consentimiento", { withoutBed: true });
     const name = enc.patient.fullName;
     const page = await asRole("gestion_camas");
     await page.goto("/camas");
