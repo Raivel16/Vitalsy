@@ -18,6 +18,30 @@ class PatientClinicalChartApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_chart_shows_who_recorded_each_vital_sign_reading(): void
+    {
+        AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-HOSP-0002', 'order_number' => 'OI-2026-CHART-2', 'source' => 'manual',
+            'patient_name' => 'Paciente Autoría', 'document_type' => 'DNI', 'document_number' => '55667788',
+            'origin_service' => 'Medicina', 'coverage_payer' => 'SIS', 'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS', 'room' => '402', 'bed' => 'A', 'service' => 'Medicina',
+            'current_step' => 'cerrado', 'deliverables' => [], 'clinical_payload' => [],
+        ]);
+        $auxiliary = User::factory()->create(['role' => 'auxiliar_enfermeria', 'name' => 'Rosa Quispe']);
+
+        $this->actingAs($auxiliary)->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0002/vital-signs', [
+            'respiratoryRate' => 17, 'oxygenSaturation' => 97, 'systolicBloodPressure' => 120,
+            'diastolicBloodPressure' => 80, 'pulse' => 74, 'temperature' => 36.7, 'consciousness' => 'alert',
+        ])->assertCreated();
+
+        $reading = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0002/clinical-chart')
+            ->assertOk()
+            ->json('vitalSigns.0');
+
+        $this->assertSame('Rosa Quispe', $reading['authorName']);
+        $this->assertSame('Auxiliar de enfermería', $reading['authorRole']);
+    }
+
     public function test_clinical_roles_can_read_inpatient_clinical_chart(): void
     {
         AdmissionEncounter::query()->create([

@@ -14,6 +14,7 @@ use App\Models\MedicationAdministration;
 use App\Models\NursingEvolutionNote;
 use App\Models\Prescription;
 use App\Models\VitalSignReading;
+use App\Support\RoleCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -144,6 +145,7 @@ class PatientClinicalChart
     {
         return VitalSignReading::query()
             ->where('encounter_id', $encounterId)
+            ->with('author')
             ->tap(fn (Builder $q) => $this->applyDateRange($q, 'recorded_at', $from, $to))
             ->orderByDesc('recorded_at')
             ->limit(100)
@@ -156,6 +158,8 @@ class PatientClinicalChart
                 'systolicBloodPressure' => $row->sbp,
                 'temperature' => $row->temperature,
                 'news2' => $row->news2_total,
+                'authorName' => $row->author?->name,
+                'authorRole' => $row->author ? RoleCatalog::label($row->author->role) : null,
             ])
             ->all();
     }
