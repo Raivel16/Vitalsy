@@ -64,7 +64,7 @@ test.describe("e-MAR y los cinco correctos", () => {
     expect(dose).toBeDefined();
   });
 
-  test("RF-33 · e-MAR · la pantalla no revela los códigos esperados [E2-06]", { tag: "@hallazgo-HP-04" }, async ({ asRole, api, data }) => {
+  test("RF-33 · e-MAR · la pantalla no revela los códigos esperados [E2-06]", async ({ asRole, api, data }) => {
     const { hosp, code } = await preparedDose({ api, data });
     const page = await asRole("enfermera_piso");
     await page.goto(withIngreso("/atencion/emar", hosp.encounterId));

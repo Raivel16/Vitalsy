@@ -62,7 +62,7 @@ test.describe("brazalete, expediente y consentimiento", () => {
     await expect(page.getByText("Consentimiento firmado.")).toBeVisible();
   });
 
-  test("RF-09 · Admisión · la impresión no ejecuta HTML escrito en el nombre del firmante [E1-14]", { tag: "@hallazgo-HP-11" }, async ({ asRole, api, data }) => {
+  test("RF-09 · Admisión · la impresión no ejecuta HTML escrito en el nombre del firmante [E1-14]", async ({ asRole, api, data }) => {
     const enc = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "consentimiento");
     const page = await asRole("admision");
     const prints = await capturePrints(page);
@@ -95,7 +95,7 @@ test.describe("traslado e identidad", () => {
     await expect(page.getByText(`Identidad confirmada: ${enc.patient.fullName}.`)).toBeVisible();
   });
 
-  test("RF-11 · Traslado · el brazalete de otro paciente se rechaza [E1-20]", { tag: "@hallazgo-HP-02" }, async ({ asRole, api, data }) => {
+  test("RF-11 · Traslado · el brazalete de otro paciente se rechaza [E1-20]", async ({ asRole, api, data }) => {
     const other = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "identidad");
     const enc = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "identidad");
     const page = await asRole("camillero");

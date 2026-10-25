@@ -43,7 +43,7 @@ test.describe("censo y proyecciones (RF-69/71)", () => {
     const ctx = { api, data };
     const occupied = async () => (await census(ctx)).flatMap((w) => w.beds).filter((b) => b.status === "occupied").length;
     const before = await occupied();
-    await hospitalize(ctx, { withBed: true });
+    await hospitalize(ctx);
     expect(await occupied()).toBe(before + 1);
 
     const page = await asRole("gestion_camas");
@@ -54,7 +54,7 @@ test.describe("censo y proyecciones (RF-69/71)", () => {
 
   test("RF-71 · Camas · la proyección de alta exige una fecha futura [E5-04]", async ({ asRole, api, data }) => {
     // La proyección se registra sobre pacientes con cama del censo.
-    const hosp = await hospitalize({ api, data }, { withBed: true });
+    const hosp = await hospitalize({ api, data });
     const page = await asRole("enfermera_supervisora");
     await page.goto("/camas");
     const select = page.getByLabel("Paciente internado");
