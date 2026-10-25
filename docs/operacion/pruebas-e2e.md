@@ -92,3 +92,7 @@ Cualquier otra prueba en rojo es una **regresión o un defecto nuevo**.
 | `/api/health` no responde en 5 minutos | Revise `docker compose -p vitalsy-e2e logs backend`. |
 | `reverb` sale con código 1 | Falta la extensión `pcntl` en `backend/api/Dockerfile`. |
 | El navegador no abre en el primer intento | El primer arranque del Chromium descargado puede tardar (escaneo del antivirus); vuelva a ejecutar. |
+
+## Pruebas inestables por recargas de página
+
+El servidor Vite del stack E2E sirve el código en modo desarrollo y vigila la carpeta del proyecto. Si no ignora `e2e-results/` (reportes, videos, trazas) y `e2e/.auth/` (sesiones), cada archivo que Playwright escribe provoca un `page reload` en los navegadores de las demás pruebas, que pierden la página a mitad de una navegación y agotan el tiempo. `vite.config.ts` los ignora (`server.watch.ignored`) y `src/app/viteWatch.test.ts` lo vigila. Si una prueba vuelve a agotar el tiempo en un `goto`, revise en `docker compose -p vitalsy-e2e logs frontend` si aparecen líneas `page reload`.
