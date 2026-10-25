@@ -34,6 +34,8 @@ test.describe("constantes y NEWS2 en piso", () => {
     // RF-26: el registro debe identificar a su autora (la guía espera ver a la auxiliar).
     await page.goto(withIngreso("/atencion/chart", hosp.encounterId));
     await page.getByRole("tab", { name: "Constantes" }).click();
+    // Las lecturas se agrupan por día y cada día llega plegado.
+    await page.getByLabel("Lecturas de constantes").locator("summary").first().click();
     await expect(page.getByLabel("Lecturas de constantes").getByText(/Auxiliar de enfermería/)).toBeVisible();
   });
 });
