@@ -42,6 +42,8 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Mientras llega el mes elegido, plan y matriz siguen siendo los del mes anterior: no se muestran ni se publican.
+  const loading = loadedMonth !== month;
 
   useEffect(() => {
     let active = true;
@@ -137,8 +139,6 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
     else void doPublish();
   }
 
-  const loading = loadedMonth !== month;
-
   return (
     <>
       <Panel title="Agregar colaborador al rol">
@@ -159,7 +159,7 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
 
       <Panel
         title="Rol mensual de turnos"
-        aside={plan ? <StatusPill tone="success">Publicado</StatusPill> : <StatusPill tone="warning">Sin publicar</StatusPill>}
+        aside={loading ? undefined : plan ? <StatusPill tone="success">Publicado</StatusPill> : <StatusPill tone="warning">Sin publicar</StatusPill>}
       >
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}
@@ -190,8 +190,8 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
           </SelectField>
         </div>
         <p className="hint roster-status">
-          {planStatusText(plan, month)}
-          {dirty ? " Tiene cambios sin publicar." : ""}
+          {loading ? "" : planStatusText(plan, month)}
+          {dirty && !loading ? " Tiene cambios sin publicar." : ""}
         </p>
 
         <div className="roster-stats">
@@ -221,7 +221,7 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
           </div>
         ) : (
           <div className="actions roster-publish">
-            <Button type="button" pending={pending} onClick={requestPublish}>Publicar rol mensual oficial</Button>
+            <Button type="button" pending={pending} disabled={loading} onClick={requestPublish}>Publicar rol mensual oficial</Button>
           </div>
         )}
       </Panel>
