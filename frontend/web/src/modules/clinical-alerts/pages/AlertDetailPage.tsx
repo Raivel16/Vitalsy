@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useId, useState } from "react";
+import { createContext, type SyntheticEvent, useCallback, useContext, useEffect, useId, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
@@ -46,6 +46,20 @@ type RunHandlers = {
   failure: string;
 };
 
+type PageNotice = { text: string; link?: { to: string; label: string } };
+
+/**
+ * El aviso de éxito vive en la página y no en cada panel: tras una acción la alerta cambia de estado,
+ * el panel puede desmontarse y su aviso se perdería.
+ */
+const AlertNoticeContext = createContext<(notice: PageNotice | null) => void>(() => {});
+
+/** Devuelve `setNotice(texto)`; un texto vacío limpia el aviso. */
+function useNotice(link?: PageNotice["link"]) {
+  const announce = useContext(AlertNoticeContext);
+  return (text: string) => announce(text ? { text, link } : null);
+}
+
 /** Ejecuta una acción del evento con bloqueo de doble envío; al terminar recarga la línea de tiempo. */
 function useActionRunner(postAction: PostAction, reload: Reload) {
   const [saving, setSaving] = useState(false);
@@ -72,7 +86,7 @@ function useVitalsForm(postAction: PostAction, reload: Reload) {
   const [consciousness, setConsciousness] = useState<Consciousness>("alert");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice();
   const errors = validateVitalSigns(vitals);
   const visibleErrors = submitted ? errors : {};
 
@@ -110,7 +124,7 @@ function useVitalsForm(postAction: PostAction, reload: Reload) {
     );
   }
 
-  return { vitals, setVitals, consciousness, setConsciousness, visibleErrors, error, notice, saving, onSubmit };
+  return { vitals, setVitals, consciousness, setConsciousness, visibleErrors, error, saving, onSubmit };
 }
 
 function useScheduleForm(postAction: PostAction, reload: Reload) {
@@ -118,7 +132,7 @@ function useScheduleForm(postAction: PostAction, reload: Reload) {
   const [frequency, setFrequency] = useState("60");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice({ to: "/atencion/controles", label: "Abrir bandeja de controles" });
 
   async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
@@ -148,14 +162,14 @@ function useScheduleForm(postAction: PostAction, reload: Reload) {
     );
   }
 
-  return { frequency, setFrequency, note, setNote, error, notice, saving, onSubmit };
+  return { frequency, setFrequency, note, setNote, error, saving, onSubmit };
 }
 
 function useMedicalRequestForm(postAction: PostAction, reload: Reload) {
   const { saving, run } = useActionRunner(postAction, reload);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice({ to: "/alertas", label: "Ver bandeja de alertas" });
 
   async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
@@ -179,7 +193,7 @@ function useMedicalRequestForm(postAction: PostAction, reload: Reload) {
     );
   }
 
-  return { reason, setReason, error, notice, saving, onSubmit };
+  return { reason, setReason, error, saving, onSubmit };
 }
 
 type FormPanelProps = { postAction: PostAction; reload: Reload };
@@ -202,7 +216,6 @@ function VitalsTabPanel({
         Registre la nueva toma. Si el NEWS2 sigue ≥ 1, el sistema notifica al médico automáticamente. Si queda en 0, programe el control.
       </Feedback>
       {form.error ? <Feedback tone="error">{form.error}</Feedback> : null}
-      {form.notice ? <Feedback tone="success">{form.notice}</Feedback> : null}
       <form className="stack" onSubmit={form.onSubmit} noValidate>
         <div className="form-grid">
           <UnitField id="alert-rr" label="Frecuencia respiratoria" unit="rpm" abbr="FR" inputMode="numeric" value={vitals.respiratoryRate} onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })} error={visibleErrors.respiratoryRate} />
@@ -237,12 +250,6 @@ function VitalsTabPanel({
       <section className="result-block" aria-label="Programación del control">
         <h3>Programar control (solo si NEWS2 = 0)</h3>
         {schedule.error ? <Feedback tone="error">{schedule.error}</Feedback> : null}
-        {schedule.notice ? (
-          <Feedback tone="success">
-            {schedule.notice}{" "}
-            <Link to="/atencion/controles">Abrir bandeja de controles</Link>
-          </Feedback>
-        ) : null}
         <form className="stack" onSubmit={schedule.onSubmit} noValidate>
           <TextField
             id="alert-frequency"
@@ -271,12 +278,6 @@ function DeteriorationTabPanel({ tabsId, medical }: Readonly<{ tabsId: string; m
         Use esta pestaña si nota deterioro o preocupación clínica (nurse&apos;s worry) aunque aún no haya segunda toma. El médico recibe la alerta de inmediato.
       </Feedback>
       {medical.error ? <Feedback tone="error">{medical.error}</Feedback> : null}
-      {medical.notice ? (
-        <Feedback tone="success">
-          {medical.notice}{" "}
-          <Link to="/alertas">Ver bandeja de alertas</Link>
-        </Feedback>
-      ) : null}
       <form className="stack" onSubmit={medical.onSubmit} noValidate>
         <TextAreaField
           id="alert-medical-reason"
@@ -345,7 +346,7 @@ function AcknowledgePanel({
 }: Readonly<FormPanelProps & { alertId: string | undefined }>) {
   const { saving, run } = useActionRunner(postAction, reload);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice();
 
   async function onAcknowledge() {
     setError("");
@@ -363,7 +364,6 @@ function AcknowledgePanel({
   return (
     <section className="result-block" aria-label="Confirmación de lectura">
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       <FormActions>
         <Button type="button" disabled={saving} onClick={() => void onAcknowledge()}>
           {saving ? "Confirmando…" : "Confirmar recepción"}
@@ -380,7 +380,7 @@ function DoctorPanel({ pendingAck, postAction, reload }: Readonly<FormPanelProps
   const [assessment, setAssessment] = useState("");
   const [orders, setOrders] = useState("");
   const [medicalError, setMedicalError] = useState("");
-  const [actionNotice, setActionNotice] = useState("");
+  const setActionNotice = useNotice();
   const [rrtReason, setRrtReason] = useState("");
   const [rrtError, setRrtError] = useState("");
 
@@ -432,7 +432,6 @@ function DoctorPanel({ pendingAck, postAction, reload }: Readonly<FormPanelProps
     <section className="result-block" aria-label="Atención médica de urgencia">
       {medicalError ? <Feedback tone="error">{medicalError}</Feedback> : null}
       {rrtError ? <Feedback tone="error">{rrtError}</Feedback> : null}
-      {actionNotice ? <Feedback tone="success">{actionNotice}</Feedback> : null}
       <h3>Evaluación e indicaciones de urgencia</h3>
       <form className="stack" onSubmit={onMedicalAssessment} noValidate>
         <TextAreaField id="alert-assessment" label="Evaluación del paciente" rows={3} value={assessment} onChange={(e) => setAssessment(e.target.value)} />
@@ -461,7 +460,7 @@ function RrtPanel({ pendingAck, postAction, reload }: Readonly<FormPanelProps & 
   const [assessment, setAssessment] = useState("");
   const [transferToIcu, setTransferToIcu] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice();
 
   async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
@@ -491,7 +490,6 @@ function RrtPanel({ pendingAck, postAction, reload }: Readonly<FormPanelProps & 
   return (
     <section className="result-block" aria-label="Evaluación del equipo de respuesta rápida">
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextAreaField id="alert-err-assessment" label="Evaluación del paciente" rows={3} value={assessment} onChange={(e) => setAssessment(e.target.value)} />
         <CheckField id="alert-icu" label="Requiere traslado a cuidados intensivos" checked={transferToIcu} onChange={(e) => setTransferToIcu(e.target.checked)} />
@@ -628,7 +626,7 @@ function IcuPanel({
   const transfer = useActionRunner(postAction, reload);
   const back = useActionRunner(postAction, reload);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const setNotice = useNotice();
 
   async function onAuthorize() {
     setError("");
@@ -645,7 +643,6 @@ function IcuPanel({
       <h3>Traslado a UCI</h3>
       <IcuSummary icu={icu} />
       {error ? <Feedback tone="error">{error}</Feedback> : null}
-      {notice ? <Feedback tone="success">{notice}</Feedback> : null}
       {canAuthorize ? (
         <FormActions>
           <Button type="button" disabled={authorize.saving} onClick={() => void onAuthorize()}>
@@ -753,11 +750,18 @@ function followUpText(alert: ClinicalAlert): string {
   return "";
 }
 
+/** Con `key` por alerta, el aviso de éxito se reinicia al abrir otro evento. */
 export function AlertDetailPage() {
+  const { alertId } = useParams();
+  return <AlertDetailView key={alertId} />;
+}
+
+function AlertDetailView() {
   const { alertId } = useParams();
   const { user } = useAuth();
   const role = user?.role ?? "enfermera_piso";
   const { alert, events, escalations, loading, pageError, load } = useAlertTimeline(alertId);
+  const [notice, setNotice] = useState<PageNotice | null>(null);
 
   const postAction: PostAction = async (action, body) =>
     api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
@@ -773,6 +777,7 @@ export function AlertDetailPage() {
   const icu = alert.icuTransfer;
 
   return (
+    <AlertNoticeContext.Provider value={setNotice}>
     <Sheet kicker="Gestión de alertas" title="Evento de alerta" wide clinic="file" className="floor-care">
       <p className="lead">
         {alert.patientName ?? alert.encounterId} · {alert.location ?? "Ubicación no registrada"}
@@ -783,6 +788,12 @@ export function AlertDetailPage() {
         {followUpText(alert)}
       </output>
       {pageError ? <Feedback tone="error">{pageError}</Feedback> : null}
+      {notice ? (
+        <Feedback tone="success">
+          {notice.text}
+          {notice.link ? <>{" "}<Link to={notice.link.to}>{notice.link.label}</Link></> : null}
+        </Feedback>
+      ) : null}
       <p className="hint">
         <Link to={`/atencion/chart?ingreso=${encodeURIComponent(alert.encounterId)}`}>Ver en el expediente clínico</Link>
       </p>
@@ -817,5 +828,6 @@ export function AlertDetailPage() {
         <EventHistory events={events} escalations={escalations} />
       </div>
     </Sheet>
+    </AlertNoticeContext.Provider>
   );
 }
