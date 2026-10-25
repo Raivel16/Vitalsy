@@ -42,7 +42,7 @@ Para recorrer el camino completo de Ana:
 
 Si la cobertura no está aprobada, derive el trámite y registre: el ingreso queda en trámite. Cuando se apruebe, vuelva a cobertura, marque **Aprobada** y registre.
 
-La cama no se asigna en el registro de ingreso. Gestión de camas (`/camas`, RF-68–73) confirma el lecho. Si al firmar el consentimiento el ingreso aún no tiene habitación, el sistema deja una asignación provisional para la orden de traslado del camillero (RF-07).
+La cama no se asigna en el registro de ingreso. Gestión de camas (`/camas`, RF-68–73) confirma el lecho. El consentimiento informado exige que Gestión de camas ya haya asignado una cama del censo al ingreso (HP-07): sin ella, `POST informed-consents` y el avance del paso `consentimiento` responden 422 con «Asigne una cama en Gestión de camas antes de registrar el consentimiento.». Así el egreso siempre libera una cama real y genera su orden de limpieza.
 
 ## Cómo entrar
 
