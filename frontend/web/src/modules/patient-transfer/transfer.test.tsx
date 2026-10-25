@@ -99,7 +99,8 @@ describe("traslado y recepción en piso", () => {
     );
 
     renderApp("/traslado/identidad?ingreso=ENC-0001");
-    await screen.findByDisplayValue("BRZ-0001-ANA");
+    // El código del brazalete no se pre-carga: el camillero debe escanearlo o escribirlo.
+    expect(await screen.findByLabelText(/código del brazalete/i)).toHaveValue("");
     await user.clear(screen.getByLabelText(/código del brazalete/i));
     await user.type(screen.getByLabelText(/código del brazalete/i), "BRZ-MALO");
     await user.click(screen.getByRole("button", { name: /verificar brazalete/i }));
@@ -117,7 +118,8 @@ describe("traslado y recepción en piso", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     renderApp("/traslado/identidad?ingreso=ENC-0001");
-    await screen.findByDisplayValue("BRZ-0001-ANA");
+    // El código del brazalete no se pre-carga: el camillero debe escanearlo o escribirlo.
+    expect(await screen.findByLabelText(/código del brazalete/i)).toHaveValue("");
     expect(screen.getByRole("heading", { name: /lector óptico listo/i })).toBeInTheDocument();
     expect(document.querySelector(".scan-panel.identity-verify")).toBeInTheDocument();
     expect(document.querySelector(".scan-panel-form")).toBeInTheDocument();

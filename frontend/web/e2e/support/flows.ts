@@ -90,7 +90,10 @@ export async function uiConsentAndTransfer(open: OpenAs, id: string, p: Patient)
   await porter.getByRole("button", { name: "Confirmar traslado" }).click();
   await expect(porter.getByText("Traslado confirmado.")).toBeVisible();
   await porter.goto(withIngreso("/traslado/identidad", id));
-  const code = await porter.getByLabel("Código del brazalete").inputValue();
+  // El código no se pre-carga: se lee del brazalete emitido (el camillero lo escanearía) y se escribe.
+  const issued = await porter.context().request.get(`/api/v1/hospital-admission/encounters/${id}`);
+  const code = (await issued.json()).encounter.wristbandCode as string;
+  await porter.getByLabel("Código del brazalete").fill(code);
   await porter.getByRole("button", { name: "Verificar brazalete" }).click();
   await expect(porter.getByText(`Identidad confirmada: ${p.fullName}.`)).toBeVisible();
   return code;
