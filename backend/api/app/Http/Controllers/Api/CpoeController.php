@@ -66,9 +66,19 @@ class CpoeController extends Controller
         return response()->json($this->cpoe->deleteItem($encounterId, $itemId));
     }
 
-    public function active(string $encounterId): JsonResponse
+    public function active(Request $request, string $encounterId): JsonResponse
     {
-        return response()->json($this->cpoe->active($encounterId));
+        $active = $this->cpoe->active($encounterId);
+
+        // HP-04: quien escanea en el e-MAR (enfermería de piso) no recibe los códigos esperados del medicamento.
+        if ($request->user()?->role === 'enfermera_piso' && $active['prescription'] !== null) {
+            $active['prescription']['items'] = array_map(
+                fn (array $item) => array_diff_key($item, ['drugBarcode' => true]),
+                $active['prescription']['items'],
+            );
+        }
+
+        return response()->json($active);
     }
 
     public function kardex(string $encounterId): JsonResponse
