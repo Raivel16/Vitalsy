@@ -222,6 +222,26 @@ describe("admisión administrativa", () => {
     expect(screen.getByLabelText(/el paciente es usuario de la app vitalsy life/i)).toBeInTheDocument();
   });
 
+  it("avisa que falta asignar una cama del censo antes del consentimiento y no lo da por firmado", async () => {
+    const user = userEvent.setup();
+    const atConsent = { ...anaEncounter, currentStep: "consentimiento", recordId: "EXP-0001", wristbandCode: "BRZ-0001-ANA" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(jsonResponse(200, { encounter: atConsent }))
+        .mockResolvedValueOnce(jsonResponse(422, { message: "Asigne una cama en Gestión de camas antes de registrar el consentimiento." })),
+    );
+
+    renderApp("/admision/consentimiento?ingreso=ENC-0001");
+    await user.type(await screen.findByLabelText(/nombre de quien firma/i), "Rosa Quispe");
+    await user.click(screen.getByLabelText(/acepto el consentimiento informado/i));
+    await user.click(screen.getByRole("button", { name: /registrar consentimiento/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/asigne una cama en gestión de camas/i);
+    expect(screen.queryByText(/consentimiento firmado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /registrar consentimiento/i })).toBeEnabled();
+  });
+
   it("al volver a un paso ya registrado restaura los datos y no permite reenviar", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
       encounter: {
