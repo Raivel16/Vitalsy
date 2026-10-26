@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1793050195">
-  <project timestamp="1793050195" name="Clover Coverage">
+<coverage generated="1793053106">
+  <project timestamp="1793053106" name="Clover Coverage">
     <package name="App\Casts">
       <file name="backend/api/app/Casts/EncryptedArray.php">
         <class name="App\Casts\EncryptedArray" namespace="App\Casts">

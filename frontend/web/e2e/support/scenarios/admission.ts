@@ -259,7 +259,8 @@ export async function lifeLinkCode(ctx: Ctx): Promise<{ code: string; email: str
   const life = await request.newContext({ baseURL: `${E2E_BASE_URL}/api/v1/life/`, extraHTTPHeaders: { Accept: "application/json" } });
   try {
     const email = `life.${ctx.data.seed}.${ctx.data.int(1000, 9999)}@correo.pe`;
-    const reg = await life.post("auth/register", { data: { name: ctx.data.patient().fullName, email, password: "Clave-segura-9" } });
+    const lifePassword = `Clave-${ctx.data.int(1000, 9999)}-segura`;
+    const reg = await life.post("auth/register", { data: { name: ctx.data.patient().fullName, email, password: lifePassword } });
     if (!reg.ok()) throw new Error(`Registro Life → ${reg.status()}: ${await reg.text()}`);
     const { token } = (await reg.json()) as { token: string };
     const headers = { Authorization: `Bearer ${token}` };
