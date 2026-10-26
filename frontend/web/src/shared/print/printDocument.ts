@@ -1,3 +1,13 @@
+/** Convierte texto del usuario en texto plano seguro para insertar dentro del HTML de impresión. */
+export function escapeHtml(value: string | null | undefined): string {
+  return (value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 export function printClinicalDocument(title: string, bodyHtml: string) {
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
@@ -13,7 +23,7 @@ export function printClinicalDocument(title: string, bodyHtml: string) {
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 500);
   };
-  frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>${title}</title>
+  frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>${escapeHtml(title)}</title>
     <style>
       body { margin: 24px; font: 14px/1.45 "Source Sans 3", "Segoe UI", sans-serif; color: #1b2228; }
       h1 { font-size: 22px; margin: 0 0 4px; }
@@ -25,7 +35,7 @@ export function printClinicalDocument(title: string, bodyHtml: string) {
     </style>
   </head><body>
     <p class="kicker">Vitalsy Clinical</p>
-    <h1>${title}</h1>
+    <h1>${escapeHtml(title)}</h1>
     ${bodyHtml}
     <footer>Documento generado para impresión institucional.</footer>
   </body></html>`;

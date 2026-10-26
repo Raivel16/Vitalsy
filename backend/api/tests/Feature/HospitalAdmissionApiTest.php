@@ -165,6 +165,19 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
     }
 
+    public function test_wristband_of_another_patient_is_rejected_for_the_open_encounter(): void
+    {
+        $this->asRole('camillero');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0002'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'El brazalete no corresponde al paciente del ingreso abierto.');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0001'])
+            ->assertOk()
+            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
+    }
+
     public function test_transfer_identity_reception_and_relocation(): void
     {
         $this->asRole('camillero');

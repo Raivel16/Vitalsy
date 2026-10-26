@@ -9,7 +9,7 @@ import { errorText } from "../../../app/userMessage";
 import { Button, ButtonLink } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/Field";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
-import { printClinicalDocument } from "../../../shared/print/printDocument";
+import { escapeHtml, printClinicalDocument } from "../../../shared/print/printDocument";
 import { readDraft, writeDraft } from "../domain/admissionDraft";
 
 type OrderData = {
@@ -98,12 +98,12 @@ export function AdmissionOrderPage() {
     if (!order) return;
     printClinicalDocument("Orden de internamiento", `
       <dl>
-        <dt>Número</dt><dd>${order.orderNumber}</dd>
-        <dt>Paciente</dt><dd>${order.patient.fullName} · ${order.patient.documentType} ${order.patient.documentNumber}</dd>
-        <dt>Origen</dt><dd>${order.originService}</dd>
-        <dt>Médico solicitante</dt><dd>${order.requestingPhysician ?? "No indicado"}</dd>
-        <dt>Motivo</dt><dd>${order.reason ?? "No indicado"}</dd>
-        <dt>Cobertura</dt><dd>${order.coverage.payer} · ${order.coverage.status} · ${order.coverage.plan}</dd>
+        <dt>Número</dt><dd>${escapeHtml(order.orderNumber)}</dd>
+        <dt>Paciente</dt><dd>${escapeHtml(order.patient.fullName)} · ${escapeHtml(order.patient.documentType)} ${escapeHtml(order.patient.documentNumber)}</dd>
+        <dt>Origen</dt><dd>${escapeHtml(order.originService)}</dd>
+        <dt>Médico solicitante</dt><dd>${escapeHtml(order.requestingPhysician ?? "No indicado")}</dd>
+        <dt>Motivo</dt><dd>${escapeHtml(order.reason ?? "No indicado")}</dd>
+        <dt>Cobertura</dt><dd>${escapeHtml(order.coverage.payer)} · ${escapeHtml(order.coverage.status)} · ${escapeHtml(order.coverage.plan)}</dd>
       </dl>
     `);
   }
