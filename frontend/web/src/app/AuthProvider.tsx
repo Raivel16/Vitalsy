@@ -81,6 +81,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// Hook y proveedor comparten contexto: patrón estándar.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const value = useContext(AuthContext);
   if (!value) throw new Error("useAuth debe usarse dentro de AuthProvider.");

@@ -55,14 +55,15 @@ export function DischargeBoardPage() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [inpatients, setInpatients] = useState<Inpatient[]>([]);
-  const canStart = user?.role === "medico_tratante" || user?.role === "medico_residente";
+  const role = user?.role;
+  const canStart = role === "medico_tratante" || role === "medico_residente";
 
   const load = useCallback(async () => {
     try {
-      const path = user?.role === "camillero" ? "/api/v1/discharge/authorized-exits" : "/api/v1/discharge/board";
+      const path = role === "camillero" ? "/api/v1/discharge/authorized-exits" : "/api/v1/discharge/board";
       const data = await api<{ cases: DischargeCase[] }>(path);
       setCases(data.cases);
-      if (user?.role === "medico_tratante" || user?.role === "medico_residente") {
+      if (role === "medico_tratante" || role === "medico_residente") {
         setInpatients(await fetchInpatients());
       }
       setError("");
@@ -71,7 +72,7 @@ export function DischargeBoardPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.role]);
+  }, [role]);
 
   useEffect(() => {
     void load();

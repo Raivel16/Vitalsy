@@ -3,12 +3,9 @@ import JsBarcode from "jsbarcode";
 
 function FallbackBars({ value }: Readonly<{ value: string }>) {
   const widths = value.split("").map((char) => ((char.codePointAt(0) ?? 0) % 3) + 1);
-  let x = 4;
-  const bars = widths.map((width) => {
-    const rect = <rect key={`bar-${x}`} x={x} y="4" width={width} height="40" fill="#0E4C92" />;
-    x += width + 1;
-    return rect;
-  });
+  const starts = widths.reduce<number[]>((acc, _width, i) => [...acc, i === 0 ? 4 : acc[i - 1] + widths[i - 1] + 1], []);
+  const x = widths.length === 0 ? 4 : starts[starts.length - 1] + widths[widths.length - 1] + 1;
+  const bars = widths.map((width, i) => <rect key={`bar-${starts[i]}`} x={starts[i]} y="4" width={width} height="40" fill="#0E4C92" />);
   return (
     <svg className="barcode" viewBox={`0 0 ${x + 8} 56`} role="img" aria-label={`Código de barras ${value}`}>
       <rect x="0" y="0" width={x + 8} height="56" fill="#ffffff" />
@@ -74,6 +71,8 @@ export function Barcode({ value, id = "wristband-barcode" }: Readonly<{ value: s
   );
 }
 
+// Utilidad de impresión junto al componente que imprime; no afecta al refresco rápido.
+// eslint-disable-next-line react-refresh/only-export-components
 export function printBarcodeOnly(elementId = "wristband-barcode") {
   const node = document.getElementById(elementId);
   if (!node) return;

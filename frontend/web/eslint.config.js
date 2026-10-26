@@ -18,6 +18,13 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Las propiedades que se descartan al reenviar `...props` (p. ej. `wide: _wide`) no son variables sin uso.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true, varsIgnorePattern: '^_' }],
+      // Regla del compilador de React: el código sincroniza estado con props y carga datos en efectos
+      // (patrón extendido en todo el frontend). Se mantiene como aviso para ir migrándolos sin bloquear.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
   {
     // RNF-18: los fixtures de Playwright llaman a `use(...)`, que no es un hook de React, y

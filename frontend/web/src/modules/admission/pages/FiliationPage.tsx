@@ -20,6 +20,13 @@ export function FiliationPage() {
   const role = user?.role ?? "admision";
   const [fullName, setFullName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   useEffect(() => {
     if (!encounter) return;
     const saved = encounter.clinical?.filiation ?? readDraft<{
@@ -37,13 +44,6 @@ export function FiliationPage() {
       setSuccess("Filiación validada.");
     }
   }, [encounter]);
-  const [birthDate, setBirthDate] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-  const [advanced, setAdvanced] = useState(false);
 
   if (!encounter) {
     return (
