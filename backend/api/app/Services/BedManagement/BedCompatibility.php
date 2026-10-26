@@ -59,6 +59,7 @@ class BedCompatibility
     {
         return Bed::query()
             ->with('ward')
+            ->enabled()
             ->where('status', 'available')
             ->orderBy('room')
             ->orderBy('bed_code')

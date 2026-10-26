@@ -36,6 +36,7 @@ import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage
 import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
 import { BedCensusPage } from "./modules/bed-management/pages/BedCensusPage";
 import { CleaningOrdersPage } from "./modules/bed-management/pages/CleaningOrdersPage";
+import { BedInfrastructurePage } from "./modules/bed-infrastructure/pages/BedInfrastructurePage";
 import { UsersListPage } from "./modules/user-admin/pages/UsersListPage";
 import { UserCreatePage } from "./modules/user-admin/pages/UserCreatePage";
 import { UserEditPage } from "./modules/user-admin/pages/UserEditPage";
@@ -273,6 +274,7 @@ function Shell() {
                 path="/personal"
                 element={<Guard roles={STAFF_ROLES} requirement="un perfil de gestión del personal"><StaffBoardPage /></Guard>}
               />
+              <Route path="/infraestructura" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><BedInfrastructurePage /></Guard>} />
               <Route path="/usuarios" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UsersListPage /></Guard>} />
               <Route path="/usuarios/nuevo" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UserCreatePage /></Guard>} />
               <Route path="/usuarios/:userId" element={<Guard roles={ADMIN_ROLES} requirement="administrador de accesos"><UserEditPage /></Guard>} />
