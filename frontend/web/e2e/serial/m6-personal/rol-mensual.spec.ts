@@ -14,7 +14,7 @@ async function openMonth(page: Page, yearMonth: string) {
   }
   await expect(month).toHaveValue(yearMonth);
   // Esperar a que el mes termine de cargar antes de actuar.
-  await expect(page.getByLabel("Cargando el rol del mes…")).toHaveCount(0);
+  await expect(page.getByText("Cargando el rol del mes…")).toHaveCount(0);
 }
 
 async function pickPerson(page: Page, label: string, query: string, name: RegExp) {
@@ -23,8 +23,7 @@ async function pickPerson(page: Page, label: string, query: string, name: RegExp
 }
 
 test.describe("rol mensual (RF-78)", () => {
-  // Intermitente: a veces, tras navegar al mes, el panel conserva el rol del mes anterior.
-  test("RF-78 · Personal · publicar sin turnos marcados se rechaza [E6-06]", { tag: "@defecto-intermitente" }, async ({ asRole }) => {
+  test("RF-78 · Personal · publicar sin turnos marcados se rechaza [E6-06]", async ({ asRole }) => {
     const page = await asRole("jefatura_enfermeria");
     await openMonth(page, "2027-02");
     // Un mes sin rol debe verse vacío (no con el rol del mes anterior).
@@ -73,7 +72,7 @@ test.describe("rol mensual (RF-78)", () => {
     await expect(month).toBeVisible();
     for (let i = 0; i < 36 && (await month.inputValue()) !== "2027-02"; i++) await page.getByRole("button", { name: "Mes siguiente" }).click();
     await late; // la respuesta retrasada del mes inicial ya llegó
-    await expect(page.getByLabel("Cargando el rol del mes…")).toHaveCount(0);
+    await expect(page.getByText("Cargando el rol del mes…")).toHaveCount(0);
     await expect(page.getByText("Aún no hay un rol publicado para febrero de 2027.")).toBeVisible();
     await expect(page.getByText(/^Publicado el /)).toHaveCount(0);
   });

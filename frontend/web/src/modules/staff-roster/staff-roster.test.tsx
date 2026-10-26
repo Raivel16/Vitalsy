@@ -206,6 +206,35 @@ describe("personal asistencial (RF-78 a RF-88)", () => {
     expect(await screen.findByText(/rol mensual de turnos publicado/i)).toBeInTheDocument();
   });
 
+  it("al cambiar de mes no muestra ni deja publicar el rol del mes anterior mientras carga", async () => {
+    stubStaff({ plans: [publishedPlan()] });
+    const [nextYear, nextMonth] = CURRENT_MONTH.split("-").map(Number);
+    const next = `${new Date(Date.UTC(nextYear, nextMonth, 1)).getUTCFullYear()}-${String(((nextMonth % 12) + 1)).padStart(2, "0")}`;
+    const delegate = globalThis.fetch;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+      if (String(input).endsWith(`/shift-plans/${next}`)) await gate;
+      return delegate(input, init);
+    }));
+    const user = userEvent.setup();
+    renderApp("/personal", { role: "jefatura_enfermeria" });
+    expect(await screen.findByRole("button", { name: /ana piso, día 5: diurno/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /mes siguiente/i }));
+
+    expect(await screen.findByText(/cargando el rol del mes/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /publicar rol mensual oficial/i })).toBeDisabled();
+    expect(screen.queryByText(/jefa turnos/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Publicado")).not.toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText(/aún no hay un rol publicado/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /publicar rol mensual oficial/i })).toBeEnabled();
+  });
+
   it("avisa cuando un mes no tiene rol publicado", async () => {
     stubStaff();
     renderApp("/personal", { role: "jefatura_enfermeria" });
