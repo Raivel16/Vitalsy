@@ -39,6 +39,12 @@ function matchesFilter(item: DischargeCase, filter: FilterId): boolean {
   return Boolean(item.order) && Boolean(item.epicrisis);
 }
 
+async function fetchInpatients(term = ""): Promise<Inpatient[]> {
+  const search = term ? `&q=${encodeURIComponent(term)}` : "";
+  const census = await api<{ encounters?: Inpatient[] }>(`/api/v1/hospital-admission/encounters?per_page=50${search}`);
+  return (census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado");
+}
+
 export function DischargeBoardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -57,8 +63,7 @@ export function DischargeBoardPage() {
       const data = await api<{ cases: DischargeCase[] }>(path);
       setCases(data.cases);
       if (user?.role === "medico_tratante" || user?.role === "medico_residente") {
-        const census = await api<{ encounters?: Inpatient[] }>("/api/v1/hospital-admission/encounters?per_page=50");
-        setInpatients((census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado"));
+        setInpatients(await fetchInpatients());
       }
       setError("");
     } catch (error_) {
@@ -83,24 +88,36 @@ export function DischargeBoardPage() {
     });
   }, [inpatients, cases, query]);
 
+  // El censo pagina de 50 en 50: buscar en el servidor evita que un paciente fuera de la primera página no aparezca.
+  async function searchInpatients(term: string) {
+    setQuery(term);
+    try {
+      setInpatients(await fetchInpatients(term));
+      setError("");
+    } catch (error_) {
+      setError(errorText(error_, "No se pudo buscar entre los hospitalizados."));
+    }
+  }
+
   async function onWristbandScan(code: string) {
     const needle = code.trim().toLowerCase();
     if (!needle) return;
-    let pool = inpatients;
-    if (pool.length === 0) {
+    const findIn = (pool: Inpatient[]) => pool.find((patient) =>
+      [patient.wristbandCode, patient.documentNumber, patient.encounterId]
+        .some((value) => value?.toLowerCase() === needle),
+    );
+    let inpatient = findIn(inpatients);
+    if (!inpatient) {
+      // El censo pagina de 50 en 50: si no está en lo cargado, se busca el código en el servidor.
       try {
-        const census = await api<{ encounters?: Inpatient[] }>("/api/v1/hospital-admission/encounters?per_page=50");
-        pool = (census.encounters ?? []).filter((patient) => patient.currentStep === "cerrado");
-        setInpatients(pool);
+        const found = await fetchInpatients(code.trim());
+        setInpatients(found);
+        inpatient = findIn(found);
       } catch (error_) {
         setError(errorText(error_, "No se pudo leer el censo para ese código."));
         return;
       }
     }
-    const inpatient = pool.find((patient) =>
-      [patient.wristbandCode, patient.documentNumber, patient.encounterId]
-        .some((value) => value?.toLowerCase() === needle),
-    );
     const openCase = cases.find((item) => item.encounterId.toLowerCase() === needle);
     const encounterId = inpatient?.encounterId ?? openCase?.encounterId;
     if (!encounterId) {
@@ -133,7 +150,7 @@ export function DischargeBoardPage() {
           className="census-toolbar"
           onSubmit={(event) => {
             event.preventDefault();
-            setQuery(search.trim());
+            void searchInpatients(search.trim());
           }}
         >
           <div className="census-toolbar-row">
