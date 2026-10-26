@@ -36,9 +36,13 @@ export function AdmissionOrderPage() {
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
 
+  // Los avisos solo se limpian al cambiar de ingreso: confirmar la orden avanza el paso y no debe borrar «Orden confirmada.».
   useEffect(() => {
     setError("");
     setNotice("");
+  }, [encounter?.encounterId]);
+
+  useEffect(() => {
     setOrderNumber(encounter?.orderNumber ?? "");
     const cached = encounter ? readDraft<AdmissionOrder>(encounter.encounterId, "order") : null;
     setResult(cached);

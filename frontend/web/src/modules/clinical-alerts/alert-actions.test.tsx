@@ -95,6 +95,36 @@ describe("acciones del evento de alerta", () => {
     expect(await screen.findByText(/se recalculó el news2/i)).toBeInTheDocument();
   });
 
+  it("mantiene el aviso de éxito aunque la alerta cambie de estado y el panel desaparezca", async () => {
+    let current: Record<string, unknown> = baseAlert;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+        if (url.includes("/timeline")) return jsonResponse(200, { alert: current, events: [], escalations: [] });
+        if (init?.method === "POST") {
+          current = { ...baseAlert, status: "medico_notificado", assignedRole: "medico_residente" };
+          return jsonResponse(200, { medicalNotified: true });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp("/alertas/9", { role: "enfermera_piso" });
+
+    await user.type(await screen.findByLabelText(/frecuencia respiratoria/i), "24");
+    await user.type(screen.getByLabelText(/saturación/i), "91");
+    await user.type(screen.getByLabelText(/sistólica/i), "100");
+    await user.type(screen.getByLabelText(/diastólica/i), "70");
+    await user.type(screen.getByLabelText(/pulso/i), "110");
+    await user.type(screen.getByLabelText(/temperatura/i), "38.4");
+    await user.click(screen.getByRole("button", { name: /recalcular news2/i }));
+
+    expect(await screen.findByText(/se notificó automáticamente al médico de guardia/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /recalcular news2/i })).not.toBeInTheDocument();
+  });
+
   it("rechaza una frecuencia de control fuera de rango", async () => {
     const calls = stubApi({ ...baseAlert, reassessedAt: "2026-09-26T08:10:00+00:00", news2Total: 0 });
     const user = userEvent.setup();

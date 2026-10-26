@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VitalSignReading extends Model
 {
     protected $fillable = [
         'encounter_id',
+        'author_user_id',
         'rr',
         'spo2',
         'sbp',
@@ -20,6 +22,11 @@ class VitalSignReading extends Model
         'news2_total',
         'recorded_at',
     ];
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_user_id');
+    }
 
     protected function casts(): array
     {

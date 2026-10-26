@@ -74,7 +74,7 @@ describe("expediente clínico (RF-38)", () => {
               signedAt: "2026-09-21T10:00:00+00:00",
               items: [{ drugName: "Paracetamol", dose: "1 g", route: "VO", frequency: "cada 8 horas", drugBarcode: "DRUG-PARACETAMOL-1G" }],
             },
-            vitalSigns: [{ recordedAt: "2026-09-21T09:00:00+00:00", pulse: 72, news2: 0, respiratoryRate: 16, oxygenSaturation: 98 }],
+            vitalSigns: [{ recordedAt: "2026-09-21T09:00:00+00:00", pulse: 72, news2: 0, respiratoryRate: 16, oxygenSaturation: 98, authorName: "Rosa Quispe", authorRole: "Auxiliar de enfermería" }],
             labResults: [{ id: 1, summary: "Hemograma normal", resultedAt: "2026-09-21T08:30:00+00:00" }],
             imagingReports: [],
             medicalEvolutionNotes: [{ id: 1, body: "Evolución favorable.", authoredAt: "2026-09-21T11:00:00+00:00", authorName: "Dra. Demo" }],
@@ -116,6 +116,8 @@ describe("expediente clínico (RF-38)", () => {
     await user.click(screen.getByRole("tab", { name: /^constantes$/i }));
     expect(await screen.findByRole("img", { name: /gráfica evolutiva de pulso/i })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /filtrar historial del expediente/i })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /registró/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/lecturas de constantes/i)).toHaveTextContent(/rosa quispe.*auxiliar de enfermería/i);
 
     await user.click(screen.getByRole("tab", { name: /^tratamiento$/i }));
     expect(screen.getByRole("tabpanel", { name: /^tratamiento$/i })).toHaveTextContent(/paracetamol/i);

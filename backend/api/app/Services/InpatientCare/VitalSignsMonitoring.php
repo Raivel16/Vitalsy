@@ -123,6 +123,7 @@ class VitalSignsMonitoring
 
         $reading = VitalSignReading::query()->create([
             'encounter_id' => $encounterId,
+            'author_user_id' => $user?->id,
             'rr' => $values['rr'],
             'spo2' => $values['spo2'],
             'sbp' => $values['sbp'],
