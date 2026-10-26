@@ -21,6 +21,9 @@ coverage.xml
 *.info
 *.xml
 !backend/api/phpunit.xml
+# Reportes de cobertura normalizados para SonarQube (scripts/sonar-coverage.sh)
+!coverage-reports/
+!coverage-reports/*
 !frontend/web/phpunit.xml
 
 # Laravel / PHP
