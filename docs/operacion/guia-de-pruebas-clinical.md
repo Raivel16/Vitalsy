@@ -82,7 +82,7 @@ php artisan migrate --force
 php artisan db:seed --force
 ```
 
-`db:seed` ejecuta `DatabaseSeeder`, que: crea una cuenta por rol (`{rol}@vitalsy.local`), siembra `CatalogSeeder` (pabellones y camas), siembra 3 ingresos demo si no hay ninguno y `DemoPeopleSeeder` (22 personas con nombre y un escenario de relevo de turno).
+`db:seed` ejecuta `DatabaseSeeder`, que: crea una cuenta por rol (`{rol}@vitalsy.local`), siembra `CatalogSeeder` y `DemoInfrastructureSeeder` (4 pabellones y ~34 camas con variedad de género y aislamiento; si el administrador borró algo, no se resucita), siembra 3 ingresos demo si no hay ninguno y `DemoPeopleSeeder` (22 personas con nombre y un escenario de relevo de turno).
 
 Comandos manuales (por si hace falta repetir):
 
@@ -91,7 +91,7 @@ docker compose exec backend php artisan migrate --force
 docker compose exec backend php artisan db:seed --force
 ```
 
-**Si actualiza desde una versión anterior** (después de `git pull` en `dev`): reconstruya las imágenes con `docker compose up --build` (la imagen del backend ahora incluye `pcntl`, necesaria para que `reverb` arranque) y ejecute `docker compose exec backend php artisan migrate --force` (nueva columna `author_user_id` en `vital_sign_readings`, RF-26). Los ingresos de demostración ENC-0001 a ENC-0003 no tienen cama del censo asignada: si va a firmar su consentimiento, asígneles primero una cama en `/camas` (HP-07).
+**Si actualiza desde una versión anterior** (después de `git pull` en `dev`): para la infraestructura de camas (RF-110–112) ejecute también `docker compose exec backend php artisan migrate --force` y `docker compose exec backend php artisan db:seed --force` (carga ~34 camas demo; no resucita lo borrado); reconstruya las imágenes con `docker compose up --build` (la imagen del backend ahora incluye `pcntl`, necesaria para que `reverb` arranque) y ejecute `docker compose exec backend php artisan migrate --force` (nueva columna `author_user_id` en `vital_sign_readings`, RF-26). Los ingresos de demostración ENC-0001 a ENC-0003 no tienen cama del censo asignada: si va a firmar su consentimiento, asígneles primero una cama en `/camas` (HP-07).
 
 **Reinicio total de datos** (borra todo, solo para pruebas): `docker compose down -v` y luego `docker compose up --build`. No use `migrate:fresh` si desea conservar datos.
 
@@ -184,7 +184,7 @@ El catálogo es idéntico en `RoleCatalog.php` y `roles.ts`. El menú lateral se
 | `servicios_generales` | Servicios generales / Limpieza | `servicios_generales@` | Limpieza |
 | `jefatura_enfermeria` | Jefatura de enfermería | `jefatura_enfermeria@` | Turnos y cobertura |
 | `recursos_humanos` | Recursos humanos | `recursos_humanos@` | Turnos y cobertura |
-| `administrador_accesos` | Administrador de accesos | `administrador_accesos@` | Usuarios |
+| `administrador_accesos` | Administrador de accesos | `administrador_accesos@` | Usuarios, Infraestructura de camas |
 
 Rutas del menú: Pacientes `/pacientes`; Registrar ingreso `/pacientes/nuevo`; Expediente clínico `/atencion/chart`; Visita médica `/atencion/visita`; Laboratorio `/atencion/laboratorio`; Imágenes `/atencion/imagenes`; Evolución médica `/atencion/evolucion`; CPOE `/atencion/cpoe`; Constantes `/atencion/constantes`; Controles `/atencion/controles`; e-MAR `/atencion/emar`; Cuidados `/atencion/cuidados`; Alertas `/alertas`; Registrar deterioro `/alertas/deterioro`; Egreso `/egreso`; Censo de camas `/camas`; Limpieza `/camas/limpieza`; Turnos y cobertura `/personal`; Usuarios `/usuarios`.
 
@@ -494,6 +494,22 @@ Prepare dos navegadores (o perfiles): A = `enfermera_piso@`, B = `medico_residen
 | E7-07 | igual | Intente cambiar su **propio** rol y desactivar su **propia** cuenta. | «No puede cambiar su propio rol.» / «No puede desactivar su propia cuenta.» |
 | E7-08 | igual | «Desactivar cuenta» → «Confirmar desactivación» (de `qa.nueva@`). | «Cuenta desactivada. La persona ya no puede iniciar sesión.» Esa cuenta no puede entrar (N-18); sus registros permanecen. |
 | E7-09 | igual | Intente desactivar la última cuenta de administrador. | «Debe quedar al menos un administrador de accesos activo.» |
+
+### E7b. Infraestructura de camas (RF-110 a RF-112; `administrador_accesos@`)
+
+Cada institución define sus pabellones, habitaciones y camas; los datos precargados son solo para probar.
+
+| Paso | Rol · ruta | Acción y datos | Resultado esperado |
+|---|---|---|---|
+| E7b-01 | `/infraestructura` | Revise los pabellones precargados y sus camas. | Cada cama muestra habitación, código, género, aislamiento, estado y si está activa (RF-110). |
+| E7b-02 | igual | «Crear pabellón» vacío. | «El código es obligatorio.», «El nombre es obligatorio.», «Seleccione una especialidad.» |
+| E7b-03 | igual | Código `QA-1`, nombre `Pabellón QA`, especialidad `Medicina interna`; «Crear pabellón». | «Pabellón QA-1 creado.» Sin camas todavía. Un código repetido se rechaza. |
+| E7b-04 | igual | «Nueva cama»: pabellón `QA-1`, habitación `701`, cama `A`, género `Mixta`; «Crear cama». | «Cama 701-A creada.» Repetirla → «Ya existe una cama con esa habitación y código en el pabellón.» |
+| E7b-05 | igual | «Alta en lote»: pabellón `QA-1`, habitaciones `710` a `712`, `2` camas; «Vista previa del lote». | Vista previa con 6 camas (710-A … 712-B). «Crear 6 camas nuevas» → «Lote creado: 6 camas nuevas.» Repetir el lote → «6 ya existen» y no hay nada que crear (RF-112). |
+| E7b-06 | igual | «Desactivar cama 710-A». Luego entre como `gestion_camas@` y abra `/camas`. | «Cama 710-A desactivada.» La cama no se ofrece, sugiere ni asigna. «Activar cama 710-A» la devuelve (RF-111). |
+| E7b-07 | igual | Intente desactivar o borrar una cama **ocupada** o **en limpieza** (p. ej. `101-B` con paciente). | Rechazo: «No se puede … la cama …: está ocupada o en limpieza.» |
+| E7b-08 | igual | «Borrar cama 711-A» → «Sí, borrar». | «Cama 711-A borrada. El historial se conserva.» Desaparece de la lista y de la asignación; sus asignaciones y limpiezas pasadas siguen en el historial. Crear otra cama con el mismo código la restaura. |
+| E7b-09 | Otros roles | `gestion_camas@` abre `/infraestructura` o llama `GET /api/v1/bed-infrastructure/wards`. | Vista no disponible / 403. |
 
 ---
 ## 4. Casos transversales

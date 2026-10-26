@@ -38,6 +38,7 @@ class BedManagement
     {
         $beds = Bed::query()
             ->with('ward')
+            ->enabled()
             ->where('status', 'available')
             ->orderBy('room')
             ->orderBy('bed_code')
@@ -52,20 +53,21 @@ class BedManagement
     public function census(): array
     {
         $occupants = $this->occupancy->byBed();
-        $wards = Ward::query()->with('beds')->orderBy('code')->get()->map(function (Ward $ward) use ($occupants) {
-            $beds = $ward->beds->map(fn (Bed $bed) => $this->presenter->bed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
+        $wards = Ward::query()->where('active', true)
+            ->with(['beds' => fn ($q) => $q->where('active', true)])->orderBy('code')->get()->map(function (Ward $ward) use ($occupants) {
+                $beds = $ward->beds->map(fn (Bed $bed) => $this->presenter->bed($bed) + ['occupant' => $occupants[$bed->id] ?? null]);
 
-            return [
-                'id' => $ward->id,
-                'code' => $ward->code,
-                'name' => $ward->name,
-                'specialty' => $ward->specialty,
-                'available' => $ward->beds->where('status', 'available')->count(),
-                'occupied' => $ward->beds->where('status', 'occupied')->count(),
-                'cleaning' => $ward->beds->where('status', 'cleaning')->count(),
-                'beds' => $beds->values(),
-            ];
-        });
+                return [
+                    'id' => $ward->id,
+                    'code' => $ward->code,
+                    'name' => $ward->name,
+                    'specialty' => $ward->specialty,
+                    'available' => $ward->beds->where('status', 'available')->count(),
+                    'occupied' => $ward->beds->where('status', 'occupied')->count(),
+                    'cleaning' => $ward->beds->where('status', 'cleaning')->count(),
+                    'beds' => $beds->values(),
+                ];
+            });
 
         return ['wards' => $wards->values()];
     }
@@ -146,6 +148,9 @@ class BedManagement
             $bed = Bed::query()->with('ward')->lockForUpdate()->find($bedId);
             if (! $bed) {
                 throw new NotFoundHttpException('No se encontró el lecho.');
+            }
+            if (! $bed->active || ! $bed->ward?->active) {
+                throw new ClinicalRuleException('El lecho está deshabilitado por la administración.');
             }
             if ($bed->status !== 'available') {
                 throw new ClinicalRuleException('El lecho ya no está disponible.');
