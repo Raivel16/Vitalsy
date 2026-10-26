@@ -39,7 +39,7 @@ class HospitalAdmissionController extends Controller
     {
         $data = $request->validate([
             'fullName' => ['required', 'string'],
-            'documentNumber' => ['required', 'string'],
+            'documentNumber' => ['required', 'string', 'regex:/^[0-9]+$/'],
             'birthDate' => ['nullable', 'date'],
             'confirmed' => ['accepted'],
             'encounterId' => ['nullable', 'string'],

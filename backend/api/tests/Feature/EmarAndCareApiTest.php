@@ -262,4 +262,24 @@ class EmarAndCareApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('activities.0.completedByName', $auxiliar->name);
     }
+
+    public function test_el_turno_del_emar_sigue_la_zona_horaria_de_la_aplicacion(): void
+    {
+        $original = date_default_timezone_get();
+        date_default_timezone_set('America/Lima');
+        Carbon::setTestNow(Carbon::parse('2026-09-21 08:30:00', 'America/Lima'));
+
+        try {
+            $this->inpatientEncounter();
+            $this->asRole('enfermera_piso');
+
+            $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
+                ->assertOk()
+                ->assertJsonPath('shiftStart', '2026-09-21T07:00:00-05:00')
+                ->assertJsonPath('shiftEnd', '2026-09-21T19:00:00-05:00');
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($original);
+        }
+    }
 }
