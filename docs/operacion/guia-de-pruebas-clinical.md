@@ -2,6 +2,8 @@
 
 **Producto:** Vitalsy Clinical (backend Laravel + web React). **Fuera de alcance:** la app móvil *Vitalsy Life* (`movil/`) no se prueba en esta guía; solo se simula su lado de servidor por API cuando un escenario de Clinical lo necesita (código de vinculación).
 
+**Versión automática:** casi todos los escenarios de esta guía se ejecutan solos con `npm run e2e` (ver [pruebas-e2e.md](pruebas-e2e.md)).
+
 **Para quién:** QA o evaluador sin conocimiento del código. Cada paso indica rol/cuenta, ruta o pantalla, qué escribir, resultado esperado y siguiente paso.
 
 **Cómo usar este documento**

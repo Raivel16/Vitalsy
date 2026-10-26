@@ -6,6 +6,9 @@ use App\Services\Interoperability\LisClient;
 use App\Services\Interoperability\PacsClient;
 use App\Services\Interoperability\StubLisClient;
 use App\Services\Interoperability\StubPacsClient;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +35,9 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(
+            (int) config('vitalsy.auth.login_throttle_per_minute', 10),
+        )->by($request->ip()));
     }
 }

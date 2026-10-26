@@ -8,7 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run --coverage --coverage.reporter=lcov"
+    "test": "vitest run --coverage --coverage.reporter=lcov",
+    "e2e": "node e2e/run.mjs",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report e2e-results/html",
+    "e2e:browsers": "playwright test --project=firefox --project=webkit",
+    "e2e:down": "docker compose -p vitalsy-e2e -f ../../docker-compose.yml -f ../../docker-compose.e2e.yml --env-file ../../.env.e2e down -v"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",
@@ -25,6 +30,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.6.0",
+    "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.7",

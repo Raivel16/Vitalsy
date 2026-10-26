@@ -40,7 +40,7 @@ Route::get('health', function () {
 });
 
 Route::prefix('v1')->group(function () {
-    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // Vitalsy Life: cuentas ciudadanas (RF-89); el middleware `life` excluye al personal clínico.
     Route::prefix('life')->group(function () {

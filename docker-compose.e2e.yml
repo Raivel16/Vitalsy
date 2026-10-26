@@ -1,0 +1,35 @@
+# RNF-18: stack aislado de la suite E2E (proyecto `vitalsy-e2e`, BD propia).
+# Uso: docker compose -p vitalsy-e2e -f docker-compose.yml -f docker-compose.e2e.yml --env-file .env.e2e up -d --build
+# Solo publica Nginx en 18080 para convivir con el stack de desarrollo (8080/8443/8000/5432).
+services:
+  nginx:
+    ports: !override
+      - "18080:80"
+
+  frontend:
+    environment:
+      VITE_HMR_CLIENT_PORT: "18080"
+
+  backend:
+    ports: !reset []
+    environment:
+      APP_ENV: e2e
+      APP_URL: http://localhost:18080
+      E2E_CLOCK_ENABLED: "true"
+      VITALSY_LOGIN_THROTTLE_PER_MINUTE: "1000"
+      PHP_CLI_SERVER_WORKERS: "8"
+      # Sesiones y caché en la BD del E2E: storage/ es compartido con el stack de desarrollo y,
+      # con el reloj adelantado, el recolector de sesiones por archivo borraría también las de
+      # desarrollo. La vida útil larga tolera los saltos del reloj E2E.
+      SESSION_DRIVER: database
+      SESSION_LIFETIME: "5256000"
+      CACHE_STORE: database
+      SANCTUM_STATEFUL_DOMAINS: localhost,localhost:18080,127.0.0.1:18080,__SANCTUM_CURRENT_REQUEST_HOST__
+
+  reverb:
+    environment:
+      APP_ENV: e2e
+      E2E_CLOCK_ENABLED: "true"
+
+  postgres:
+    ports: !reset []

@@ -22,4 +22,11 @@ composer install --no-interaction --prefer-dist --no-progress
 
 php artisan migrate --force --no-interaction
 php artisan db:seed --force --no-interaction
+
+# RNF-18: `artisan serve` hace que backend/api/.env pise las variables del contenedor. El stack
+# E2E (BD propia) usa el servidor embebido directo para que manden las del compose.
+if [ "${APP_ENV:-}" = "e2e" ]; then
+  cd public
+  exec php -S 0.0.0.0:"${PORT}" ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
+fi
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"

@@ -225,4 +225,14 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 - `composer audit` sigue con 3 avisos ajenos (`league/commonmark`, `symfony/http-foundation`). PHP 8.2 llega a fin de vida el 31/12/2026: planear salto a 8.4.
 - Rama: `hotfix/RF-91-php-cve-2026-109618`.
 
+### 2026-10-24 — Suite E2E automática local (RNF-18)
+
+- `npm run e2e` (en `frontend/web`) corre Playwright contra un stack Docker propio (`vitalsy-e2e`, puerto 18080, BD propia, `APP_ENV=e2e`) que se reinicia en cada corrida. Guía: `docs/operacion/pruebas-e2e.md`.
+- Backend: límite de login configurable (`VITALSY_LOGIN_THROTTLE_PER_MINUTE`, 10 por defecto), reloj de pruebas `e2e:clock` (solo con `APP_ENV=e2e` y `E2E_CLOCK_ENABLED=true`; vive en `app/Support/E2E` para no autodescubrirse) y `E2ESeeder` (70 camas extra, se niega fuera de e2e).
+- El entrypoint usa `php -S` cuando `APP_ENV=e2e`: `artisan serve` deja que `backend/api/.env` pise las variables del contenedor. El E2E guarda sesiones y caché en su BD: `storage/` es compartido con desarrollo y el reloj adelantado haría que el recolector borre las sesiones de desarrollo.
+- Hallazgos nuevos que la suite deja en rojo (cada uno tiene su prueba y aparece en `frontend/web/e2e-results/hallazgos.csv` al correr la suite): ENC duplicado al registrar en paralelo (500), censo de ingresos sin control de rol, aviso «Orden confirmada.» que desaparece, brazalete con tildes (Code 128), expediente sin autor de constantes, avisos del detalle de alerta que desaparecen tras recargar, acuse del ERR que devuelve la alerta a enfermería, rol mensual que a veces muestra el mes anterior (intermitente). Además confirma HP-02, HP-04, HP-06, HP-07, HP-11 y HP-12.
+- Rama: `feature/RNF-18-suite-e2e-clinical`.
+
 <!-- END AGENT ANNOTATIONS -->
+
+- 2026-10-24 (RNF-18, corrida completa desde cero, semilla 1674140881): 196 pruebas, 178 en verde y 18 rojas, todas hallazgos registrados salvo E4-01 «el tratante inicia el alta…», que agotó el tiempo esperando la fila del buscador con 4 workers y piso lleno, y pasó 3/3 sola: tratar como intermitente por carga hasta investigarlo.
