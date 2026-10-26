@@ -2,46 +2,30 @@
 
 namespace Database\Seeders;
 
-use App\Models\Bed;
-use App\Models\Ward;
 use Illuminate\Database\Seeder;
 
 class CatalogSeeder extends Seeder
 {
+    use SeedsInfrastructure;
+
     public function run(): void
     {
-        $medicina = Ward::query()->updateOrCreate(
-            ['code' => 'MED-A'],
-            ['name' => 'Medicina Interna A', 'specialty' => 'medicina_interna'],
-        );
-
-        $cirugia = Ward::query()->updateOrCreate(
-            ['code' => 'CIR-B'],
-            ['name' => 'Cirugía B', 'specialty' => 'cirugia'],
-        );
+        $medicina = $this->seedWard('MED-A', 'Medicina Interna A', 'medicina_interna');
+        $cirugia = $this->seedWard('CIR-B', 'Cirugía B', 'cirugia');
 
         $beds = [
-            [$medicina->id, '101', 'A', 'mixed', false, 'available'],
-            [$medicina->id, '101', 'B', 'mixed', false, 'available'],
-            [$medicina->id, '102', 'A', 'female', false, 'available'],
-            [$cirugia->id, '201', 'A', 'male', false, 'available'],
-            [$cirugia->id, '201', 'B', 'male', true, 'blocked'],
-            [$cirugia->id, '202', 'A', 'mixed', false, 'cleaning'],
+            [$medicina, '101', 'A', 'mixed', false, 'available'],
+            [$medicina, '101', 'B', 'mixed', false, 'available'],
+            [$medicina, '102', 'A', 'female', false, 'available'],
+            [$cirugia, '201', 'A', 'male', false, 'available'],
+            [$cirugia, '201', 'B', 'male', true, 'blocked'],
+            [$cirugia, '202', 'A', 'mixed', false, 'cleaning'],
         ];
 
-        foreach ($beds as [$wardId, $room, $bedCode, $genderPolicy, $isolation, $status]) {
-            Bed::query()->updateOrCreate(
-                [
-                    'ward_id' => $wardId,
-                    'room' => $room,
-                    'bed_code' => $bedCode,
-                ],
-                [
-                    'gender_policy' => $genderPolicy,
-                    'isolation' => $isolation,
-                    'status' => $status,
-                ],
-            );
+        foreach ($beds as [$ward, $room, $bedCode, $genderPolicy, $isolation, $status]) {
+            if ($ward !== null) {
+                $this->seedBed($ward, $room, $bedCode, $genderPolicy, $isolation, $status);
+            }
         }
     }
 }

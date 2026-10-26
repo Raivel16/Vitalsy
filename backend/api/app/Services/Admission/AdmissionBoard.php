@@ -3,6 +3,8 @@
 namespace App\Services\Admission;
 
 use App\Models\AdmissionEncounter;
+use App\Models\BedAssignment;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 class AdmissionBoard
 {
@@ -181,8 +183,7 @@ class AdmissionBoard
             throw new AdmissionBoardException('No se encontró la orden.', 404);
         }
 
-        $encounter = AdmissionEncounter::query()->create([
-            'encounter_id' => $this->identifiers->nextEncounterId(),
+        $encounter = $this->createWithNextEncounterId([
             'order_number' => $order['orderNumber'],
             'source' => 'catalog',
             'patient_name' => $order['patient']['fullName'],
@@ -204,6 +205,27 @@ class AdmissionBoard
     }
 
     /**
+     * Crea el ingreso con el siguiente número ENC. Si otro registro simultáneo tomó el mismo
+     * número entre el cálculo y el insert, se recalcula y se reintenta.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createWithNextEncounterId(array $attributes): AdmissionEncounter
+    {
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                return AdmissionEncounter::query()->create(
+                    ['encounter_id' => $this->identifiers->nextEncounterId()] + $attributes,
+                );
+            } catch (UniqueConstraintViolationException $e) {
+                if ($attempt >= 5 || ! str_contains($e->getMessage(), 'encounter_id')) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -215,8 +237,7 @@ class AdmissionBoard
             throw new AdmissionBoardException('Ya existe un ingreso con esa orden.', 422);
         }
 
-        $encounter = AdmissionEncounter::query()->create([
-            'encounter_id' => $this->identifiers->nextEncounterId(),
+        $encounter = $this->createWithNextEncounterId([
             'order_number' => $orderNumber,
             'source' => $source,
             'patient_name' => $data['patientName'],
@@ -253,6 +274,10 @@ class AdmissionBoard
         }
 
         $this->transitions->assertCanAdvance($encounter, $step, $definition['role'], $role, $coverageStatus);
+
+        if ($step === 'consentimiento') {
+            $this->requireCensusBed($encounter);
+        }
 
         if ($coverageStatus !== null) {
             $encounter->coverage_status = $coverageStatus;
@@ -308,12 +333,15 @@ class AdmissionBoard
     /**
      * @return array<string, mixed>
      */
-    public function verifyWristband(string $code): array
+    public function verifyWristband(string $code, ?string $expectedEncounterId = null): array
     {
         $this->ensureDemo();
         $encounter = AdmissionEncounter::query()->where('wristband_code', $code)->first();
         if (! $encounter) {
             throw new AdmissionBoardException('El código no corresponde al paciente.', 422);
+        }
+        if ($expectedEncounterId !== null && $encounter->encounter_id !== $expectedEncounterId) {
+            throw new AdmissionBoardException('El brazalete no corresponde al paciente del ingreso abierto.', 422);
         }
 
         return [
@@ -370,6 +398,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
+        $this->requireCensusBed($encounter);
         $payload = $encounter->readablePayload();
         $payload['consent'] = $consent;
         $encounter->clinical_payload = $payload;
@@ -525,6 +554,21 @@ class AdmissionBoard
             'physicianName' => $signature['physicianName'],
             'credential' => $signature['credential'],
         ];
+    }
+
+    /**
+     * HP-07: sin una cama del censo M5 no hay nada que limpiar al egreso, así que el consentimiento
+     * (y con él el traslado) exige que Gestión de camas ya haya asignado una.
+     */
+    private function requireCensusBed(AdmissionEncounter $encounter): void
+    {
+        $hasBed = BedAssignment::query()
+            ->where('encounter_id', $encounter->encounter_id)
+            ->whereNull('released_at')
+            ->exists();
+        if (! $hasBed) {
+            throw new AdmissionBoardException('Asigne una cama en Gestión de camas antes de registrar el consentimiento.', 422);
+        }
     }
 
     private function locate(string $encounterId): AdmissionEncounter

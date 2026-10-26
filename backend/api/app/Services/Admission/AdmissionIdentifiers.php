@@ -3,6 +3,7 @@
 namespace App\Services\Admission;
 
 use App\Models\AdmissionEncounter;
+use Illuminate\Support\Str;
 
 /** Numeración de ingresos, órdenes de traslado, brazaletes y expedientes. */
 class AdmissionIdentifiers
@@ -38,7 +39,8 @@ class AdmissionIdentifiers
         $parts = preg_split('/\s+/', trim($encounter->patient_name)) ?: [];
         $initials = '';
         foreach (array_slice($parts, 0, 3) as $part) {
-            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+            // Code 128 solo admite ASCII: «Á» → «A», «Ñ» → «N».
+            $initials .= preg_replace('/[^A-Z0-9]/', '', strtoupper(Str::ascii(mb_substr($part, 0, 1))));
         }
 
         return 'BRZ-'.str_pad($this->digitSuffix($encounter), 4, '0', STR_PAD_LEFT).'-'.($initials ?: 'PX');

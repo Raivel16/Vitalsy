@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\AdmissionEncounter;
 use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
+use App\Services\Admission\AdmissionIdentifiers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AdmissionCensusApiTest extends TestCase
@@ -314,5 +316,91 @@ class AdmissionCensusApiTest extends TestCase
             'coverageStatus' => 'aprobada',
             'coveragePlan' => 'SIS Gratuito',
         ])->assertStatus(422)->assertJsonPath('message', 'Ya existe un ingreso con esa orden.');
+    }
+
+    public function test_wristband_code_is_plain_ascii_for_patients_with_accents(): void
+    {
+        $encounter = AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-0006', 'order_number' => 'OI-ASCII-1', 'source' => 'manual',
+            'patient_name' => 'Álvaro Óscar Úbeda Peña', 'document_type' => 'DNI', 'document_number' => '12345678',
+            'origin_service' => 'Emergencia', 'coverage_payer' => 'SIS', 'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS', 'current_step' => 'brazalete', 'deliverables' => [], 'clinical_payload' => [],
+        ]);
+
+        $this->assertSame('BRZ-0006-AOU', app(AdmissionIdentifiers::class)->wristbandCode($encounter));
+    }
+
+    public function test_access_administrator_cannot_list_admission_encounters(): void
+    {
+        $this->asRole('administrador_accesos');
+
+        $this->getJson('/api/v1/hospital-admission/encounters')->assertForbidden();
+        $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')->assertForbidden();
+    }
+
+    public function test_registering_survives_another_registration_taking_the_same_encounter_number(): void
+    {
+        $this->asRole('admision');
+        $taken = false;
+        AdmissionEncounter::creating(function (AdmissionEncounter $encounter) use (&$taken) {
+            if ($taken) {
+                return;
+            }
+            $taken = true;
+            // Otro registro simultáneo toma el mismo número justo antes de este insert.
+            DB::table('admission_encounters')->insert([
+                'encounter_id' => $encounter->encounter_id,
+                'order_number' => 'OI-RACE-0001',
+                'patient_name' => 'Paciente Simultáneo',
+                'document_type' => 'DNI',
+                'document_number' => '10000001',
+                'origin_service' => 'Emergencia adultos',
+                'coverage_payer' => 'SIS',
+                'coverage_status' => 'aprobada',
+                'coverage_plan' => 'SIS Gratuito',
+                'current_step' => 'orden',
+                'deliverables' => '{}',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        $response = $this->postJson('/api/v1/hospital-admission/encounters', [
+            'orderNumber' => 'OI-RACE-0002',
+            'patientName' => 'Lucía Fernández Rojas',
+            'documentNumber' => '10000002',
+            'originService' => 'Emergencia adultos',
+            'coveragePayer' => 'SIS',
+            'coverageStatus' => 'aprobada',
+            'coveragePlan' => 'SIS Gratuito',
+        ]);
+
+        $response->assertCreated();
+        $ids = AdmissionEncounter::query()->whereIn('order_number', ['OI-RACE-0001', 'OI-RACE-0002'])->pluck('encounter_id');
+        $this->assertCount(2, $ids->unique());
+    }
+
+    public function test_el_documento_del_paciente_solo_admite_digitos(): void
+    {
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/encounters', [
+            'orderNumber' => 'OI-2026-0200',
+            'patientName' => 'Pedro Salas Díaz',
+            'documentNumber' => '77AB9900',
+            'originService' => 'Emergencia adultos',
+            'coveragePayer' => 'SIS',
+            'coverageStatus' => 'aprobada',
+            'coveragePlan' => 'SIS Gratuito',
+            'source' => 'manual',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);
+
+        $this->postJson('/api/v1/hospital-admission/filiation/validate', [
+            'fullName' => 'Pedro Salas Díaz',
+            'documentNumber' => '77 99',
+            'confirmed' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);
+
+        $this->assertDatabaseCount('admission_encounters', 0);
     }
 }

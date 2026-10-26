@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.e2e.example
 
 # Node
 node_modules/
@@ -60,3 +61,6 @@ movil/coverage/
 
 # Certificados TLS de produccion (RNF-05): nunca se versionan
 /certs/
+
+# Documentos PDF de la actividad de patentes (pesados; no se versionan)
+docs/actividad-19-patentes/*.pdf

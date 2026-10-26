@@ -96,6 +96,14 @@ class AlertWorkflow
             return $alert->refresh();
         }
 
+        if ($this->siren->isRapidResponseStatus($alert)) {
+            // El ERR confirma la lectura sin cambiar de estado: el caso sigue en sus manos hasta su evaluación (RF-49).
+            $alert->update(['assigned_user_id' => $user->id, 'acknowledge_due_at' => null]);
+            $this->recorder->record($alert, 'recepcion', 'Confirmó la recepción de la alerta.', $user);
+
+            return $alert->refresh();
+        }
+
         $isMedical = in_array($user->role, self::MEDICAL_ROLES, true);
 
         $alert->update([

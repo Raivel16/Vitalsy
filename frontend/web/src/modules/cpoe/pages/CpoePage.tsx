@@ -29,7 +29,7 @@ export function CpoePage() {
   const encounter = useEncounter();
   const [active, setActive] = useState<ActivePrescription | null>(null);
   const [kardexMeds, setKardexMeds] = useState<string[]>([]);
-  const rowKeys = useMemo(createRowKeys, []);
+  const rowKeys = useMemo(() => createRowKeys(), []);
   const [newLines, setNewLines] = useState<Item[]>([emptyItem()]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Item>(emptyItem());

@@ -87,6 +87,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CatalogSeeder::class);
 
+        // La suite E2E conserva el catálogo mínimo: sus escenarios cuentan camas disponibles.
+        if (! app()->environment('e2e')) {
+            $this->call(DemoInfrastructureSeeder::class);
+        }
+
         app(AdmissionBoard::class)->ensureDemo();
 
         // Después de ensureDemo(): esa carga solo corre si aún no hay ingresos.

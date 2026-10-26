@@ -151,7 +151,7 @@ Los actores de proceso se implementan con una clave de rol por responsabilidad. 
 | `servicios_generales` | Personal de servicios generales / limpieza | Desinfección terminal de la unidad (RF-75) |
 | `jefatura_enfermeria` | Jefatura de enfermería / Dirección médica | Rol mensual de turnos (RF-78) y convocatoria de retén (RF-86) |
 | `recursos_humanos` | Personal de recursos humanos | Autorización de cobertura extraordinaria (RF-87) |
-| `administrador_accesos` | Administrador de accesos | Consulta, alta, edición y desactivación de cuentas (RF-101–104) |
+| `administrador_accesos` | Administrador de accesos | Consulta, alta, edición y desactivación de cuentas (RF-101–104) y configuración de la infraestructura de camas (RF-110–112) |
 
 RF-99: Iniciar sesión. El sistema debe autenticar al personal con correo y contraseña, y abrir el espacio de trabajo de su rol. Actor: usuario autorizado.
 RF-100: Cerrar sesión. El sistema debe permitir cerrar la sesión de forma explícita e invalidar el acceso hasta un nuevo inicio. Actor: usuario autenticado.
@@ -159,6 +159,9 @@ RF-101: Consultar usuarios y roles. El sistema debe listar las cuentas del perso
 RF-102: Registrar un usuario y asignarle un rol. El sistema debe permitir crear una cuenta y asociarla a un único rol operativo del catálogo. Actor: administrador de accesos.
 RF-103: Actualizar datos o rol de un usuario. El sistema debe permitir corregir los datos de la cuenta o cambiar el rol asignado. Actor: administrador de accesos.
 RF-104: Desactivar un usuario. El sistema debe permitir desactivar una cuenta sin eliminarla, de modo que no pueda iniciar sesión y se conserve la trazabilidad. Actor: administrador de accesos.
+RF-110: Configurar pabellones, habitaciones y camas. El sistema debe permitir crear y editar pabellones (código, nombre, especialidad) y camas (habitación, código, política de género e indicador de aislamiento), de modo que cada institución defina su propia infraestructura sin depender de datos precargados. Actor: administrador de accesos.
+RF-111: Desactivar o borrar camas y pabellones. El sistema debe permitir desactivar (reversible) o borrar una cama o un pabellón; una cama desactivada o borrada no se ofrece, sugiere ni asigna, y no se puede desactivar ni borrar una cama ocupada o en limpieza. El borrado es lógico: conserva el historial de asignaciones, limpiezas y solicitudes. Actor: administrador de accesos.
+RF-112: Alta de camas en lote y trazabilidad. El sistema debe permitir generar varias habitaciones y camas en una sola operación (rango de habitaciones y camas por habitación) con vista previa, sin duplicar camas existentes, y registrar en una bitácora quién realizó cada cambio y cuándo. Actor: administrador de accesos.
 
 ## 3. Requerimientos No Funcionales
 

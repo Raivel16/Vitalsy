@@ -243,7 +243,7 @@ export function MedicalOrdersPage() {
   const ingreso = params.get("ingreso");
   const role = user?.role ?? "medico_residente";
   const [orders, setOrders] = useState<Orders | null>(null);
-  const rowKeys = useMemo(createRowKeys, []);
+  const rowKeys = useMemo(() => createRowKeys(), []);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [statusLabel, setStatusLabel] = useState("");
   const [physicianName, setPhysicianName] = useState("");

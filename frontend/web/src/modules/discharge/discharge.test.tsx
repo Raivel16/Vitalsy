@@ -107,6 +107,52 @@ describe("alta y egreso (RF-54 a RF-67)", () => {
     expect(await screen.findByRole("heading", { name: /raivel/i })).toBeInTheDocument();
   });
 
+  it("busca al paciente hospitalizado en el servidor aunque no esté en la primera página del censo", async () => {
+    const inpatient = (id: string, name: string) => ({
+      encounterId: id, patientName: name, documentType: "DNI", documentNumber: "10000000", currentStep: "cerrado",
+      location: { room: "401", bed: "A", service: "Medicina" }, wristbandCode: `BRZ-${id}`,
+    });
+    const calls = stubDischarge((url) => {
+      if (url.includes("/hospital-admission/encounters")) {
+        const term = new URL(url, "http://localhost").searchParams.get("q");
+        return jsonResponse(200, {
+          encounters: term === "ENC-0099" ? [inpatient("ENC-0099", "Paciente Lejano")] : [inpatient("ENC-0001", "Paciente Primero")],
+        });
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderApp("/egreso", { role: "medico_tratante" });
+
+    await user.type(await screen.findByLabelText(/buscar paciente hospitalizado/i), "ENC-0099");
+    await user.click(screen.getByRole("button", { name: /^buscar$/i }));
+
+    expect(await screen.findByText("Paciente Lejano")).toBeInTheDocument();
+    expect(screen.queryByText("Paciente Primero")).not.toBeInTheDocument();
+    expect(calls.some((call) => call.url.includes("q=ENC-0099"))).toBe(true);
+  });
+
+  it("al escanear un brazalete fuera de la primera página del censo lo busca en el servidor", async () => {
+    const stranger = { encounterId: "ENC-0001", patientName: "Paciente Primero", documentType: "DNI", documentNumber: "1", wristbandCode: "BRZ-0001", currentStep: "cerrado", location: { room: "1", bed: "A", service: "M" } };
+    const target = { encounterId: "ENC-HOSP", patientName: "Raivel", documentType: "DNI", documentNumber: "0056", wristbandCode: "BRZ-HOSP", currentStep: "cerrado", location: { room: "304", bed: "B", service: "Medicina interna" } };
+    stubDischarge((url) => {
+      if (url.includes("/hospital-admission/encounters")) {
+        const term = new URL(url, "http://localhost").searchParams.get("q");
+        return jsonResponse(200, { encounters: term === "BRZ-HOSP" ? [target] : [stranger] });
+      }
+      if (url.includes("/discharge/encounters/ENC-HOSP")) {
+        return jsonResponse(200, { case: { ...baseCase, encounterId: "ENC-HOSP", patientName: "Raivel" } });
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderApp("/egreso", { role: "medico_tratante" });
+
+    await user.click(await screen.findByRole("button", { name: /escanear brazalete/i }));
+
+    expect(await screen.findByRole("heading", { name: /raivel/i })).toBeInTheDocument();
+  });
+
   it("permite al médico tratante registrar la orden de alta", async () => {
     const calls = stubDischarge((url, init) => {
       if (url.includes("/order") && init?.method === "POST") {

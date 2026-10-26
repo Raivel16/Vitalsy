@@ -39,7 +39,7 @@ class HospitalAdmissionController extends Controller
     {
         $data = $request->validate([
             'fullName' => ['required', 'string'],
-            'documentNumber' => ['required', 'string'],
+            'documentNumber' => ['required', 'string', 'regex:/^[0-9]+$/'],
             'birthDate' => ['nullable', 'date'],
             'confirmed' => ['accepted'],
             'encounterId' => ['nullable', 'string'],
@@ -166,11 +166,11 @@ class HospitalAdmissionController extends Controller
 
     public function verifyWristband(Request $request): JsonResponse
     {
-        $data = $request->validate(['code' => ['required', 'string']]);
+        $data = $request->validate(['code' => ['required', 'string'], 'encounterId' => ['nullable', 'string']]);
 
         return $this->guard(function () use ($data) {
             try {
-                return response()->json(['identity' => $this->board->verifyWristband($data['code'])]);
+                return response()->json(['identity' => $this->board->verifyWristband($data['code'], $data['encounterId'] ?? null)]);
             } catch (AdmissionBoardException $exception) {
                 return response()->json(['message' => $exception->getMessage()], $exception->status);
             }

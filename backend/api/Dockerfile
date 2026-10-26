@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libzip-dev \
         $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_pgsql gd zip bcmath \
+    && docker-php-ext-install pdo_pgsql gd zip bcmath pcntl \
     && pecl install pcov \
     && docker-php-ext-enable pcov \
     && apt-get purge -y --auto-remove $PHPIZE_DEPS \

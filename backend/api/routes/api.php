@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AdmissionNursingController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BedInfrastructureController;
 use App\Http\Controllers\Api\BedManagementController;
 use App\Http\Controllers\Api\ClinicalAlertsController;
 use App\Http\Controllers\Api\ClinicalVisitController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Api\PatientClinicalChartController;
 use App\Http\Controllers\Api\StaffRosterController;
 use App\Http\Controllers\Api\UserAdminController;
 use App\Http\Controllers\Api\VitalSignsMonitoringController;
+use App\Support\RoleCatalog;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +42,7 @@ Route::get('health', function () {
 });
 
 Route::prefix('v1')->group(function () {
-    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // Vitalsy Life: cuentas ciudadanas (RF-89); el middleware `life` excluye al personal clínico.
     Route::prefix('life')->group(function () {
@@ -73,8 +75,11 @@ Route::prefix('v1')->group(function () {
         require base_path('routes/channels.php');
 
         Route::prefix('hospital-admission')->group(function () {
-            Route::get('encounters', [AdmissionCensusController::class, 'index']);
-            Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
+            // N-17: el censo de ingresos lo consulta todo el personal clínico y operativo, no la administración de accesos.
+            Route::middleware('role:'.implode(',', array_diff(RoleCatalog::all(), ['administrador_accesos'])))->group(function () {
+                Route::get('encounters', [AdmissionCensusController::class, 'index']);
+                Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
+            });
             Route::post('encounters/{encounterId}/advance', [AdmissionCensusController::class, 'advance']);
 
             Route::middleware('role:admision')->group(function () {
@@ -304,6 +309,19 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:auxiliar_enfermeria')->group(function () {
                 Route::post('{bedId}/equip', [BedManagementController::class, 'equip']);
             });
+        });
+
+        // RF-110–112: configuración de pabellones, habitaciones y camas (solo administrador de accesos).
+        Route::middleware('role:administrador_accesos')->prefix('bed-infrastructure')->group(function () {
+            Route::get('wards', [BedInfrastructureController::class, 'wards']);
+            Route::post('wards', [BedInfrastructureController::class, 'storeWard']);
+            Route::patch('wards/{id}', [BedInfrastructureController::class, 'updateWard']);
+            Route::delete('wards/{id}', [BedInfrastructureController::class, 'destroyWard']);
+            Route::post('beds', [BedInfrastructureController::class, 'storeBed']);
+            Route::post('beds/bulk/preview', [BedInfrastructureController::class, 'previewBulk']);
+            Route::post('beds/bulk', [BedInfrastructureController::class, 'storeBulk']);
+            Route::patch('beds/{id}', [BedInfrastructureController::class, 'updateBed']);
+            Route::delete('beds/{id}', [BedInfrastructureController::class, 'destroyBed']);
         });
 
         // Módulo 6 — Gestión del personal asistencial (RF-78–82)

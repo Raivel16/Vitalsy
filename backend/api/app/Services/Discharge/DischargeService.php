@@ -54,7 +54,10 @@ class DischargeService
 
     public function registerOrder(string $encounterId, User $user): array
     {
-        $this->requireEncounter($encounterId);
+        $encounter = $this->requireEncounter($encounterId);
+        if ($encounter->current_step !== 'cerrado') {
+            throw new ClinicalRuleException('La orden de alta solo procede para ingresos hospitalizados.');
+        }
 
         $existing = DischargeOrder::query()->where('encounter_id', $encounterId)->first();
         if ($existing) {

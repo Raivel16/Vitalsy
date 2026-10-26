@@ -147,6 +147,7 @@ export const NAV: NavGroup[] = [
     label: "Administración",
     items: [
       { to: "/usuarios", label: "Usuarios", icon: IconUserCog, roles: ADMIN_ROLES },
+      { to: "/infraestructura", label: "Infraestructura de camas", icon: IconBed, roles: ADMIN_ROLES },
     ],
   },
 ];

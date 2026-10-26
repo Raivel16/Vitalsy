@@ -224,7 +224,7 @@ async function verifyWristbandCode(
 ): Promise<string> {
   const data = await api<{ identity: { patientName: string } }>("/api/v1/hospital-admission/wristbands/verify", {
     method: "POST",
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, encounterId: activeEncounter.encounterId }),
   });
   if (activeEncounter.currentStep === "identidad") {
     const next = await advanceEncounter(activeEncounter.encounterId, "identidad");
@@ -249,8 +249,9 @@ export function WristbandVerifyPage() {
     setMessage("");
     setError("");
     setAdvanced(false);
-    setCode(encounter?.wristbandCode ?? "");
-  }, [encounter?.encounterId, encounter?.wristbandCode]);
+    // El código no se pre-carga (HP-04): el camillero lo escanea o lo escribe.
+    setCode("");
+  }, [encounter?.encounterId]);
 
   const runVerify = useCallback(async (value: string) => {
     const trimmed = value.trim();

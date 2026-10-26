@@ -84,6 +84,22 @@ class CpoePrescriptionApiTest extends TestCase
             ->assertJsonPath('medications.0', 'Paracetamol 1 g cada 8 horas');
     }
 
+    public function test_floor_nurse_reads_the_active_prescription_without_the_drug_barcodes(): void
+    {
+        $this->inpatientEncounter();
+        $this->asRole('medico_tratante');
+        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+            'items' => [['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => 'cada 8 horas']],
+        ])->assertCreated();
+
+        $this->asRole('enfermera_piso');
+        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')->assertOk();
+
+        $response->assertJsonPath('prescription.items.0.drugName', 'Paracetamol');
+        $this->assertArrayNotHasKey('drugBarcode', $response->json('prescription.items.0'));
+        $this->assertStringNotContainsString('DRUG-PARACETAMOL-1G', $response->getContent());
+    }
+
     public function test_tratante_can_edit_delete_and_add_items_individually(): void
     {
         $this->inpatientEncounter();

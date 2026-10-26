@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionEncounter;
+use App\Models\Bed;
+use App\Models\BedAssignment;
 use App\Models\PrescriptionItem;
 use App\Models\User;
 use App\Models\VitalSignReading;
+use App\Models\Ward;
 use App\Services\Admission\AdmissionBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -18,6 +21,30 @@ class HospitalAdmissionApiTest extends TestCase
     private function asRole(string $role): static
     {
         return $this->actingAs(User::factory()->create(['role' => $role]));
+    }
+
+    /** HP-07: el consentimiento exige una cama del censo M5 asignada al ingreso. */
+    private function assignCensusBed(string $encounterId, string $room = '999'): void
+    {
+        $ward = Ward::query()->firstOrCreate(['code' => 'T-'.$room], ['name' => 'Servicio de prueba '.$room]);
+        $bed = Bed::query()->create(['ward_id' => $ward->id, 'room' => $room, 'bed_code' => 'A', 'status' => 'occupied']);
+        BedAssignment::query()->create(['bed_id' => $bed->id, 'encounter_id' => $encounterId, 'assigned_at' => now()]);
+    }
+
+    public function test_consent_requires_a_census_bed_assigned_to_the_encounter(): void
+    {
+        $this->asRole('admision');
+        $payload = ['encounterId' => 'ENC-0001', 'signerName' => 'Rosa Quispe', 'accepted' => true];
+
+        $this->postJson('/api/v1/hospital-admission/informed-consents', $payload)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Asigne una cama en Gestión de camas antes de registrar el consentimiento.');
+
+        $this->assignCensusBed('ENC-0001');
+
+        $this->postJson('/api/v1/hospital-admission/informed-consents', $payload)
+            ->assertCreated()
+            ->assertJsonPath('consent.status', 'firmado');
     }
 
     public function test_admission_order_returns_the_order_or_a_spanish_not_found(): void
@@ -60,6 +87,7 @@ class HospitalAdmissionApiTest extends TestCase
     public function test_coverage_referral_wristband_record_and_consent_are_created(): void
     {
         $this->asRole('admision');
+        $this->assignCensusBed('ENC-0001');
         $this->postJson('/api/v1/hospital-admission/coverage/validate', [
             'orderNumber' => 'OI-2026-0002',
         ])->assertOk()->assertJsonPath('coverage.status', 'pendiente');
@@ -94,6 +122,7 @@ class HospitalAdmissionApiTest extends TestCase
     public function test_consent_stores_life_user_flag(): void
     {
         $this->asRole('admision');
+        $this->assignCensusBed('ENC-0001');
         $this->postJson('/api/v1/hospital-admission/informed-consents', [
             'encounterId' => 'ENC-0001',
             'signerName' => 'Rosa Quispe',
@@ -161,6 +190,19 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('identity.patientName', 'Luis Ernesto Paredes');
 
         $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA'])
+            ->assertOk()
+            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
+    }
+
+    public function test_wristband_of_another_patient_is_rejected_for_the_open_encounter(): void
+    {
+        $this->asRole('camillero');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0002'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'El brazalete no corresponde al paciente del ingreso abierto.');
+
+        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0001'])
             ->assertOk()
             ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
     }
