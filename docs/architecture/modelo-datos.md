@@ -90,8 +90,9 @@ El Kardex y la ficha digital siguen apoyados en `admission_encounters.clinical_p
 
 | Tabla | Contenido | RF |
 |-------|-----------|----|
-| `wards` | Servicios / unidades | RF-69 |
-| `beds` | Lecho (`available`\|`occupied`\|`cleaning`\|`blocked`) | RF-69, RF-72–73 |
+| `wards` | Servicios / unidades (`active`, borrado lógico) | RF-69, RF-110–111 |
+| `beds` | Lecho (`available`\|`occupied`\|`cleaning`\|`blocked`; `active`, borrado lógico) | RF-69, RF-72–73, RF-110–111 |
+| `bed_infrastructure_changes` | Bitácora de cambios del catálogo (quién, cuándo, qué) | RF-112 |
 | `bed_requests` | Solicitud priorizada | RF-68, RF-70 |
 | `bed_assignments` | Asignación / liberación | RF-07, RF-73 |
 | `cleaning_orders` | Limpieza (`standard`\|`deep`) | RF-74–75 |

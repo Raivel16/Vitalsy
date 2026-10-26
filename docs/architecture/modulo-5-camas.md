@@ -36,6 +36,9 @@ Cada transición valida el estado previo dentro de una transacción con la fila 
 | RF-75 | Hecho | Checklist obligatorio · `POST .../complete` | `BedCleaningWorkflowTest`, `cleaning-orders.test.tsx` |
 | RF-76 | Hecho | `POST /beds/{bedId}/equip` (exige desinfección completa; chequeo ligado a la orden) | `BedCleaningWorkflowTest` |
 | RF-77 | Hecho | `POST /beds/{bedId}/release` (exige la orden `equipada` del ciclo actual) | `BedCleaningWorkflowTest` |
+| RF-110 | Hecho | Pantalla `/infraestructura` (crear pabellones y camas) · `GET/POST/PATCH /bed-infrastructure/wards`, `POST/PATCH /bed-infrastructure/beds` (solo `administrador_accesos`) | `BedInfrastructureApiTest`, `bed-infrastructure.test.tsx`, E2E `infraestructura.spec.ts` |
+| RF-111 | Hecho | Desactivar (`PATCH {active:false}`) o borrar (`DELETE`, borrado lógico con historial); no aplica a camas ocupadas o en limpieza; las camas desactivadas no se ofrecen, sugieren ni asignan | `BedInfrastructureApiTest`, `bed-infrastructure.test.tsx` |
+| RF-112 | Hecho | Alta en lote con vista previa (`POST /bed-infrastructure/beds/bulk[/preview]`, tope 200 camas) y bitácora `bed_infrastructure_changes` | `BedInfrastructureApiTest`, `DemoInfrastructureSeederTest` |
 
 ## Compatibilidad lecho ↔ paciente (RF-72)
 
@@ -53,6 +56,7 @@ Fuente única en `App\Services\BedManagement\BedCompatibility`. Un lecho es comp
 |---|---|---|
 | `/camas` | `gestion_camas`, `enfermera_supervisora` | `screen_3_censo_hospitalario_corregido` |
 | `/camas/limpieza` | `servicios_generales`, `auxiliar_enfermeria`, `enfermera_supervisora` | `screen_4_limpieza_habilitaci_n_de_unidades` |
+| `/infraestructura` | `administrador_accesos` | Sin diseño de referencia (RF-110–112): pabellones, camas, desactivar/borrar y alta en lote |
 
 Las pantallas no muestran guía de pasos informativos. En `/camas` el panel lateral (lista de espera priorizada, notificaciones y proyecciones) queda fijo al hacer scroll y «Nueva solicitud» abre el registro en un cajón lateral. Cada tarjeta expone solo la acción que corresponde al rol y a la etapa; en cualquier otro caso indica a quién se espera.
 
