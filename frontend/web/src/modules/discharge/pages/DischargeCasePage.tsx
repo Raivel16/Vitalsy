@@ -12,6 +12,7 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { printClinicalDocument } from "../../../shared/print/printDocument";
 import { handoffLines, lifePlanCode, lifePlanValidUntil, type DischargeCase, type LifePlan, type LifePlanMode } from "../domain/discharge";
 import { lifeSheetHtml } from "../domain/lifeSheet";
+import { isAffirmative } from "../domain/socialAnswer";
 
 const LIFE_ERROR = "No se pudo generar el código de Vitalsy Life. Intente de nuevo.";
 const LIFE_MODES: ReadonlySet<string> = new Set(["usuario", "invitacion", "rechaza"]);
@@ -219,7 +220,7 @@ function SocialStep({ role, item, encounterId, form, onField, pending, submit }:
       className="stack ops-form"
       onSubmit={submitHandler(() => void submit(`/api/v1/discharge/encounters/${encounterId}/social-assessment`, {
         report: form.report ?? "",
-        validated: form.validated === "si",
+        validated: isAffirmative(form.validated ?? ""),
       }, "Valoración social registrada."))}
     >
       <TextAreaField id="report" label="Informe de valoración social" value={form.report ?? ""} onChange={onField("report")} />

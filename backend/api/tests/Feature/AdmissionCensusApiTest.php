@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdmissionEncounter;
 use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
+use App\Services\Admission\AdmissionIdentifiers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -315,6 +316,18 @@ class AdmissionCensusApiTest extends TestCase
             'coverageStatus' => 'aprobada',
             'coveragePlan' => 'SIS Gratuito',
         ])->assertStatus(422)->assertJsonPath('message', 'Ya existe un ingreso con esa orden.');
+    }
+
+    public function test_wristband_code_is_plain_ascii_for_patients_with_accents(): void
+    {
+        $encounter = AdmissionEncounter::query()->create([
+            'encounter_id' => 'ENC-0006', 'order_number' => 'OI-ASCII-1', 'source' => 'manual',
+            'patient_name' => 'Álvaro Óscar Úbeda Peña', 'document_type' => 'DNI', 'document_number' => '12345678',
+            'origin_service' => 'Emergencia', 'coverage_payer' => 'SIS', 'coverage_status' => 'aprobada',
+            'coverage_plan' => 'SIS', 'current_step' => 'brazalete', 'deliverables' => [], 'clinical_payload' => [],
+        ]);
+
+        $this->assertSame('BRZ-0006-AOU', app(AdmissionIdentifiers::class)->wristbandCode($encounter));
     }
 
     public function test_access_administrator_cannot_list_admission_encounters(): void

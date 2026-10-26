@@ -43,6 +43,13 @@ describe("registro manual de ingreso (RF-01)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("no promete una solicitud de cama: la cama no se asigna en el registro", async () => {
+    renderApp("/pacientes/nuevo");
+    await screen.findByLabelText(/número de orden/i);
+    expect(screen.queryByText(/solicitud de asignación inmediata/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/no asigna ni solicita cama/i)).toBeInTheDocument();
+  });
+
   it("valida antes de enviar y no llama a la API con el formulario vacío", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, {}));
