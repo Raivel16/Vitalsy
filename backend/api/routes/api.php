@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdmissionCensusController;
 use App\Http\Controllers\Api\AdmissionNursingController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BedInfrastructureController;
 use App\Http\Controllers\Api\BedManagementController;
 use App\Http\Controllers\Api\ClinicalAlertsController;
 use App\Http\Controllers\Api\ClinicalVisitController;
@@ -308,6 +309,19 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:auxiliar_enfermeria')->group(function () {
                 Route::post('{bedId}/equip', [BedManagementController::class, 'equip']);
             });
+        });
+
+        // RF-110–112: configuración de pabellones, habitaciones y camas (solo administrador de accesos).
+        Route::middleware('role:administrador_accesos')->prefix('bed-infrastructure')->group(function () {
+            Route::get('wards', [BedInfrastructureController::class, 'wards']);
+            Route::post('wards', [BedInfrastructureController::class, 'storeWard']);
+            Route::patch('wards/{id}', [BedInfrastructureController::class, 'updateWard']);
+            Route::delete('wards/{id}', [BedInfrastructureController::class, 'destroyWard']);
+            Route::post('beds', [BedInfrastructureController::class, 'storeBed']);
+            Route::post('beds/bulk/preview', [BedInfrastructureController::class, 'previewBulk']);
+            Route::post('beds/bulk', [BedInfrastructureController::class, 'storeBulk']);
+            Route::patch('beds/{id}', [BedInfrastructureController::class, 'updateBed']);
+            Route::delete('beds/{id}', [BedInfrastructureController::class, 'destroyBed']);
         });
 
         // Módulo 6 — Gestión del personal asistencial (RF-78–82)
