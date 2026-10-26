@@ -13,6 +13,7 @@ const BED_LABEL: Record<BedVisual, string> = {
 };
 
 /** Mapea el estado persistido del censo a la ficha visual. El aislamiento pisa al resto. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function bedTone(status: string, isolation = false): BedVisual {
   if (isolation) return "isolation";
   if (status === "available" || status === "disponible") return "available";
