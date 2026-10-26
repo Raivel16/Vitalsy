@@ -53,6 +53,7 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Lima}
       # Sin APP_KEY los campos cifrados (RNF-06) serian ilegibles: el arranque debe fallar.
       APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
       APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
@@ -89,6 +90,36 @@ services:
     depends_on:
       - postgres
       - reverb
+
+  # HP-01: ejecuta el planificador (SLA de alertas, recordatorios de cumplimiento).
+  scheduler:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?defina APP_KEY (base64:...); su perdida hace irrecuperables los datos cifrados}
+      APP_PREVIOUS_KEYS: ${APP_PREVIOUS_KEYS:-}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Lima}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_NAME:-mi_db}
+      DB_USERNAME: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:?defina REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?defina REVERB_APP_SECRET}
+      REVERB_HOST: reverb
+      REVERB_PORT: "8080"
+      REVERB_SCHEME: http
+    depends_on:
+      - postgres
+      - backend
 
   reverb:
     build:

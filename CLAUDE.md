@@ -32,6 +32,8 @@ Desarrollo completo (Nginx en http://localhost:8080, API bajo `/api`, Postgres e
 docker compose up --build
 ```
 
+La primera vez, nginx exige certificados de desarrollo no versionados: `bash docker/nginx/generate-dev-certs.sh`. El servicio `scheduler` ejecuta `schedule:work` (SLA de alertas) y `APP_TIMEZONE` vale `America/Lima` por defecto.
+
 Frontend (`frontend/web`):
 
 ```bash
