@@ -17,7 +17,12 @@ export default defineConfig({
       "/up": { target: proxyTarget, changeOrigin: true },
     },
     hmr: hmrClientPort ? { clientPort: Number(hmrClientPort) } : undefined,
-    watch: process.env.CHOKIDAR_USEPOLLING === "true" ? { usePolling: true } : undefined,
+    watch: {
+      // Playwright escribe reportes, videos y sesiones aquí mientras corre; sin ignorarlos Vite recarga
+      // las páginas de las demás pruebas a mitad de una navegación (pruebas inestables, RNF-18).
+      ignored: ["**/e2e-results/**", "**/e2e/.auth/**"],
+      ...(process.env.CHOKIDAR_USEPOLLING === "true" ? { usePolling: true } : {}),
+    },
   },
   preview: {
     host: "0.0.0.0",
