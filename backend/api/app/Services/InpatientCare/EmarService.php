@@ -201,8 +201,6 @@ class EmarService
             'administeredAt' => optional($dose->administered_at)?->toIso8601String(),
             'status' => $dose->status,
             'barcodeOk' => $dose->barcode_ok,
-            'expectedPatientBarcode' => $encounter->wristband_code,
-            'expectedDrugBarcode' => $this->drugBarcode($item),
         ];
     }
 

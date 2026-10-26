@@ -70,7 +70,7 @@ async function advance(ctx: Ctx, enc: Enc, step: string, coverageStatus?: string
   return apply(enc, encounter);
 }
 
-export type AdmissionOptions = { withBed?: boolean; lifeCode?: string };
+export type AdmissionOptions = { lifeCode?: string; withoutBed?: boolean };
 
 /** Acción de la pantalla del paso vigente; devuelve el ingreso ya avanzado. */
 async function completeStep(ctx: Ctx, enc: Enc, opts: AdmissionOptions): Promise<Enc> {
@@ -109,23 +109,23 @@ async function completeStep(ctx: Ctx, enc: Enc, opts: AdmissionOptions): Promise
       const { wristband } = await (await as("admision")).post<{ wristband: { code: string } }>(`${ADM}/wristbands`, { encounterId: id });
       return advance(ctx, { ...enc, wristband: wristband.code }, "brazalete");
     }
-    case "expediente":
+    case "expediente": {
       await (await as("admision")).post(`${ADM}/clinical-records`, { encounterId: id });
-      return advance(ctx, enc, "expediente");
+      const next = await advance(ctx, enc, "expediente");
+      // HP-07: el consentimiento exige una cama del censo, así que el ingreso llega a ese paso ya con cama.
+      if (opts.withoutBed || next.bedId !== undefined) return next;
+      const { requestId } = await requestBed(ctx, {
+        encounterId: id,
+        specialty: "medicina_interna",
+        gender: p.sex,
+        isolationType: "ninguno",
+        priority: "media",
+        source: "admisiones",
+      });
+      const bed = await assignBed(ctx, requestId);
+      return { ...next, bedId: bed.bedId, room: bed.room, bed: bed.bedCode };
+    }
     case "consentimiento": {
-      let current = enc;
-      if (opts.withBed && current.bedId === undefined) {
-        const { requestId } = await requestBed(ctx, {
-          encounterId: id,
-          specialty: "medicina_interna",
-          gender: p.sex,
-          isolationType: "ninguno",
-          priority: "media",
-          source: "admisiones",
-        });
-        const bed = await assignBed(ctx, requestId);
-        current = { ...current, bedId: bed.bedId, room: bed.room, bed: bed.bedCode };
-      }
       await (await as("admision")).post(`${ADM}/informed-consents`, {
         encounterId: id,
         signerName: p.fullName,
@@ -134,7 +134,7 @@ async function completeStep(ctx: Ctx, enc: Enc, opts: AdmissionOptions): Promise
         lifeUser: Boolean(opts.lifeCode),
       });
       if (opts.lifeCode) await (await as("admision")).post(`${ADM}/life-links`, { encounterId: id, code: opts.lifeCode });
-      return advance(ctx, current, "consentimiento");
+      return advance(ctx, enc, "consentimiento");
     }
     case "traslado":
       await (await as("camillero")).get(`${ADM}/transfer-orders/${encodeURIComponent(enc.transferOrderNumber ?? "")}`);

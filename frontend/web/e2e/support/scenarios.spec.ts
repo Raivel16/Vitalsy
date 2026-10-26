@@ -15,8 +15,8 @@ test("hospitalize con cobertura pendiente pasa por la derivación", async ({ api
   expect(hosp.currentStep).toBe("cerrado");
 });
 
-test("hospitalize con withBed ocupa un lecho del censo", async ({ api, data }) => {
-  const hosp = await hospitalize({ api, data }, { withBed: true });
+test("hospitalize ocupa un lecho del censo", async ({ api, data }) => {
+  const hosp = await hospitalize({ api, data });
   expect(hosp.bedId).toBeDefined();
   const { wards } = await (await api("gestion_camas")).get<{ wards: { beds: { id: number; status: string }[] }[] }>("/beds/census");
   expect(wards.flatMap((w) => w.beds).find((b) => b.id === hosp.bedId)?.status).toBe("occupied");

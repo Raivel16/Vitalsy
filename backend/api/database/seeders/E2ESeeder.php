@@ -60,5 +60,32 @@ class E2ESeeder extends Seeder
                 );
             }
         }
+
+        $this->seedVolumeWards();
+    }
+
+    /**
+     * Cada ingreso de la suite ocupa un lecho del censo antes del consentimiento (HP-07), así que
+     * hace falta un fondo grande de camas libres y neutras para que las pruebas no se las agoten.
+     */
+    private function seedVolumeWards(): void
+    {
+        foreach ([10, 11, 12, 13] as $floor) {
+            $ward = Ward::query()->updateOrCreate(
+                ['code' => "VOL-E2E-{$floor}"],
+                ['name' => "Volumen E2E {$floor}", 'specialty' => 'medicina_interna'],
+            );
+
+            for ($index = 0; $index < 80; $index++) {
+                Bed::query()->updateOrCreate(
+                    [
+                        'ward_id' => $ward->id,
+                        'room' => sprintf('%d%02d', $floor, intdiv($index, 2) + 1),
+                        'bed_code' => $index % 2 === 0 ? 'A' : 'B',
+                    ],
+                    ['gender_policy' => 'mixed', 'isolation' => false, 'status' => 'available'],
+                );
+            }
+        }
     }
 }

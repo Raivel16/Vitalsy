@@ -135,7 +135,6 @@ class PatientClinicalChart
                 'dose' => $item->dose,
                 'route' => $item->route,
                 'frequency' => $item->frequency,
-                'drugBarcode' => CpoeService::drugBarcodeFor($item->drug_name, $item->dose),
             ])->all(),
         ];
     }

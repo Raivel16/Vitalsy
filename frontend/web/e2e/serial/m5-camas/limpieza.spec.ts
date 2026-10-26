@@ -1,5 +1,5 @@
 import { expect, test } from "../../support/fixtures";
-import { advanceDischarge, census, hospitalize, type Ctx } from "../../support/scenarios";
+import { advanceAdmission, advanceDischarge, census, hospitalize, registerEncounter, type Ctx } from "../../support/scenarios";
 
 type Order = { id: number; status: string; bed?: { id: number; room: string; bedCode: string } } & Record<string, unknown>;
 
@@ -12,7 +12,7 @@ function bedIdOf(order: Order): number | undefined {
 }
 
 async function vacatedBed(ctx: Ctx) {
-  const hosp = await hospitalize(ctx, { withBed: true });
+  const hosp = await hospitalize(ctx);
   await advanceDischarge(ctx, hosp, "salida");
   const order = (await ordersOf(ctx)).find((o) => bedIdOf(o) === hosp.bedId);
   return { hosp, order };
@@ -79,11 +79,15 @@ test.describe("limpieza terminal y habilitación (RF-74–77)", () => {
     expect((await res.json()).message).toBe("Complete todo el checklist antes de registrar la desinfección.");
   });
 
-  test("RF-74 · Camas · el egreso de un paciente sin cama del censo también genera limpieza [E5-09]", { tag: "@hallazgo-HP-07" }, async ({ api, data }) => {
+  test("RF-74 · Camas · sin cama del censo asignada no se firma el consentimiento [E5-09]", async ({ api, data }) => {
     const ctx = { api, data };
-    const before = (await ordersOf(ctx)).length;
-    const hosp = await hospitalize(ctx);
-    await advanceDischarge(ctx, hosp, "salida");
-    expect((await ordersOf(ctx)).length, "debería generarse una orden (o un aviso) por la habitación liberada").toBeGreaterThan(before);
+    const enc = await advanceAdmission(ctx, await registerEncounter(ctx), "consentimiento", { withoutBed: true });
+    const res = await (await api("admision")).raw("POST", "/hospital-admission/informed-consents", {
+      encounterId: enc.encounterId,
+      signerName: enc.patient.fullName,
+      accepted: true,
+    });
+    expect(res.status()).toBe(422);
+    expect((await res.json()).message).toBe("Asigne una cama en Gestión de camas antes de registrar el consentimiento.");
   });
 });

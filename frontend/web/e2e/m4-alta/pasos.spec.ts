@@ -37,7 +37,7 @@ test.describe("gates de secuencia del egreso", () => {
     });
   }
 
-  test("RF-54 · Egreso · la orden de alta solo procede para ingresos hospitalizados [E4-02]", { tag: "@hallazgo-HP-06" }, async ({ api, data }) => {
+  test("RF-54 · Egreso · la orden de alta solo procede para ingresos hospitalizados [E4-02]", async ({ api, data }) => {
     const enc = await advanceAdmission({ api, data }, await registerEncounter({ api, data }), "orden");
     const res = await (await api("medico_tratante")).raw("POST", `/discharge/encounters/${enc.encounterId}/order`);
     expect(res.status()).toBe(422);
@@ -85,7 +85,7 @@ test.describe("pasos del egreso por pantalla", () => {
   });
 
   for (const answer of ["si", "Sí"]) {
-    test(`RF-57 · Egreso · la valoración social acepta «${answer}» como entorno adecuado [E4-05]`, answer === "Sí" ? { tag: "@hallazgo-HP-12" } : {}, async ({ asRole, api, data }) => {
+    test(`RF-57 · Egreso · la valoración social acepta «${answer}» como entorno adecuado [E4-05]`, async ({ asRole, api, data }) => {
       const hosp = await hospitalize({ api, data });
       await advanceDischarge({ api, data }, hosp, "recetas");
       const page = await asRole("trabajo_social");

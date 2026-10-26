@@ -34,8 +34,6 @@ export type Dose = {
   drugName: string;
   status: string;
   scheduledAt: string;
-  expectedPatientBarcode: string;
-  expectedDrugBarcode: string;
 };
 
 export async function emarDoses(ctx: Ctx, enc: Enc): Promise<Dose[]> {

@@ -256,7 +256,7 @@ Flujo lineal por rol (stepper): orden → filiación → cobertura → brazalete
 | E1-10 | `/admision/brazalete` | «Emitir brazalete». | «Brazalete emitido.» Se muestra el código `BRZ-0004-MGR` (BRZ + número del ingreso + iniciales de hasta 3 palabras) con código de barras. «Imprimir código de barras» abre impresión. |
 | E1-11 | `/admision/expediente` | «Aperturar expediente». | «Expediente abierto correctamente. Identificador EXP-0004.» Ubicación «Pendiente de asignación» (no hay cama aún). |
 
-**Siguiente paso:** **E1b (asignar cama) antes del consentimiento.** Motivo: al registrar el consentimiento el sistema fija la orden de traslado y, si el ingreso no tiene habitación, le pone una provisional; un ingreso sin cama del censo M5 no genera orden de limpieza al egresar (HP-07).
+**Siguiente paso:** **E1b (asignar cama) antes del consentimiento — obligatorio.** El sistema rechaza el consentimiento (422) si el ingreso no tiene una cama del censo M5 asignada (HP-07, corregido).
 
 #### E1b. Asignación de cama (Módulo 5 — RF-68, RF-72, RF-73)
 
@@ -352,7 +352,7 @@ Repita los pasos E1-01 a E1-33 (con E1b antes del consentimiento) usando los dat
 | E2-03 | igual | «Agregar medicamento al plan activo»: `Omeprazol`, `20 mg`, `VO`, `cada 24 horas`; «Agregar al plan». Luego edite (Guardar) y elimine (Eliminar) la línea. | «Medicamento agregado al plan activo.», «Medicamento actualizado.», «Medicamento eliminado del plan.»; el «Kardex electrónico» se actualiza. |
 | E2-04 | `enfermera_piso@` · `/atencion/constantes` | Constantes normales: FR `16`, SpO2 `98`, PA `118`/`76`, Pulso `70`, Temp `36.6`, Alerta. «Registrar constantes». | NEWS2 0: «NEWS2 0. Próximo control: <fecha+12 h>.» La «Gráfica evolutiva» agrega un punto (RF-29, RF-31). |
 | E2-05 | igual | Registre FR `22`, resto normal. | NEWS2 2 (banner amarillo): «Se activó el proceso de alertas (NEWS2 2).» y se crea una alerta (ver E3). |
-| E2-06 | `enfermera_piso@` · `/atencion/emar` | Revise la tabla horaria. En una dosis pulse «Verificar y administrar» (o «Justificar / Administrar» si está vencida). | Panel «Verificación de Seguridad al Pie de Cama · 5 Correctos» con el código esperado del medicamento y del brazalete. |
+| E2-06 | `enfermera_piso@` · `/atencion/emar` | Revise la tabla horaria. En una dosis pulse «Verificar y administrar» (o «Justificar / Administrar» si está vencida). | Panel «Verificación de Seguridad al Pie de Cama · 5 Correctos» con los dos campos de código **vacíos**: la pantalla ya no muestra los códigos esperados (HP-04, corregido). Para saber qué escanear: el brazalete es el código de `/admision/brazalete` (también en el censo); el medicamento es `DRUG-{NOMBRE}-{DOSIS}` en mayúsculas y sin espacios (lo muestra la tabla «Prescripción activa» del CPOE) y `php artisan emar:codes ENC-XXXX` (en el contenedor `backend`) lista ambos para un ingreso. |
 | E2-07 | igual (negativo) | En «Código paciente (brazalete)» escriba `BRZ-0004-MGR` y en «Código medicamento» `DRUG-OTRO-1MG`; «Confirmar administración». | Bloqueado: «Los cinco correctos no coinciden. Administración bloqueada.» La dosis sigue pendiente. |
 | E2-08 | igual | Escriba el código correcto del medicamento (p. ej. `DRUG-PARACETAMOL-500MG`); «Confirmar administración». | «Dosis administrada y firmada.» La dosis pasa a administrada y queda inmutable (RF-33/35). |
 | E2-09 | `medico_residente@` · `/atencion/laboratorio` | «Integrar desde LIS». | «2 resultados integrados desde el LIS.»: «Hemoglobina 11.2 g/dL» y «Creatinina 0.9 mg/dL» (origen «Integración LIS / FHIR»; son datos *stub*). |
@@ -437,7 +437,7 @@ Prepare dos navegadores (o perfiles): A = `enfermera_piso@`, B = `medico_residen
 | E5-06 | `auxiliar_enfermeria@` · `/camas/limpieza` | «Marcar unidad equipada». | «Unidad equipada: <unidad>. Pasa a validación de la supervisora.» |
 | E5-07 | `enfermera_supervisora@` · `/camas/limpieza` | «Habilitar cama en censo hospitalario». | «Cama habilitada en el censo central: <unidad>.» La cama vuelve a «disponible» en `/camas`. |
 | E5-08 | cualquiera | Salte etapas por API (equipar sin desinfectar) | 422 con regla de estado previo. |
-| E5-09 | `gestion_camas@` | Egrese un paciente **sin** asignación M5 (p. ej. ENC-PRAC-1 tras una alta completa). | **No se genera orden de limpieza** (HP-07). Regístrelo. |
+| E5-09 | `admision@` | Con un ingreso en paso «consentimiento» **sin** cama asignada en `/camas`, intente «Registrar consentimiento». | Rechazo: «Asigne una cama en Gestión de camas antes de registrar el consentimiento.» (HP-07, corregido). |
 
 **Siguiente paso:** E6.
 

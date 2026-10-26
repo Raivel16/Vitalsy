@@ -19,8 +19,6 @@ type Dose = {
   status: string;
   scheduledAt?: string | null;
   administeredAt?: string | null;
-  expectedPatientBarcode: string | null;
-  expectedDrugBarcode: string;
 };
 
 function timeLabel(iso: string | null | undefined): string {
@@ -122,7 +120,6 @@ function ScanCard({
   scanLabel,
   hint,
   value,
-  ok,
   onChange,
 }: Readonly<{
   id: string;
@@ -130,45 +127,39 @@ function ScanCard({
   scanLabel: string;
   hint: string;
   value: string;
-  ok: boolean;
   onChange: (value: string) => void;
 }>) {
   return (
-    <div className={`emar-scan-card${ok ? " is-ok" : ""}`}>
+    <div className="emar-scan-card">
       <TextField id={id} label={label} value={value} onChange={(e) => onChange(e.target.value)} required />
       <BarcodeScanner label={scanLabel} onScan={(code) => onChange(code)} />
-      {ok ? <p className="emar-ok">Validado</p> : <p className="hint">{hint}</p>}
+      <p className="hint">{hint}</p>
     </div>
   );
 }
 
-function FiveCorrects({
-  selected,
-  patientName,
-  patientOk,
-  drugOk,
-}: Readonly<{ selected: Dose; patientName?: string; patientOk: boolean; drugOk: boolean }>) {
+function FiveCorrects({ selected, patientName }: Readonly<{ selected: Dose; patientName?: string }>) {
   return (
     <div className="emar-five" aria-label="Auditoría de los 5 correctos">
       <p className="kicker">Auditoría de los 5 correctos (OMS / JCI)</p>
       <ul>
-        <li className={patientOk ? "is-ok" : undefined}>
+        <li>
           <strong>1. Paciente</strong>
           <span>{patientName ?? "Pendiente"}</span>
         </li>
-        <li className={drugOk ? "is-ok" : undefined}>
+        <li>
           <strong>2. Fármaco</strong>
           <span>{selected.drugName}</span>
         </li>
-        <li className={drugOk ? "is-ok" : undefined}>
+        <li>
           <strong>3. Dosis</strong>
           <span>{selected.dose}</span>
         </li>
-        <li className={drugOk ? "is-ok" : undefined}>
+        <li>
           <strong>4. Vía</strong>
           <span>{selected.route}</span>
         </li>
-        <li className={patientOk && drugOk ? "is-ok" : undefined}>
+        <li>
           <strong>5. Hora</strong>
           <span>{timeLabel(selected.scheduledAt)}</span>
         </li>
@@ -225,11 +216,6 @@ export function EmarPage() {
     }, 30_000);
     return () => window.clearInterval(timer);
   }, []);
-
-  const patientOk = Boolean(
-    selected?.expectedPatientBarcode && patientBarcode.trim() === selected.expectedPatientBarcode,
-  );
-  const drugOk = drugBarcode.trim() === selected?.expectedDrugBarcode;
 
   const activeCount = useMemo(
     () => doses.filter((dose) => dose.status === "pendiente").length,
@@ -347,12 +333,6 @@ export function EmarPage() {
               <p className="hint">
                 Validación de cabecera para {selected.drugName} {selected.dose} ({timeLabel(selected.scheduledAt)})
               </p>
-              <p className="hint">
-                Código esperado del medicamento: <code>{selected.expectedDrugBarcode}</code>
-                {selected.expectedPatientBarcode ? (
-                  <> · Brazalete paciente: <code>{selected.expectedPatientBarcode}</code></>
-                ) : null}
-              </p>
             </div>
           </header>
 
@@ -363,7 +343,6 @@ export function EmarPage() {
               scanLabel="Escanear brazalete"
               hint="Escanee o escriba el código de la pulsera"
               value={patientBarcode}
-              ok={patientOk}
               onChange={setPatientBarcode}
             />
             <ScanCard
@@ -372,12 +351,11 @@ export function EmarPage() {
               scanLabel="Escanear medicamento"
               hint="Escanee o escriba el código del fármaco"
               value={drugBarcode}
-              ok={drugOk}
               onChange={setDrugBarcode}
             />
           </div>
 
-          <FiveCorrects selected={selected} patientName={encounter?.patientName} patientOk={patientOk} drugOk={drugOk} />
+          <FiveCorrects selected={selected} patientName={encounter?.patientName} />
 
           <label className="check">
             <input type="checkbox" checked={sign} onChange={(e) => setSign(e.target.checked)} />

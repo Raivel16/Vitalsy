@@ -21,7 +21,7 @@ test.beforeAll(async ({}, testInfo) => {
   const data = new DataGen(seedForTest(runSeed(), testInfo.project.name, ["piso-lleno"], 0));
   const ctx = { api, data };
   for (let i = 0; i < 25; i++) {
-    const hosp = await hospitalize(ctx, { withBed: i < 3 });
+    const hosp = await hospitalize(ctx);
     floor.patients.push(hosp);
     if (i >= 3 && i < 8) {
       await raiseAlert(ctx, hosp, i % 2 === 0 ? "news2_alto" : "news2_medio");

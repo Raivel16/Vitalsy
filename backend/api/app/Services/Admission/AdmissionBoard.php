@@ -3,6 +3,7 @@
 namespace App\Services\Admission;
 
 use App\Models\AdmissionEncounter;
+use App\Models\BedAssignment;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 class AdmissionBoard
@@ -274,6 +275,10 @@ class AdmissionBoard
 
         $this->transitions->assertCanAdvance($encounter, $step, $definition['role'], $role, $coverageStatus);
 
+        if ($step === 'consentimiento') {
+            $this->requireCensusBed($encounter);
+        }
+
         if ($coverageStatus !== null) {
             $encounter->coverage_status = $coverageStatus;
         }
@@ -393,6 +398,7 @@ class AdmissionBoard
     {
         $this->ensureDemo();
         $encounter = $this->locate($encounterId);
+        $this->requireCensusBed($encounter);
         $payload = $encounter->readablePayload();
         $payload['consent'] = $consent;
         $encounter->clinical_payload = $payload;
@@ -548,6 +554,21 @@ class AdmissionBoard
             'physicianName' => $signature['physicianName'],
             'credential' => $signature['credential'],
         ];
+    }
+
+    /**
+     * HP-07: sin una cama del censo M5 no hay nada que limpiar al egreso, así que el consentimiento
+     * (y con él el traslado) exige que Gestión de camas ya haya asignado una.
+     */
+    private function requireCensusBed(AdmissionEncounter $encounter): void
+    {
+        $hasBed = BedAssignment::query()
+            ->where('encounter_id', $encounter->encounter_id)
+            ->whereNull('released_at')
+            ->exists();
+        if (! $hasBed) {
+            throw new AdmissionBoardException('Asigne una cama en Gestión de camas antes de registrar el consentimiento.', 422);
+        }
     }
 
     private function locate(string $encounterId): AdmissionEncounter

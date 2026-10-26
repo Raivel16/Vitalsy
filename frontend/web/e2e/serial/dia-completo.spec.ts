@@ -51,6 +51,7 @@ test.describe("día completo de un paciente", () => {
     );
     const id = await uiRegister(asRole, p, data.orderNumber());
     await uiAdmissionDesk(asRole, id, p);
+    await uiAssignBed(asRole, p);
     await uiConsentAndTransfer(asRole, id, p);
     await uiNursingAdmission(asRole, id, p, data.vitals("normal"));
     await uiSignOrders(asRole, id);

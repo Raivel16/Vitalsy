@@ -249,8 +249,9 @@ export function WristbandVerifyPage() {
     setMessage("");
     setError("");
     setAdvanced(false);
-    setCode(encounter?.wristbandCode ?? "");
-  }, [encounter?.encounterId, encounter?.wristbandCode]);
+    // El código no se pre-carga (HP-04): el camillero lo escanea o lo escribe.
+    setCode("");
+  }, [encounter?.encounterId]);
 
   const runVerify = useCallback(async (value: string) => {
     const trimmed = value.trim();

@@ -29,8 +29,8 @@ class E2ESeederTest extends TestCase
 
         $this->seed(E2ESeeder::class);
 
-        $this->assertSame(7, Ward::query()->count());
-        $this->assertSame(76, Bed::query()->count());
+        $this->assertSame(11, Ward::query()->count());
+        $this->assertSame(396, Bed::query()->count());
         $this->assertSame(10, Bed::query()->where('isolation', true)->where('status', 'available')->count());
         foreach (RoleCatalog::all() as $role) {
             $this->assertTrue(User::query()->where('email', "{$role}@vitalsy.local")->exists(), $role);

@@ -22,7 +22,7 @@ test.describe("registro del ingreso", () => {
     await expect(page.getByLabel("Documento de identidad")).toHaveValue("71234501");
   });
 
-  test("RF-01 · Admisión · el registro no promete una solicitud de cama inmediata [E1-03]", { tag: "@hallazgo-HP-08" }, async ({ asRole }) => {
+  test("RF-01 · Admisión · el registro no promete una solicitud de cama inmediata [E1-03]", async ({ asRole }) => {
     const page = await asRole("admision");
     await page.goto("/pacientes/nuevo");
     await expect(page.getByText("se generará la solicitud de asignación inmediata")).toHaveCount(0);
