@@ -379,4 +379,28 @@ class AdmissionCensusApiTest extends TestCase
         $ids = AdmissionEncounter::query()->whereIn('order_number', ['OI-RACE-0001', 'OI-RACE-0002'])->pluck('encounter_id');
         $this->assertCount(2, $ids->unique());
     }
+
+    public function test_el_documento_del_paciente_solo_admite_digitos(): void
+    {
+        $this->asRole('admision');
+
+        $this->postJson('/api/v1/hospital-admission/encounters', [
+            'orderNumber' => 'OI-2026-0200',
+            'patientName' => 'Pedro Salas Díaz',
+            'documentNumber' => '77AB9900',
+            'originService' => 'Emergencia adultos',
+            'coveragePayer' => 'SIS',
+            'coverageStatus' => 'aprobada',
+            'coveragePlan' => 'SIS Gratuito',
+            'source' => 'manual',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);
+
+        $this->postJson('/api/v1/hospital-admission/filiation/validate', [
+            'fullName' => 'Pedro Salas Díaz',
+            'documentNumber' => '77 99',
+            'confirmed' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);
+
+        $this->assertDatabaseCount('admission_encounters', 0);
+    }
 }
