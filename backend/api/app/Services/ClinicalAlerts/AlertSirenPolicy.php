@@ -11,6 +11,8 @@ class AlertSirenPolicy
     /** Perfiles médicos que reciben la notificación de alta prioridad. */
     private const MEDICAL_ROLES = ['medico_residente', 'medico_tratante'];
 
+    private const RRT_ROLE = 'equipo_respuesta_rapida';
+
     private const ICU_TRANSFER_ROLES = ['enfermera_piso', 'enfermera_supervisora', 'camillero'];
 
     public function needsSiren(ClinicalAlert $alert, ?User $viewer = null): bool
@@ -32,13 +34,27 @@ class AlertSirenPolicy
 
     public function awaitsAcknowledgement(ClinicalAlert $alert): bool
     {
+        if ($this->isRapidResponseStatus($alert)) {
+            // Solo cuenta el acuse posterior a la última vez que la alerta pasó al ERR.
+            $routedAt = $alert->events()->whereIn('type', ['solicitud_err', 'escalamiento'])->max('created_at');
+
+            return ! $alert->acknowledgements()
+                ->where('role', self::RRT_ROLE)
+                ->when($routedAt, fn ($query) => $query->where('acknowledged_at', '>=', $routedAt))
+                ->exists();
+        }
+
         return in_array($alert->status, [
             ClinicalAlert::STATUS_OPEN,
             ClinicalAlert::STATUS_SUPERVISOR,
             ClinicalAlert::STATUS_DOCTOR_NOTIFIED,
-            ClinicalAlert::STATUS_RRT_REQUESTED,
-            ClinicalAlert::STATUS_RRT_ESCALATED,
         ], true);
+    }
+
+    /** Alerta en manos del Equipo de Respuesta Rápida (solicitada o escalada a él). */
+    public function isRapidResponseStatus(ClinicalAlert $alert): bool
+    {
+        return in_array($alert->status, [ClinicalAlert::STATUS_RRT_REQUESTED, ClinicalAlert::STATUS_RRT_ESCALATED], true);
     }
 
     private function followUpOverdue(ClinicalAlert $alert): bool
