@@ -91,6 +91,8 @@ docker compose exec backend php artisan migrate --force
 docker compose exec backend php artisan db:seed --force
 ```
 
+**Si actualiza desde una versión anterior** (después de `git pull` en `dev`): reconstruya las imágenes con `docker compose up --build` (la imagen del backend ahora incluye `pcntl`, necesaria para que `reverb` arranque) y ejecute `docker compose exec backend php artisan migrate --force` (nueva columna `author_user_id` en `vital_sign_readings`, RF-26). Los ingresos de demostración ENC-0001 a ENC-0003 no tienen cama del censo asignada: si va a firmar su consentimiento, asígneles primero una cama en `/camas` (HP-07).
+
 **Reinicio total de datos** (borra todo, solo para pruebas): `docker compose down -v` y luego `docker compose up --build`. No use `migrate:fresh` si desea conservar datos.
 
 **Datos sembrados reales**
@@ -253,7 +255,7 @@ Flujo lineal por rol (stepper): orden → filiación → cobertura → brazalete
 | E1-07 | `/admision/filiacion` | Deje la fecha vacía y pulse «Validar filiación». | «La fecha de nacimiento es obligatoria.» y «Confirme que los datos coinciden con la orden.» |
 | E1-08 | igual | Fecha de nacimiento `1985-03-14`; marque «Confirmo que los datos coinciden con el documento presentado»; «Validar filiación». | «Filiación validada.» El botón queda deshabilitado; «Continuar al siguiente paso». |
 | E1-09 | `/admision/cobertura` | Con estado «Aprobada» pulse «Registrar cobertura». | «Cobertura registrada. Puede continuar con el brazalete.» Sello «Aprobada», «Vigente». |
-| E1-10 | `/admision/brazalete` | «Emitir brazalete». | «Brazalete emitido.» Se muestra el código `BRZ-0004-MGR` (BRZ + número del ingreso + iniciales de hasta 3 palabras) con código de barras. «Imprimir código de barras» abre impresión. |
+| E1-10 | `/admision/brazalete` | «Emitir brazalete». | «Brazalete emitido.» Se muestra el código `BRZ-0004-MGR` (BRZ + número del ingreso + iniciales de hasta 3 palabras, siempre en ASCII: «Á» se escribe «A» y «Ñ» «N», porque Code 128 no admite tildes) con código de barras. «Imprimir código de barras» abre impresión. |
 | E1-11 | `/admision/expediente` | «Aperturar expediente». | «Expediente abierto correctamente. Identificador EXP-0004.» Ubicación «Pendiente de asignación» (no hay cama aún). |
 
 **Siguiente paso:** **E1b (asignar cama) antes del consentimiento — obligatorio.** El sistema rechaza el consentimiento (422) si el ingreso no tiene una cama del censo M5 asignada (HP-07, corregido).
@@ -287,7 +289,7 @@ Flujo lineal por rol (stepper): orden → filiación → cobertura → brazalete
 | E1-17 | `/traslado/orden` | «Consultar traslado». | Muestra Habitación 101, lecho A y servicio «Medicina Interna A» (formato exacto del texto: no verificado). |
 | E1-18 | igual | «Confirmar traslado». | «Traslado confirmado.» Continuar. |
 | E1-19 | `/traslado/identidad` | El código aparece precargado `BRZ-0004-MGR`. Pulse «Verificar brazalete». | «Identidad confirmada: Mateo Gonzales Rivera.» El ingreso pasa a la enfermera de piso. |
-| E1-20 | igual (**prueba de seguridad**) | En otro ingreso en paso «identidad» (use P2 más adelante), escriba el código `BRZ-0001-ANA` (de otra paciente) y verifique. | **Esperado correcto:** rechazo porque el brazalete no es del paciente abierto. **Comportamiento probable del código actual:** muestra «Identidad confirmada: Ana María Quispe Rojas.» y avanza el ingreso equivocado. Registre el resultado (HP-02). |
+| E1-20 | igual (**prueba de seguridad**) | En otro ingreso en paso «identidad» (use P2 más adelante), escriba el código `BRZ-0001-ANA` (de otra paciente) y verifique. | **Esperado:** rechazo con «El brazalete no corresponde al paciente del ingreso abierto.»; el ingreso no avanza (HP-02, corregido). Si aparece «Identidad confirmada: Ana María Quispe Rojas.», registre un hallazgo bloqueante. |
 | E1-21 | igual | Escriba un código inexistente `BRZ-9999-XXX`. | «El código no corresponde al paciente.» |
 | E1-22 | igual | «Escanear brazalete» (si hay cámara). | Abre el lector; al leer un código válido confirma sin segundo clic (RF-08). Con `localhost` la cámara está permitida. |
 
@@ -361,7 +363,7 @@ Repita los pasos E1-01 a E1-33 (con E1b antes del consentimiento) usando los dat
 | E2-12 | `/atencion/evolucion` | Guarde vacío; luego nota `Paciente con mejoría clínica, afebril, tolera vía oral.`; «Registrar evolución». | «La nota de evolución es obligatoria.»; luego «Evolución registrada.»; la nota aparece en «Historial de notas anteriores». |
 | E2-13 | `enfermera_piso@` · `/atencion/cuidados` | Pestaña Notas: nota `Hola` (4 caracteres) y luego `Paciente descansa, sin dolor.`; «Registrar nota». | «La nota debe tener al menos 5 caracteres.»; luego «Nota de enfermería registrada.» con autor y hora. |
 | E2-14 | `auxiliar_enfermeria@` · `/atencion/cuidados` | Pestaña Actividades: elija `Higiene de manos / oral`; «Marcar finalizado». Pruebe «Otros» sin descripción. | «Cuidado directo registrado: Higiene de manos / oral.»; «Describa la actividad (mínimo 3 caracteres).» Filtre por «Hoy», «7 días», rango. (RF-37) |
-| E2-15 | `auxiliar_enfermeria@` · `/atencion/constantes` | Registre constantes de P1 (FR `17`, SpO2 `97`, PA `120`/`80`, Pulso `74`, Temp `36.7`). | Registro exitoso con el nombre de la auxiliar como autora (RF-26). |
+| E2-15 | `auxiliar_enfermeria@` · `/atencion/constantes` | Registre constantes de P1 (FR `17`, SpO2 `97`, PA `120`/`80`, Pulso `74`, Temp `36.7`). | Registro exitoso. En `/atencion/chart` → pestaña «Constantes» → despliegue el día en «Lecturas por fecha»: la columna «Registró» muestra a la auxiliar (nombre · rol). Las lecturas anteriores a RF-26 muestran «—» (RF-26). |
 | E2-16 | `medico_tratante@` · `/atencion/chart` | Recorra cada pestaña; en «Constantes» use el filtro de fechas. | Cada pestaña muestra los registros del paciente y su autor; el historial se agrupa por fecha (RF-38). |
 | E2-17 | `enfermera_piso@` · `/atencion/controles` | Revise la bandeja. | Muestra el control programado de P1 con «Vence», paciente, ubicación, frecuencia y estado (RF-42). Pulse «Registrar control», complete constantes y «Confirmar control». |
 
@@ -407,7 +409,7 @@ Prepare dos navegadores (o perfiles): A = `enfermera_piso@`, B = `medico_residen
 | E4-02 | igual | «Registrar orden de alta». | «Orden digital de alta registrada. Sigue el médico residente con la epicrisis. Trabajo social y enfermería avanzan en paralelo.» Una segunda vez: «Este ingreso ya tiene una orden digital de alta.» |
 | E4-03 | `medico_residente@` · `/egreso/ENC-0004` | «Guardar epicrisis» vacío; luego Diagnósticos `Neumonía adquirida en la comunidad resuelta`, Procedimientos `Ninguno`, Evolución `Favorable, afebril 48 h.` | «Registre los diagnósticos de la epicrisis.»; luego «Epicrisis electrónica registrada.» |
 | E4-04 | igual | «Emitir receta»: Medicamento `Amoxicilina`, Dosis `500 mg`, Vía `Oral`, Frecuencia `cada 8 horas`, Días `7`. | «Recetas ambulatorias emitidas.» |
-| E4-05 | `trabajo_social@` · `/egreso/ENC-0004` | Informe `Red de apoyo familiar adecuada; domicilio con servicios básicos.`; «¿Entorno adecuado? (si/no)» escriba `si` (en minúsculas; `Sí` se interpreta como no); «Guardar valoración». | «Valoración social registrada.» (RF-57/58) |
+| E4-05 | `trabajo_social@` · `/egreso/ENC-0004` | Informe `Red de apoyo familiar adecuada; domicilio con servicios básicos.`; «¿Entorno adecuado? (si/no)» escriba `si` o `Sí` (ambos se interpretan como afirmativo, HP-12 corregido); «Guardar valoración». | «Valoración social registrada.» (RF-57/58) |
 | E4-06 | `enfermera_piso@` · `/egreso/ENC-0004` | Resultado de la conciliación `Se concilian medicamentos domiciliarios con la receta.`; «Registrar conciliación». | «Conciliación farmacéutica al alta registrada.» |
 | E4-07 | igual | «Generar informe» **sin** elegir seguimiento Life; luego con Indicaciones `Amoxicilina cada 8 horas por 7 días`, Signos de alarma `Fiebre mayor a 38 C`, Cuidados `Reposo relativo`, y elija «No es usuario: generar invitación». | Primero «Indique el seguimiento en Vitalsy Life.»; luego «Informe digital de alta de enfermería generado.» y aparece el código `VLI-…` con QR, «Código de invitación» y «Válido hasta» (30 días). |
 | E4-08 | igual | Nombre de quien recibe `Julia Ruiz`; «Confirmar recepción». | «Recepción de indicaciones confirmada.» Un reenvío distinto: «La recepción de indicaciones ya fue registrada y no puede modificarse.» |
@@ -544,7 +546,7 @@ Ejecute la lista N-01 a N-19 (sección 2.2). Además: (a) cierre sesión en una 
 | T-19 | Brazalete | `/admision/brazalete` → «Imprimir código de barras» | Solo el código de barras legible, con el código `BRZ-…`. Escanéelo con un lector o la app de cámara. |
 | T-20 | Consentimiento | `/admision/consentimiento` → «Imprimir consentimiento físico» | Paciente, quien firma, relación, declaración. |
 | T-21 | Ficha de alta | `/egreso/<id>` → «Imprimir ficha de alta» | Datos del alta; el modo Life aparece sin exponer códigos a roles no autorizados. |
-| T-22 | Seguridad de impresión | Registre un paciente con nombre `<img src=x onerror=alert(1)> Prueba` (solo en entorno de prueba) y use «Imprimir orden». | **Esperado:** el nombre se imprime como texto. Si aparece una alerta de JavaScript, registre un hallazgo bloqueante de seguridad (HP-11). |
+| T-22 | Seguridad de impresión | Registre un paciente con nombre `<img src=x onerror=alert(1)> Prueba` (solo en entorno de prueba) y use «Imprimir orden». | **Esperado:** el nombre se imprime como texto (HP-11, corregido: los datos se escapan). Si aparece una alerta de JavaScript, registre un hallazgo bloqueante de seguridad. |
 
 ### 4.6 Accesibilidad básica
 
@@ -625,7 +627,7 @@ Datos fijos sembrados que también sirven: `ENC-0001` Ana (recorrido camillero �
 
 ### 6.1 Hoja de registro
 
-Copie esta plantilla (también en `docs/operacion/registro-de-hallazgos.csv`) y registre **un hallazgo por fila**. Ya contiene los hallazgos previos HP-01 a HP-12 para que confirme o descarte cada uno.
+Copie esta plantilla (también en `docs/operacion/registro-de-hallazgos.csv`) y registre **un hallazgo por fila**. Ya contiene los hallazgos previos HP-01 a HP-12 para que confirme o descarte cada uno. **HP-02, HP-04, HP-06, HP-07, HP-08, HP-11 y HP-12 ya están corregidos** (estado «Corregido»): confirme que no reaparecen. Siguen abiertos HP-01, HP-03, HP-05, HP-09 y HP-10.
 
 | Campo | Qué anotar |
 |---|---|
@@ -653,8 +655,8 @@ Anote aquí, durante la prueba, observaciones que no son defectos pero mejorarí
 |---|---|---|
 | Usabilidad | La alta social pide escribir `si`/`no` en un campo de texto libre (`¿Entorno adecuado? (si/no)`); cualquier otra grafía se guarda como «no». | ¿Es claro? ¿Debería ser casilla o selector? |
 | Usabilidad | El campo «Número de traslado» y el código del brazalete aparecen **precargados**, de modo que la verificación se reduce a un clic. | ¿Aporta seguridad real el paso? |
-| Usabilidad | El texto de «Registrar ingreso» promete que se generará «la solicitud de asignación inmediata» de cama; en la práctica hay que registrar la solicitud en `/camas` (HP-08). | ¿Se entiende el siguiente paso? |
-| Seguridad | Los códigos esperados de brazalete y medicamento se muestran en la pantalla del e-MAR (HP-04). | ¿Sigue siendo un control independiente de los 5 correctos? |
+| Usabilidad | El texto de «Registrar ingreso» promete que se generará «la solicitud de asignación inmediata» de cama; el aviso ya dice que el registro no asigna ni solicita cama y que Gestión de camas la confirma (HP-08, corregido). | ¿Se entiende el siguiente paso? |
+| Seguridad | La pantalla del e-MAR ya no muestra los códigos esperados (HP-04, corregido); el probador los obtiene del brazalete, de la tabla «Prescripción activa» del CPOE o con `php artisan emar:codes ENC-XXXX`. | ¿Los 5 correctos exigen ahora escanear de verdad? |
 | Funcional | No hay notificación persistente a la enfermera tras aprobar la asignación (RF-80 parcial). | ¿Cómo se entera la enfermera? |
 | Funcional | El reporte de handover se guarda sin validación aparte (RF-82 parcial). | ¿Es suficiente el reporte a pie de cama? |
 | Rendimiento | El primer arranque compila el frontend en el momento (modo desarrollo). | Tiempo hasta ver el login. |
@@ -686,7 +688,7 @@ Anote aquí, durante la prueba, observaciones que no son defectos pero mejorarí
 | Gates del alta (orden, epicrisis, receta, social, informe, recepción, cuenta, pase) | RF-54 a RF-65 | E4-01 a E4-11 | Cada gate rechaza fuera de orden | Sí | |
 | Salida efectiva solo `enfermera_piso` y libera la cama | RF-66, RF-67 | E4-12, N-15, N-16 | Otros roles 403; cama pasa a limpieza | Sí | |
 | Limpieza genera orden y exige checklist | RF-74 a RF-77 | E5-05 a E5-07 | Flujo completo hasta «disponible» | Sí | |
-| Egreso de paciente sin cama M5 deja rastro de limpieza | RF-74 | E5-09 | Debe generar orden o avisar | Sí (HP-07) | |
+| Todo ingreso tiene cama M5 antes del consentimiento (así su egreso genera limpieza) | RF-74 | E5-09 | Consentimiento rechazado sin cama asignada | No (HP-07, corregido) | |
 | Rol mensual, balanceo, handover y cobertura | RF-78 a RF-88 | E6 | Flujos correctos y transiciones validadas | Sí | |
 | Administración de usuarios y desactivación | RF-101 a RF-104 | E7 | Crea, edita, desactiva; no deja sin administrador | Sí | |
 | Control de acceso por rol | RNF-08 | N-01 a N-19 | 100 % rechazados | Sí | |
@@ -726,17 +728,17 @@ Defectos o riesgos detectados al leer el código y la documentación para prepar
 | ID | Hallazgo | Evidencia | Severidad propuesta | Confirmar en |
 |---|---|---|---|---|
 | HP-01 | **El escalamiento por SLA no se ejecuta solo.** `routes/console.php` programa `alerts:process-slas` cada minuto, pero ni `docker-compose.yml` ni `docker-compose.prod.yml` levantan `schedule:work` ni un cron; el entrypoint solo arranca `artisan serve`. Sin ese proceso, no hay escalamiento a supervisora/médico/ERR ni alertas por control o dosis vencidos (RF-45, RF-48, RF-32/42). | Búsqueda en compose y `docker/`; `ProcessAlertSlas` solo se invoca por el comando. | Bloqueante para producción | E3-16 a E3-19 |
-| HP-02 | **La verificación de brazalete no se liga al paciente abierto.** `POST /wristbands/verify` solo recibe `code` y devuelve el paciente dueño del código; la web avanza el ingreso actual con cualquier código válido de otro paciente. La documentación afirma que «cada BRZ confirma solo a su paciente». | `HospitalAdmissionController::verifyWristband`, `AdmissionBoard::verifyWristband`, `TransferPages.tsx::verifyWristbandCode`. | Bloqueante (seguridad del paciente) | E1-20 |
+| HP-02 | ✅ **Corregido** (verifique que no reaparece). **La verificación de brazalete no se liga al paciente abierto.** `POST /wristbands/verify` solo recibe `code` y devuelve el paciente dueño del código; la web avanza el ingreso actual con cualquier código válido de otro paciente. La documentación afirma que «cada BRZ confirma solo a su paciente». | `HospitalAdmissionController::verifyWristband`, `AdmissionBoard::verifyWristband`, `TransferPages.tsx::verifyWristbandCode`. | Bloqueante (seguridad del paciente) | E1-20 |
 | HP-03 | **Zona horaria fija en UTC** (`config/app.php`: `'timezone' => 'UTC'`). Los turnos del e-MAR (07–19), la fecha de turno de las asignaciones y la ventana de relevo se calculan con el reloj del servidor; para un hospital en Perú (UTC−5) el turno «diurno» corresponde a 02:00–14:00 locales. | `EmarService::shiftWindow`, `config/app.php`. | Mayor | E2-04, E2-06, E6-01 |
-| HP-04 | **El e-MAR muestra en pantalla los códigos esperados** del medicamento y del brazalete (y se pre-cargan en el flujo de camillero), lo que reduce la verificación de los «5 correctos» a copiar el valor mostrado. | `EmarPage.tsx` (texto «Código esperado del medicamento»), `EmarService::present`. | Mayor (diseño de seguridad) | E2-06 |
+| HP-04 | ✅ **Corregido** (verifique que no reaparece). **El e-MAR muestra en pantalla los códigos esperados** del medicamento y del brazalete (y se pre-cargan en el flujo de camillero), lo que reduce la verificación de los «5 correctos» a copiar el valor mostrado. | `EmarPage.tsx` (texto «Código esperado del medicamento»), `EmarService::present`. | Mayor (diseño de seguridad) | E2-06 |
 | HP-05 | **Servidor sin validación numérica del documento** (`max:30`, solo cadena) en `POST /encounters` e `intake`; la regla «solo dígitos» vive únicamente en la web. Una carga por API admite letras. | `AdmissionCensusController` reglas `documentNumber`. | Menor | T-01 (vía API) |
-| HP-06 | **La orden de alta puede registrarse para cualquier ingreso existente**: `registerOrder` solo exige que exista el ingreso, no que esté hospitalizado (`cerrado`); el filtro vive en la interfaz. | `DischargeService::registerOrder/requireEncounter`. | Mayor (por API) | E4-02 (probar con un ingreso en paso «orden» por API) |
-| HP-07 | **Un egreso sin asignación de cama del censo M5 no genera orden de limpieza ni avisa.** `vacateEncounter` retorna en silencio si no hay `BedAssignment`; los ingresos con habitación provisional (`300+n`) o importados quedan sin limpieza y sin censo actualizado. | `BedManagement::vacateEncounter`, `AdmissionIdentifiers::ensureTransferReady`. | Mayor | E5-09 |
-| HP-08 | **Texto engañoso en «Registrar ingreso»:** «Al formalizar el registro se generará la solicitud de asignación inmediata». La documentación del módulo 1 y el código indican que no se asigna ni se solicita cama en el registro. | `PatientRegistrationPage.tsx`, `modulo-1-admision.md`. | Menor | E1-03 |
+| HP-06 | ✅ **Corregido** (verifique que no reaparece). **La orden de alta puede registrarse para cualquier ingreso existente**: `registerOrder` solo exige que exista el ingreso, no que esté hospitalizado (`cerrado`); el filtro vive en la interfaz. | `DischargeService::registerOrder/requireEncounter`. | Mayor (por API) | E4-02 (probar con un ingreso en paso «orden» por API) |
+| HP-07 | ✅ **Corregido** (verifique que no reaparece). **Un egreso sin asignación de cama del censo M5 no genera orden de limpieza ni avisa.** `vacateEncounter` retorna en silencio si no hay `BedAssignment`; los ingresos con habitación provisional (`300+n`) o importados quedan sin limpieza y sin censo actualizado. | `BedManagement::vacateEncounter`, `AdmissionIdentifiers::ensureTransferReady`. | Mayor | E5-09 |
+| HP-08 | ✅ **Corregido** (verifique que no reaparece). **Texto engañoso en «Registrar ingreso»:** «Al formalizar el registro se generará la solicitud de asignación inmediata». La documentación del módulo 1 y el código indican que no se asigna ni se solicita cama en el registro. | `PatientRegistrationPage.tsx`, `modulo-1-admision.md`. | Menor | E1-03 |
 | HP-09 | **Plantilla `.env.example` con variables sin efecto** en desarrollo (`NGINX_PORT=80`, `APP_PORT`, `FRONTEND_PORT`, `PORT`) y dos contraseñas de BD que deben coincidir a mano (`POSTGRES_PASSWORD`/`DB_PASSWORD`). | `.env.example`, `docker-compose.yml`. | Menor | Sección 1.2 |
 | HP-10 | **Arranque dependiente de certificados no versionados:** `docker/nginx/certs/dev.crt|dev.key` están en `.gitignore` y `dev.conf` los exige; `CLAUDE.md` indica solo `docker compose up --build`. En un clon limpio nginx no arranca hasta ejecutar `generate-dev-certs.sh`. | `.gitignore`, `docker/nginx/dev.conf`, `https-dev-lan.md`. | Menor | Sección 1.3 |
-| HP-11 | **Posible inyección HTML en impresión:** `printClinicalDocument` inserta `bodyHtml` en un `iframe srcdoc` sin escapar y las plantillas interpolan nombre, documento y firmante tal como se escribieron. Un nombre con HTML podría ejecutarse al imprimir. | `shared/print/printDocument.ts`, `AdmissionOrderPage.tsx`, `IdentityPages.tsx`. | Mayor/Bloqueante (seguridad), por confirmar | T-22 |
-| HP-12 | **Valoración social con campo de texto libre `si/no`**: cualquier grafía distinta de `si` (p. ej. «Sí») se guarda como «no validado». | `DischargeCasePage.tsx::SocialStep`. | Menor | E4-05 |
+| HP-11 | ✅ **Corregido** (verifique que no reaparece). **Posible inyección HTML en impresión:** `printClinicalDocument` inserta `bodyHtml` en un `iframe srcdoc` sin escapar y las plantillas interpolan nombre, documento y firmante tal como se escribieron. Un nombre con HTML podría ejecutarse al imprimir. | `shared/print/printDocument.ts`, `AdmissionOrderPage.tsx`, `IdentityPages.tsx`. | Mayor/Bloqueante (seguridad), por confirmar | T-22 |
+| HP-12 | ✅ **Corregido** (verifique que no reaparece). **Valoración social con campo de texto libre `si/no`**: cualquier grafía distinta de `si` (p. ej. «Sí») se guarda como «no validado». | `DischargeCasePage.tsx::SocialStep`. | Menor | E4-05 |
 
 Observaciones documentales (no son defectos de código): RF-80 y RF-82 figuran como «parcial» en `modulo-6-personal.md`; RNF-01 y RNF-12 figuran pendientes de corrida en staging en `modulo-3-alertas.md`.
 
@@ -786,6 +788,7 @@ docker compose exec backend php artisan alerts:process-slas
 docker compose exec backend php artisan schedule:work
 docker compose exec backend php artisan db:seed --force
 docker compose exec backend php artisan migrate:status
+docker compose exec backend php artisan emar:codes ENC-0001        # códigos de brazalete y medicamento que debe escanear en el e-MAR
 docker compose exec backend php artisan test          # opcional: suite automática del backend
 docker compose down -v                                # borra datos y empieza de cero
 ```
