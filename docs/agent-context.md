@@ -145,3 +145,13 @@ Registrado para una iteración aparte. No se implementa junto con el ajuste visu
 - **Nube (SonarCloud):** el CI pasa `sonar.tests`, `sonar.test.inclusions` y `sonar.exclusions` solo como argumentos del escaneo (no en el archivo de la entrega) para tratar `*.test.ts(x)` y `e2e` como tests, que es lo que mejor reproduce la cobertura del informe del profesor (hipótesis; no es exacta). Los 8 hallazgos de seguridad de workflows y Dockerfile se corrigieron con `--ignore-scripts`, `jest` sin `npx` y `setup-php` fijado a su commit.
 - **Cobertura entregada:** el profesor lee `coverage-reports/` (copia versionada). Antes de entregar, regenerar con `npm test` (frontend), `npx jest --ci --coverage` (móvil) y `XDEBUG_MODE=coverage php artisan test --coverage-clover=coverage.xml` (backend) y reescribir rutas con `scripts/refresh-coverage.py` (local, ignorado por git). PHPUnit mide `app`, `bootstrap`, `config`, `database`, `routes` y `tests`, porque los tests los ejecutan.
 - **Pendiente conocido:** `PersonPicker` mantiene `role="listbox"` (patrón combobox accesible); Sonar sugiere `<select>`/`<datalist>`, lo que degradaría la interacción.
+
+### 2026-10-30 — Corrección: cómo mide la evaluación oficial (RNF-90)
+
+Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrecto.
+
+- El servidor del profesor **ignora `sonar.sources` y las exclusiones** del repositorio y analiza todo: en la 1.ª evaluación marcó 122 hallazgos en `backend/api/tests` pese a `sonar.test.inclusions`, y también `UI/`, `scripts/`, `config/`, `routes/` y Dockerfiles.
+- `backend/api/tests` y `frontend/web/e2e/support` cuentan como **código** (les disparó reglas de alcance MAIN como `php:S1192` o `typescript:S3358`). Los `*.test.ts(x)` y `*.spec.ts` probablemente cuentan como tests: con ellos como código la nube midió 70 938 líneas y 61,2 % sobre el mismo contenido, y él 56 352 y 75,4 %.
+- Sí usa las rutas de cobertura de `sonar-project.properties` (`coverage-reports/`).
+- Su perfil equivale a **«Sonar way comprehensive»** (activa el 100 % de sus 52 reglas observadas; «Sonar way core» solo 15). La organización de SonarCloud usa ese perfil por defecto desde esta fecha.
+- El CI ya no pasa exclusiones: solo `-Dsonar.sources=.`, para medir el repositorio completo como él. `sonar-project.properties` se mantiene igual que en la evaluación. Ningún archivo del repo contiene `sonar.exclusions` ni `sonar.test.inclusions` (regla 1).
