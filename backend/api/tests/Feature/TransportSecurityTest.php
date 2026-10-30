@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 /**
- * RNF-05: en produccion todo el trafico es HTTPS (el TLS 1.3 lo termina el proxy inverso).
+ * RNF-05: en produccion el trafico completo es HTTPS (el TLS 1.3 lo termina el proxy inverso).
  */
 class TransportSecurityTest extends TestCase
 {

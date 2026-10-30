@@ -386,7 +386,7 @@ export class LifeApp {
   }
 
   /**
-   * Cierra todo en el teléfono de inmediato. Con `awaitServer` queda un pendiente
+   * Cierra el vínculo en el teléfono de inmediato. Con `awaitServer` queda un pendiente
    * durable hasta que el servidor confirme la revocación.
    */
   revokeSharing(awaitServer = false): void {

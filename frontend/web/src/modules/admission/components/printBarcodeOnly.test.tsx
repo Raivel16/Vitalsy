@@ -22,7 +22,7 @@ describe("printBarcodeOnly", () => {
     const frame = document.querySelector<HTMLIFrameElement>("iframe");
 
     const doc = new DOMParser().parseFromString(frame!.srcdoc, "text/html");
-    expect(doc.querySelector("svg")).toBeTruthy();
+    expect(doc.querySelector('img[src^="data:image/svg+xml"]')).toBeTruthy();
     expect(doc.title).toBe("Brazalete");
     expect(doc.querySelector("style")?.textContent).toContain("90mm");
     expect(frame?.getAttribute("aria-hidden")).toBe("true");

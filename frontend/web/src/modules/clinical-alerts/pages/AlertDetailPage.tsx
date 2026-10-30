@@ -756,6 +756,14 @@ export function AlertDetailPage() {
   return <AlertDetailView key={alertId} />;
 }
 
+function buildPostAction(alertId: string | undefined): PostAction {
+  return async (action, body) =>
+    api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
+      method: "POST",
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+}
+
 function AlertDetailView() {
   const { alertId } = useParams();
   const { user } = useAuth();
@@ -763,11 +771,7 @@ function AlertDetailView() {
   const { alert, events, escalations, loading, pageError, load } = useAlertTimeline(alertId);
   const [notice, setNotice] = useState<PageNotice | null>(null);
 
-  const postAction: PostAction = async (action, body) =>
-    api(`/api/v1/clinical-alerts/${encodeURIComponent(String(alertId))}/${action}`, {
-      method: "POST",
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
+  const postAction = buildPostAction(alertId);
 
   if (loading) return <LoadingState label="Cargando el evento…" />;
   if (!alert) return <Feedback tone="error">{pageError || "No se encontró el evento."}</Feedback>;

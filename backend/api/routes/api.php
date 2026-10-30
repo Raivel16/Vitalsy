@@ -75,7 +75,7 @@ Route::prefix('v1')->group(function () {
         require base_path('routes/channels.php');
 
         Route::prefix('hospital-admission')->group(function () {
-            // N-17: el censo de ingresos lo consulta todo el personal clínico y operativo, no la administración de accesos.
+            // N-17: el censo de ingresos lo consulta el personal clínico completo y operativo, no la administración de accesos.
             Route::middleware('role:'.implode(',', array_diff(RoleCatalog::all(), ['administrador_accesos'])))->group(function () {
                 Route::get('encounters', [AdmissionCensusController::class, 'index']);
                 Route::get('encounters/{encounterId}', [AdmissionCensusController::class, 'show']);
