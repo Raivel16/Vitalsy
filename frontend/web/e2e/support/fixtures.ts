@@ -167,9 +167,10 @@ export const test = base.extend<Fixtures & Internal & Options>({
     await use({
       advance: async (minutes) => sync(artisan("e2e:clock", "advance", `--minutes=${minutes}`)),
       set: async (at) => sync(artisan("e2e:clock", "set", `--at=${at.toISOString()}`)),
-      reset: async () => {
+      reset: () => {
         artisan("e2e:clock", "reset");
         clockOffsetMs.value = null;
+        return Promise.resolve();
       },
     });
     // Siempre, aunque la prueba falle: la siguiente no debe heredar una hora falsa.

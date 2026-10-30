@@ -31,7 +31,7 @@ test.describe("inasistencias y rebalanceo (RF-84/85)", () => {
     data.track("inasistencia", result);
     expect(result.unassigned).toBe(0);
     expect(result.coverage.required).toBe(false);
-    expect(result.reassignments.length).toBe(rows.filter((r) => r.nurseUserId === rows[0].nurseUserId).length);
+    expect(result.reassignments).toHaveLength(rows.filter((r) => r.nurseUserId === rows[0].nurseUserId).length);
   });
 
   test("RF-85 · Personal · un paciente crítico (NEWS2 ≥ 7) de la ausente pide retén", async ({ api, data }) => {

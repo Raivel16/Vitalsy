@@ -86,7 +86,7 @@ async function deliverPendingRevoke({ life, client, tokenStore }: Deps): Promise
     if (!token) {
       return;
     }
-    await retryPendingConsent({ life, client, hasSession: true, online: true, onUnauthorized: async () => undefined });
+    await retryPendingConsent({ life, client, hasSession: true, online: true, onUnauthorized: () => Promise.resolve() });
   } catch {
     // Queda pendiente.
   }
@@ -132,7 +132,7 @@ async function openFromServer(
               life.endSessionChange();
             }
           },
-          cancel: async () => undefined,
+          cancel: () => Promise.resolve(),
         },
       };
     }

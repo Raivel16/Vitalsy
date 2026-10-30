@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Button } from "../../../shared/ui/Button";
 import { CheckField, SelectField, TextField } from "../../../shared/ui/Field";
 import { Panel } from "../../../shared/ui/clinical";
@@ -43,7 +43,7 @@ export function WardForm({ onSubmit }: Readonly<{ onSubmit: (values: WardFormVal
   const [errors, setErrors] = useState<Errors<WardFormValues>>({});
   const [pending, setPending] = useState(false);
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent) {
     event.preventDefault();
     const found = validateWardForm(values);
     setErrors(found);
@@ -73,7 +73,7 @@ export function BedForm({ wards, onSubmit }: Readonly<{ wards: InfraWard[]; onSu
   const [errors, setErrors] = useState<Errors<BedFormValues>>({});
   const [pending, setPending] = useState(false);
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent) {
     event.preventDefault();
     const found = validateBedForm(values);
     setErrors(found);
@@ -115,7 +115,7 @@ export function BulkForm({
     onChange(next);
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent) {
     event.preventDefault();
     const found = validateBulkForm(values);
     setErrors(found);

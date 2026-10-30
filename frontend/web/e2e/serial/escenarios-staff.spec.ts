@@ -8,7 +8,7 @@ test("registerAbsence de una enfermera con pacientes reasigna su carga", async (
   const nurses = ["rosa.quispe@vitalsy.local", "lucia.mendoza@vitalsy.local", "carmen.huaman@vitalsy.local"];
   const suggestion = await suggestAssignments(ctx, today, nurses);
   const mine = suggestion.assignments.filter((a) => pacientes.some((p) => p.encounterId === a.encounterId));
-  expect(mine.length).toBe(3);
+  expect(mine).toHaveLength(3);
   await approveAssignments(ctx, today, suggestion.assignments);
   const result = await registerAbsence(ctx, "rosa.quispe@vitalsy.local", today, "Descanso médico");
   expect(result).toHaveProperty("absence.id");
