@@ -155,3 +155,10 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Sí usa las rutas de cobertura de `sonar-project.properties` (`coverage-reports/`).
 - Su perfil equivale a **«Sonar way comprehensive»** (activa el 100 % de sus 52 reglas observadas; «Sonar way core» solo 15). La organización de SonarCloud usa ese perfil por defecto desde esta fecha.
 - El CI ya no pasa exclusiones: solo `-Dsonar.sources=.`, para medir el repositorio completo como él. `sonar-project.properties` se mantiene igual que en la evaluación. Ningún archivo del repo contiene `sonar.exclusions` ni `sonar.test.inclusions` (regla 1).
+
+### 2026-10-30 — Calidad fase 2: code smells de Sonar con impacto real (RNF-90)
+
+- Corregidos: S1077 (svg decorativo `aria-hidden` dentro del contenedor `role=img` de `VitalSignsChart`), S3776 (`AlertActionPanels` sale de `AlertDetailView`), S1874 (`FormEvent` → `SubmitEvent`), S7503 (async sin await → `Promise.resolve`), S5906 (`toHaveLength`), php:S1481, php:S1192 y docker:S6570.
+- Dockerfile del backend: `$PHPIZE_DEPS` debe separarse en varios paquetes; se entrecomilla y se reparte con `printf '%s' "$PHPIZE_DEPS" | xargs apt-get ...`. No se pudo construir la imagen en local (Docker apagado): validar con `docker compose build backend` antes de desplegar.
+- Se dejan a propósito: S9382 (awaits secuenciales en E2E, el orden importa), `!important` en `clinical.css` (riesgo visual) y plsql:S1192 (el servidor oficial no analiza PL/SQL).
+- `npx expo lint` en `movil/` crea `eslint.config.js` y un script `lint` si no existen: no versionarlos sin decidirlo.
