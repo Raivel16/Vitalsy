@@ -73,7 +73,7 @@ class DegradedReadAndSeederTest extends TestCase
 
         try {
             $e = AdmissionEncounter::query()->findOrFail($id);
-            $payload = $e->readablePayload();
+            $e->readablePayload();
             $this->fail('lectura fuera de listado debía lanzar');
         } catch (UndecryptableFieldException) {
             $this->assertTrue(true);

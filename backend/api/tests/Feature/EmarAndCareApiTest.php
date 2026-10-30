@@ -255,7 +255,7 @@ class EmarAndCareApiTest extends TestCase
         $this->inpatientEncounter();
         $auxiliar = $this->asRole('auxiliar_enfermeria');
 
-        $response = $this->postJson(self::V_0001_CARE_ACTIVITIES, [
+        $this->postJson(self::V_0001_CARE_ACTIVITIES, [
             'activityLabel' => self::HIGIENE_MATUTINA,
         ])
             ->assertCreated()

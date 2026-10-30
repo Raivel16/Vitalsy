@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Bed;
 use App\Models\Ward;
+use App\Support\E2E\E2EEnvironmentRequiredException;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 /**
  * RNF-18: datos de la suite E2E. Siembra lo mismo que DatabaseSeeder y añade
@@ -16,7 +16,7 @@ class E2ESeeder extends Seeder
     public function run(): void
     {
         if (! app()->environment('e2e')) {
-            throw new RuntimeException('E2ESeeder solo se ejecuta con APP_ENV=e2e.');
+            throw new E2EEnvironmentRequiredException('E2ESeeder solo se ejecuta con APP_ENV=e2e.');
         }
 
         $this->call(DatabaseSeeder::class);

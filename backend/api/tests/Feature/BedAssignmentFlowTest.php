@@ -10,6 +10,7 @@ use App\Models\Patient;
 use App\Models\User;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\SimulatedFailureException;
 use Tests\TestCase;
 
 /**
@@ -232,13 +233,13 @@ class BedAssignmentFlowTest extends TestCase
         $requestId = $this->request();
         $bed = $this->bed('102', 'A');
         BedAssignment::creating(function () {
-            throw new \RuntimeException('fallo simulado');
+            throw new SimulatedFailureException('fallo simulado');
         });
 
         try {
             $this->postJson("/api/v1/beds/requests/{$requestId}/assign", ['bedId' => $bed->id]);
             $this->fail('Se esperaba la excepción simulada.');
-        } catch (\RuntimeException) {
+        } catch (SimulatedFailureException) {
             // esperado
         }
 

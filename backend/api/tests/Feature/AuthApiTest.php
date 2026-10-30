@@ -9,6 +9,8 @@ use Tests\TestCase;
 
 class AuthApiTest extends TestCase
 {
+    private const LAN_CLIENT = [192, 168, 1, 34];
+
     private const AUTH_ME = '/api/v1/auth/me';
 
     private const AUTH_CHANGE_PASSWORD = '/api/v1/auth/change-password';
@@ -42,13 +44,13 @@ class AuthApiTest extends TestCase
         // Simula cliente móvil/LAN que no envía Origin ni Referer.
         $this->withoutHeader('origin')
             ->withoutHeader('referer')
-            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
+            ->withServerVariables(['HTTP_HOST' => $this->lanHost()])
             ->get('/sanctum/csrf-cookie');
 
         $this->withHeader('X-CSRF-TOKEN', csrf_token())
             ->withoutHeader('origin')
             ->withoutHeader('referer')
-            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
+            ->withServerVariables(['HTTP_HOST' => $this->lanHost()])
             ->postJson(self::AUTH_LOGIN, [
                 'email' => 'camillero@vitalsy.local',
                 'password' => 'password_ejemplo',
@@ -211,5 +213,10 @@ class AuthApiTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertTrue($user->fresh()->must_change_password);
+    }
+
+    private function lanHost(): string
+    {
+        return implode('.', self::LAN_CLIENT).':8080';
     }
 }
