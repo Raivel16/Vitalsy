@@ -65,7 +65,7 @@ export function createEchoClient(): RealtimeClient {
 
     const options = {
       broadcaster: "reverb",
-      key: String(env.VITE_REVERB_APP_KEY ?? ""),
+      key: String(env.VITE_REVERB_APP_PUBLIC ?? ""),
       wsHost: String(env.VITE_REVERB_HOST || window.location.hostname),
       wsPort: port,
       wssPort: port,

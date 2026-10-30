@@ -2,6 +2,7 @@
 //   parallel: M1–M4, acceso, permisos y piso lleno (E2E_WORKERS, 4 por defecto)
 //   serial:   reloj, M5 camas, M6 personal y día completo (1 worker; comparten estado global)
 // Uso: npm run e2e [-- <filtro de archivos> | -g "<título>" ...]
+import { randomInt } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -9,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const results = "e2e-results";
 const args = process.argv.slice(2);
-const seed = process.env.E2E_SEED ?? String(Math.floor(Math.random() * 2 ** 31));
+const seed = process.env.E2E_SEED ?? String(randomInt(2 ** 31));
 const workers = process.env.E2E_WORKERS ?? "4";
 
 rmSync(results, { recursive: true, force: true });
