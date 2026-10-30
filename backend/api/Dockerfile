@@ -3,16 +3,16 @@ FROM php:8.2.35-cli
 WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
         curl \
-        unzip \
-        zip \
-        pkg-config \
-        libpng-dev \
-        libjpeg62-turbo-dev \
+        git \
         libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
         libpq-dev \
         libzip-dev \
+        pkg-config \
+        unzip \
+        zip \
     && printf '%s' "$PHPIZE_DEPS" | xargs apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql gd zip bcmath pcntl \
