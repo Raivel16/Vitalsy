@@ -11,6 +11,10 @@ use Tests\TestCase;
 
 class LifeSyncApiTest extends TestCase
 {
+    private const LIFE_SYNC = '/api/v1/life/sync';
+
+    private const LIFE_CONSENT = '/api/v1/life/consent';
+
     use RefreshDatabase;
 
     private function asCitizen(string $email = 'ana@correo.pe'): LifeAccount
@@ -39,8 +43,8 @@ class LifeSyncApiTest extends TestCase
         $this->asCitizen();
         $item = $this->bioItem('bio-1', [$this->sample('s1', 'heart_rate', 72, 'bpm')]);
 
-        $this->postJson('/api/v1/life/sync', ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
-        $this->postJson('/api/v1/life/sync', ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
 
         $this->assertDatabaseCount('life_biometric_samples', 1);
     }
@@ -50,7 +54,7 @@ class LifeSyncApiTest extends TestCase
         $this->asCitizen();
         $bad = $this->bioItem('bio-2', [$this->sample('s2', 'spo2', 400, '%', 'manual')]);
 
-        $this->postJson('/api/v1/life/sync', ['items' => [$bad]])
+        $this->postJson(self::LIFE_SYNC, ['items' => [$bad]])
             ->assertOk()->assertJsonPath('rejected.0.id', 'bio-2');
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
@@ -66,7 +70,7 @@ class LifeSyncApiTest extends TestCase
             $this->bioItem('bio-3', [$this->sample('s3', 'steps', 1200, 'count')]),
         ];
 
-        $response = $this->postJson('/api/v1/life/sync', ['items' => $items])->assertOk();
+        $response = $this->postJson(self::LIFE_SYNC, ['items' => $items])->assertOk();
         $response->assertJsonPath('accepted', ['c1', 'p1', 'bio-3']);
         $response->assertJsonCount(2, 'rejected');
         $response->assertJsonPath('rejected.0.id', 'x1');
@@ -78,10 +82,10 @@ class LifeSyncApiTest extends TestCase
     {
         $this->asCitizen('uno@correo.pe');
         $item = $this->bioItem('bio-1', [$this->sample('s1', 'heart_rate', 72, 'bpm')]);
-        $this->postJson('/api/v1/life/sync', ['items' => [$item]])->assertOk();
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk();
 
         $this->asCitizen('dos@correo.pe');
-        $this->postJson('/api/v1/life/sync', ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-1');
 
         $this->assertDatabaseCount('life_biometric_samples', 2);
     }
@@ -89,28 +93,28 @@ class LifeSyncApiTest extends TestCase
     public function test_sync_requires_items_array(): void
     {
         $this->asCitizen();
-        $this->postJson('/api/v1/life/sync', [])->assertStatus(422);
+        $this->postJson(self::LIFE_SYNC, [])->assertStatus(422);
     }
 
     public function test_revoking_consent_closes_sharing(): void
     {
         $account = $this->asCitizen();
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true])
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => true])
             ->assertOk()->assertJsonPath('sharingEnabled', true)->assertJsonPath('revokedAt', null);
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => false])
             ->assertOk()->assertJsonPath('sharingEnabled', false)->assertJsonStructure(['revokedAt']);
 
         $this->assertDatabaseHas('life_consents', ['life_account_id' => $account->id, 'sharing_enabled' => false]);
         $this->assertNotNull(LifeConsent::query()->first()->revoked_at);
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true])->assertOk()->assertJsonPath('revokedAt', null);
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => true])->assertOk()->assertJsonPath('revokedAt', null);
         $this->assertDatabaseCount('life_consents', 1);
     }
 
     public function test_consent_requires_boolean(): void
     {
         $this->asCitizen();
-        $this->putJson('/api/v1/life/consent', [])->assertStatus(422);
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => 'quizas'])->assertStatus(422);
+        $this->putJson(self::LIFE_CONSENT, [])->assertStatus(422);
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => 'quizas'])->assertStatus(422);
     }
 
     public function test_logout_revokes_only_current_token(): void
@@ -133,7 +137,7 @@ class LifeSyncApiTest extends TestCase
             ['id' => 'p1', 'kind' => 'plan', 'status' => 'pending', 'body' => '{}'],
         ];
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])
             ->assertOk()
             ->assertJsonPath('accepted', ['p1'])
             ->assertJsonPath('rejected.0.id', '0')
@@ -145,7 +149,7 @@ class LifeSyncApiTest extends TestCase
         $this->asCitizen();
         $items = array_map(fn ($i) => ['id' => "p$i", 'kind' => 'plan', 'status' => 'pending', 'body' => '{}'], range(1, 201));
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertStatus(422);
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])->assertStatus(422);
     }
 
     public function test_end_before_start_is_rejected(): void
@@ -154,7 +158,7 @@ class LifeSyncApiTest extends TestCase
         $s = $this->sample('s1', 'heart_rate', 72, 'bpm');
         $s['endedAt'] = '2026-10-10T07:00:00Z';
 
-        $this->postJson('/api/v1/life/sync', ['items' => [$this->bioItem('b1', [$s])]])
+        $this->postJson(self::LIFE_SYNC, ['items' => [$this->bioItem('b1', [$s])]])
             ->assertOk()->assertJsonPath('rejected.0.id', 'b1');
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
@@ -169,7 +173,7 @@ class LifeSyncApiTest extends TestCase
         $future['startedAt'] = now()->addHour()->toIso8601String();
         $future['endedAt'] = now()->addHours(2)->toIso8601String();
 
-        $this->postJson('/api/v1/life/sync', ['items' => [
+        $this->postJson(self::LIFE_SYNC, ['items' => [
             $this->bioItem('b1', [$rel]),
             $this->bioItem('b2', [$future]),
         ]])->assertOk()->assertJsonCount(2, 'rejected')->assertJsonPath('accepted', []);
@@ -184,7 +188,7 @@ class LifeSyncApiTest extends TestCase
             $this->sample('s2', 'spo2', 400, '%'),
         ]);
 
-        $this->postJson('/api/v1/life/sync', ['items' => [$item]])->assertOk()->assertJsonPath('rejected.0.id', 'b1');
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('rejected.0.id', 'b1');
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
 
@@ -194,7 +198,7 @@ class LifeSyncApiTest extends TestCase
         $s = $this->sample('s1', 'heart_rate', 72, 'bpm');
         $s['value'] = '72';
 
-        $this->postJson('/api/v1/life/sync', ['items' => [$this->bioItem('b1', [$s])]])
+        $this->postJson(self::LIFE_SYNC, ['items' => [$this->bioItem('b1', [$s])]])
             ->assertOk()->assertJsonPath('rejected.0.id', 'b1');
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
@@ -209,19 +213,19 @@ class LifeSyncApiTest extends TestCase
             $this->bioItem('ok', [$this->sample('s9', 'heart_rate', 72, 'bpm')]),
         ];
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])
             ->assertOk()->assertJsonPath('accepted', ['ok'])->assertJsonCount(2, 'rejected');
     }
 
     public function test_client_id_collision_across_accounts_leaves_original_unchanged(): void
     {
         $a = $this->asCitizen('uno@correo.pe');
-        $this->postJson('/api/v1/life/sync', ['items' => [
+        $this->postJson(self::LIFE_SYNC, ['items' => [
             $this->bioItem('b1', [$this->sample('s1', 'heart_rate', 72, 'bpm')]),
         ]])->assertOk();
 
         $this->asCitizen('dos@correo.pe');
-        $this->postJson('/api/v1/life/sync', ['items' => [
+        $this->postJson(self::LIFE_SYNC, ['items' => [
             $this->bioItem('b1', [$this->sample('s1', 'heart_rate', 99, 'bpm')]),
         ]])->assertOk();
 
@@ -233,10 +237,10 @@ class LifeSyncApiTest extends TestCase
     public function test_revoking_twice_preserves_original_revoked_at(): void
     {
         $this->asCitizen();
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true])->assertOk();
-        $first = $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])->assertOk()->json('revokedAt');
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => true])->assertOk();
+        $first = $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => false])->assertOk()->json('revokedAt');
         $this->travel(2)->hours();
-        $second = $this->putJson('/api/v1/life/consent', ['sharingEnabled' => false])->assertOk()->json('revokedAt');
+        $second = $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => false])->assertOk()->json('revokedAt');
 
         $this->assertNotNull($first);
         $this->assertSame($first, $second);
@@ -247,7 +251,7 @@ class LifeSyncApiTest extends TestCase
         $account = LifeAccount::query()->create(['name' => 'Ana', 'email' => 'a@b.pe', 'password' => 'Clave-segura-9']);
         Sanctum::actingAs($account, ['otra']);
 
-        $this->putJson('/api/v1/life/consent', ['sharingEnabled' => true])->assertForbidden();
+        $this->putJson(self::LIFE_CONSENT, ['sharingEnabled' => true])->assertForbidden();
     }
 
     public function test_request_over_total_body_cap_is_rejected_whole(): void
@@ -258,7 +262,7 @@ class LifeSyncApiTest extends TestCase
             $items[] = ['id' => "pad{$i}", 'kind' => 'plan', 'status' => 'pending', 'body' => str_repeat('a', 190000)];
         }
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertStatus(422);
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])->assertStatus(422);
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
 
@@ -274,7 +278,7 @@ class LifeSyncApiTest extends TestCase
             $items[] = $this->bioItem("item{$i}", $samples);
         }
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertStatus(422);
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])->assertStatus(422);
         $this->assertDatabaseCount('life_biometric_samples', 0);
     }
 
@@ -290,7 +294,7 @@ class LifeSyncApiTest extends TestCase
             $items[] = $this->bioItem("item{$i}", $samples);
         }
 
-        $this->postJson('/api/v1/life/sync', ['items' => $items])->assertOk()->assertJsonCount(4, 'accepted');
+        $this->postJson(self::LIFE_SYNC, ['items' => $items])->assertOk()->assertJsonCount(4, 'accepted');
         $this->assertDatabaseCount('life_biometric_samples', 2000);
     }
 }

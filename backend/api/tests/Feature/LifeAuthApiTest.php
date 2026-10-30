@@ -10,28 +10,32 @@ use Tests\TestCase;
 
 class LifeAuthApiTest extends TestCase
 {
+    private const ANA_CORREO_PE = 'ana@correo.pe';
+
+    private const LIFE_AUTH_REGISTER = '/api/v1/life/auth/register';
+
     use RefreshDatabase;
 
     public function test_citizen_registers_and_receives_token(): void
     {
-        $this->postJson('/api/v1/life/auth/register', [
-            'name' => 'Ana Rojas', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9',
+        $this->postJson(self::LIFE_AUTH_REGISTER, [
+            'name' => 'Ana Rojas', 'email' => self::ANA_CORREO_PE, 'password' => 'Clave-segura-9',
         ])->assertCreated()->assertJsonStructure(['token', 'account' => ['id', 'name', 'email']]);
 
-        $this->assertDatabaseHas('life_accounts', ['email' => 'ana@correo.pe']);
+        $this->assertDatabaseHas('life_accounts', ['email' => self::ANA_CORREO_PE]);
     }
 
     public function test_login_rejects_wrong_password(): void
     {
-        LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
+        LifeAccount::query()->create(['name' => 'Ana', 'email' => self::ANA_CORREO_PE, 'password' => 'Clave-segura-9']);
 
-        $this->postJson('/api/v1/life/auth/login', ['email' => 'ana@correo.pe', 'password' => 'otra'])
+        $this->postJson('/api/v1/life/auth/login', ['email' => self::ANA_CORREO_PE, 'password' => 'otra'])
             ->assertStatus(422);
     }
 
     public function test_login_returns_token_with_valid_credentials(): void
     {
-        LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
+        LifeAccount::query()->create(['name' => 'Ana', 'email' => self::ANA_CORREO_PE, 'password' => 'Clave-segura-9']);
 
         $this->postJson('/api/v1/life/auth/login', ['email' => 'ANA@correo.pe', 'password' => 'Clave-segura-9'])
             ->assertOk()->assertJsonStructure(['token', 'account' => ['id', 'name', 'email']]);
@@ -39,13 +43,13 @@ class LifeAuthApiTest extends TestCase
 
     public function test_register_rejects_weak_password_and_duplicate_email(): void
     {
-        $this->postJson('/api/v1/life/auth/register', [
-            'name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'corta',
+        $this->postJson(self::LIFE_AUTH_REGISTER, [
+            'name' => 'Ana', 'email' => self::ANA_CORREO_PE, 'password' => 'corta',
         ])->assertStatus(422);
 
-        LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
-        $this->postJson('/api/v1/life/auth/register', [
-            'name' => 'Otra', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9',
+        LifeAccount::query()->create(['name' => 'Ana', 'email' => self::ANA_CORREO_PE, 'password' => 'Clave-segura-9']);
+        $this->postJson(self::LIFE_AUTH_REGISTER, [
+            'name' => 'Otra', 'email' => self::ANA_CORREO_PE, 'password' => 'Clave-segura-9',
         ])->assertStatus(422);
     }
 

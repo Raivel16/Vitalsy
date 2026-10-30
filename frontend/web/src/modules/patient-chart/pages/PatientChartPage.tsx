@@ -111,6 +111,11 @@ function hasAdmissionContent(admission: ChartPayload["admission"], lifeBaseline?
 
 type OrderItem = string | { title?: string; detail?: string; category?: string };
 
+function authorLabel(name?: string | null, role?: string | null): string {
+  if (!name) return "—";
+  return role ? `${name} · ${role}` : name;
+}
+
 function presentOrderItem(item: OrderItem): { key: string; text: string } {
   if (typeof item === "string") {
     return { key: item, text: item };
@@ -322,7 +327,7 @@ function VitalsPanel({
               <td>{row.respiratoryRate ?? "—"}</td>
               <td>{row.oxygenSaturation ?? "—"}</td>
               <td>{row.news2 ?? "—"}</td>
-              <td>{row.authorName ? `${row.authorName}${row.authorRole ? ` · ${row.authorRole}` : ""}` : "—"}</td>
+              <td>{authorLabel(row.authorName, row.authorRole)}</td>
             </>
           )}
         />

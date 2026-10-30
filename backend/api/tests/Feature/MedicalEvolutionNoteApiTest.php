@@ -10,6 +10,10 @@ use Tests\TestCase;
 
 class MedicalEvolutionNoteApiTest extends TestCase
 {
+    private const MEDICAL_EVOLUTION_NOTES = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes';
+
+    private const CONTINUAR_PLAN_ACTUAL = 'Evolución favorable. Continuar plan actual.';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -48,17 +52,17 @@ class MedicalEvolutionNoteApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes', [
-            'body' => 'Evolución favorable. Continuar plan actual.',
+        $this->postJson(self::MEDICAL_EVOLUTION_NOTES, [
+            'body' => self::CONTINUAR_PLAN_ACTUAL,
             'sign' => true,
         ])
             ->assertCreated()
-            ->assertJsonPath('note.body', 'Evolución favorable. Continuar plan actual.')
+            ->assertJsonPath('note.body', self::CONTINUAR_PLAN_ACTUAL)
             ->assertJsonPath('note.signed', true);
 
         // RNF-06: el cuerpo se almacena cifrado; se verifica por el modelo.
         $this->assertSame('ENC-HOSP-0001', MedicalEvolutionNote::query()->first()->encounter_id);
-        $this->assertSame('Evolución favorable. Continuar plan actual.', MedicalEvolutionNote::query()->first()->body);
+        $this->assertSame(self::CONTINUAR_PLAN_ACTUAL, MedicalEvolutionNote::query()->first()->body);
         $this->assertNotNull(MedicalEvolutionNote::query()->first()->signed_at);
     }
 
@@ -67,7 +71,7 @@ class MedicalEvolutionNoteApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes', [])
+        $this->postJson(self::MEDICAL_EVOLUTION_NOTES, [])
             ->assertStatus(422)
             ->assertJsonPath('message', 'El campo nota de evolución es obligatorio.');
     }
@@ -77,7 +81,7 @@ class MedicalEvolutionNoteApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes', [
+        $this->postJson(self::MEDICAL_EVOLUTION_NOTES, [
             'body' => 'Evolución clínica del paciente durante la visita.',
             'sign' => true,
         ])
@@ -97,7 +101,7 @@ class MedicalEvolutionNoteApiTest extends TestCase
         ]);
 
         $this->actingAs($resident)
-            ->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/medical-evolution-notes')
+            ->getJson(self::MEDICAL_EVOLUTION_NOTES)
             ->assertOk()
             ->assertJsonCount(1, 'notes')
             ->assertJsonPath('notes.0.body', 'Nota previa');

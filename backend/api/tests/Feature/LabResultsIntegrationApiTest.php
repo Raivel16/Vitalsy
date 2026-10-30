@@ -10,6 +10,8 @@ use Tests\TestCase;
 
 class LabResultsIntegrationApiTest extends TestCase
 {
+    private const LAB_RESULTS_SYNC = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -48,7 +50,7 @@ class LabResultsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync')
+        $this->postJson(self::LAB_RESULTS_SYNC)
             ->assertOk()
             ->assertJsonPath('integrated', 2)
             ->assertJsonPath('results.0.externalId', 'LIS-OBS-1001')
@@ -71,8 +73,8 @@ class LabResultsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync')->assertOk();
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync')
+        $this->postJson(self::LAB_RESULTS_SYNC)->assertOk();
+        $this->postJson(self::LAB_RESULTS_SYNC)
             ->assertOk()
             ->assertJsonPath('integrated', 2);
 
@@ -83,7 +85,7 @@ class LabResultsIntegrationApiTest extends TestCase
     {
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync')->assertOk();
+        $this->postJson(self::LAB_RESULTS_SYNC)->assertOk();
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results')
             ->assertOk()
@@ -105,7 +107,7 @@ class LabResultsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/lab-results/sync')
+        $this->postJson(self::LAB_RESULTS_SYNC)
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
     }

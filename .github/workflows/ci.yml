@@ -33,7 +33,7 @@ jobs:
             movil/package-lock.json
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: "8.2.35"
           extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, pgsql, pcov
@@ -42,7 +42,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend/web
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run frontend tests
         working-directory: frontend/web
@@ -75,15 +75,22 @@ jobs:
 
       - name: Install mobile dependencies
         working-directory: movil
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # Genera movil/coverage/lcov.info para SonarQube.
       - name: Run mobile tests with coverage
         working-directory: movil
-        run: npx jest --ci --coverage
+        run: ./node_modules/.bin/jest --ci --coverage
 
       # Análisis de SonarQube Cloud. Acción fijada al commit del tag v8.3.0.
       - name: SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        with:
+          # Solo en el CI (no en sonar-project.properties, que es el archivo de la entrega): los *.test.ts(x) y el e2e
+          # cuentan como tests y el resto como codigo, que es lo que mide la evaluacion oficial (ver docs/agent-context.md).
+          args: >
+            -Dsonar.tests=frontend/web/src,movil/src,frontend/web/e2e
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx,frontend/web/e2e/**
+            -Dsonar.exclusions=**/*.test.ts,**/*.test.tsx,frontend/web/e2e/**
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -19,7 +19,7 @@ export function Button({
   pending?: boolean;
 }) {
   return (
-    <button className={buttonClass(variant, className)} disabled={disabled || pending} {...props}>
+    <button type="button" className={buttonClass(variant, className)} disabled={disabled || pending} {...props}>
       {children}
     </button>
   );

@@ -13,6 +13,8 @@ use Tests\TestCase;
 
 class ClinicalVisitConsolidationApiTest extends TestCase
 {
+    private const V_0001_CLINICAL_VISIT = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-visit';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -85,7 +87,7 @@ class ClinicalVisitConsolidationApiTest extends TestCase
 
         $this->asRole('medico_tratante');
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-visit')
+        $this->getJson(self::V_0001_CLINICAL_VISIT)
             ->assertOk()
             ->assertJsonPath('day', '2026-09-21')
             ->assertJsonCount(1, 'labResults')
@@ -103,7 +105,7 @@ class ClinicalVisitConsolidationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-visit')
+        $this->getJson(self::V_0001_CLINICAL_VISIT)
             ->assertOk()
             ->assertJsonPath('labResults', [])
             ->assertJsonPath('imagingReports', [])
@@ -115,7 +117,7 @@ class ClinicalVisitConsolidationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('enfermera_piso');
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-visit')
+        $this->getJson(self::V_0001_CLINICAL_VISIT)
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
     }

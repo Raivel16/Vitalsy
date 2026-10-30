@@ -27,10 +27,10 @@ jobs:
           cache-dependency-path: frontend/web/package-lock.json
       - name: Install dependencies
         working-directory: frontend/web
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Install Playwright test runner (sin tocar package.json)
         working-directory: frontend/web
-        run: npm install --no-save @playwright/test@1.49.1
+        run: npm install --no-save --ignore-scripts @playwright/test@1.49.1
       - name: Install Playwright browser
         working-directory: frontend/web
         run: npx playwright install --with-deps ${{ matrix.browser }}

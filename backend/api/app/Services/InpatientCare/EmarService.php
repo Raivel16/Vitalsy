@@ -34,7 +34,7 @@ class EmarService
             ->whereBetween('scheduled_at', [$start, $end])
             ->orderBy('scheduled_at')
             ->get()
-            ->map(fn (MedicationAdministration $dose) => $this->present($dose, $encounter))
+            ->map(fn (MedicationAdministration $dose) => $this->present($dose))
             ->all();
 
         return [
@@ -96,7 +96,7 @@ class EmarService
         app(MonitoringControlsBoard::class)
             ->closeComplianceAlert('emar:'.$dose->id, 'Dosis administrada en e-MAR.', $nurse);
 
-        return ['dose' => $this->present($dose->fresh('prescriptionItem'), $encounter)];
+        return ['dose' => $this->present($dose->fresh('prescriptionItem'))];
     }
 
     private function ensureDosesFromActiveCpoe(string $encounterId): void
@@ -187,7 +187,7 @@ class EmarService
     /**
      * @return array<string, mixed>
      */
-    private function present(MedicationAdministration $dose, AdmissionEncounter $encounter): array
+    private function present(MedicationAdministration $dose): array
     {
         $item = $dose->prescriptionItem;
 

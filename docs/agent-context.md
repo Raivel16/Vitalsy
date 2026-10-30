@@ -137,3 +137,11 @@ Registrado para una iteración aparte. No se implementa junto con el ajuste visu
 - `LifeEndToEndTest` recorre el flujo completo (registro, consentimiento, sync, código, importación en admisión, plan de alta, salida con custodia, reclamo). La línea base exige al menos 7 días de historia.
 - Docs actualizados: `modulo-1-admision.md`, `modulo-4-alta.md`, `modulo-7-vitalsy-life.md`, `modelo-datos.md` y colección `docs/api/yaak-vitalsy-life.postman_collection.json`.
 - No verificado en ejecución: app móvil contra servidor real, Reverb/wss, pg_dump/k6/Playwright reales, servidor FHIR real.
+
+## Nota: calidad SonarQube alineada con la evaluación del profesor (RNF-90)
+
+- **Rúbrica /20:** Seguridad 5, Fiabilidad 4, Cobertura 4 (`cobertura/80 × 4`, global), Mantenibilidad 4 (rating SQALE), Hotspots 2, Duplicación 1 (≤ 3 %). El Quality Gate de SonarQube no cuenta.
+- **Reglas anti-trampa:** regla 1 (−10) por excluir carpetas de código o poner rutas de código en `sonar.test.inclusions`; regla 2 (nota 0) con más de 2500 hallazgos. `sonar-project.properties` solo trae `sonar.sources=.` y las rutas de cobertura; no añadir `sonar.exclusions` ni `sonar.test.inclusions`.
+- **Nube (SonarCloud):** el CI pasa `sonar.tests`, `sonar.test.inclusions` y `sonar.exclusions` solo como argumentos del escaneo (no en el archivo de la entrega) para tratar `*.test.ts(x)` y `e2e` como tests, que es lo que mejor reproduce la cobertura del informe del profesor (hipótesis; no es exacta). Los 8 hallazgos de seguridad de workflows y Dockerfile se corrigieron con `--ignore-scripts`, `jest` sin `npx` y `setup-php` fijado a su commit.
+- **Cobertura entregada:** el profesor lee `coverage-reports/` (copia versionada). Antes de entregar, regenerar con `npm test` (frontend), `npx jest --ci --coverage` (móvil) y `XDEBUG_MODE=coverage php artisan test --coverage-clover=coverage.xml` (backend) y reescribir rutas con `scripts/refresh-coverage.py` (local, ignorado por git). PHPUnit mide `app`, `bootstrap`, `config`, `database`, `routes` y `tests`, porque los tests los ejecutan.
+- **Pendiente conocido:** `PersonPicker` mantiene `role="listbox"` (patrón combobox accesible); Sonar sugiere `<select>`/`<datalist>`, lo que degradaría la interacción.

@@ -10,6 +10,16 @@ use Tests\TestCase;
 
 class CpoePrescriptionApiTest extends TestCase
 {
+    private const CADA_24_HORAS = 'cada 24 horas';
+
+    private const V_0001_PRESCRIPTIONS_ACTIVE = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active';
+
+    private const HOSP_0001_PRESCRIPTIONS = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions';
+
+    private const V_500_MG = '500 mg';
+
+    private const CADA_8_HORAS = 'cada 8 horas';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -48,20 +58,20 @@ class CpoePrescriptionApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+        $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
             'continuePlan' => false,
             'items' => [
                 [
                     'drugName' => 'Paracetamol',
                     'dose' => '1 g',
                     'route' => 'VO',
-                    'frequency' => 'cada 8 horas',
+                    'frequency' => self::CADA_8_HORAS,
                 ],
                 [
                     'drugName' => 'Omeprazol',
                     'dose' => '20 mg',
                     'route' => 'VO',
-                    'frequency' => 'cada 24 horas',
+                    'frequency' => self::CADA_24_HORAS,
                 ],
             ],
         ])
@@ -74,7 +84,7 @@ class CpoePrescriptionApiTest extends TestCase
         $this->assertDatabaseCount('prescriptions', 1);
         $this->assertDatabaseCount('prescription_items', 2);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')
+        $this->getJson(self::V_0001_PRESCRIPTIONS_ACTIVE)
             ->assertOk()
             ->assertJsonPath('prescription.items.0.drugName', 'Paracetamol')
             ->assertJsonPath('prescription.items.0.drugBarcode', 'DRUG-PARACETAMOL-1G');
@@ -88,12 +98,12 @@ class CpoePrescriptionApiTest extends TestCase
     {
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
-            'items' => [['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => 'cada 8 horas']],
+        $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
+            'items' => [['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS]],
         ])->assertCreated();
 
         $this->asRole('enfermera_piso');
-        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')->assertOk();
+        $response = $this->getJson(self::V_0001_PRESCRIPTIONS_ACTIVE)->assertOk();
 
         $response->assertJsonPath('prescription.items.0.drugName', 'Paracetamol');
         $this->assertArrayNotHasKey('drugBarcode', $response->json('prescription.items.0'));
@@ -105,10 +115,10 @@ class CpoePrescriptionApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $created = $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+        $created = $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
             'items' => [
-                ['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => 'cada 8 horas'],
-                ['drugName' => 'Omeprazol', 'dose' => '20 mg', 'route' => 'VO', 'frequency' => 'cada 24 horas'],
+                ['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS],
+                ['drugName' => 'Omeprazol', 'dose' => '20 mg', 'route' => 'VO', 'frequency' => self::CADA_24_HORAS],
             ],
         ])->assertCreated();
 
@@ -116,24 +126,24 @@ class CpoePrescriptionApiTest extends TestCase
 
         $this->putJson("/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items/{$itemId}", [
             'drugName' => 'Paracetamol',
-            'dose' => '500 mg',
+            'dose' => self::V_500_MG,
             'route' => 'VO',
             'frequency' => 'cada 6 horas',
         ])
             ->assertOk()
-            ->assertJsonPath('prescription.items.0.dose', '500 mg')
+            ->assertJsonPath('prescription.items.0.dose', self::V_500_MG)
             ->assertJsonPath('prescription.items.0.drugBarcode', 'DRUG-PARACETAMOL-500MG');
 
         $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items', [
             'drugName' => 'Enoxaparina',
             'dose' => '40 mg',
             'route' => 'SC',
-            'frequency' => 'cada 24 horas',
+            'frequency' => self::CADA_24_HORAS,
         ])
             ->assertCreated()
             ->assertJsonCount(3, 'prescription.items');
 
-        $active = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active')->json('prescription.items');
+        $active = $this->getJson(self::V_0001_PRESCRIPTIONS_ACTIVE)->json('prescription.items');
         $omeprazolId = (int) collect($active)->firstWhere('drugName', 'Omeprazol')['id'];
 
         $this->deleteJson("/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions/active/items/{$omeprazolId}")
@@ -153,20 +163,20 @@ class CpoePrescriptionApiTest extends TestCase
         ]);
         $previous->items()->create([
             'drug_name' => 'Amoxicilina',
-            'dose' => '500 mg',
+            'dose' => self::V_500_MG,
             'route' => 'VO',
-            'frequency' => 'cada 8 horas',
+            'frequency' => self::CADA_8_HORAS,
         ]);
 
         $this->actingAs($prescriber)
-            ->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+            ->postJson(self::HOSP_0001_PRESCRIPTIONS, [
                 'continuePlan' => true,
                 'items' => [
                     [
                         'drugName' => 'Enoxaparina',
                         'dose' => '40 mg',
                         'route' => 'SC',
-                        'frequency' => 'cada 24 horas',
+                        'frequency' => self::CADA_24_HORAS,
                     ],
                 ],
             ])
@@ -183,7 +193,7 @@ class CpoePrescriptionApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+        $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
             'items' => [
                 ['drugName' => 'X', 'dose' => '1', 'route' => 'VO', 'frequency' => 'c/24h'],
             ],
@@ -197,7 +207,7 @@ class CpoePrescriptionApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/prescriptions', [
+        $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
             'items' => [],
         ])
             ->assertStatus(422)

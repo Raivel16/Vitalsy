@@ -108,4 +108,29 @@ class E2EClockTest extends TestCase
         $this->artisan('e2e:clock', ['action' => 'reset'])->assertSuccessful();
         $this->assertFileDoesNotExist($this->file);
     }
+
+    public function test_command_rejects_invalid_action_and_invalid_instant(): void
+    {
+        $this->bootIn('e2e', true);
+        $this->app[Kernel::class]->registerCommand($this->app->make(E2EClockCommand::class));
+
+        $this->artisan('e2e:clock', ['action' => 'rewind'])
+            ->expectsOutputToContain('Acción no válida')
+            ->assertFailed();
+        $this->artisan('e2e:clock', ['action' => 'set', '--at' => 'no es una fecha'])
+            ->expectsOutputToContain('instante ISO-8601 válido')
+            ->assertFailed();
+        $this->assertSame(0, E2EClock::offsetSeconds());
+    }
+
+    public function test_command_show_does_not_move_the_clock(): void
+    {
+        $this->bootIn('e2e', true);
+        $this->app[Kernel::class]->registerCommand($this->app->make(E2EClockCommand::class));
+
+        $this->artisan('e2e:clock', ['action' => 'show'])
+            ->expectsOutputToContain('Reloj E2E: ')
+            ->assertSuccessful();
+        $this->assertSame(0, E2EClock::offsetSeconds());
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\LifeBaselineImport;
 use App\Models\User;
 use App\Services\Admission\AdmissionBoard;
 use App\Services\Admission\AdmissionBoardException;
+use App\Services\Admission\AdmissionMedicalOrders;
 use App\Services\InpatientCare\CpoeService;
 use App\Services\Life\LifeLinking;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ class HospitalAdmissionController extends Controller
 
     public function __construct(
         private readonly AdmissionBoard $board,
+        private readonly AdmissionMedicalOrders $orders,
         private readonly CpoeService $cpoe,
     ) {}
 
@@ -216,7 +218,7 @@ class HospitalAdmissionController extends Controller
     public function showMedicalOrders(string $encounterId): JsonResponse
     {
         return $this->guard(fn () => response()->json([
-            'orders' => $this->board->medicalOrders($encounterId),
+            'orders' => $this->orders->view($encounterId),
         ]));
     }
 
@@ -230,7 +232,7 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return $this->guard(fn () => response()->json([
-            'orders' => $this->board->saveMedicalOrders($encounterId, $data['items']),
+            'orders' => $this->orders->save($encounterId, $data['items']),
         ]));
     }
 
@@ -247,7 +249,7 @@ class HospitalAdmissionController extends Controller
         ]);
 
         return $this->guard(function () use ($data, $encounterId, $request) {
-            $signature = $this->board->signMedicalOrders($encounterId, [
+            $signature = $this->orders->sign($encounterId, [
                 'physicianName' => $data['physicianName'],
                 'credential' => $data['credential'],
                 'items' => $data['items'] ?? null,

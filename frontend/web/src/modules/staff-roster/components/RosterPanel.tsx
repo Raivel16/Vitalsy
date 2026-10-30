@@ -21,6 +21,11 @@ import type { PlanSummary, PublishedPlan, StaffMember } from "../types";
 import { PersonPicker } from "./PersonPicker";
 import { ShiftMatrix } from "./ShiftMatrix";
 
+function planStatusPill(loading: boolean, published: boolean) {
+  if (loading) return undefined;
+  return published ? <StatusPill tone="success">Publicado</StatusPill> : <StatusPill tone="warning">Sin publicar</StatusPill>;
+}
+
 function planStatusText(plan: PublishedPlan | null, month: string): string {
   if (!plan) return `Aún no hay un rol publicado para ${monthLabel(month)}.`;
   const author = plan.publishedByName ? " por " + plan.publishedByName : "";
@@ -159,7 +164,7 @@ export function RosterPanel({ members }: Readonly<{ members: StaffMember[] }>) {
 
       <Panel
         title="Rol mensual de turnos"
-        aside={loading ? undefined : plan ? <StatusPill tone="success">Publicado</StatusPill> : <StatusPill tone="warning">Sin publicar</StatusPill>}
+        aside={planStatusPill(loading, Boolean(plan))}
       >
         {error ? <Feedback tone="error">{error}</Feedback> : null}
         {notice ? <Feedback tone="success">{notice}</Feedback> : null}

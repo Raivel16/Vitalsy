@@ -15,6 +15,8 @@ use Tests\TestCase;
 
 class MonitoringControlsAndComplianceTest extends TestCase
 {
+    private const V_12_00_00 = '2026-09-26 12:00:00';
+
     use RefreshDatabase;
 
     private function encounter(): AdmissionEncounter
@@ -51,7 +53,7 @@ class MonitoringControlsAndComplianceTest extends TestCase
 
     public function test_nurse_lists_and_completes_a_due_monitoring_control(): void
     {
-        Carbon::setTestNow('2026-09-26 12:00:00');
+        Carbon::setTestNow(self::V_12_00_00);
         $this->encounter();
         MonitoringSchedule::query()->create([
             'encounter_id' => 'ENC-CTRL-0001',
@@ -83,7 +85,7 @@ class MonitoringControlsAndComplianceTest extends TestCase
 
     public function test_overdue_control_opens_a_compliance_alert_for_the_floor_nurse(): void
     {
-        Carbon::setTestNow('2026-09-26 12:00:00');
+        Carbon::setTestNow(self::V_12_00_00);
         $this->encounter();
         MonitoringSchedule::query()->create([
             'encounter_id' => 'ENC-CTRL-0001',
@@ -106,7 +108,7 @@ class MonitoringControlsAndComplianceTest extends TestCase
 
     public function test_overdue_emar_dose_opens_compliance_alert_and_closes_when_administered(): void
     {
-        Carbon::setTestNow('2026-09-26 12:00:00');
+        Carbon::setTestNow(self::V_12_00_00);
         $this->encounter();
         $prescription = Prescription::query()->create([
             'encounter_id' => 'ENC-CTRL-0001',
