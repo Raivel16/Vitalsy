@@ -764,6 +764,47 @@ function buildPostAction(alertId: string | undefined): PostAction {
     });
 }
 
+function AlertActionPanels({
+  alert,
+  role,
+  alertId,
+  postAction,
+  reload,
+}: Readonly<{ alert: ClinicalAlert; role: string; alertId: string | undefined; postAction: PostAction; reload: Reload }>) {
+  const perms = alertPermissions(alert, role);
+  const { closed, pendingAck } = perms;
+  const icu = alert.icuTransfer;
+
+  return (
+    <div className="stack">
+      {pendingAck && !closed ? <AcknowledgePanel alertId={alertId} postAction={postAction} reload={reload} /> : null}
+
+      {perms.canNurseCare ? (
+        <NurseCarePanel canSchedule={perms.canSchedule} postAction={postAction} reload={reload} />
+      ) : null}
+
+      {perms.isDoctor && !closed && !perms.inIcuFlow ? (
+        <DoctorPanel pendingAck={pendingAck} postAction={postAction} reload={reload} />
+      ) : null}
+
+      {perms.isRrt && !closed && (alert.status === "err_solicitado" || alert.status === "escalada_err") ? (
+        <RrtPanel pendingAck={pendingAck} postAction={postAction} reload={reload} />
+      ) : null}
+
+      {!closed && icu?.ordered ? (
+        <IcuPanel
+          icu={icu}
+          canAuthorize={perms.canAuthorizeIcu}
+          canTransfer={perms.canTransferIcu}
+          canReturn={perms.canReturnIcu}
+          postAction={postAction}
+          reload={reload}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function AlertDetailView() {
   const { alertId } = useParams();
   const { user } = useAuth();
@@ -775,10 +816,6 @@ function AlertDetailView() {
 
   if (loading) return <LoadingState label="Cargando el evento…" />;
   if (!alert) return <Feedback tone="error">{pageError || "No se encontró el evento."}</Feedback>;
-
-  const perms = alertPermissions(alert, role);
-  const { closed, pendingAck } = perms;
-  const icu = alert.icuTransfer;
 
   return (
     <AlertNoticeContext.Provider value={setNotice}>
@@ -803,32 +840,7 @@ function AlertDetailView() {
       </p>
 
       <div className="split-board">
-        <div className="stack">
-          {pendingAck && !closed ? <AcknowledgePanel alertId={alertId} postAction={postAction} reload={load} /> : null}
-
-          {perms.canNurseCare ? (
-            <NurseCarePanel canSchedule={perms.canSchedule} postAction={postAction} reload={load} />
-          ) : null}
-
-          {perms.isDoctor && !closed && !perms.inIcuFlow ? (
-            <DoctorPanel pendingAck={pendingAck} postAction={postAction} reload={load} />
-          ) : null}
-
-          {perms.isRrt && !closed && (alert.status === "err_solicitado" || alert.status === "escalada_err") ? (
-            <RrtPanel pendingAck={pendingAck} postAction={postAction} reload={load} />
-          ) : null}
-
-          {!closed && icu?.ordered ? (
-            <IcuPanel
-              icu={icu}
-              canAuthorize={perms.canAuthorizeIcu}
-              canTransfer={perms.canTransferIcu}
-              canReturn={perms.canReturnIcu}
-              postAction={postAction}
-              reload={load}
-            />
-          ) : null}
-        </div>
+        <AlertActionPanels alert={alert} role={role} alertId={alertId} postAction={postAction} reload={load} />
         <EventHistory events={events} escalations={escalations} />
       </div>
     </Sheet>

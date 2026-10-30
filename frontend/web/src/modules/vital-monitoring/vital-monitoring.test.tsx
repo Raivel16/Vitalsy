@@ -1,7 +1,8 @@
-import { screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
+import { VitalSignsChart } from "./ui/VitalSignsChart";
 
 const encounter = {
   encounterId: "ENC-HOSP-0001",
@@ -77,5 +78,23 @@ describe("monitoreo de constantes (RF-26–27)", () => {
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/próximo control/i);
     expect(await screen.findByRole("img", { name: /gráfica evolutiva/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /gráfica evolutiva/i })).toHaveTextContent(/72/);
+  });
+});
+
+describe("gráfica evolutiva (RF-27)", () => {
+  it("se anuncia una sola vez: los trazos internos son decorativos", () => {
+    const { container } = render(
+      <VitalSignsChart
+        series={[
+          { recordedAt: "2026-10-30T08:00:00Z", pulse: 72, news2: 1, respiratoryRate: 16, oxygenSaturation: 97 },
+          { recordedAt: "2026-10-30T12:00:00Z", pulse: 88, news2: 3, respiratoryRate: 20, oxygenSaturation: 95 },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: /gráfica evolutiva de pulso y news2/i })).toBeInTheDocument();
+    const svgs = container.querySelectorAll("svg");
+    expect(svgs).toHaveLength(2);
+    svgs.forEach((svg) => expect(svg).toHaveAttribute("aria-hidden", "true"));
   });
 });

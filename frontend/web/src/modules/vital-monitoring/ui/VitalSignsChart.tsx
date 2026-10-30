@@ -75,7 +75,7 @@ function VitalLane({ lane, series }: Readonly<{ lane: Lane; series: ChartPoint[]
         <span>{lane.label}</span>
         <span>{lane.unit}</span>
       </figcaption>
-      <svg className="vitals-chart" viewBox={`0 0 ${width} ${height}`}>
+      <svg className="vitals-chart" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
         <line x1={padX} y1={padY} x2={padX} y2={height - padY} stroke="#d1d6dc" />
         <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="#d1d6dc" />
         <text x={8} y={padY + 4} className="vitals-chart-axis">{max}</text>
