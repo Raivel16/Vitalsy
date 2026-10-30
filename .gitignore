@@ -84,3 +84,6 @@ docs/actividad-19-patentes/*.pdf
 
 # Herramientas de calidad solo locales (la entrega no las incluye)
 /scripts/
+
+# Código .ino del ESP32-C3 SuperMini (historial en repo Git propio, nunca se sube)
+/firmware-esp32c3/
