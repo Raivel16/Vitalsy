@@ -82,24 +82,8 @@ jobs:
         working-directory: movil
         run: npx jest --ci --coverage
 
-      # Deja la cobertura fresca en coverage-reports/ con rutas relativas a la raiz,
-      # el mismo layout que lee la evaluacion oficial. Solo vive en el workspace del CI.
-      - name: Prepare coverage reports for SonarQube
-        run: |
-          mkdir -p coverage-reports
-          sed -e '/^SF:/ s#[\]#/#g' -e 's#^SF:src/#SF:frontend/web/src/#' frontend/web/coverage/lcov.info > coverage-reports/lcov-frontend.info
-          sed -e '/^SF:/ s#[\]#/#g' -e 's#^SF:src/#SF:movil/src/#' movil/coverage/lcov.info > coverage-reports/lcov-movil.info
-          sed "s#${GITHUB_WORKSPACE}/##g" backend/api/coverage.xml > coverage-reports/php-coverage.xml
-
       # Análisis de SonarQube Cloud. Acción fijada al commit del tag v8.3.0.
       - name: SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
-        with:
-          # Solo en el CI (no en sonar-project.properties, que es el archivo de la entrega):
-          # los tests cuentan como tests, no como codigo sin cobertura, y los reportes de cobertura no se analizan.
-          args: >
-            -Dsonar.tests=backend/api/tests,frontend/web/e2e,frontend/web/src,movil/src
-            -Dsonar.test.inclusions=backend/api/tests/**,frontend/web/e2e/**,**/*.test.ts,**/*.test.tsx
-            -Dsonar.exclusions=coverage-reports/**,backend/api/tests/**,frontend/web/e2e/**,**/*.test.ts,**/*.test.tsx
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
