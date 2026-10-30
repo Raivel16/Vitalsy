@@ -15,6 +15,11 @@
     <source>
         <include>
             <directory>app</directory>
+            <directory>bootstrap</directory>
+            <directory>config</directory>
+            <directory>database</directory>
+            <directory>routes</directory>
+            <directory>tests</directory>
         </include>
     </source>
     <php>
