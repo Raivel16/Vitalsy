@@ -14,7 +14,12 @@ coverage/
 # Python
 __pycache__/
 .venv/
+venv/
 *.pyc
+
+# Artefactos de compilacion (plantilla oficial de evaluacion)
+build/
+target/
 
 # Coverage and reports
 coverage.xml
