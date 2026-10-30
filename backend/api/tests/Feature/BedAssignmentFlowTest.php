@@ -21,6 +21,16 @@ use Tests\TestCase;
  */
 class BedAssignmentFlowTest extends TestCase
 {
+    private const ANA_QUISPE = 'Ana Quispe';
+
+    private const BEDS_REQUESTS = '/api/v1/beds/requests';
+
+    private const BEDS_ASSIGNMENTS_NOTIFICATIONS = '/api/v1/beds/assignments/notifications';
+
+    private const CARLOS_RAM_REZ = 'Carlos Ramírez';
+
+    private const BEDS_PROJECTIONS = '/api/v1/beds/projections';
+
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -45,7 +55,7 @@ class BedAssignmentFlowTest extends TestCase
     /** @param array<string, mixed> $overrides */
     private function request(array $overrides = []): int
     {
-        return (int) $this->postJson('/api/v1/beds/requests', array_merge([
+        return (int) $this->postJson(self::BEDS_REQUESTS, array_merge([
             'source' => 'urgencias',
             'priority' => 'alta',
             'specialty' => 'medicina_interna',
@@ -81,7 +91,7 @@ class BedAssignmentFlowTest extends TestCase
     {
         $this->asRole('gestion_camas');
 
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'urgencias',
             'priority' => 'alta',
         ])->assertStatus(422)->assertJsonValidationErrors(['patientName']);
@@ -91,7 +101,7 @@ class BedAssignmentFlowTest extends TestCase
     {
         $this->asRole('gestion_camas');
 
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'quirofano',
             'priority' => 'media',
             'patientName' => 'Con aislamiento',
@@ -107,7 +117,7 @@ class BedAssignmentFlowTest extends TestCase
     {
         $this->asRole('gestion_camas');
 
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'urgencias',
             'priority' => 'alta',
             'patientName' => 'X',
@@ -118,21 +128,21 @@ class BedAssignmentFlowTest extends TestCase
 
     public function test_request_derives_name_and_gender_from_the_encounter(): void
     {
-        $this->encounter('ENC-B-1', 'Ana Quispe', 'cerrado', '70000010');
+        $this->encounter('ENC-B-1', self::ANA_QUISPE, 'cerrado', '70000010');
         Patient::query()->create([
             'document_type' => 'DNI',
             'document_number' => '70000010',
-            'full_name' => 'Ana Quispe',
+            'full_name' => self::ANA_QUISPE,
             'sex' => 'Femenino',
         ]);
         $this->asRole('gestion_camas');
 
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'admisiones',
             'priority' => 'media',
             'encounterId' => 'ENC-B-1',
         ])->assertCreated()
-            ->assertJsonPath('request.patientName', 'Ana Quispe')
+            ->assertJsonPath('request.patientName', self::ANA_QUISPE)
             ->assertJsonPath('request.gender', 'female');
     }
 
@@ -246,7 +256,7 @@ class BedAssignmentFlowTest extends TestCase
             ->assertCreated();
 
         $this->asRole('enfermera_supervisora');
-        $list = $this->getJson('/api/v1/beds/assignments/notifications')
+        $list = $this->getJson(self::BEDS_ASSIGNMENTS_NOTIFICATIONS)
             ->assertOk()
             ->assertJsonPath('notifications.0.patientName', 'Notificada')
             ->assertJsonPath('notifications.0.room', '102')
@@ -255,7 +265,7 @@ class BedAssignmentFlowTest extends TestCase
 
         $this->postJson("/api/v1/beds/assignments/{$list[0]['id']}/acknowledge")->assertOk();
 
-        $this->getJson('/api/v1/beds/assignments/notifications')
+        $this->getJson(self::BEDS_ASSIGNMENTS_NOTIFICATIONS)
             ->assertOk()
             ->assertJsonCount(0, 'notifications');
     }
@@ -263,7 +273,7 @@ class BedAssignmentFlowTest extends TestCase
     public function test_only_the_supervisor_reads_assignment_notifications(): void
     {
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/assignments/notifications')->assertForbidden();
+        $this->getJson(self::BEDS_ASSIGNMENTS_NOTIFICATIONS)->assertForbidden();
         $this->postJson('/api/v1/beds/assignments/1/acknowledge')->assertForbidden();
     }
 
@@ -271,7 +281,7 @@ class BedAssignmentFlowTest extends TestCase
 
     public function test_census_exposes_the_occupant_of_an_occupied_bed(): void
     {
-        $this->encounter('ENC-OC-1', 'Carlos Ramírez', 'cerrado', '70000061');
+        $this->encounter('ENC-OC-1', self::CARLOS_RAM_REZ, 'cerrado', '70000061');
         $bed = $this->bed('101', 'A');
         $bed->update(['status' => 'occupied']);
         BedAssignment::query()->create([
@@ -286,7 +296,7 @@ class BedAssignmentFlowTest extends TestCase
 
         $occupied = $beds->firstWhere('id', $bed->id);
         $this->assertSame('ENC-OC-1', $occupied['occupant']['encounterId']);
-        $this->assertSame('Carlos Ramírez', $occupied['occupant']['patientName']);
+        $this->assertSame(self::CARLOS_RAM_REZ, $occupied['occupant']['patientName']);
         $this->assertNotNull($occupied['occupant']['since']);
 
         $free = $beds->firstWhere('id', $this->bed('101', 'B')->id);
@@ -297,7 +307,7 @@ class BedAssignmentFlowTest extends TestCase
 
     public function test_patient_lookup_lists_open_encounters_without_a_bed(): void
     {
-        $this->encounter('ENC-P-1', 'Ana Quispe', 'cerrado', '70000031');
+        $this->encounter('ENC-P-1', self::ANA_QUISPE, 'cerrado', '70000031');
         $this->encounter('ENC-P-2', 'Egresado Uno', 'egresado', '70000032');
         $this->encounter('ENC-P-3', 'Con Cama', 'cerrado', '70000033');
         BedAssignment::query()->create([
@@ -306,7 +316,7 @@ class BedAssignmentFlowTest extends TestCase
             'assigned_at' => now(),
         ]);
         Patient::query()->create([
-            'document_type' => 'DNI', 'document_number' => '70000031', 'full_name' => 'Ana Quispe', 'sex' => 'F',
+            'document_type' => 'DNI', 'document_number' => '70000031', 'full_name' => self::ANA_QUISPE, 'sex' => 'F',
         ]);
         $this->asRole('gestion_camas');
 
@@ -314,13 +324,13 @@ class BedAssignmentFlowTest extends TestCase
 
         $this->assertCount(1, $patients);
         $this->assertSame('ENC-P-1', $patients[0]['encounterId']);
-        $this->assertSame('Ana Quispe', $patients[0]['patientName']);
+        $this->assertSame(self::ANA_QUISPE, $patients[0]['patientName']);
         $this->assertSame('female', $patients[0]['gender']);
     }
 
     public function test_patient_lookup_filters_by_name_or_document(): void
     {
-        $this->encounter('ENC-P-4', 'Carlos Ramírez', 'cerrado', '70000041');
+        $this->encounter('ENC-P-4', self::CARLOS_RAM_REZ, 'cerrado', '70000041');
         $this->encounter('ENC-P-5', 'María Quispe', 'cerrado', '70000042');
         $this->asRole('gestion_camas');
 
@@ -343,28 +353,28 @@ class BedAssignmentFlowTest extends TestCase
     {
         $this->encounter('ENC-PR-1', 'Proyectado', 'cerrado', '70000051');
         $this->asRole('enfermera_supervisora');
-        $this->postJson('/api/v1/beds/projections', [
+        $this->postJson(self::BEDS_PROJECTIONS, [
             'encounterId' => 'ENC-PR-1',
             'projectedAt' => now()->addHours(5)->toIso8601String(),
         ])->assertCreated();
 
-        $this->getJson('/api/v1/beds/projections')
+        $this->getJson(self::BEDS_PROJECTIONS)
             ->assertOk()
             ->assertJsonPath('projections.0.encounterId', 'ENC-PR-1')
             ->assertJsonPath('projections.0.patientName', 'Proyectado');
 
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/projections')->assertOk()->assertJsonCount(1, 'projections');
+        $this->getJson(self::BEDS_PROJECTIONS)->assertOk()->assertJsonCount(1, 'projections');
 
         $this->asRole('servicios_generales');
-        $this->getJson('/api/v1/beds/projections')->assertForbidden();
+        $this->getJson(self::BEDS_PROJECTIONS)->assertForbidden();
     }
 
     public function test_projection_rejects_a_past_date(): void
     {
         $this->asRole('enfermera_supervisora');
 
-        $this->postJson('/api/v1/beds/projections', [
+        $this->postJson(self::BEDS_PROJECTIONS, [
             'encounterId' => 'ENC-PR-2',
             'projectedAt' => now()->subDay()->toIso8601String(),
         ])->assertStatus(422)->assertJsonValidationErrors(['projectedAt']);

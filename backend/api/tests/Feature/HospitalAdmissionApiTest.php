@@ -16,6 +16,32 @@ use Tests\TestCase;
 
 class HospitalAdmissionApiTest extends TestCase
 {
+    private const ADMISSION_VITAL_SIGNS = '/api/v1/hospital-admission/vital-signs';
+
+    private const REPOSO_RELATIVO = 'Reposo relativo';
+
+    private const CMP_12345 = 'CMP 12345';
+
+    private const A_30_GRADOS = 'Cabecera a 30 grados';
+
+    private const ROSA_QUISPE = 'Rosa Quispe';
+
+    private const DOS_D_AS = 'Disnea de dos días';
+
+    private const PENDIENTE_DE_FIRMA = 'Pendiente de firma';
+
+    private const ADMISSION_INFORMED_CONSENTS = '/api/v1/hospital-admission/informed-consents';
+
+    private const ADMISSION_WRISTBANDS_VERIFY = '/api/v1/hospital-admission/wristbands/verify';
+
+    private const A_QUISPE_ROJAS = 'Ana María Quispe Rojas';
+
+    private const DR_MATEO_SALAS = 'Dr. Mateo Salas';
+
+    private const LOSART_N = 'Losartán';
+
+    private const CADA_8_HORAS = 'cada 8 horas';
+
     use RefreshDatabase;
 
     private function asRole(string $role): static
@@ -34,15 +60,15 @@ class HospitalAdmissionApiTest extends TestCase
     public function test_consent_requires_a_census_bed_assigned_to_the_encounter(): void
     {
         $this->asRole('admision');
-        $payload = ['encounterId' => 'ENC-0001', 'signerName' => 'Rosa Quispe', 'accepted' => true];
+        $payload = ['encounterId' => 'ENC-0001', 'signerName' => self::ROSA_QUISPE, 'accepted' => true];
 
-        $this->postJson('/api/v1/hospital-admission/informed-consents', $payload)
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, $payload)
             ->assertStatus(422)
             ->assertJsonPath('message', 'Asigne una cama en Gestión de camas antes de registrar el consentimiento.');
 
         $this->assignCensusBed('ENC-0001');
 
-        $this->postJson('/api/v1/hospital-admission/informed-consents', $payload)
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, $payload)
             ->assertCreated()
             ->assertJsonPath('consent.status', 'firmado');
     }
@@ -53,7 +79,7 @@ class HospitalAdmissionApiTest extends TestCase
         $found = $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001');
         $found->assertOk()
             ->assertJsonMissingPath('simulated')
-            ->assertJsonPath('order.patient.fullName', 'Ana María Quispe Rojas')
+            ->assertJsonPath('order.patient.fullName', self::A_QUISPE_ROJAS)
             ->assertJsonPath('order.coverage.status', 'aprobada');
 
         $this->getJson('/api/v1/hospital-admission/admission-orders/OI-0000')
@@ -71,7 +97,7 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('message', 'El campo nombre completo es obligatorio.');
 
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [
-            'fullName' => 'Ana María Quispe Rojas',
+            'fullName' => self::A_QUISPE_ROJAS,
             'documentNumber' => '45678912',
             'birthDate' => '1978-04-12',
             'confirmed' => true,
@@ -81,7 +107,7 @@ class HospitalAdmissionApiTest extends TestCase
         $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')
             ->assertOk()
             ->assertJsonPath('encounter.clinical.filiation.birthDate', '1978-04-12')
-            ->assertJsonPath('encounter.clinical.filiation.fullName', 'Ana María Quispe Rojas');
+            ->assertJsonPath('encounter.clinical.filiation.fullName', self::A_QUISPE_ROJAS);
     }
 
     public function test_coverage_referral_wristband_record_and_consent_are_created(): void
@@ -94,7 +120,7 @@ class HospitalAdmissionApiTest extends TestCase
 
         $this->postJson('/api/v1/hospital-admission/coverage/referrals', [
             'destination' => 'trabajo_social',
-            'relativeName' => 'Rosa Quispe',
+            'relativeName' => self::ROSA_QUISPE,
             'relativePhone' => '999111222',
         ])->assertCreated()->assertJsonPath('referral.status', 'derivado');
 
@@ -106,15 +132,15 @@ class HospitalAdmissionApiTest extends TestCase
             'encounterId' => 'ENC-0001',
         ])->assertCreated()->assertJsonPath('record.status', 'abierto');
 
-        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, [
             'encounterId' => 'ENC-0001',
-            'signerName' => 'Rosa Quispe',
+            'signerName' => self::ROSA_QUISPE,
             'accepted' => false,
         ])->assertStatus(422);
 
-        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, [
             'encounterId' => 'ENC-0001',
-            'signerName' => 'Rosa Quispe',
+            'signerName' => self::ROSA_QUISPE,
             'accepted' => true,
         ])->assertCreated()->assertJsonPath('consent.status', 'firmado');
     }
@@ -123,9 +149,9 @@ class HospitalAdmissionApiTest extends TestCase
     {
         $this->asRole('admision');
         $this->assignCensusBed('ENC-0001');
-        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, [
             'encounterId' => 'ENC-0001',
-            'signerName' => 'Rosa Quispe',
+            'signerName' => self::ROSA_QUISPE,
             'accepted' => true,
             'lifeUser' => true,
         ])->assertCreated();
@@ -133,9 +159,9 @@ class HospitalAdmissionApiTest extends TestCase
         $payload = AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->first()->clinical_payload;
         $this->assertTrue($payload['consent']['lifeUser']);
 
-        $this->postJson('/api/v1/hospital-admission/informed-consents', [
+        $this->postJson(self::ADMISSION_INFORMED_CONSENTS, [
             'encounterId' => 'ENC-0001',
-            'signerName' => 'Rosa Quispe',
+            'signerName' => self::ROSA_QUISPE,
             'accepted' => true,
             'lifeUser' => 'tal vez',
         ])->assertStatus(422);
@@ -146,7 +172,7 @@ class HospitalAdmissionApiTest extends TestCase
         $this->asRole('admision');
         $this->postJson('/api/v1/hospital-admission/coverage/referrals', [
             'destination' => 'caja',
-            'relativeName' => 'Rosa Quispe',
+            'relativeName' => self::ROSA_QUISPE,
             'relativePhone' => 'abc123',
         ])->assertStatus(422);
     }
@@ -183,28 +209,28 @@ class HospitalAdmissionApiTest extends TestCase
 
         $this->getJson('/api/v1/hospital-admission/transfer-orders/OT-2026-0001')
             ->assertOk()
-            ->assertJsonPath('transfer.patientName', 'Ana María Quispe Rojas');
+            ->assertJsonPath('transfer.patientName', self::A_QUISPE_ROJAS);
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0002-LEP'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-0002-LEP'])
             ->assertOk()
             ->assertJsonPath('identity.patientName', 'Luis Ernesto Paredes');
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-0001-ANA'])
             ->assertOk()
-            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
+            ->assertJsonPath('identity.patientName', self::A_QUISPE_ROJAS);
     }
 
     public function test_wristband_of_another_patient_is_rejected_for_the_open_encounter(): void
     {
         $this->asRole('camillero');
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0002'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0002'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'El brazalete no corresponde al paciente del ingreso abierto.');
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0001'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-0001-ANA', 'encounterId' => 'ENC-0001'])
             ->assertOk()
-            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
+            ->assertJsonPath('identity.patientName', self::A_QUISPE_ROJAS);
     }
 
     public function test_transfer_identity_reception_and_relocation(): void
@@ -215,13 +241,13 @@ class HospitalAdmissionApiTest extends TestCase
             ->assertJsonPath('transfer.room', '312')
             ->assertJsonPath('transfer.bed', 'B');
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-MALO'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-MALO'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'El código no corresponde al paciente.');
 
-        $this->postJson('/api/v1/hospital-admission/wristbands/verify', ['code' => 'BRZ-0001-ANA'])
+        $this->postJson(self::ADMISSION_WRISTBANDS_VERIFY, ['code' => 'BRZ-0001-ANA'])
             ->assertOk()
-            ->assertJsonPath('identity.patientName', 'Ana María Quispe Rojas');
+            ->assertJsonPath('identity.patientName', self::A_QUISPE_ROJAS);
 
         $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/floor-receptions', [
@@ -241,11 +267,11 @@ class HospitalAdmissionApiTest extends TestCase
     {
         $this->asRole('enfermera_piso');
         $this->postJson('/api/v1/hospital-admission/nursing-assessments', [
-            'chiefComplaint' => 'Disnea de dos días',
+            'chiefComplaint' => self::DOS_D_AS,
             'allergies' => ['Penicilina'],
         ])->assertCreated()->assertJsonPath('assessment.status', 'registrada');
 
-        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+        $this->postJson(self::ADMISSION_VITAL_SIGNS, [
             'respiratoryRate' => 2,
             'oxygenSaturation' => 98,
             'systolicBloodPressure' => 120,
@@ -253,7 +279,7 @@ class HospitalAdmissionApiTest extends TestCase
             'temperature' => 36.8,
         ])->assertStatus(422);
 
-        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+        $this->postJson(self::ADMISSION_VITAL_SIGNS, [
             'encounterId' => 'ENC-0001',
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
@@ -265,7 +291,7 @@ class HospitalAdmissionApiTest extends TestCase
             'temperature' => 36.8,
         ])->assertStatus(422);
 
-        $stored = $this->postJson('/api/v1/hospital-admission/vital-signs', [
+        $stored = $this->postJson(self::ADMISSION_VITAL_SIGNS, [
             'encounterId' => 'ENC-0001',
             'respiratoryRate' => 16,
             'oxygenSaturation' => 98,
@@ -305,7 +331,7 @@ class HospitalAdmissionApiTest extends TestCase
         $this->seedEncounter('ENC-ALERT', 'OI-2026-ALERT');
         $this->asRole('enfermera_piso');
 
-        $this->postJson('/api/v1/hospital-admission/vital-signs', [
+        $this->postJson(self::ADMISSION_VITAL_SIGNS, [
             'encounterId' => 'ENC-ALERT',
             'respiratoryRate' => 25,
             'oxygenSaturation' => 98,
@@ -338,7 +364,7 @@ class HospitalAdmissionApiTest extends TestCase
             'medications' => [[
                 'name' => 'Amoxicilina',
                 'dose' => '500 mg',
-                'frequency' => 'cada 8 horas',
+                'frequency' => self::CADA_8_HORAS,
                 'route' => 'oral',
             ]],
         ])->assertCreated()
@@ -377,32 +403,32 @@ class HospitalAdmissionApiTest extends TestCase
 
         $this->getJson('/api/v1/hospital-admission/kardex/ENC-0001')
             ->assertOk()
-            ->assertJsonPath('kardex.patientName', 'Ana María Quispe Rojas')
+            ->assertJsonPath('kardex.patientName', self::A_QUISPE_ROJAS)
             ->assertJsonMissingPath('simulated');
 
         $this->asRole('medico_residente');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-0001')
             ->assertOk()
-            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');
+            ->assertJsonPath('orders.statusLabel', self::PENDIENTE_DE_FIRMA);
 
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-0001/sign', [
-            'physicianName' => 'Dr. Mateo Salas',
+            'physicianName' => self::DR_MATEO_SALAS,
             'confirmed' => false,
         ])->assertStatus(422);
 
         $this->putJson('/api/v1/hospital-admission/medical-orders/ENC-0001', [
             'items' => [
-                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+                ['title' => self::REPOSO_RELATIVO, 'detail' => self::A_30_GRADOS, 'category' => 'Cuidados'],
             ],
         ])->assertOk()
-            ->assertJsonPath('orders.items.0.title', 'Reposo relativo');
+            ->assertJsonPath('orders.items.0.title', self::REPOSO_RELATIVO);
 
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-0001/sign', [
-            'physicianName' => 'Dr. Mateo Salas',
-            'credential' => 'CMP 12345',
+            'physicianName' => self::DR_MATEO_SALAS,
+            'credential' => self::CMP_12345,
             'confirmed' => true,
             'items' => [
-                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+                ['title' => self::REPOSO_RELATIVO, 'detail' => self::A_30_GRADOS, 'category' => 'Cuidados'],
             ],
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
     }
@@ -425,8 +451,8 @@ class HospitalAdmissionApiTest extends TestCase
             'clinical_payload' => [
                 'medicalOrders' => [
                     'status' => 'pendiente',
-                    'statusLabel' => 'Pendiente de firma',
-                    'items' => ['Reposo relativo'],
+                    'statusLabel' => self::PENDIENTE_DE_FIRMA,
+                    'items' => [self::REPOSO_RELATIVO],
                 ],
             ],
         ]);
@@ -434,7 +460,7 @@ class HospitalAdmissionApiTest extends TestCase
         $this->asRole('medico_tratante');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD')
             ->assertOk()
-            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma');
+            ->assertJsonPath('orders.statusLabel', self::PENDIENTE_DE_FIRMA);
 
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-TRAT-ORD/sign', [
             'physicianName' => 'Dra. Tratante Demo',
@@ -464,19 +490,19 @@ class HospitalAdmissionApiTest extends TestCase
         $this->asRole('medico_residente');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY')
             ->assertOk()
-            ->assertJsonPath('orders.statusLabel', 'Pendiente de firma')
+            ->assertJsonPath('orders.statusLabel', self::PENDIENTE_DE_FIRMA)
             ->assertJsonPath('orders.items', []);
 
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY/sign', [
-            'physicianName' => 'Dr. Mateo Salas',
-            'credential' => 'CMP 12345',
+            'physicianName' => self::DR_MATEO_SALAS,
+            'credential' => self::CMP_12345,
             'confirmed' => true,
             'items' => [],
         ])->assertStatus(422);
 
         $this->asRole('admision');
         $this->putJson('/api/v1/hospital-admission/medical-orders/ENC-ORD-EMPTY', [
-            'items' => [['title' => 'Reposo relativo']],
+            'items' => [['title' => self::REPOSO_RELATIVO]],
         ])->assertForbidden();
     }
 
@@ -485,7 +511,7 @@ class HospitalAdmissionApiTest extends TestCase
         Carbon::setTestNow('2026-09-21 14:30:00');
         $this->seedEncounter('ENC-BPMH', 'OI-2026-BPMH', [
             'assessment' => [
-                'chiefComplaint' => 'Disnea de dos días',
+                'chiefComplaint' => self::DOS_D_AS,
                 'allergies' => ['Penicilina'],
                 'history' => 'HTA controlada',
             ],
@@ -500,9 +526,9 @@ class HospitalAdmissionApiTest extends TestCase
             'reconciliation' => [
                 'noHomeMedications' => false,
                 'medications' => [[
-                    'name' => 'Losartán',
+                    'name' => self::LOSART_N,
                     'dose' => '50 mg',
-                    'frequency' => 'cada 8 horas',
+                    'frequency' => self::CADA_8_HORAS,
                 ]],
                 'alerts' => ['Revisar presión arterial.'],
                 'notes' => 'Toma matutina',
@@ -512,20 +538,20 @@ class HospitalAdmissionApiTest extends TestCase
         $this->asRole('medico_residente');
         $this->getJson('/api/v1/hospital-admission/medical-orders/ENC-BPMH')
             ->assertOk()
-            ->assertJsonPath('orders.chiefComplaint', 'Disnea de dos días')
+            ->assertJsonPath('orders.chiefComplaint', self::DOS_D_AS)
             ->assertJsonPath('orders.history', 'HTA controlada')
             ->assertJsonPath('orders.vitals.news2Label', '5 puntos, riesgo medio')
             ->assertJsonPath('orders.risks.fallRisk', 'Riesgo alto de caídas, 45 puntos')
-            ->assertJsonPath('orders.reconciliation.medications.0.name', 'Losartán')
+            ->assertJsonPath('orders.reconciliation.medications.0.name', self::LOSART_N)
             ->assertJsonPath('orders.reconciliation.notes', 'Toma matutina')
             ->assertJsonPath('orders.reconciliation.alerts.0', 'Revisar presión arterial.');
 
         $this->postJson('/api/v1/hospital-admission/medical-orders/ENC-BPMH/sign', [
-            'physicianName' => 'Dr. Mateo Salas',
-            'credential' => 'CMP 12345',
+            'physicianName' => self::DR_MATEO_SALAS,
+            'credential' => self::CMP_12345,
             'confirmed' => true,
             'items' => [
-                ['title' => 'Reposo relativo', 'detail' => 'Cabecera a 30 grados', 'category' => 'Cuidados'],
+                ['title' => self::REPOSO_RELATIVO, 'detail' => self::A_30_GRADOS, 'category' => 'Cuidados'],
             ],
         ])->assertCreated()->assertJsonPath('signature.status', 'firmado');
 
@@ -535,15 +561,15 @@ class HospitalAdmissionApiTest extends TestCase
         ]);
         // RNF-06: drug_name/dose/route/frequency van cifrados; se verifica por el modelo.
         $items = PrescriptionItem::query()->get();
-        $this->assertTrue($items->contains(fn ($i) => $i->drug_name === 'Losartán'
-            && $i->dose === '50 mg' && $i->route === 'oral' && $i->frequency === 'cada 8 horas'));
-        $this->assertFalse($items->contains(fn ($i) => $i->drug_name === 'Reposo relativo'));
+        $this->assertTrue($items->contains(fn ($i) => $i->drug_name === self::LOSART_N
+            && $i->dose === '50 mg' && $i->route === 'oral' && $i->frequency === self::CADA_8_HORAS));
+        $this->assertFalse($items->contains(fn ($i) => $i->drug_name === self::REPOSO_RELATIVO));
 
         $this->asRole('enfermera_piso');
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-BPMH/emar')
             ->assertOk()
             ->assertJsonPath('hasActivePrescription', true)
-            ->assertJsonFragment(['drugName' => 'Losartán', 'status' => 'pendiente']);
+            ->assertJsonFragment(['drugName' => self::LOSART_N, 'status' => 'pendiente']);
 
         Carbon::setTestNow();
     }

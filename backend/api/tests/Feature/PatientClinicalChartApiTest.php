@@ -16,6 +16,14 @@ use Tests\TestCase;
 
 class PatientClinicalChartApiTest extends TestCase
 {
+    private const PACIENTE_CHART_DEMO = 'Paciente Chart Demo';
+
+    private const V_11223344 = '11223344';
+
+    private const V_0001_CLINICAL_CHART = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart';
+
+    private const HIGIENE_MATUTINA = 'Higiene matutina';
+
     use RefreshDatabase;
 
     public function test_chart_shows_who_recorded_each_vital_sign_reading(): void
@@ -48,9 +56,9 @@ class PatientClinicalChartApiTest extends TestCase
             'encounter_id' => 'ENC-HOSP-0001',
             'order_number' => 'OI-2026-CHART-1',
             'source' => 'manual',
-            'patient_name' => 'Paciente Chart Demo',
+            'patient_name' => self::PACIENTE_CHART_DEMO,
             'document_type' => 'DNI',
-            'document_number' => '11223344',
+            'document_number' => self::V_11223344,
             'origin_service' => 'Medicina',
             'coverage_payer' => 'Essalud',
             'coverage_status' => 'aprobada',
@@ -110,9 +118,9 @@ class PatientClinicalChartApiTest extends TestCase
         $user = User::factory()->create(['role' => 'medico_tratante']);
         $this->actingAs($user);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+        $this->getJson(self::V_0001_CLINICAL_CHART)
             ->assertOk()
-            ->assertJsonPath('encounter.patientName', 'Paciente Chart Demo')
+            ->assertJsonPath('encounter.patientName', self::PACIENTE_CHART_DEMO)
             ->assertJsonPath('admission.assessment.chiefComplaint', 'Disnea de dos días')
             ->assertJsonPath('vitalSigns.0.news2', 0)
             ->assertJsonPath('labResults.0.summary', 'Hemograma normal')
@@ -126,9 +134,9 @@ class PatientClinicalChartApiTest extends TestCase
             'encounter_id' => 'ENC-HOSP-0001',
             'order_number' => 'OI-2026-CHART-LIFE',
             'source' => 'manual',
-            'patient_name' => 'Paciente Chart Demo',
+            'patient_name' => self::PACIENTE_CHART_DEMO,
             'document_type' => 'DNI',
-            'document_number' => '11223344',
+            'document_number' => self::V_11223344,
             'origin_service' => 'Medicina',
             'coverage_payer' => 'Essalud',
             'coverage_status' => 'aprobada',
@@ -139,7 +147,7 @@ class PatientClinicalChartApiTest extends TestCase
         ]);
         $this->actingAs(User::factory()->create(['role' => 'medico_tratante']));
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+        $this->getJson(self::V_0001_CLINICAL_CHART)
             ->assertOk()->assertJsonPath('lifeBaseline', null);
 
         $account = LifeAccount::query()->create(['name' => 'Ana', 'email' => 'ana@correo.pe', 'password' => 'Clave-segura-9']);
@@ -150,7 +158,7 @@ class PatientClinicalChartApiTest extends TestCase
             'imported_at' => now(),
         ]);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+        $this->getJson(self::V_0001_CLINICAL_CHART)
             ->assertOk()
             ->assertJsonPath('lifeBaseline.metrics.0.kind', 'heart_rate')
             ->assertJsonPath('lifeBaseline.metrics.0.high', 82);
@@ -162,9 +170,9 @@ class PatientClinicalChartApiTest extends TestCase
             'encounter_id' => 'ENC-HOSP-0001',
             'order_number' => 'OI-2026-CHART-2',
             'source' => 'manual',
-            'patient_name' => 'Paciente Chart Demo',
+            'patient_name' => self::PACIENTE_CHART_DEMO,
             'document_type' => 'DNI',
-            'document_number' => '11223344',
+            'document_number' => self::V_11223344,
             'origin_service' => 'Medicina',
             'coverage_payer' => 'Essalud',
             'coverage_status' => 'aprobada',
@@ -177,7 +185,7 @@ class PatientClinicalChartApiTest extends TestCase
         $user = User::factory()->create(['role' => 'admision']);
         $this->actingAs($user);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+        $this->getJson(self::V_0001_CLINICAL_CHART)
             ->assertForbidden();
     }
 
@@ -189,9 +197,9 @@ class PatientClinicalChartApiTest extends TestCase
             'encounter_id' => 'ENC-HOSP-0001',
             'order_number' => 'OI-2026-CHART-3',
             'source' => 'manual',
-            'patient_name' => 'Paciente Chart Demo',
+            'patient_name' => self::PACIENTE_CHART_DEMO,
             'document_type' => 'DNI',
-            'document_number' => '11223344',
+            'document_number' => self::V_11223344,
             'origin_service' => 'Medicina',
             'coverage_payer' => 'Essalud',
             'coverage_status' => 'aprobada',
@@ -204,7 +212,7 @@ class PatientClinicalChartApiTest extends TestCase
         $auxiliar = User::factory()->create(['role' => 'auxiliar_enfermeria', 'name' => 'Auxiliar Demo']);
         CareActivityCompletion::query()->create([
             'encounter_id' => 'ENC-HOSP-0001',
-            'activity_label' => 'Higiene matutina',
+            'activity_label' => self::HIGIENE_MATUTINA,
             'completed_at' => Carbon::parse('2026-09-24 09:00:00'),
             'completed_by' => $auxiliar->id,
         ]);
@@ -231,16 +239,16 @@ class PatientClinicalChartApiTest extends TestCase
         $user = User::factory()->create(['role' => 'medico_tratante']);
         $this->actingAs($user);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart')
+        $this->getJson(self::V_0001_CLINICAL_CHART)
             ->assertOk()
-            ->assertJsonPath('careActivities.0.activityLabel', 'Higiene matutina')
+            ->assertJsonPath('careActivities.0.activityLabel', self::HIGIENE_MATUTINA)
             ->assertJsonPath('careActivities.0.completedByName', 'Auxiliar Demo')
             ->assertJsonCount(2, 'careActivities');
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/clinical-chart?from=2026-09-20&to=2026-09-25')
             ->assertOk()
             ->assertJsonCount(1, 'careActivities')
-            ->assertJsonPath('careActivities.0.activityLabel', 'Higiene matutina')
+            ->assertJsonPath('careActivities.0.activityLabel', self::HIGIENE_MATUTINA)
             ->assertJsonCount(0, 'vitalSigns');
 
         Carbon::setTestNow();

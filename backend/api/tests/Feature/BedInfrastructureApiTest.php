@@ -11,6 +11,18 @@ use Tests\TestCase;
 
 class BedInfrastructureApiTest extends TestCase
 {
+    private const BEDS = '/beds/';
+
+    private const BEDS_AVAILABLE = '/api/v1/beds/available';
+
+    private const WARDS = '/wards';
+
+    private const BEDS_BULK = '/beds/bulk';
+
+    private const BEDS_2 = '/beds';
+
+    private const WARDS_2 = '/wards/';
+
     use RefreshDatabase;
 
     private const BASE = '/api/v1/bed-infrastructure';
@@ -40,22 +52,22 @@ class BedInfrastructureApiTest extends TestCase
     {
         foreach (['gestion_camas', 'enfermera_supervisora', 'admision'] as $role) {
             $this->asRole($role);
-            $this->getJson(self::BASE.'/wards')->assertForbidden();
+            $this->getJson(self::BASE.self::WARDS)->assertForbidden();
         }
 
         $this->asRole('administrador_accesos');
-        $this->getJson(self::BASE.'/wards')->assertOk()->assertJsonPath('wards', []);
+        $this->getJson(self::BASE.self::WARDS)->assertOk()->assertJsonPath('wards', []);
     }
 
     public function test_el_administrador_crea_un_pabellon_y_una_cama_con_auditoria(): void
     {
         $admin = $this->asRole('administrador_accesos');
 
-        $wardId = $this->postJson(self::BASE.'/wards', [
+        $wardId = $this->postJson(self::BASE.self::WARDS, [
             'code' => 'UCI-C', 'name' => 'Cuidados intensivos', 'specialty' => 'cuidados_intensivos',
         ])->assertCreated()->assertJsonPath('ward.code', 'UCI-C')->json('ward.id');
 
-        $this->postJson(self::BASE.'/beds', [
+        $this->postJson(self::BASE.self::BEDS_2, [
             'wardId' => $wardId, 'room' => '501', 'bedCode' => 'A', 'genderPolicy' => 'female', 'isolation' => true,
         ])->assertCreated()
             ->assertJsonPath('bed.room', '501')
@@ -74,13 +86,13 @@ class BedInfrastructureApiTest extends TestCase
         $ward = $this->ward();
         $this->bed($ward);
 
-        $this->postJson(self::BASE.'/wards', ['code' => 'MED-A', 'name' => 'Otra', 'specialty' => 'x'])
+        $this->postJson(self::BASE.self::WARDS, ['code' => 'MED-A', 'name' => 'Otra', 'specialty' => 'x'])
             ->assertUnprocessable()->assertJsonValidationErrors(['code']);
-        $this->postJson(self::BASE.'/beds', ['wardId' => $ward->id, 'room' => '101', 'bedCode' => 'A', 'genderPolicy' => 'mixed'])
+        $this->postJson(self::BASE.self::BEDS_2, ['wardId' => $ward->id, 'room' => '101', 'bedCode' => 'A', 'genderPolicy' => 'mixed'])
             ->assertUnprocessable();
-        $this->postJson(self::BASE.'/beds', ['wardId' => $ward->id, 'room' => '102', 'bedCode' => 'A', 'genderPolicy' => 'otro'])
+        $this->postJson(self::BASE.self::BEDS_2, ['wardId' => $ward->id, 'room' => '102', 'bedCode' => 'A', 'genderPolicy' => 'otro'])
             ->assertUnprocessable()->assertJsonValidationErrors(['genderPolicy']);
-        $this->postJson(self::BASE.'/beds', ['wardId' => 9999, 'room' => '102', 'bedCode' => 'A', 'genderPolicy' => 'mixed'])
+        $this->postJson(self::BASE.self::BEDS_2, ['wardId' => 9999, 'room' => '102', 'bedCode' => 'A', 'genderPolicy' => 'mixed'])
             ->assertUnprocessable()->assertJsonValidationErrors(['wardId']);
     }
 
@@ -89,18 +101,18 @@ class BedInfrastructureApiTest extends TestCase
         $this->asRole('administrador_accesos');
         $bed = $this->bed($this->ward());
 
-        $this->patchJson(self::BASE.'/beds/'.$bed->id, ['active' => false])
+        $this->patchJson(self::BASE.self::BEDS.$bed->id, ['active' => false])
             ->assertOk()->assertJsonPath('bed.active', false);
 
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/available')->assertOk()->assertJsonPath('count', 0);
+        $this->getJson(self::BEDS_AVAILABLE)->assertOk()->assertJsonPath('count', 0);
         $census = $this->getJson('/api/v1/beds/census')->assertOk();
         $this->assertSame([], $census->json('wards.0.beds'));
 
         $this->asRole('administrador_accesos');
-        $this->patchJson(self::BASE.'/beds/'.$bed->id, ['active' => true])->assertOk();
+        $this->patchJson(self::BASE.self::BEDS.$bed->id, ['active' => true])->assertOk();
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/available')->assertJsonPath('count', 1);
+        $this->getJson(self::BEDS_AVAILABLE)->assertJsonPath('count', 1);
     }
 
     public function test_no_se_desactiva_ni_se_borra_una_cama_ocupada_o_en_limpieza(): void
@@ -111,8 +123,8 @@ class BedInfrastructureApiTest extends TestCase
         $cleaning = $this->bed($ward, '101', 'B', 'cleaning');
 
         foreach ([$occupied, $cleaning] as $bed) {
-            $this->patchJson(self::BASE.'/beds/'.$bed->id, ['active' => false])->assertUnprocessable();
-            $this->deleteJson(self::BASE.'/beds/'.$bed->id)->assertUnprocessable();
+            $this->patchJson(self::BASE.self::BEDS.$bed->id, ['active' => false])->assertUnprocessable();
+            $this->deleteJson(self::BASE.self::BEDS.$bed->id)->assertUnprocessable();
             $this->assertNotNull(Bed::query()->find($bed->id));
         }
     }
@@ -127,16 +139,16 @@ class BedInfrastructureApiTest extends TestCase
             'assigned_at' => now()->subDay(), 'released_at' => now()->subHour(),
         ]);
 
-        $this->deleteJson(self::BASE.'/beds/'.$bed->id)->assertOk();
+        $this->deleteJson(self::BASE.self::BEDS.$bed->id)->assertOk();
 
         $this->assertNull(Bed::query()->find($bed->id));
         $this->assertNotNull(Bed::withTrashed()->find($bed->id)->deleted_at);
         $this->assertDatabaseHas('bed_assignments', ['bed_id' => $bed->id, 'encounter_id' => 'ENC-0001']);
         $this->assertDatabaseHas('bed_infrastructure_changes', ['user_id' => $admin->id, 'action' => 'bed.deleted']);
 
-        $this->getJson(self::BASE.'/wards')->assertJsonPath('wards.0.beds', []);
+        $this->getJson(self::BASE.self::WARDS)->assertJsonPath('wards.0.beds', []);
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/available')->assertJsonPath('count', 0);
+        $this->getJson(self::BEDS_AVAILABLE)->assertJsonPath('count', 0);
     }
 
     public function test_crear_una_cama_borrada_con_el_mismo_codigo_la_restaura(): void
@@ -144,9 +156,9 @@ class BedInfrastructureApiTest extends TestCase
         $this->asRole('administrador_accesos');
         $ward = $this->ward();
         $bed = $this->bed($ward);
-        $this->deleteJson(self::BASE.'/beds/'.$bed->id)->assertOk();
+        $this->deleteJson(self::BASE.self::BEDS.$bed->id)->assertOk();
 
-        $this->postJson(self::BASE.'/beds', [
+        $this->postJson(self::BASE.self::BEDS_2, [
             'wardId' => $ward->id, 'room' => '101', 'bedCode' => 'A', 'genderPolicy' => 'male', 'isolation' => false,
         ])->assertCreated()->assertJsonPath('bed.id', $bed->id)->assertJsonPath('bed.genderPolicy', 'male');
 
@@ -160,11 +172,11 @@ class BedInfrastructureApiTest extends TestCase
         $busy = $this->bed($ward, '101', 'A', 'occupied');
         $this->bed($ward, '101', 'B');
 
-        $this->deleteJson(self::BASE.'/wards/'.$ward->id)->assertUnprocessable();
+        $this->deleteJson(self::BASE.self::WARDS_2.$ward->id)->assertUnprocessable();
         $this->assertNotNull(Ward::query()->find($ward->id));
 
         $busy->update(['status' => 'available']);
-        $this->deleteJson(self::BASE.'/wards/'.$ward->id)->assertOk();
+        $this->deleteJson(self::BASE.self::WARDS_2.$ward->id)->assertOk();
         $this->assertNull(Ward::query()->find($ward->id));
         $this->assertSame(0, Bed::query()->count());
         $this->assertSame(2, Bed::withTrashed()->count());
@@ -185,11 +197,11 @@ class BedInfrastructureApiTest extends TestCase
         $this->assertSame(['301-A', '301-B', '302-A'], array_slice(array_column($preview->json('beds'), 'label'), 0, 3));
         $this->assertSame(0, Bed::query()->count());
 
-        $this->postJson(self::BASE.'/beds/bulk', $payload)->assertCreated()
+        $this->postJson(self::BASE.self::BEDS_BULK, $payload)->assertCreated()
             ->assertJsonPath('created', 6)->assertJsonPath('skipped', 0);
         $this->assertSame(6, Bed::query()->count());
 
-        $this->postJson(self::BASE.'/beds/bulk', $payload)->assertCreated()
+        $this->postJson(self::BASE.self::BEDS_BULK, $payload)->assertCreated()
             ->assertJsonPath('created', 0)->assertJsonPath('skipped', 6);
         $this->assertSame(6, Bed::query()->count());
     }
@@ -200,11 +212,11 @@ class BedInfrastructureApiTest extends TestCase
         $ward = $this->ward();
         $base = ['wardId' => $ward->id, 'bedsPerRoom' => 2, 'genderPolicy' => 'mixed', 'isolation' => false];
 
-        $this->postJson(self::BASE.'/beds/bulk', $base + ['roomFrom' => 310, 'roomTo' => 301])
+        $this->postJson(self::BASE.self::BEDS_BULK, $base + ['roomFrom' => 310, 'roomTo' => 301])
             ->assertUnprocessable()->assertJsonValidationErrors(['roomTo']);
-        $this->postJson(self::BASE.'/beds/bulk', ['bedsPerRoom' => 9, 'roomFrom' => 1, 'roomTo' => 2] + $base)
+        $this->postJson(self::BASE.self::BEDS_BULK, ['bedsPerRoom' => 9, 'roomFrom' => 1, 'roomTo' => 2] + $base)
             ->assertUnprocessable()->assertJsonValidationErrors(['bedsPerRoom']);
-        $this->postJson(self::BASE.'/beds/bulk', $base + ['roomFrom' => 1, 'roomTo' => 150])
+        $this->postJson(self::BASE.self::BEDS_BULK, $base + ['roomFrom' => 1, 'roomTo' => 150])
             ->assertUnprocessable();
         $this->assertSame(0, Bed::query()->count());
     }
@@ -215,10 +227,10 @@ class BedInfrastructureApiTest extends TestCase
         $ward = $this->ward();
         $this->bed($ward);
 
-        $this->patchJson(self::BASE.'/wards/'.$ward->id, ['name' => 'Medicina Interna Norte', 'active' => false])
+        $this->patchJson(self::BASE.self::WARDS_2.$ward->id, ['name' => 'Medicina Interna Norte', 'active' => false])
             ->assertOk()->assertJsonPath('ward.name', 'Medicina Interna Norte')->assertJsonPath('ward.active', false);
 
         $this->asRole('gestion_camas');
-        $this->getJson('/api/v1/beds/available')->assertJsonPath('count', 0);
+        $this->getJson(self::BEDS_AVAILABLE)->assertJsonPath('count', 0);
     }
 }

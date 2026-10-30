@@ -17,6 +17,8 @@ use Tests\TestCase;
 
 class DegradedReadAndSeederTest extends TestCase
 {
+    private const HOSPITAL_ADMISSION_ENCOUNTERS = '/api/v1/hospital-admission/encounters';
+
     use RefreshDatabase;
 
     private function insertEncounter(string $id, mixed $payload): int
@@ -42,7 +44,7 @@ class DegradedReadAndSeederTest extends TestCase
         $badId = $this->insertEncounter('ENC-BAD', $this->foreign());
         Log::spy();
 
-        $response = $this->getJson('/api/v1/hospital-admission/encounters')->assertOk();
+        $response = $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS)->assertOk();
 
         $response->assertJsonPath('decryptError', true);
         $response->assertJsonPath('decryptErrors.0.table', 'admission_encounters');
@@ -59,7 +61,7 @@ class DegradedReadAndSeederTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'admision']));
         $this->insertEncounter('ENC-OK', json_encode(['a' => 1]));
 
-        $this->getJson('/api/v1/hospital-admission/encounters')
+        $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS)
             ->assertOk()
             ->assertJsonMissingPath('decryptError');
     }
@@ -134,7 +136,7 @@ class DegradedReadAndSeederTest extends TestCase
         $this->insertEncounter('ENC-OK', json_encode(['assessment' => ['allergies' => ['Penicilina']], 'reconciliation' => ['medications' => [['name' => 'Metformina']]]]));
         $this->insertEncounter('ENC-BAD', $this->foreign());
 
-        $response = $this->getJson('/api/v1/hospital-admission/encounters')->assertOk();
+        $response = $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS)->assertOk();
         $rows = collect($response->json('encounters'))->keyBy('encounterId');
 
         $bad = $rows['ENC-BAD'];

@@ -12,6 +12,16 @@ use Tests\TestCase;
 
 class EmarAndCareApiTest extends TestCase
 {
+    private const CADA_8_HORAS = 'cada 8 horas';
+
+    private const HIGIENE_MATUTINA = 'Higiene matutina';
+
+    private const HOSP_0001_EMAR = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar';
+
+    private const V_0001_CARE_ACTIVITIES = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities';
+
+    private const V_14_30_00 = '2026-09-21 14:30:00';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -52,7 +62,7 @@ class EmarAndCareApiTest extends TestCase
             'drug_name' => 'Paracetamol',
             'dose' => '1 g',
             'route' => 'VO',
-            'frequency' => 'cada 8 horas',
+            'frequency' => self::CADA_8_HORAS,
         ]);
 
         return MedicationAdministration::query()->create([
@@ -76,13 +86,13 @@ class EmarAndCareApiTest extends TestCase
 
     public function test_nurse_can_list_emar_doses_for_current_shift(): void
     {
-        Carbon::setTestNow('2026-09-21 14:30:00');
+        Carbon::setTestNow(self::V_14_30_00);
         $this->inpatientEncounter();
         $prescriber = User::factory()->create(['role' => 'medico_tratante']);
         $this->seedDose('ENC-HOSP-0001', $prescriber);
         $this->asRole('enfermera_piso');
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
+        $this->getJson(self::HOSP_0001_EMAR)
             ->assertOk()
             ->assertJsonPath('hasActivePrescription', true)
             ->assertJsonFragment(['drugName' => 'Paracetamol', 'status' => 'pendiente']);
@@ -92,13 +102,13 @@ class EmarAndCareApiTest extends TestCase
 
     public function test_emar_does_not_reveal_the_expected_barcodes(): void
     {
-        Carbon::setTestNow('2026-09-21 14:30:00');
+        Carbon::setTestNow(self::V_14_30_00);
         $this->inpatientEncounter();
         $prescriber = User::factory()->create(['role' => 'medico_tratante']);
         $this->seedDose('ENC-HOSP-0001', $prescriber);
         $this->asRole('enfermera_piso');
 
-        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')->assertOk();
+        $response = $this->getJson(self::HOSP_0001_EMAR)->assertOk();
 
         $this->assertStringNotContainsString('DRUG-PARACETAMOL-1G', $response->getContent());
         $this->assertStringNotContainsString('BRZ-EMAR-0001', $response->getContent());
@@ -110,7 +120,7 @@ class EmarAndCareApiTest extends TestCase
 
     public function test_emar_codes_command_lists_the_codes_testers_need_to_scan(): void
     {
-        Carbon::setTestNow('2026-09-21 14:30:00');
+        Carbon::setTestNow(self::V_14_30_00);
         $this->inpatientEncounter();
         $this->seedDose('ENC-HOSP-0001', User::factory()->create(['role' => 'medico_tratante']));
 
@@ -176,8 +186,8 @@ class EmarAndCareApiTest extends TestCase
         $this->inpatientEncounter();
 
         $this->asRole('enfermera_piso');
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities', [
-            'activityLabel' => 'Higiene matutina',
+        $this->postJson(self::V_0001_CARE_ACTIVITIES, [
+            'activityLabel' => self::HIGIENE_MATUTINA,
         ])->assertCreated();
 
         $this->asRole('auxiliar_enfermeria');
@@ -191,7 +201,7 @@ class EmarAndCareApiTest extends TestCase
 
     public function test_new_cpoe_schedules_doses_even_when_prior_doses_exist(): void
     {
-        Carbon::setTestNow('2026-09-21 14:30:00');
+        Carbon::setTestNow(self::V_14_30_00);
         $this->inpatientEncounter();
         $prescriber = User::factory()->create(['role' => 'medico_tratante']);
 
@@ -205,7 +215,7 @@ class EmarAndCareApiTest extends TestCase
             'drug_name' => 'Ibuprofeno',
             'dose' => '400 mg',
             'route' => 'VO',
-            'frequency' => 'cada 8 horas',
+            'frequency' => self::CADA_8_HORAS,
         ]);
         MedicationAdministration::query()->create([
             'encounter_id' => 'ENC-HOSP-0001',
@@ -224,12 +234,12 @@ class EmarAndCareApiTest extends TestCase
             'drug_name' => 'Paracetamol',
             'dose' => '1 g',
             'route' => 'VO',
-            'frequency' => 'cada 8 horas',
+            'frequency' => self::CADA_8_HORAS,
         ]);
 
         $this->asRole('enfermera_piso');
 
-        $response = $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
+        $response = $this->getJson(self::HOSP_0001_EMAR)
             ->assertOk()
             ->assertJsonPath('hasActivePrescription', true);
 
@@ -245,20 +255,20 @@ class EmarAndCareApiTest extends TestCase
         $this->inpatientEncounter();
         $auxiliar = $this->asRole('auxiliar_enfermeria');
 
-        $response = $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities', [
-            'activityLabel' => 'Higiene matutina',
+        $response = $this->postJson(self::V_0001_CARE_ACTIVITIES, [
+            'activityLabel' => self::HIGIENE_MATUTINA,
         ])
             ->assertCreated()
-            ->assertJsonPath('activity.activityLabel', 'Higiene matutina')
+            ->assertJsonPath('activity.activityLabel', self::HIGIENE_MATUTINA)
             ->assertJsonPath('activity.completedByName', $auxiliar->name);
 
         $this->assertDatabaseHas('care_activity_completions', [
             'encounter_id' => 'ENC-HOSP-0001',
-            'activity_label' => 'Higiene matutina',
+            'activity_label' => self::HIGIENE_MATUTINA,
             'completed_by' => $auxiliar->id,
         ]);
 
-        $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/care-activities')
+        $this->getJson(self::V_0001_CARE_ACTIVITIES)
             ->assertOk()
             ->assertJsonPath('activities.0.completedByName', $auxiliar->name);
     }
@@ -273,7 +283,7 @@ class EmarAndCareApiTest extends TestCase
             $this->inpatientEncounter();
             $this->asRole('enfermera_piso');
 
-            $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/emar')
+            $this->getJson(self::HOSP_0001_EMAR)
                 ->assertOk()
                 ->assertJsonPath('shiftStart', '2026-09-21T07:00:00-05:00')
                 ->assertJsonPath('shiftEnd', '2026-09-21T19:00:00-05:00');
