@@ -16,6 +16,10 @@ use Tests\TestCase;
 
 class LifeAdmissionLinkApiTest extends TestCase
 {
+    private const V_1_LIFE_BASELINE = '/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline';
+
+    private const ADMISSION_LIFE_LINKS = '/api/v1/hospital-admission/life-links';
+
     use RefreshDatabase;
 
     private function asRole(string $role): static
@@ -76,7 +80,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertCreated()
             ->assertJsonPath('link.status', 'importada')
             ->assertJsonMissingPath('link.accountName')
@@ -86,7 +90,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->assertSame('ENC-LIFE-1', LifeLinkCode::query()->first()->consumed_encounter_id);
 
         $this->asRole('enfermera_piso');
-        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')
+        $this->getJson(self::V_1_LIFE_BASELINE)
             ->assertOk()->assertJsonPath('baseline.metrics.0.kind', 'heart_rate');
     }
 
@@ -101,7 +105,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->asRole('admision');
 
         DB::enableQueryLog();
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
 
         $selects = collect(DB::getQueryLog())->filter(fn ($q) => str_starts_with($q['query'], 'select') && str_contains($q['query'], 'life_biometric_samples'));
         $this->assertTrue($selects->contains(fn ($q) => str_contains($q['query'], 'started_at')), 'La consulta de muestras debe acotar la ventana por started_at.');
@@ -111,7 +115,7 @@ class LifeAdmissionLinkApiTest extends TestCase
     {
         $this->encounter('ENC-LIFE-1');
         $this->asRole('medico_tratante');
-        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')
+        $this->getJson(self::V_1_LIFE_BASELINE)
             ->assertOk()->assertJsonPath('baseline', null);
     }
 
@@ -121,12 +125,12 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
         $this->encounter('ENC-LIFE-2');
         $this->asRole('admision');
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-2', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-2', 'code' => $code])
             ->assertStatus(422)->assertJsonPath('code', 'code_consumed');
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-2', 'code' => 'VL-ZZZZ-ZZZZ'])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-2', 'code' => 'VL-ZZZZ-ZZZZ'])
             ->assertStatus(422)->assertJsonPath('code', 'code_not_found');
     }
 
@@ -137,7 +141,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->asRole('admision');
         $this->travel(31)->minutes();
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertStatus(422)->assertJsonPath('code', 'code_expired');
         $this->assertDatabaseCount('life_baseline_imports', 0);
     }
@@ -150,7 +154,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertStatus(422)->assertJsonPath('code', 'sharing_closed');
         $this->assertDatabaseCount('life_baseline_imports', 0);
         $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
@@ -161,7 +165,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         [, $code] = $this->citizenWithCodeAndHistory();
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-NOPE', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-NOPE', 'code' => $code])
             ->assertNotFound();
         $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
     }
@@ -176,9 +180,9 @@ class LifeAdmissionLinkApiTest extends TestCase
             'expires_at' => now()->addMinutes(30),
         ]);
         $this->asRole('admision');
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => 'VL-WXYZ-6789'])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => 'VL-WXYZ-6789'])
             ->assertStatus(422)->assertJsonPath('code', 'already_linked');
         $this->assertDatabaseCount('life_baseline_imports', 1);
         $this->assertNull(LifeLinkCode::query()->where('code', 'VL-WXYZ-6789')->first()->consumed_at);
@@ -190,9 +194,9 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
         Sanctum::actingAs($account, ['life']);
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertForbidden();
-        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertForbidden();
+        $this->getJson(self::V_1_LIFE_BASELINE)->assertForbidden();
     }
 
     public function test_baseline_is_readable_by_admission_and_clinical_roles(): void
@@ -200,7 +204,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
         foreach (['admision', 'medico_residente', 'medico_tratante', 'enfermera_piso'] as $role) {
             $this->asRole($role);
-            $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertOk();
+            $this->getJson(self::V_1_LIFE_BASELINE)->assertOk();
         }
     }
 
@@ -211,7 +215,7 @@ class LifeAdmissionLinkApiTest extends TestCase
         $user = User::factory()->create(['role' => 'admision']);
         $this->actingAs($user);
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])->assertCreated();
 
         $this->assertSame($user->id, LifeBaselineImport::query()->first()->imported_by);
     }
@@ -231,7 +235,7 @@ class LifeAdmissionLinkApiTest extends TestCase
             ]);
         });
 
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertStatus(422)->assertJsonPath('code', 'already_linked');
         $this->assertNull(LifeLinkCode::query()->first()->consumed_at);
         // El INSERT simulado ocurre dentro de la misma transacción, que se revierte completa.
@@ -244,16 +248,16 @@ class LifeAdmissionLinkApiTest extends TestCase
         $this->encounter('ENC-LIFE-1');
 
         $this->asRole('enfermera_piso');
-        $this->postJson('/api/v1/hospital-admission/life-links', ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
+        $this->postJson(self::ADMISSION_LIFE_LINKS, ['encounterId' => 'ENC-LIFE-1', 'code' => $code])
             ->assertForbidden();
 
         $this->asRole('camillero');
-        $this->getJson('/api/v1/hospital-admission/encounters/ENC-LIFE-1/life-baseline')->assertForbidden();
+        $this->getJson(self::V_1_LIFE_BASELINE)->assertForbidden();
     }
 
     public function test_link_requires_encounter_and_code(): void
     {
         $this->asRole('admision');
-        $this->postJson('/api/v1/hospital-admission/life-links', [])->assertStatus(422);
+        $this->postJson(self::ADMISSION_LIFE_LINKS, [])->assertStatus(422);
     }
 }

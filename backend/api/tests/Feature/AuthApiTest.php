@@ -9,6 +9,18 @@ use Tests\TestCase;
 
 class AuthApiTest extends TestCase
 {
+    private const LAN_CLIENT = [192, 168, 1, 34];
+
+    private const AUTH_ME = '/api/v1/auth/me';
+
+    private const AUTH_CHANGE_PASSWORD = '/api/v1/auth/change-password';
+
+    private const ADMISION_VITALSY_LOCAL = 'admision@vitalsy.local';
+
+    private const AUTH_LOGIN = '/api/v1/auth/login';
+
+    private const OI_2026_0001 = '/api/v1/hospital-admission/admission-orders/OI-2026-0001';
+
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -32,14 +44,14 @@ class AuthApiTest extends TestCase
         // Simula cliente móvil/LAN que no envía Origin ni Referer.
         $this->withoutHeader('origin')
             ->withoutHeader('referer')
-            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
+            ->withServerVariables(['HTTP_HOST' => $this->lanHost()])
             ->get('/sanctum/csrf-cookie');
 
         $this->withHeader('X-CSRF-TOKEN', csrf_token())
             ->withoutHeader('origin')
             ->withoutHeader('referer')
-            ->withServerVariables(['HTTP_HOST' => '192.168.1.34:8080'])
-            ->postJson('/api/v1/auth/login', [
+            ->withServerVariables(['HTTP_HOST' => $this->lanHost()])
+            ->postJson(self::AUTH_LOGIN, [
                 'email' => 'camillero@vitalsy.local',
                 'password' => 'password_ejemplo',
             ])
@@ -49,7 +61,7 @@ class AuthApiTest extends TestCase
 
     public function test_login_rejects_unknown_credentials_in_spanish(): void
     {
-        $this->postJson('/api/v1/auth/login', [
+        $this->postJson(self::AUTH_LOGIN, [
             'email' => 'nadie@vitalsy.local',
             'password' => 'incorrecta',
         ])->assertStatus(422)
@@ -65,7 +77,7 @@ class AuthApiTest extends TestCase
             'is_active' => false,
         ]);
 
-        $this->postJson('/api/v1/auth/login', [
+        $this->postJson(self::AUTH_LOGIN, [
             'email' => 'baja@vitalsy.local',
             'password' => 'password_ejemplo',
         ])->assertStatus(422)
@@ -76,19 +88,19 @@ class AuthApiTest extends TestCase
     {
         User::factory()->create([
             'name' => 'Mesa de admisión',
-            'email' => 'admision@vitalsy.local',
+            'email' => self::ADMISION_VITALSY_LOCAL,
             'password' => 'password_ejemplo',
             'role' => 'admision',
         ]);
 
-        $this->postJson('/api/v1/auth/login', [
-            'email' => 'admision@vitalsy.local',
+        $this->postJson(self::AUTH_LOGIN, [
+            'email' => self::ADMISION_VITALSY_LOCAL,
             'password' => 'password_ejemplo',
         ])->assertOk()
-            ->assertJsonPath('user.email', 'admision@vitalsy.local')
+            ->assertJsonPath('user.email', self::ADMISION_VITALSY_LOCAL)
             ->assertJsonPath('user.role', 'admision');
 
-        $this->getJson('/api/v1/auth/me')
+        $this->getJson(self::AUTH_ME)
             ->assertOk()
             ->assertJsonPath('user.name', 'Mesa de admisión');
 
@@ -96,7 +108,7 @@ class AuthApiTest extends TestCase
             ->postJson('/api/v1/auth/logout')
             ->assertNoContent();
 
-        $this->getJson('/api/v1/auth/me')
+        $this->getJson(self::AUTH_ME)
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Debe iniciar sesión para continuar.');
     }
@@ -110,27 +122,27 @@ class AuthApiTest extends TestCase
             'role' => 'gestion_camas',
         ]);
 
-        $this->postJson('/api/v1/auth/login', [
+        $this->postJson(self::AUTH_LOGIN, [
             'email' => 'gestion_camas@vitalsy.local',
             'password' => 'password_ejemplo',
         ])->assertOk()
             ->assertJsonPath('user.role', 'gestion_camas');
 
-        $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')
+        $this->getJson(self::OI_2026_0001)
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
     }
 
     public function test_guest_and_wrong_role_cannot_open_an_admission_order(): void
     {
-        $this->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')
+        $this->getJson(self::OI_2026_0001)
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Debe iniciar sesión para continuar.');
 
         $physician = User::factory()->create(['role' => 'medico_residente']);
 
         $this->actingAs($physician)
-            ->getJson('/api/v1/hospital-admission/admission-orders/OI-2026-0001')
+            ->getJson(self::OI_2026_0001)
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
     }
@@ -148,7 +160,7 @@ class AuthApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 'password_change_required');
 
-        $this->getJson('/api/v1/auth/me')
+        $this->getJson(self::AUTH_ME)
             ->assertOk()
             ->assertJsonPath('user.mustChangePassword', true);
     }
@@ -162,7 +174,7 @@ class AuthApiTest extends TestCase
         ]);
         $this->actingAs($user);
 
-        $this->postJson('/api/v1/auth/change-password', [
+        $this->postJson(self::AUTH_CHANGE_PASSWORD, [
             'currentPassword' => 'password_temporal',
             'password' => 'Clave-nueva-segura-9',
             'password_confirmation' => 'Clave-nueva-segura-9',
@@ -182,24 +194,29 @@ class AuthApiTest extends TestCase
         ]);
         $this->actingAs($user);
 
-        $this->postJson('/api/v1/auth/change-password', [
+        $this->postJson(self::AUTH_CHANGE_PASSWORD, [
             'currentPassword' => 'equivocada',
             'password' => 'Clave-nueva-segura-9',
             'password_confirmation' => 'Clave-nueva-segura-9',
         ])->assertStatus(422);
 
-        $this->postJson('/api/v1/auth/change-password', [
+        $this->postJson(self::AUTH_CHANGE_PASSWORD, [
             'currentPassword' => 'password_temporal',
             'password' => 'corta',
             'password_confirmation' => 'corta',
         ])->assertStatus(422);
 
-        $this->postJson('/api/v1/auth/change-password', [
+        $this->postJson(self::AUTH_CHANGE_PASSWORD, [
             'currentPassword' => 'password_temporal',
             'password' => 'password_temporal',
             'password_confirmation' => 'password_temporal',
         ])->assertStatus(422);
 
         $this->assertTrue($user->fresh()->must_change_password);
+    }
+
+    private function lanHost(): string
+    {
+        return implode('.', self::LAN_CLIENT).':8080';
     }
 }

@@ -1,19 +1,26 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import JsBarcode from "jsbarcode";
 
-function FallbackBars({ value }: Readonly<{ value: string }>) {
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function escapeXml(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function toDataUri(markup: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+}
+
+/** Barras deterministas para entornos sin canvas (pruebas) o si JsBarcode falla. */
+function fallbackMarkup(value: string): string {
   const widths = value.split("").map((char) => ((char.codePointAt(0) ?? 0) % 3) + 1);
   const starts = widths.reduce<number[]>((acc, _width, i) => [...acc, i === 0 ? 4 : acc[i - 1] + widths[i - 1] + 1], []);
-  const x = widths.length === 0 ? 4 : starts[starts.length - 1] + widths[widths.length - 1] + 1;
-  const bars = widths.map((width, i) => <rect key={`bar-${starts[i]}`} x={starts[i]} y="4" width={width} height="40" fill="#0E4C92" />);
+  const x = widths.length === 0 ? 4 : (starts.at(-1) ?? 0) + (widths.at(-1) ?? 0) + 1;
+  const bars = widths.map((width, i) => `<rect x="${starts[i]}" y="4" width="${width}" height="40" fill="#0E4C92"/>`).join("");
   return (
-    <svg className="barcode" viewBox={`0 0 ${x + 8} 56`} role="img" aria-label={`Código de barras ${value}`}>
-      <rect x="0" y="0" width={x + 8} height="56" fill="#ffffff" />
-      {bars}
-      <text x={8} y="54" fontSize="10" fill="#0E4C92">
-        {value}
-      </text>
-    </svg>
+    `<svg xmlns="${SVG_NS}" width="${x + 8}" height="56" viewBox="0 0 ${x + 8} 56">` +
+    `<rect x="0" y="0" width="${x + 8}" height="56" fill="#ffffff"/>${bars}` +
+    `<text x="8" y="54" font-size="10" fill="#0E4C92">${escapeXml(value)}</text></svg>`
   );
 }
 
@@ -27,46 +34,36 @@ function canUseJsBarcode() {
   }
 }
 
+function jsBarcodeMarkup(value: string): string | null {
+  try {
+    const node = document.createElementNS(SVG_NS, "svg");
+    JsBarcode(node, value, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 14,
+      height: 40,
+      margin: 6,
+      background: "#ffffff",
+      lineColor: "#1E6B7B",
+    });
+    node.setAttribute("xmlns", SVG_NS);
+    return new XMLSerializer().serializeToString(node);
+  } catch {
+    return null;
+  }
+}
+
 export function Barcode({ value, id = "wristband-barcode" }: Readonly<{ value: string; id?: string }>) {
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [mode, setMode] = useState<"js" | "fallback">(() => (canUseJsBarcode() ? "js" : "fallback"));
+  const [jsSource, setJsSource] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    if (!value || mode === "fallback") return;
-    const node = svgRef.current;
-    if (!node || !canUseJsBarcode()) {
-      setMode("fallback");
-      return;
-    }
-    try {
-      JsBarcode(node, value, {
-        format: "CODE128",
-        displayValue: true,
-        fontSize: 14,
-        height: 40,
-        margin: 6,
-        background: "#ffffff",
-        lineColor: "#1E6B7B",
-      });
-    } catch {
-      setMode("fallback");
-    }
-  }, [mode, value]);
+    const markup = value && canUseJsBarcode() ? jsBarcodeMarkup(value) : null;
+    setJsSource(markup ? toDataUri(markup) : null);
+  }, [value]);
 
   return (
     <div id={id} className="barcode-wrap">
-      {mode === "fallback" ? (
-        <FallbackBars value={value} />
-      ) : (
-        <svg
-          ref={svgRef}
-          className="barcode"
-          width={240}
-          height={80}
-          role="img"
-          aria-label={`Código de barras ${value}`}
-        />
-      )}
+      <img className="barcode" src={jsSource ?? toDataUri(fallbackMarkup(value))} alt={`Código de barras ${value}`} />
     </div>
   );
 }

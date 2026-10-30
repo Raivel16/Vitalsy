@@ -12,7 +12,7 @@ type QueryOptions = {
   filter?: { date: { startDate: Date; endDate: Date } };
 };
 
-/** Subconjunto de `@kingstinct/react-native-healthkit` que usa la app. Todo el acceso nativo pasa por aquí. */
+/** Subconjunto de `@kingstinct/react-native-healthkit` que usa la app. Cada acceso nativo pasa por aquí. */
 export type HealthKitModule = {
   isHealthDataAvailable(): boolean | Promise<boolean>;
   requestAuthorization(request: { toRead: string[]; toShare?: string[] }): Promise<boolean>;

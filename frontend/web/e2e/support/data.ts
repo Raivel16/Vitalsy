@@ -82,27 +82,54 @@ const PERU_SURNAMES = [
 ];
 
 /** Puntuación por parámetro según el apéndice A de la guía de pruebas. */
+function respiratoryScore(rr: number): number {
+  if (rr <= 8 || rr >= 25) return 3;
+  if (rr >= 21) return 2;
+  return rr <= 11 ? 1 : 0;
+}
+
+function spo2ScaleOneScore(spo2: number): number {
+  if (spo2 <= 91) return 3;
+  if (spo2 <= 93) return 2;
+  return spo2 <= 95 ? 1 : 0;
+}
+
+function spo2ScaleTwoScore(spo2: number, supplementalO2: boolean): number {
+  if (spo2 <= 83) return 3;
+  if (spo2 <= 85) return 2;
+  if (spo2 <= 87) return 1;
+  if (!supplementalO2 || spo2 <= 92) return 0;
+  if (spo2 <= 94) return 1;
+  return spo2 <= 96 ? 2 : 3;
+}
+
+function systolicScore(sbp: number): number {
+  if (sbp <= 90 || sbp >= 220) return 3;
+  if (sbp <= 100) return 2;
+  return sbp <= 110 ? 1 : 0;
+}
+
+function pulseScore(hr: number): number {
+  if (hr <= 40 || hr >= 131) return 3;
+  if (hr >= 111) return 2;
+  return hr <= 50 || hr >= 91 ? 1 : 0;
+}
+
+function temperatureScore(t: number): number {
+  if (t <= 35) return 3;
+  if (t >= 39.1) return 2;
+  return t <= 36 || t >= 38.1 ? 1 : 0;
+}
+
 export function news2Breakdown(v: Vitals): Record<News2Parameter, number> {
-  const rr = v.respiratoryRate;
-  const spo2 =
-    v.spo2Scale === 1
-      ? v.spo2 <= 91 ? 3 : v.spo2 <= 93 ? 2 : v.spo2 <= 95 ? 1 : 0
-      : v.spo2 <= 83 ? 3
-        : v.spo2 <= 85 ? 2
-          : v.spo2 <= 87 ? 1
-            : !v.supplementalO2 || v.spo2 <= 92 ? 0
-              : v.spo2 <= 94 ? 1 : v.spo2 <= 96 ? 2 : 3;
-  const sbp = v.systolic;
-  const hr = v.pulse;
-  const t = v.temperature;
   return {
-    respiratoryRate: rr <= 8 || rr >= 25 ? 3 : rr >= 21 ? 2 : rr <= 11 ? 1 : 0,
-    spo2,
+    respiratoryRate: respiratoryScore(v.respiratoryRate),
+    spo2: v.spo2Scale === 1 ? spo2ScaleOneScore(v.spo2) : spo2ScaleTwoScore(v.spo2, v.supplementalO2),
     supplementalO2: v.supplementalO2 ? 2 : 0,
-    systolic: sbp <= 90 || sbp >= 220 ? 3 : sbp <= 100 ? 2 : sbp <= 110 ? 1 : 0,
-    pulse: hr <= 40 || hr >= 131 ? 3 : hr >= 111 ? 2 : hr <= 50 || hr >= 91 ? 1 : 0,
+    systolic: systolicScore(v.systolic),
+    pulse: pulseScore(v.pulse),
     consciousness: v.consciousness === "A" ? 0 : 3,
-    temperature: t <= 35 ? 3 : t >= 39.1 ? 2 : t <= 36 || t >= 38.1 ? 1 : 0,
+    temperature: temperatureScore(v.temperature),
   };
 }
 
@@ -127,7 +154,7 @@ export function seedForTest(runSeed: number, project: string, titlePath: string[
 
 export function runSeed(): number {
   const raw = process.env.E2E_SEED;
-  const seed = raw === undefined ? NaN : Number(raw);
+  const seed = raw === undefined ? Number.NaN : Number(raw);
   if (!Number.isInteger(seed)) throw new Error("E2E_SEED no está definida: ejecute la suite con `npm run e2e`.");
   return seed;
 }

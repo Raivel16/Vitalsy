@@ -22,6 +22,8 @@ use Tests\TestCase;
 /** RNF-01 / RNF-12: las alertas se empujan por WebSocket a quienes las ven en su bandeja. */
 class ClinicalAlertBroadcastTest extends TestCase
 {
+    private const BROADCASTING_AUTH = '/api/v1/broadcasting/auth';
+
     use RefreshDatabase;
 
     private User $nurse;
@@ -197,7 +199,7 @@ class ClinicalAlertBroadcastTest extends TestCase
         Broadcast::forgetDrivers();
         require base_path('routes/channels.php');
 
-        $auth = fn (User $user, int $id) => $this->actingAs($user->fresh())->postJson('/api/v1/broadcasting/auth', [
+        $auth = fn (User $user, int $id) => $this->actingAs($user->fresh())->postJson(self::BROADCASTING_AUTH, [
             'socket_id' => '1234.5678', 'channel_name' => 'private-alerts.'.$id,
         ]);
 
@@ -256,7 +258,7 @@ class ClinicalAlertBroadcastTest extends TestCase
     public function test_broadcast_auth_route_has_the_same_middleware_stack_as_authenticated_api_routes(): void
     {
         $routes = app('router')->getRoutes();
-        $auth = $routes->match(Request::create('/api/v1/broadcasting/auth', 'POST'));
+        $auth = $routes->match(Request::create(self::BROADCASTING_AUTH, 'POST'));
         $me = $routes->match(Request::create('/api/v1/hospital-admission/encounters/ENC-0001/advance', 'POST'));
 
         $this->assertSame(
@@ -286,7 +288,7 @@ class ClinicalAlertBroadcastTest extends TestCase
         $cookies = collect($login->headers->getCookies())->mapWithKeys(fn ($c) => [$c->getName() => $c->getValue()])->all();
 
         $call = fn (int $id, array $cookies) => $this->withHeaders($headers)->withUnencryptedCookies([])
-            ->withCookies($cookies)->postJson('/api/v1/broadcasting/auth', [
+            ->withCookies($cookies)->postJson(self::BROADCASTING_AUTH, [
                 'socket_id' => '1234.5678', 'channel_name' => 'private-alerts.'.$id,
             ]);
 

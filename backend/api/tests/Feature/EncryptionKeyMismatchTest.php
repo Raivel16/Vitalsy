@@ -14,6 +14,8 @@ use Tests\TestCase;
 /** RNF-06: una clave incorrecta no debe perder, sobrescribir ni recifrar datos. */
 class EncryptionKeyMismatchTest extends TestCase
 {
+    private const A_1 = '{"a":1}';
+
     use RefreshDatabase;
 
     private function foreignCipher(string $plain): string
@@ -37,8 +39,8 @@ class EncryptionKeyMismatchTest extends TestCase
         $this->assertTrue(FieldCipher::looksEncrypted(FieldCipher::encrypt('x')));
         $this->assertTrue(FieldCipher::looksEncrypted($this->foreignCipher('x')));
         $this->assertFalse(FieldCipher::looksEncrypted('texto legado'));
-        $this->assertFalse(FieldCipher::looksEncrypted(base64_encode('{"a":1}')));
-        $this->assertFalse(FieldCipher::looksEncrypted('{"a":1}'));
+        $this->assertFalse(FieldCipher::looksEncrypted(base64_encode(self::A_1)));
+        $this->assertFalse(FieldCipher::looksEncrypted(self::A_1));
     }
 
     public function test_ciphertext_under_another_key_throws_on_read(): void
@@ -101,7 +103,7 @@ class EncryptionKeyMismatchTest extends TestCase
 
     public function test_backfill_with_correct_key_is_idempotent_and_encrypts_base64_json_lookalikes(): void
     {
-        $lookalike = base64_encode('{"a":1}');
+        $lookalike = base64_encode(self::A_1);
         DB::table('medical_evolution_notes')->insert([
             ['encounter_id' => 'E', 'body' => $lookalike, 'created_at' => now(), 'updated_at' => now()],
             ['encounter_id' => 'E', 'body' => FieldCipher::encrypt('ya cifrado'), 'created_at' => now(), 'updated_at' => now()],

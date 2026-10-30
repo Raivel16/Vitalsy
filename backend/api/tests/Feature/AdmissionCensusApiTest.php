@@ -12,6 +12,20 @@ use Tests\TestCase;
 
 class AdmissionCensusApiTest extends TestCase
 {
+    private const SIS_GRATUITO = 'SIS Gratuito';
+
+    private const EMERGENCIA_ADULTOS = 'Emergencia adultos';
+
+    private const HOSPITAL_ADMISSION_ENCOUNTERS = '/api/v1/hospital-admission/encounters';
+
+    private const SALAS_D_AZ = 'Pedro Salas Díaz';
+
+    private const ENC_0001_ADVANCE = '/api/v1/hospital-admission/encounters/ENC-0001/advance';
+
+    private const ENC_0003_ADVANCE = '/api/v1/hospital-admission/encounters/ENC-0003/advance';
+
+    private const ENC_0002_ADVANCE = '/api/v1/hospital-admission/encounters/ENC-0002/advance';
+
     use RefreshDatabase;
 
     private function asRole(string $role): static
@@ -23,7 +37,7 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $response = $this->getJson('/api/v1/hospital-admission/encounters');
+        $response = $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS);
 
         $response->assertOk()
             ->assertJsonMissingPath('simulated')
@@ -49,7 +63,7 @@ class AdmissionCensusApiTest extends TestCase
         app(AdmissionBoard::class)->ensureDemo();
         AdmissionEncounter::query()->where('encounter_id', 'ENC-0001')->update(['current_step' => 'egresado']);
 
-        $response = $this->getJson('/api/v1/hospital-admission/encounters');
+        $response = $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS);
 
         $response->assertOk();
         $ids = collect($response->json('encounters'))->pluck('encounterId');
@@ -82,17 +96,17 @@ class AdmissionCensusApiTest extends TestCase
     public function test_census_paginates_ten_per_page(): void
     {
         $this->asRole('admision');
-        $this->getJson('/api/v1/hospital-admission/encounters');
+        $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS);
 
         for ($i = 4; $i <= 15; $i++) {
-            $this->postJson('/api/v1/hospital-admission/encounters', [
+            $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, [
                 'orderNumber' => sprintf('OI-PAGE-%04d', $i),
                 'patientName' => sprintf('Paciente Demo %02d', $i),
                 'documentNumber' => sprintf('700000%02d', $i),
-                'originService' => 'Emergencia adultos',
+                'originService' => self::EMERGENCIA_ADULTOS,
                 'coveragePayer' => 'SIS',
                 'coverageStatus' => 'aprobada',
-                'coveragePlan' => 'SIS Gratuito',
+                'coveragePlan' => self::SIS_GRATUITO,
                 'source' => 'manual',
             ])->assertCreated();
         }
@@ -130,21 +144,21 @@ class AdmissionCensusApiTest extends TestCase
     public function test_only_the_responsible_role_can_advance_the_current_step(): void
     {
         $this->asRole('camillero');
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'derivacion'])
+        $this->postJson(self::ENC_0003_ADVANCE, ['step' => 'derivacion'])
             ->assertForbidden()
             ->assertJsonPath('message', 'Este paso corresponde a otro perfil.');
 
         $this->asRole('admision');
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', ['step' => 'brazalete'])
+        $this->postJson(self::ENC_0002_ADVANCE, ['step' => 'brazalete'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Este no es el paso vigente del ingreso.');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', ['step' => 'cobertura'])
+        $this->postJson(self::ENC_0002_ADVANCE, ['step' => 'cobertura'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'derivacion')
             ->assertJsonPath('encounter.statusLabel', 'Cobertura en trámite');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', [
+        $this->postJson(self::ENC_0002_ADVANCE, [
             'step' => 'derivacion',
             'coverageStatus' => 'aprobada',
         ])->assertOk()
@@ -154,11 +168,11 @@ class AdmissionCensusApiTest extends TestCase
             ->assertJsonPath('encounter.deliverables.0.done', true);
 
         $this->asRole('camillero');
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'traslado'])
+        $this->postJson(self::ENC_0001_ADVANCE, ['step' => 'traslado'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'identidad');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'recepcion'])
+        $this->postJson(self::ENC_0001_ADVANCE, ['step' => 'recepcion'])
             ->assertStatus(422);
     }
 
@@ -166,7 +180,7 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0002/advance', [
+        $this->postJson(self::ENC_0002_ADVANCE, [
             'step' => 'cobertura',
             'coverageStatus' => 'aprobada',
         ])->assertOk()
@@ -180,7 +194,7 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'derivacion'])
+        $this->postJson(self::ENC_0003_ADVANCE, ['step' => 'derivacion'])
             ->assertOk()
             ->assertJsonPath('encounter.statusLabel', 'En trámite de cobertura');
 
@@ -220,7 +234,7 @@ class AdmissionCensusApiTest extends TestCase
         $this->assertNotNull($encounter);
         $encounter->update(['current_step' => 'indicaciones']);
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'indicaciones'])
+        $this->postJson(self::ENC_0001_ADVANCE, ['step' => 'indicaciones'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'cerrado')
             ->assertJsonPath('encounter.nextRole', null)
@@ -235,7 +249,7 @@ class AdmissionCensusApiTest extends TestCase
         $this->assertNotNull($encounter);
         $encounter->update(['current_step' => 'indicaciones']);
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0001/advance', ['step' => 'indicaciones'])
+        $this->postJson(self::ENC_0001_ADVANCE, ['step' => 'indicaciones'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'cerrado')
             ->assertJsonPath('encounter.nextRole', null)
@@ -246,13 +260,13 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'derivacion'])
+        $this->postJson(self::ENC_0003_ADVANCE, ['step' => 'derivacion'])
             ->assertOk()
             ->assertJsonPath('encounter.currentStep', 'derivacion')
             ->assertJsonPath('encounter.nextRole', null)
             ->assertJsonPath('encounter.statusLabel', 'En trámite de cobertura');
 
-        $this->postJson('/api/v1/hospital-admission/encounters/ENC-0003/advance', ['step' => 'brazalete'])
+        $this->postJson(self::ENC_0003_ADVANCE, ['step' => 'brazalete'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'La cobertura no permite continuar. Derive el trámite.');
     }
@@ -261,13 +275,13 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/encounters', ['orderNumber' => 'OI-2026-0001'])
+        $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, ['orderNumber' => 'OI-2026-0001'])
             ->assertOk()
             ->assertJsonPath('encounter.encounterId', 'ENC-0001');
 
         $this->assertDatabaseCount('admission_encounters', 3);
 
-        $this->postJson('/api/v1/hospital-admission/encounters', ['orderNumber' => 'OI-0000'])
+        $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, ['orderNumber' => 'OI-0000'])
             ->assertNotFound()
             ->assertJsonPath('message', 'No se encontró la orden.');
     }
@@ -276,18 +290,18 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $manual = $this->postJson('/api/v1/hospital-admission/encounters', [
+        $manual = $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, [
             'orderNumber' => 'OI-2026-0100',
-            'patientName' => 'Pedro Salas Díaz',
+            'patientName' => self::SALAS_D_AZ,
             'documentNumber' => '77889900',
-            'originService' => 'Emergencia adultos',
+            'originService' => self::EMERGENCIA_ADULTOS,
             'coveragePayer' => 'SIS',
             'coverageStatus' => 'aprobada',
-            'coveragePlan' => 'SIS Gratuito',
+            'coveragePlan' => self::SIS_GRATUITO,
             'source' => 'manual',
         ]);
         $manual->assertCreated()
-            ->assertJsonPath('encounter.patientName', 'Pedro Salas Díaz')
+            ->assertJsonPath('encounter.patientName', self::SALAS_D_AZ)
             ->assertJsonPath('encounter.currentStep', 'orden')
             ->assertJsonPath('encounter.source', 'manual');
 
@@ -311,10 +325,10 @@ class AdmissionCensusApiTest extends TestCase
             'orderNumber' => 'OI-2026-0100',
             'patientName' => 'Duplicado',
             'documentNumber' => '00000000',
-            'originService' => 'Emergencia adultos',
+            'originService' => self::EMERGENCIA_ADULTOS,
             'coveragePayer' => 'SIS',
             'coverageStatus' => 'aprobada',
-            'coveragePlan' => 'SIS Gratuito',
+            'coveragePlan' => self::SIS_GRATUITO,
         ])->assertStatus(422)->assertJsonPath('message', 'Ya existe un ingreso con esa orden.');
     }
 
@@ -334,7 +348,7 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('administrador_accesos');
 
-        $this->getJson('/api/v1/hospital-admission/encounters')->assertForbidden();
+        $this->getJson(self::HOSPITAL_ADMISSION_ENCOUNTERS)->assertForbidden();
         $this->getJson('/api/v1/hospital-admission/encounters/ENC-0001')->assertForbidden();
     }
 
@@ -354,10 +368,10 @@ class AdmissionCensusApiTest extends TestCase
                 'patient_name' => 'Paciente Simultáneo',
                 'document_type' => 'DNI',
                 'document_number' => '10000001',
-                'origin_service' => 'Emergencia adultos',
+                'origin_service' => self::EMERGENCIA_ADULTOS,
                 'coverage_payer' => 'SIS',
                 'coverage_status' => 'aprobada',
-                'coverage_plan' => 'SIS Gratuito',
+                'coverage_plan' => self::SIS_GRATUITO,
                 'current_step' => 'orden',
                 'deliverables' => '{}',
                 'created_at' => now(),
@@ -365,14 +379,14 @@ class AdmissionCensusApiTest extends TestCase
             ]);
         });
 
-        $response = $this->postJson('/api/v1/hospital-admission/encounters', [
+        $response = $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, [
             'orderNumber' => 'OI-RACE-0002',
             'patientName' => 'Lucía Fernández Rojas',
             'documentNumber' => '10000002',
-            'originService' => 'Emergencia adultos',
+            'originService' => self::EMERGENCIA_ADULTOS,
             'coveragePayer' => 'SIS',
             'coverageStatus' => 'aprobada',
-            'coveragePlan' => 'SIS Gratuito',
+            'coveragePlan' => self::SIS_GRATUITO,
         ]);
 
         $response->assertCreated();
@@ -384,19 +398,19 @@ class AdmissionCensusApiTest extends TestCase
     {
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/hospital-admission/encounters', [
+        $this->postJson(self::HOSPITAL_ADMISSION_ENCOUNTERS, [
             'orderNumber' => 'OI-2026-0200',
-            'patientName' => 'Pedro Salas Díaz',
+            'patientName' => self::SALAS_D_AZ,
             'documentNumber' => '77AB9900',
-            'originService' => 'Emergencia adultos',
+            'originService' => self::EMERGENCIA_ADULTOS,
             'coveragePayer' => 'SIS',
             'coverageStatus' => 'aprobada',
-            'coveragePlan' => 'SIS Gratuito',
+            'coveragePlan' => self::SIS_GRATUITO,
             'source' => 'manual',
         ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);
 
         $this->postJson('/api/v1/hospital-admission/filiation/validate', [
-            'fullName' => 'Pedro Salas Díaz',
+            'fullName' => self::SALAS_D_AZ,
             'documentNumber' => '77 99',
             'confirmed' => true,
         ])->assertUnprocessable()->assertJsonValidationErrors(['documentNumber']);

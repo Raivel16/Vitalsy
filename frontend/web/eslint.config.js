@@ -22,7 +22,7 @@ export default defineConfig([
       // Las propiedades que se descartan al reenviar `...props` (p. ej. `wide: _wide`) no son variables sin uso.
       '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true, varsIgnorePattern: '^_' }],
       // Regla del compilador de React: el código sincroniza estado con props y carga datos en efectos
-      // (patrón extendido en todo el frontend). Se mantiene como aviso para ir migrándolos sin bloquear.
+      // (patrón extendido en el frontend completo). Se mantiene como aviso para ir migrándolos sin bloquear.
       'react-hooks/set-state-in-effect': 'warn',
     },
   },

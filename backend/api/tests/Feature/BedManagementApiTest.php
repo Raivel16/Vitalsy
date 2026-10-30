@@ -14,6 +14,8 @@ use Tests\TestCase;
 
 class BedManagementApiTest extends TestCase
 {
+    private const BEDS_REQUESTS = '/api/v1/beds/requests';
+
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -45,7 +47,7 @@ class BedManagementApiTest extends TestCase
         Bed::query()->update(['status' => 'occupied']);
         $this->asRole('gestion_camas');
 
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'urgencias',
             'priority' => 'critica',
             'specialty' => 'medicina_interna',
@@ -66,7 +68,7 @@ class BedManagementApiTest extends TestCase
         $bed->update(['status' => 'available']);
         $this->asRole('gestion_camas');
 
-        $created = $this->postJson('/api/v1/beds/requests', [
+        $created = $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'admisiones',
             'priority' => 'alta',
             'specialty' => 'cirugia',
@@ -184,7 +186,7 @@ class BedManagementApiTest extends TestCase
     {
         Bed::query()->update(['status' => 'occupied']);
         $this->asRole('gestion_camas');
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'quirofano',
             'priority' => 'baja',
             'specialty' => 'cirugia',
@@ -192,7 +194,7 @@ class BedManagementApiTest extends TestCase
             'isolation' => false,
             'patientName' => 'Baja',
         ])->assertCreated();
-        $this->postJson('/api/v1/beds/requests', [
+        $this->postJson(self::BEDS_REQUESTS, [
             'source' => 'urgencias',
             'priority' => 'critica',
             'specialty' => 'medicina_interna',

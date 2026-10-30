@@ -16,6 +16,12 @@ use Tests\TestCase;
 
 class LifeDischargePlanApiTest extends TestCase
 {
+    private const EXIT = '/exit';
+
+    private const DISCHARGE_ENCOUNTERS = '/api/v1/discharge/encounters/';
+
+    private const LIFE_PLAN = '/life-plan';
+
     use RefreshDatabase;
 
     private const ENC = 'ENC-ALTA-0001';
@@ -95,7 +101,7 @@ class LifeDischargePlanApiTest extends TestCase
         $this->dischargeReady(self::ENC, $upToPass);
         $this->asRole('enfermera_piso');
 
-        return (string) $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => $mode])
+        return (string) $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => $mode])
             ->assertCreated()
             ->json('lifePlan.code');
     }
@@ -104,7 +110,7 @@ class LifeDischargePlanApiTest extends TestCase
     {
         $this->dischargeReady();
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'invitacion'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'invitacion'])
             ->assertCreated()
             ->assertJsonPath('lifePlan.mode', 'invitacion')
             ->assertJsonPath('lifePlan.status', 'pendiente')
@@ -126,7 +132,7 @@ class LifeDischargePlanApiTest extends TestCase
     {
         $code = $this->issuedPlanCode('usuario');
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])
             ->assertStatus(201)
             ->assertJsonPath('lifePlan.code', $code)
             ->assertJsonPath('lifePlan.invitationCode', null);
@@ -138,7 +144,7 @@ class LifeDischargePlanApiTest extends TestCase
     {
         $this->dischargeReady();
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'rechaza'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'rechaza'])
             ->assertOk()
             ->assertJsonPath('lifePlan.mode', 'rechaza')
             ->assertJsonMissingPath('lifePlan.code');
@@ -148,13 +154,13 @@ class LifeDischargePlanApiTest extends TestCase
         $this->assertNull($plan->code);
         $this->assertNull($plan->invitation_code);
 
-        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)
+        $this->getJson(self::DISCHARGE_ENCOUNTERS.self::ENC)
             ->assertOk()
             ->assertJsonPath('case.lifePlan.mode', 'rechaza')
             ->assertJsonMissingPath('case.lifePlan.code');
 
         // El paciente puede cambiar de decisión antes del egreso.
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])
             ->assertCreated()
             ->assertJsonStructure(['lifePlan' => ['code']]);
     }
@@ -162,8 +168,8 @@ class LifeDischargePlanApiTest extends TestCase
     public function test_exit_does_not_activate_a_rejected_plan(): void
     {
         $this->dischargeReady(self::ENC, true);
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'rechaza'])->assertOk();
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'rechaza'])->assertOk();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::EXIT)->assertCreated();
 
         $this->assertSame('rechazado', LifeDischargePlan::query()->firstOrFail()->status);
     }
@@ -184,7 +190,7 @@ class LifeDischargePlanApiTest extends TestCase
         $rx = AmbulatoryPrescription::query()->where('encounter_id', self::ENC)->firstOrFail();
         $rx->update(['content' => ['items' => [['drug' => 'Amoxicilina', 'dose' => '']]]]);
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])->assertStatus(422);
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])->assertStatus(422);
         $this->assertSame(0, LifeDischargePlan::query()->count());
     }
 
@@ -200,10 +206,10 @@ class LifeDischargePlanApiTest extends TestCase
     public function test_plan_rejects_unknown_mode_and_other_roles(): void
     {
         $this->dischargeReady();
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'otro'])->assertStatus(422);
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'otro'])->assertStatus(422);
 
         $this->asRole('medico_tratante');
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])->assertForbidden();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])->assertForbidden();
     }
 
     public function test_citizen_claims_plan_once_by_code_or_invitation(): void
@@ -239,7 +245,7 @@ class LifeDischargePlanApiTest extends TestCase
         $this->issuedPlanCode('usuario', true);
         $this->asRole('enfermera_piso');
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::EXIT)->assertCreated();
 
         $plan = LifeDischargePlan::query()->firstOrFail();
         $this->assertNotNull($plan->custody_transferred_at);
@@ -253,7 +259,7 @@ class LifeDischargePlanApiTest extends TestCase
         $this->claim($code)->assertOk();
 
         $this->asRole('enfermera_piso');
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::EXIT)->assertCreated();
 
         $plan = LifeDischargePlan::query()->firstOrFail();
         $this->assertSame('reclamado', $plan->status);
@@ -282,7 +288,7 @@ class LifeDischargePlanApiTest extends TestCase
 
         foreach (['medico_tratante', 'camillero', 'altas_caja', 'trabajo_social'] as $role) {
             $this->asRole($role);
-            $plan = $this->getJson('/api/v1/discharge/encounters/'.self::ENC)->assertOk()->json('case.lifePlan');
+            $plan = $this->getJson(self::DISCHARGE_ENCOUNTERS.self::ENC)->assertOk()->json('case.lifePlan');
             $this->assertSame('invitacion', $plan['mode']);
             $this->assertSame('pendiente', $plan['status']);
             $this->assertArrayNotHasKey('code', $plan);
@@ -291,7 +297,7 @@ class LifeDischargePlanApiTest extends TestCase
         }
 
         $this->asRole('enfermera_piso');
-        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)
+        $this->getJson(self::DISCHARGE_ENCOUNTERS.self::ENC)
             ->assertJsonStructure(['case' => ['lifePlan' => ['code', 'invitationCode', 'payload']]]);
     }
 
@@ -299,9 +305,9 @@ class LifeDischargePlanApiTest extends TestCase
     {
         $this->issuedPlanCode('usuario', true);
         $this->asRole('enfermera_piso');
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/exit')->assertCreated();
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::EXIT)->assertCreated();
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'El paciente ya egresó; el plan no puede reemitirse.');
     }
@@ -311,7 +317,7 @@ class LifeDischargePlanApiTest extends TestCase
         $this->issuedPlanCode('invitacion');
         $invitation = LifeDischargePlan::query()->firstOrFail()->invitation_code;
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])
             ->assertStatus(201)
             ->assertJsonPath('lifePlan.invitationCode', null);
         $this->assertNull(LifeDischargePlan::query()->firstOrFail()->invitation_code);
@@ -323,10 +329,10 @@ class LifeDischargePlanApiTest extends TestCase
     public function test_case_presentation_includes_life_plan(): void
     {
         $this->dischargeReady();
-        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)->assertOk()->assertJsonPath('case.lifePlan', null);
+        $this->getJson(self::DISCHARGE_ENCOUNTERS.self::ENC)->assertOk()->assertJsonPath('case.lifePlan', null);
 
-        $this->postJson('/api/v1/discharge/encounters/'.self::ENC.'/life-plan', ['mode' => 'usuario'])->assertCreated();
-        $this->getJson('/api/v1/discharge/encounters/'.self::ENC)
+        $this->postJson(self::DISCHARGE_ENCOUNTERS.self::ENC.self::LIFE_PLAN, ['mode' => 'usuario'])->assertCreated();
+        $this->getJson(self::DISCHARGE_ENCOUNTERS.self::ENC)
             ->assertOk()
             ->assertJsonPath('case.lifePlan.mode', 'usuario')
             ->assertJsonStructure(['case' => ['lifePlan' => ['code', 'payload', 'status']]]);

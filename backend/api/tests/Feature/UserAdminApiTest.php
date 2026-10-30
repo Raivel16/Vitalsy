@@ -12,6 +12,10 @@ use Tests\TestCase;
 
 class UserAdminApiTest extends TestCase
 {
+    private const NUEVO_VITALSY_LOCAL = 'nuevo@vitalsy.local';
+
+    private const USERS = '/api/v1/users';
+
     use RefreshDatabase;
 
     private function admin(): User
@@ -33,7 +37,7 @@ class UserAdminApiTest extends TestCase
         $this->admin();
         User::factory()->create(['name' => 'Rosa Quispe', 'role' => 'enfermera_piso', 'email' => 'rosa@vitalsy.local']);
 
-        $response = $this->getJson('/api/v1/users')->assertOk();
+        $response = $this->getJson(self::USERS)->assertOk();
 
         $response->assertJsonStructure(['data' => [['id', 'name', 'email', 'role', 'roleLabel', 'isActive']]]);
         $this->assertStringNotContainsString('password', $response->getContent());
@@ -57,7 +61,7 @@ class UserAdminApiTest extends TestCase
     {
         $this->admin();
 
-        $response = $this->postJson('/api/v1/users', [
+        $response = $this->postJson(self::USERS, [
             'name' => 'Lucía Mendoza',
             'email' => 'Lucia@Vitalsy.local',
             'role' => 'enfermera_piso',
@@ -79,11 +83,11 @@ class UserAdminApiTest extends TestCase
         $this->admin();
         User::factory()->create(['email' => 'dup@vitalsy.local']);
 
-        $this->postJson('/api/v1/users', ['name' => 'X', 'email' => 'dup@vitalsy.local', 'role' => 'camillero'])
+        $this->postJson(self::USERS, ['name' => 'X', 'email' => 'dup@vitalsy.local', 'role' => 'camillero'])
             ->assertStatus(422);
-        $this->postJson('/api/v1/users', ['name' => 'X', 'email' => 'nuevo@vitalsy.local', 'role' => 'inexistente'])
+        $this->postJson(self::USERS, ['name' => 'X', 'email' => self::NUEVO_VITALSY_LOCAL, 'role' => 'inexistente'])
             ->assertStatus(422);
-        $this->postJson('/api/v1/users', [])->assertStatus(422);
+        $this->postJson(self::USERS, [])->assertStatus(422);
     }
 
     public function test_admin_updates_name_email_and_role_with_audit(): void
@@ -93,11 +97,11 @@ class UserAdminApiTest extends TestCase
 
         $this->patchJson("/api/v1/users/{$target->id}", [
             'name' => 'Nombre Nuevo',
-            'email' => 'nuevo@vitalsy.local',
+            'email' => self::NUEVO_VITALSY_LOCAL,
             'role' => 'auxiliar_enfermeria',
         ])->assertOk()->assertJsonPath('user.role', 'auxiliar_enfermeria');
 
-        $this->assertSame('nuevo@vitalsy.local', $target->fresh()->email);
+        $this->assertSame(self::NUEVO_VITALSY_LOCAL, $target->fresh()->email);
         $this->assertSame(1, DB::table('access_audit_logs')->where('action', 'user.updated')->count());
     }
 
@@ -179,8 +183,8 @@ class UserAdminApiTest extends TestCase
 
         foreach (array_diff(RoleCatalog::all(), ['administrador_accesos']) as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]));
-            $this->getJson('/api/v1/users')->assertForbidden();
-            $this->postJson('/api/v1/users', [])->assertForbidden();
+            $this->getJson(self::USERS)->assertForbidden();
+            $this->postJson(self::USERS, [])->assertForbidden();
             $this->patchJson("/api/v1/users/{$target->id}", [])->assertForbidden();
             $this->postJson("/api/v1/users/{$target->id}/deactivate")->assertForbidden();
         }

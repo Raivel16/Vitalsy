@@ -10,6 +10,8 @@ use Tests\TestCase;
 
 class ImagingReportsIntegrationApiTest extends TestCase
 {
+    private const IMAGING_REPORTS_SYNC = '/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync';
+
     use RefreshDatabase;
 
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
@@ -48,7 +50,7 @@ class ImagingReportsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync')
+        $this->postJson(self::IMAGING_REPORTS_SYNC)
             ->assertOk()
             ->assertJsonPath('integrated', 2)
             ->assertJsonPath('reports.0.externalId', 'PACS-DR-2001')
@@ -67,8 +69,8 @@ class ImagingReportsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync')->assertOk();
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync')
+        $this->postJson(self::IMAGING_REPORTS_SYNC)->assertOk();
+        $this->postJson(self::IMAGING_REPORTS_SYNC)
             ->assertOk()
             ->assertJsonPath('integrated', 2);
 
@@ -79,7 +81,7 @@ class ImagingReportsIntegrationApiTest extends TestCase
     {
         $this->inpatientEncounter();
         $this->asRole('medico_residente');
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync')->assertOk();
+        $this->postJson(self::IMAGING_REPORTS_SYNC)->assertOk();
 
         $this->getJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports')
             ->assertOk()
@@ -101,7 +103,7 @@ class ImagingReportsIntegrationApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('admision');
 
-        $this->postJson('/api/v1/inpatient-care/encounters/ENC-HOSP-0001/imaging-reports/sync')
+        $this->postJson(self::IMAGING_REPORTS_SYNC)
             ->assertForbidden()
             ->assertJsonPath('message', 'No tiene permiso para esta acción.');
     }

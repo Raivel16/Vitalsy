@@ -73,7 +73,7 @@ export async function uiAssignBed(open: OpenAs, p: Patient): Promise<void> {
   await page.getByRole("button", { name: "Registrar solicitud" }).click();
   await page.getByRole("button", { name: `Asignar lecho compatible a ${p.fullName}` }).click();
   await page.getByRole("button", { name: "Confirmar asignación" }).click();
-  await expect(page.getByText(new RegExp(`asignado a ${p.fullName}\\.`))).toBeVisible();
+  await expect(page.getByText(new RegExp(String.raw`asignado a ${p.fullName}\.`))).toBeVisible();
 }
 
 export async function uiConsentAndTransfer(open: OpenAs, id: string, p: Patient): Promise<string> {

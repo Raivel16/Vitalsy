@@ -21,6 +21,10 @@ use Tests\TestCase;
 /** RNF-06: campos clínicos sensibles cifrados en reposo (AES-256-CBC con APP_KEY). */
 class EncryptionAtRestTest extends TestCase
 {
+    private const DOLOR_TORACICO_INTENSO = 'Paciente refiere dolor toracico intenso';
+
+    private const LEGADO_EN_CLARO = 'Texto legado en claro';
+
     use RefreshDatabase;
 
     public function test_cipher_is_aes_256(): void
@@ -32,14 +36,14 @@ class EncryptionAtRestTest extends TestCase
     {
         $note = NursingEvolutionNote::query()->create([
             'encounter_id' => 'ENC-1',
-            'body' => 'Paciente refiere dolor toracico intenso',
+            'body' => self::DOLOR_TORACICO_INTENSO,
         ]);
 
         $raw = DB::table('nursing_evolution_notes')->where('id', $note->id)->value('body');
 
         $this->assertStringNotContainsString('dolor toracico', $raw);
-        $this->assertSame('Paciente refiere dolor toracico intenso', Crypt::decryptString($raw));
-        $this->assertSame('Paciente refiere dolor toracico intenso', $note->fresh()->body);
+        $this->assertSame(self::DOLOR_TORACICO_INTENSO, Crypt::decryptString($raw));
+        $this->assertSame(self::DOLOR_TORACICO_INTENSO, $note->fresh()->body);
     }
 
     public function test_json_payloads_round_trip_and_are_ciphertext_at_rest(): void
@@ -99,7 +103,7 @@ class EncryptionAtRestTest extends TestCase
     public function test_backfill_dry_run_changes_nothing_and_real_run_is_idempotent(): void
     {
         DB::table('medical_evolution_notes')->insert([
-            'encounter_id' => 'ENC-9', 'body' => 'Texto legado en claro', 'created_at' => now(), 'updated_at' => now(),
+            'encounter_id' => 'ENC-9', 'body' => self::LEGADO_EN_CLARO, 'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('lab_results')->insert([
             'encounter_id' => 'ENC-9', 'summary' => 'Resumen legado', 'payload' => '{"k":"valor-legado"}',
@@ -107,16 +111,16 @@ class EncryptionAtRestTest extends TestCase
         ]);
 
         // El modelo sigue leyendo valores legados en claro durante el despliegue.
-        $this->assertSame('Texto legado en claro', MedicalEvolutionNote::query()->first()->body);
+        $this->assertSame(self::LEGADO_EN_CLARO, MedicalEvolutionNote::query()->first()->body);
         $this->assertSame(['k' => 'valor-legado'], LabResult::query()->first()->payload);
 
         $this->artisan('vitalsy:encrypt-existing', ['--dry-run' => true])->assertSuccessful();
-        $this->assertSame('Texto legado en claro', DB::table('medical_evolution_notes')->value('body'));
+        $this->assertSame(self::LEGADO_EN_CLARO, DB::table('medical_evolution_notes')->value('body'));
 
         $this->artisan('vitalsy:encrypt-existing')->assertSuccessful();
         $rawBody = DB::table('medical_evolution_notes')->value('body');
         $this->assertStringNotContainsString('legado', $rawBody);
-        $this->assertSame('Texto legado en claro', MedicalEvolutionNote::query()->first()->body);
+        $this->assertSame(self::LEGADO_EN_CLARO, MedicalEvolutionNote::query()->first()->body);
         $this->assertSame(['k' => 'valor-legado'], LabResult::query()->first()->payload);
 
         $snapshot = DB::table('medical_evolution_notes')->value('body');

@@ -11,6 +11,8 @@ use Tests\TestCase;
 
 class LifeNoticesApiTest extends TestCase
 {
+    private const LIFE_NOTICES = '/api/v1/life/notices';
+
     use RefreshDatabase;
 
     private int $seq = 0;
@@ -50,7 +52,7 @@ class LifeNoticesApiTest extends TestCase
 
     public function test_requires_authentication(): void
     {
-        $this->getJson('/api/v1/life/notices')->assertUnauthorized();
+        $this->getJson(self::LIFE_NOTICES)->assertUnauthorized();
     }
 
     public function test_three_readings_outside_range_yield_preventive_notice(): void
@@ -58,7 +60,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'heart_rate', [110, 112, 115]);
 
-        $response = $this->getJson('/api/v1/life/notices')->assertOk();
+        $response = $this->getJson(self::LIFE_NOTICES)->assertOk();
 
         $notice = collect($response->json('notices'))->firstWhere('kind', 'preventivo');
         $this->assertNotNull($notice);
@@ -73,7 +75,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'heart_rate', [62, 63, 64]);
 
-        $this->getJson('/api/v1/life/notices')->assertOk()->assertExactJson(['notices' => []]);
+        $this->getJson(self::LIFE_NOTICES)->assertOk()->assertExactJson(['notices' => []]);
     }
 
     public function test_only_two_readings_outside_range_yield_no_notice(): void
@@ -81,7 +83,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'heart_rate', [62, 110, 115]);
 
-        $this->getJson('/api/v1/life/notices')->assertOk()->assertExactJson(['notices' => []]);
+        $this->getJson(self::LIFE_NOTICES)->assertOk()->assertExactJson(['notices' => []]);
     }
 
     public function test_less_than_seven_days_of_history_yield_no_notice(): void
@@ -89,7 +91,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'heart_rate', [110, 112, 115], 5);
 
-        $this->getJson('/api/v1/life/notices')->assertOk()->assertExactJson(['notices' => []]);
+        $this->getJson(self::LIFE_NOTICES)->assertOk()->assertExactJson(['notices' => []]);
     }
 
     public function test_low_steps_yield_habit_notice(): void
@@ -97,7 +99,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'steps', [20, 25, 30]);
 
-        $notice = $this->getJson('/api/v1/life/notices')->assertOk()->json('notices.0');
+        $notice = $this->getJson(self::LIFE_NOTICES)->assertOk()->json('notices.0');
 
         $this->assertSame('habito', $notice['kind']);
         $this->assertSame('steps', $notice['metric']);
@@ -108,7 +110,7 @@ class LifeNoticesApiTest extends TestCase
         $account = $this->asCitizen();
         $this->history($account, 'sleep', [10, 11, 12]);
 
-        $notice = $this->getJson('/api/v1/life/notices')->assertOk()->json('notices.0');
+        $notice = $this->getJson(self::LIFE_NOTICES)->assertOk()->json('notices.0');
 
         $this->assertSame('habito', $notice['kind']);
         $this->assertSame('sleep', $notice['metric']);
@@ -121,7 +123,7 @@ class LifeNoticesApiTest extends TestCase
         $this->history($account, 'steps', [1, 2, 3]);
         $this->history($account, 'sleep', [1, 2, 3]);
 
-        $notices = $this->getJson('/api/v1/life/notices')->assertOk()->json('notices');
+        $notices = $this->getJson(self::LIFE_NOTICES)->assertOk()->json('notices');
 
         $this->assertCount(3, $notices);
         foreach ($notices as $notice) {

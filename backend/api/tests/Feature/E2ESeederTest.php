@@ -5,10 +5,10 @@ namespace Tests\Feature;
 use App\Models\Bed;
 use App\Models\User;
 use App\Models\Ward;
+use App\Support\E2E\E2EEnvironmentRequiredException;
 use App\Support\RoleCatalog;
 use Database\Seeders\E2ESeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use RuntimeException;
 use Tests\TestCase;
 
 class E2ESeederTest extends TestCase
@@ -17,7 +17,7 @@ class E2ESeederTest extends TestCase
 
     public function test_refuses_outside_e2e(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(E2EEnvironmentRequiredException::class);
         $this->expectExceptionMessage('E2ESeeder solo se ejecuta con APP_ENV=e2e.');
 
         $this->seed(E2ESeeder::class);

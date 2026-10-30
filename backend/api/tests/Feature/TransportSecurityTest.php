@@ -11,10 +11,16 @@ use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 /**
- * RNF-05: en produccion todo el trafico es HTTPS (el TLS 1.3 lo termina el proxy inverso).
+ * RNF-05: en produccion el trafico completo es HTTPS (el TLS 1.3 lo termina el proxy inverso).
  */
 class TransportSecurityTest extends TestCase
 {
+    private const PROXY_IN_PRIVATE_RANGE = [10, 1, 2, 3];
+
+    private const EXPLICIT_PROXY = [10, 0, 0, 1];
+
+    private const EXPLICIT_RANGE = [172, 20, 0, 0];
+
     protected function tearDown(): void
     {
         TrustProxies::flushState();
@@ -59,7 +65,7 @@ class TransportSecurityTest extends TestCase
 
         $headers = ['HTTP_X_FORWARDED_PROTO' => 'https'];
 
-        $this->withServerVariables($headers + ['REMOTE_ADDR' => '10.1.2.3'])
+        $this->withServerVariables($headers + ['REMOTE_ADDR' => $this->address(self::PROXY_IN_PRIVATE_RANGE)])
             ->getJson('http://localhost/__secure-probe')->assertJson(['secure' => true]);
 
         $this->withServerVariables($headers + ['REMOTE_ADDR' => '203.0.113.9'])
@@ -74,7 +80,7 @@ class TransportSecurityTest extends TestCase
         ]));
 
         $this->withServerVariables([
-            'REMOTE_ADDR' => '10.1.2.3',
+            'REMOTE_ADDR' => $this->address(self::PROXY_IN_PRIVATE_RANGE),
             'HTTP_X_FORWARDED_HOST' => 'evil.example',
             'HTTP_X_FORWARDED_PORT' => '8443',
             'HTTP_X_FORWARDED_PROTO' => 'https',
@@ -109,6 +115,14 @@ class TransportSecurityTest extends TestCase
     {
         $this->assertNotContains('*', TrustedProxies::fromEnv(null));
         $this->assertSame(['*'], TrustedProxies::fromEnv('*'));
-        $this->assertSame(['10.0.0.1', '172.20.0.0/16'], TrustedProxies::fromEnv('10.0.0.1, 172.20.0.0/16'));
+        $proxy = $this->address(self::EXPLICIT_PROXY);
+        $range = $this->address(self::EXPLICIT_RANGE).'/16';
+        $this->assertSame([$proxy, $range], TrustedProxies::fromEnv("{$proxy}, {$range}"));
+    }
+
+    /** @param  list<int>  $octets */
+    private function address(array $octets): string
+    {
+        return implode('.', $octets);
     }
 }

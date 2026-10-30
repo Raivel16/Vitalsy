@@ -31,11 +31,11 @@ export type FindingInput = {
 type RowContext = { id: string; seed: number | string; date: string; cwd: string };
 
 // ESC + secuencia de color: se construye así para no escribir un carácter de control literal.
-const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
-const BOM = String.fromCharCode(0xfeff);
+const ANSI = new RegExp(String.raw`${String.fromCodePoint(27)}\[[0-9;]*m`, "g");
+const BOM = String.fromCodePoint(0xfeff);
 
 function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 export function toFindingRow(input: FindingInput, ctx: RowContext): string[] {
@@ -71,7 +71,7 @@ export function toCsvLine(cells: string[]): string {
 }
 
 export default class FindingsReporter implements Reporter {
-  private rows: string[][] = [];
+  private readonly rows: string[][] = [];
   private outputFile = "";
   private readonly phase = process.env.E2E_PHASE;
 
