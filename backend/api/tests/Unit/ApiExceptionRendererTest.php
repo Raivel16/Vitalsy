@@ -14,6 +14,8 @@ use Tests\TestCase;
 
 class ApiExceptionRendererTest extends TestCase
 {
+    private const DNI_OBLIGATORIO = 'El DNI es obligatorio.';
+
     private function apiRequest(): Request
     {
         return Request::create('/api/v1/algo', 'GET');
@@ -53,13 +55,13 @@ class ApiExceptionRendererTest extends TestCase
 
     public function test_validacion_responde_422_con_el_primer_error(): void
     {
-        $exception = ValidationException::withMessages(['dni' => ['El DNI es obligatorio.']]);
+        $exception = ValidationException::withMessages(['dni' => [self::DNI_OBLIGATORIO]]);
 
         $response = ApiExceptionRenderer::render($exception, $this->apiRequest());
 
         $this->assertSame(422, $response?->getStatusCode());
-        $this->assertSame('El DNI es obligatorio.', $response?->getData(true)['message']);
-        $this->assertSame(['dni' => ['El DNI es obligatorio.']], $response?->getData(true)['errors']);
+        $this->assertSame(self::DNI_OBLIGATORIO, $response?->getData(true)['message']);
+        $this->assertSame(['dni' => [self::DNI_OBLIGATORIO]], $response?->getData(true)['errors']);
     }
 
     public function test_validacion_sin_mensaje_usa_el_texto_por_defecto(): void

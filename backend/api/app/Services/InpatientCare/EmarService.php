@@ -18,7 +18,7 @@ class EmarService
      */
     public function listShift(string $encounterId): array
     {
-        $encounter = $this->requireEncounter($encounterId);
+        $this->requireEncounter($encounterId);
         $this->ensureDosesFromActiveCpoe($encounterId);
 
         [$start, $end] = $this->shiftWindow();
