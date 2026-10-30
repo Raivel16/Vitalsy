@@ -15,5 +15,5 @@ export function allowedRoutes(role: Role): Set<string> {
 export function forbiddenRoutes(role: Role): string[] {
   const allowed = allowedRoutes(role);
   const all = new Set([...NAV.flatMap((g) => g.items).map((i) => i.to), ...Object.values(STEP_PATH)]);
-  return [...all].filter((path) => path !== "/" && !allowed.has(path)).sort();
+  return [...all].filter((path) => path !== "/" && !allowed.has(path)).sort((a, b) => a.localeCompare(b));
 }

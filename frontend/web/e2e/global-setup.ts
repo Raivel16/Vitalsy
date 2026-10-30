@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import type { FullConfig } from "@playwright/test";
 import { E2E_BASE_URL, ensureStack, resetData } from "./support/env";
 import { createRoleSessions } from "./support/sessions";
@@ -10,7 +11,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   // Al correr playwright directamente (sin npm run e2e) también hay semilla.
-  process.env.E2E_SEED ??= String(Math.floor(Math.random() * 2 ** 31));
+  process.env.E2E_SEED ??= String(randomInt(2 ** 31));
   console.log(`Semilla E2E: ${process.env.E2E_SEED}`);
 
   await ensureStack();

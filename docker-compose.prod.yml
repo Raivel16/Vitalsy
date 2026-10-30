@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
       # Vite incrusta VITE_* en el build: sin la clave el cliente en tiempo real no conecta.
       args:
-        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
+        VITE_REVERB_APP_PUBLIC: ${REVERB_APP_KEY:?defina REVERB_APP_KEY}
         VITE_REVERB_HOST: ${VITE_REVERB_HOST:-}
         VITE_REVERB_PORT: ${VITE_REVERB_PORT:-}
         VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}

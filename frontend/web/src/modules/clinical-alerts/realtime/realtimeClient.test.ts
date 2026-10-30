@@ -65,7 +65,7 @@ describe("createEchoClient (RNF-01)", () => {
     state.disconnects = 0;
     state.connects = 0;
     state.failImport = false;
-    vi.stubEnv("VITE_REVERB_APP_KEY", "clave-publica");
+    vi.stubEnv("VITE_REVERB_APP_PUBLIC", "clave-publica");
     vi.stubEnv("VITE_REVERB_HOST", "ws.vitalsy.test");
     vi.stubEnv("VITE_REVERB_PORT", "443");
     vi.stubEnv("VITE_REVERB_SCHEME", "https");

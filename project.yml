@@ -1,19 +1,34 @@
+# =============================================================================
+# Configuración Oficial de Evaluación de Calidad (project.yml)
+# Plataforma PAAS - Universidad Continental
+# Usar solo espacios (sin tabulaciones) y correos institucionales válidos.
+# =============================================================================
+
 project:
-  name: vitalsy
-  version: 1.0.0
-  description:  Plataforma SaaS para la Vigilancia Fisiológica Longitudinal y Gestión de Alertas Tempranas en la Continuidad Asistencial
-  authors:
-    - Lorenzo Valiente Raivel
-    - Lapierre Castillo Pavel Jordan
-    - Quintana Tumialan Renzo David
+  name: "Vitalsy"
+  version: "1.0.0"
+  description: "Plataforma SaaS para la Vigilancia Fisiológica Longitudinal y Gestión de Alertas Tempranas en la Continuidad Asistencial"
 
 stack:
-  frontend: auto
-  backend: auto
-  python: auto
-database:
-  engine: postgresql
-quality:
-  sonar: true
-security:
-  trivy: true
+  detect: true
+
+academic:
+  course: "Pruebas y Calidad de Software"
+  evaluation_name: "Evaluación Oficial SonarQube"
+  partial_weight_percentage: 100
+
+evaluator:
+  name: "Maglioni Arana Caparachin"
+  email: "marana@continental.edu.pe"
+  role: "Docente Evaluador"
+
+members:
+  - name: "Lorenzo Valiente Raivel"
+    code: "tm843649"
+    email: "tm843649@continental.edu.pe"
+  - name: "Lapierre Castillo Pavel Jordan"
+    code: "72219491"
+    email: "72219491@continental.edu.pe"
+  - name: "Quintana Tumialan Renzo David"
+    code: "72966435"
+    email: "72966435@continental.edu.pe"

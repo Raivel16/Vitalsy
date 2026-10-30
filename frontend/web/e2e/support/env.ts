@@ -2,6 +2,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+const DOCKER_BIN = process.env.DOCKER_BIN ?? "docker";
+
 // RNF-18: el stack E2E es un proyecto Compose propio; nunca el de desarrollo.
 export const E2E_PROJECT = "vitalsy-e2e";
 export const E2E_BASE_URL = "http://localhost:18080";
@@ -15,7 +17,7 @@ export function repoPath(relative: string): string {
 
 export function compose(args: string[]): string {
   return execFileSync(
-    "docker",
+    DOCKER_BIN,
     [
       "compose",
       "-p",

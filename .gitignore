@@ -21,6 +21,9 @@ coverage.xml
 *.info
 *.xml
 !backend/api/phpunit.xml
+# Reportes de cobertura normalizados para SonarQube
+!coverage-reports/
+!coverage-reports/*
 !frontend/web/phpunit.xml
 
 # Laravel / PHP
@@ -64,3 +67,15 @@ movil/coverage/
 
 # Documentos PDF de la actividad de patentes (pesados; no se versionan)
 docs/actividad-19-patentes/*.pdf
+
+# Material no funcional (solo local; no se versiona para aligerar el repo)
+/bibliography/
+/UI/
+/docs/informe/
+/docs/actividad-19-patentes/
+/docs/resumen-ejecutivo/
+/.cursor/
+/scripts/load/
+
+# Herramientas de calidad solo locales (la entrega no las incluye)
+/scripts/
