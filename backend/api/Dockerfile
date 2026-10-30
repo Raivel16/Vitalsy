@@ -13,12 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libfreetype6-dev \
         libpq-dev \
         libzip-dev \
-        $PHPIZE_DEPS \
+    && printf '%s' "$PHPIZE_DEPS" | xargs apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql gd zip bcmath pcntl \
     && pecl install pcov \
     && docker-php-ext-enable pcov \
-    && apt-get purge -y --auto-remove $PHPIZE_DEPS \
+    && printf '%s' "$PHPIZE_DEPS" | xargs apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
