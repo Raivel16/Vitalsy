@@ -76,3 +76,6 @@ docs/actividad-19-patentes/*.pdf
 /docs/resumen-ejecutivo/
 /.cursor/
 /scripts/load/
+
+# Herramientas de calidad solo locales (la entrega no las incluye)
+/scripts/
