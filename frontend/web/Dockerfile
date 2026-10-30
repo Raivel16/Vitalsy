@@ -3,7 +3,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY index.html tsconfig.json tsconfig.app.json tsconfig.node.json tsconfig.e2e.json vite.config.ts playwright.config.ts ./
 COPY public ./public
