@@ -76,3 +76,8 @@ docs/actividad-19-patentes/*.pdf
 /docs/resumen-ejecutivo/
 /.cursor/
 /scripts/load/
+
+# Herramientas y configuracion de calidad solo locales (la entrega no las incluye)
+/scripts/
+/sonar-local.properties
+/coverage-local/
