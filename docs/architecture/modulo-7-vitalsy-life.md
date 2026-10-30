@@ -37,6 +37,27 @@ Tipos de Health Connect: frecuencia cardíaca, pulso en reposo, HRV, SpO2, pasos
 
 Apple Health lee los mismos tipos salvo temperatura cutánea (HealthKit solo expone la temperatura de muñeca durante el sueño y no se usa en este corte); la HRV es SDNN, no RMSSD. Solo lectura: `NSHealthShareUsageDescription` sin descripción de escritura.
 
+## Banda Vitalsy por Bluetooth LE (RF-113)
+
+Hoy es un prototipo: un ESP32-C3 SuperMini con un sensor MAX30102. Más adelante será una banda wearable propia, y la app la tratará como fuente principal; Health Connect y Apple Health quedan como fuentes adicionales. El ESP32-C3 solo tiene BLE, sin Bluetooth clásico.
+
+- **Contrato:** [protocolo-banda-ble.md](protocolo-banda-ble.md). Usa los perfiles estándar Heart Rate (`0x180D`) y Pulse Oximeter (`0x1822`), Device Information y un servicio propio de Vitalsy con el estado de la medida y los comandos.
+- **Seguridad:** vinculación con LE Secure Connections. Las medidas solo viajan por un enlace cifrado. El prototipo usa «Just Works» y la banda final usará un PIN fijo.
+- **Firmware:** vive en `firmware-esp32c3/`, en la raíz, con su propio repositorio Git local que no se sube (está en `.gitignore`). El algoritmo de pulso y SpO2 está en un módulo aparte (`Oximetro.h/.cpp`), sin dependencias del hardware ni del transporte.
+- **Estado:** el firmware está hecho (fase F1) y se prueba con nRF Connect. La app aún no lo usa; ese trabajo es la fase F2.
+- **Plan de la app (F2):**
+  - `react-native-ble-manager`, por su nueva arquitectura y su config plugin; por verificar con Expo 57 y React Native 0.86. Alternativa: `react-native-ble-nitro`.
+  - Permisos `BLUETOOTH_SCAN` (`neverForLocation`) y `BLUETOOTH_CONNECT`, y `NSBluetoothAlwaysUsageDescription` en iOS.
+  - Módulo `src/modules/band/`: lectores puros de `0x2A37`, `0x2A5F` y SFLOAT, más la HRV (RMSSD) a partir de los RR, con pruebas Jest primero.
+  - `BandSource`, que implementa `HealthDataSource` con lecturas agregadas por minuto e id determinista.
+  - Varias fuentes en `createHealthSource`.
+  - Origen `vitalsy_band` en la app y en `LifeSync::ORIGINS`.
+  - Tarjeta «Vitalsy Band» en Perfil › Dispositivos.
+- **Después:**
+  - F3: la banda guarda lecturas con hora, la app las descarga al reconectar y Android usa un servicio en primer plano `connectedDevice`. Debe respetar RNF-19 (como mucho un 5 % de batería al día).
+  - F4: hardware wearable (batería, ahorro de energía, acelerómetro, actualización por BLE).
+- **Límite:** el sensor no está validado clínicamente. Según RNF-10, sus lecturas son de bienestar y Clinical debe mostrar su origen.
+
 
 
 ## Calidad
