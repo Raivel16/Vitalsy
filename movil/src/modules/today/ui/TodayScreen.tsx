@@ -8,6 +8,8 @@ import { Field } from '../../../shared/ui/Field';
 import { Screen } from '../../../shared/ui/Screen';
 import { aire, font } from '../../../shared/theme/tokens';
 import { syncStatusLabel } from '../../health-sync/domain/syncQueue';
+import { useBand } from '../../band/BandProvider';
+import { BandTodayCard } from '../../band/ui/BandTodayCard';
 import { useLife } from '../../life/LifeProvider';
 import { apiBaseUrl } from '../../../shared/api/lifeClient';
 import { TodayBody } from './TodayBody';
@@ -15,6 +17,7 @@ import { TodayBody } from './TodayBody';
 export function TodayScreen() {
   const router = useRouter();
   const { life, online, refresh, syncHealth, hasSession } = useLife();
+  const { view: band, controller } = useBand();
   const user = life.currentUser();
   const [manualOpen, setManualOpen] = useState(false);
   const [kind, setKind] = useState<'heart_rate' | 'spo2'>('heart_rate');
@@ -43,6 +46,16 @@ export function TodayScreen() {
         status={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt, hasSession)}
       />
       {syncMessage ? <Banner message={syncMessage} palette={aire} tone={syncMessage.includes('No ') || syncMessage.includes('no ') ? 'warning' : 'info'} /> : null}
+      <BandTodayCard
+        battery={band.battery}
+        connection={band.connection}
+        live={band.live}
+        message={band.message}
+        onLedTest={() => void controller.ledTest()}
+        onReconnect={() => void controller.reconnect()}
+        onSwapChannels={() => void controller.swapChannels()}
+        paired={band.paired}
+      />
       <TodayBody
         dateLabel={dateLabel}
         name={user?.name ?? 'ahí'}

@@ -6,7 +6,7 @@ import { Screen } from '../../../shared/ui/Screen';
 import { aire } from '../../../shared/theme/tokens';
 import { syncStatusLabel } from '../domain/syncQueue';
 import { useBand } from '../../band/BandProvider';
-import { BandCard } from '../../band/ui/BandCard';
+import { BandPairCard } from '../../band/ui/BandPairCard';
 import { useLife } from '../../life/LifeProvider';
 import { apiBaseUrl } from '../../../shared/api/lifeClient';
 import { DevicesBody } from './DevicesBody';
@@ -21,20 +21,15 @@ export function DevicesScreen() {
     <Screen palette={aire}>
       <BackRow onBack={() => router.back()} palette={aire} subtitle="Conexión de sensores y almacenamiento local." title="Dispositivos y sincronización" />
       <View style={{ gap: 14 }}>
-        {/* La banda Vitalsy es la fuente principal (RF-113); Health Connect y Apple Health, adicionales. */}
-        <BandCard
+        {/* La banda Vitalsy es la fuente principal (RF-113); aquí solo se vincula, sus lecturas se ven en Hoy. */}
+        <BandPairCard
           available={band.available}
-          battery={band.battery}
           connection={band.connection}
           found={band.found}
-          live={band.live}
           message={band.message}
           onForget={() => void controller.forget()}
-          onLedTest={() => void controller.ledTest()}
           onPair={(found) => void controller.pair(found)}
-          onReconnect={() => void controller.reconnect()}
           onScan={() => void controller.scan()}
-          onSwapChannels={() => void controller.swapChannels()}
           paired={band.paired}
         />
         <DevicesBody
