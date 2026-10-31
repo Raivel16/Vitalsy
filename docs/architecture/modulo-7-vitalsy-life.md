@@ -44,18 +44,42 @@ Hoy es un prototipo: un ESP32-C3 SuperMini con un sensor MAX30102. Más adelante
 - **Contrato:** [protocolo-banda-ble.md](protocolo-banda-ble.md). Usa los perfiles estándar Heart Rate (`0x180D`) y Pulse Oximeter (`0x1822`), Device Information y un servicio propio de Vitalsy con el estado de la medida y los comandos.
 - **Seguridad:** vinculación con LE Secure Connections. Las medidas solo viajan por un enlace cifrado. El prototipo usa «Just Works» y la banda final usará un PIN fijo.
 - **Firmware:** vive en `firmware-esp32c3/`, en la raíz, con su propio repositorio Git local que no se sube (está en `.gitignore`). El algoritmo de pulso y SpO2 está en un módulo aparte (`Oximetro.h/.cpp`), sin dependencias del hardware ni del transporte.
-- **Estado:** el firmware está hecho (fase F1) y se prueba con nRF Connect. La app aún no lo usa; ese trabajo es la fase F2.
-- **Plan de la app (F2):**
-  - `react-native-ble-manager`, por su nueva arquitectura y su config plugin; por verificar con Expo 57 y React Native 0.86. Alternativa: `react-native-ble-nitro`.
-  - Permisos `BLUETOOTH_SCAN` (`neverForLocation`) y `BLUETOOTH_CONNECT`, y `NSBluetoothAlwaysUsageDescription` en iOS.
-  - Módulo `src/modules/band/`: lectores puros de `0x2A37`, `0x2A5F` y SFLOAT, más la HRV (RMSSD) a partir de los RR, con pruebas Jest primero.
-  - `BandSource`, que implementa `HealthDataSource` con lecturas agregadas por minuto e id determinista.
-  - Varias fuentes en `createHealthSource`.
-  - Origen `vitalsy_band` en la app y en `LifeSync::ORIGINS`.
-  - Tarjeta «Vitalsy Band» en Perfil › Dispositivos.
-- **Después:**
-  - F3: la banda guarda lecturas con hora, la app las descarga al reconectar y Android usa un servicio en primer plano `connectedDevice`. Debe respetar RNF-19 (como mucho un 5 % de batería al día).
-  - F4: hardware wearable (batería, ahorro de energía, acelerómetro, actualización por BLE).
+- **Flujo de datos:** la banda calcula un registro por minuto (pulso y SpO2 medianos y HRV RMSSD, solo con segundos de «Señal buena») y lo guarda 24 h en RAM.
+  - Con la app conectada, cada minuto se envía solo.
+  - Al reconectar, la app descarga lo pendiente desde el último minuto confirmado.
+  - La app guarda con `life.addSamples` (origen `vitalsy_band`, id `vb:<dispositivo>:<tipo>:<minuto>`) y **después** confirma a la banda, que entonces lo borra. Si la app no pudo guardar, la banda conserva los datos.
+  - Las notificaciones en vivo (pulso, SpO2, estado) solo se muestran: no se guardan.
+- **App (`src/modules/band/`):**
+
+  | Pieza | Qué hace |
+  |---|---|
+  | `domain/gatt.ts` | Lectores puros de `0x2A37`, `0x2A5F`, SFLOAT y el estado |
+  | `domain/history.ts` | Comandos, fragmentos de historial y conversión a muestras con los mismos rangos que el servidor |
+  | `bandClient.ts` | Escaneo, vinculación (`createBond` en Android), suscripciones, hora y descarga. Recibe `react-native-ble-manager` inyectado |
+  | `bandSync.ts` | Guardar y luego confirmar |
+  | `bandController.ts` | Estado y mensajes de la tarjeta, con validación previa de permisos y Bluetooth |
+  | `BandProvider.tsx` | Reconecta al abrir la app, al volver a primer plano y cada 30 s |
+  | `bandStore.ts` | La banda vinculada en SecureStore, por teléfono y no por cuenta |
+  | `ui/BandCard.tsx` | La primera tarjeta de Perfil › Dispositivos |
+
+- **Cambio respecto al plan inicial:** la banda **no** es una `HealthDataSource`. La cola de lectura de salud depende del permiso de Health Connect (`accessGranted`, `lastReadAt`), y un permiso denegado bloquearía la banda. La banda tiene su propio camino y comparte la cola de envío.
+- **Segundo plano (F3):** la tarea de 15 min (`backgroundTask.ts`) ejecuta primero `runBackgroundBandSync` (conecta, descarga, guarda, confirma y desconecta) y luego la lectura de Health Connect.
+  - Se programa si hay sesión y permiso de Health Connect **o** una banda vinculada.
+  - No conecta si la app está abierta, porque `BandProvider` ya tiene la conexión.
+  - Sin permisos de Bluetooth ya concedidos no hace nada: en segundo plano no se pueden pedir.
+  - En lugar del servicio en primer plano `connectedDevice` del plan inicial, la banda guarda y la app descarga periódicamente. Es más simple y gasta menos batería (RNF-19).
+  - iOS declara `bluetooth-central` en `UIBackgroundModes`.
+- **Hardware wearable (F4), soporte en firmware:**
+  - Battery Service (`Bateria.h`: `PIN_BATERIA` y `DIVISOR_BATERIA`; desactivado con `-1`).
+  - CPU a 80 MHz (`AHORRO_ENERGIA`).
+  - Anuncio cada 200–300 ms.
+  - Lista de materiales sugerida: LiPo de 1 celda (150–300 mAh), cargador TP4056 o MCP73831 con protección, divisor de 2 × 100 kΩ hacia GPIO3 y regulador LDO de 3,3 V de baja corriente de reposo.
+  - **No implementado** (necesita decidir hardware): acelerómetro para filtrar movimiento (p. ej. LIS3DH) y actualización de firmware por BLE. El historial está en RAM y se pierde si la banda se apaga; para persistirlo hace falta flash con nivelación de desgaste (LittleFS).
+- **Estado de la verificación (2026-10-30):**
+  - Verificado aquí: Jest de la app, typecheck, `php artisan test` y Pint.
+  - No compilado aquí: el firmware (no hay `arduino-cli`).
+  - No probado aquí: la app en un development build con la banda real.
+  - Por verificar en un iPhone: la reconexión en segundo plano con el identificador del sistema.
 - **Límite:** el sensor no está validado clínicamente. Según RNF-10, sus lecturas son de bienestar y Clinical debe mostrar su origen.
 
 
