@@ -59,7 +59,7 @@ Hoy es un prototipo: un ESP32-C3 SuperMini con un sensor MAX30102. Más adelante
   | `bandSync.ts` | Guardar y luego confirmar |
   | `bandController.ts` | Estado y mensajes de la tarjeta, con validación previa de permisos y Bluetooth |
   | `BandProvider.tsx` | Reconecta al abrir la app, al volver a primer plano y cada 30 s |
-  | `bandStore.ts` | La banda vinculada en SecureStore, por teléfono y no por cuenta |
+  | `bandStore.ts` | La banda vinculada en SecureStore con la cuenta que la vinculó. Otra cuenta del mismo teléfono no la ve, no se conecta a ella y no guarda sus datos: debe vincularla de nuevo |
   | `ui/BandCard.tsx` | La primera tarjeta de Perfil › Dispositivos |
 
 - **Cambio respecto al plan inicial:** la banda **no** es una `HealthDataSource`. La cola de lectura de salud depende del permiso de Health Connect (`accessGranted`, `lastReadAt`), y un permiso denegado bloquearía la banda. La banda tiene su propio camino y comparte la cola de envío.

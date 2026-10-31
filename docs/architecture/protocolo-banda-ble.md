@@ -97,9 +97,9 @@ Comandos de 1 byte, o de 5 bytes (código + uint32):
 |---|---|---|
 | `01` | Intercambiar los canales rojo/IR | `s` |
 | `02` | Prueba de LEDs: 10 s; durante la prueba no se mide | `l` |
-| `03` + uint32 | Fijar la hora: segundos de época Unix en UTC. La app lo envía al conectar | — |
+| `03` + uint32 | Fijar la hora: segundos de época Unix en UTC. La app lo envía al conectar. Se ignora si es anterior a 2025-01-01. Si la hora retrocede, se descartan los registros con minutos posteriores | — |
 | `04` + uint32 | Enviar el historial desde ese minuto (época / 60) | — |
-| `05` + uint32 | Borrar el historial hasta ese minuto, incluido. La app lo envía **después** de guardar | — |
+| `05` + uint32 | Borrar el historial hasta ese minuto, incluido, pero nunca más allá del último minuto enviado en esta conexión. La app lo envía **después** de guardar | — |
 
 Cualquier otro valor o longitud se ignora. Los comandos se encolan (hasta 8) y se ejecutan en el bucle principal, no en la tarea de Bluetooth.
 
@@ -120,6 +120,7 @@ Cada notificación es `[n]` seguido de n registros de 8 bytes (n ≤ 2, para cab
 
 - **Descarga:** la app escribe `04` + minuto, la banda envía los fragmentos cada 20 ms y termina con `00`.
 - **En vivo:** con la app conectada, cada minuto cerrado se envía solo, como `[1]` + registro.
+- **Limitación de seguridad (prototipo):** con «Just Works» cualquier teléfono que se vincule puede leer y confirmar el historial. Antes de un producto: vinculación con código (passkey), permitir solo un teléfono vinculado y verificar la banda con una clave por dispositivo, porque el nombre `Vitalsy-` anunciado se puede falsificar.
 - **Confirmación:** la app guarda los registros y escribe `05` + último minuto; entonces la banda los borra. Si la app no confirma, se vuelven a enviar en la siguiente descarga. La app deduplica por id, que es `vb:<8 hex del dispositivo>:<tipo>:<minuto>`.
 - **Capacidad:** 1440 minutos (24 h) en RAM. Si se llena, se pierde el más antiguo. **Al apagarse o reiniciarse la banda se pierde lo no descargado.**
 
