@@ -35,7 +35,11 @@ export function BandPairCard({ available, paired, connection, found, message, on
     <View style={styles.card}>
       <Text style={styles.title}>Vitalsy Band</Text>
       <Text style={styles.meta}>{paired ? statusText(connection, paired.name) : 'Sin banda vinculada'}</Text>
-      {paired ? <Text style={styles.meta}>Verás sus lecturas en Hoy.</Text> : null}
+      {paired ? (
+        <Text style={styles.meta}>Verás sus lecturas en Hoy.</Text>
+      ) : (
+        <Text style={styles.meta}>Escribe la clave de 6 dígitos que aparece en tu banda cuando el teléfono la pida.</Text>
+      )}
 
       {/* Con la banda vinculada, los avisos (guardado, reconexión) salen en Hoy. */}
       {message && !paired ? <Banner message={message.text} palette={aire} tone={message.tone} /> : null}

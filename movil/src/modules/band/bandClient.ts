@@ -135,14 +135,16 @@ export class BandClient {
   }
 
   /** Conecta, vincula (Android), se suscribe y da la hora. Devuelve la batería si la banda la expone. */
-  async connect(id: string, events: BandEvents): Promise<{ battery: number | null }> {
+  async connect(id: string, events: BandEvents, options: { pairing?: boolean } = {}): Promise<{ battery: number | null }> {
     await this.start();
     this.events = events;
     this.listen(id);
     await this.api.connect(id);
     if (this.os === 'android') {
-      // Si ya estaba vinculada, Android responde con error: no es un fallo.
-      await this.api.createBond(id).catch(() => undefined);
+      // Android pide aquí la clave de 6 dígitos que muestra la banda. Si la clave es incorrecta o se cancela, falla;
+      // al solo reconectar, un error de vinculación se tolera (el acceso a las características lo dirá).
+      const bonding = this.api.createBond(id);
+      await (options.pairing ? bonding : bonding.catch(() => undefined));
     }
     const info = await this.api.retrieveServices(id);
     for (const [service, characteristic] of SUBSCRIBED) {

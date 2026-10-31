@@ -111,6 +111,20 @@ describe('BandController', () => {
     expect(controller.view.message?.tone).toBe('danger');
   });
 
+  it('tells the user to check the 6-digit key when pairing fails', async () => {
+    const { controller } = setup({ connectError: new Error('Bond request has been denied') });
+    await controller.pair(BAND);
+    expect(controller.view.message?.text).toMatch(/clave de 6 dígitos/);
+  });
+
+  it('keeps the generic message when a plain reconnection fails', async () => {
+    const failing = setup({ connectError: new Error('timeout') });
+    await failing.store.set({ ...BAND, lastMinute: null, accountId: 'u1' });
+    await failing.controller.load();
+    await failing.controller.reconnect();
+    expect(failing.controller.view.message?.text).not.toMatch(/clave/);
+  });
+
   it('updates the live reading from the band notifications', async () => {
     const { controller, events } = setup();
     await controller.pair(BAND);

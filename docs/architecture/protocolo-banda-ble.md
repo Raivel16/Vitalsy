@@ -10,10 +10,12 @@ Contrato entre el firmware del ESP32-C3 y la app Vitalsy Life (RF-113). Este doc
 
 ## Seguridad
 
-- Vinculación (bonding) con LE Secure Connections, sin código ("Just Works"). Es lo acordado para el prototipo; la banda final usará un PIN fijo.
-- Al conectar, la banda pide el cifrado. Android muestra el diálogo de vinculación la primera vez.
-- Si el cifrado falla, la banda desconecta.
-- **Ninguna medida se envía por un enlace sin cifrar.** El estado y el control de Vitalsy exigen cifrado.
+- Vinculación (bonding) con LE Secure Connections y **clave de 6 dígitos** (Passkey Entry, la banda solo muestra): la banda genera la clave una vez (100000–999999), la guarda en NVS y la imprime por el monitor serie al arrancar (`k` la vuelve a mostrar).
+- Al vincular, Android muestra su diálogo y el usuario escribe la clave de la banda. Con una clave incorrecta la vinculación falla y la app lo avisa.
+- Si el cifrado o la autenticación fallan, la banda desconecta.
+- **Ninguna medida se envía por un enlace que no esté cifrado y autenticado.** El estado y el control de Vitalsy exigen autenticación (`READ_AUTHEN`/`WRITE_AUTHEN`).
+- Solo un teléfono vinculado: si aparece un segundo vínculo, la banda lo borra y desconecta.
+- Olvidar vínculos: comando serie `b` borra todos los vínculos y genera una clave nueva. Después hay que olvidar la banda en Ajustes › Bluetooth del teléfono y en la app, y vincular con la clave nueva.
 
 ## Servicios y características
 
@@ -120,7 +122,7 @@ Cada notificación es `[n]` seguido de n registros de 8 bytes (n ≤ 2, para cab
 
 - **Descarga:** la app escribe `04` + minuto, la banda envía los fragmentos cada 20 ms y termina con `00`.
 - **En vivo:** con la app conectada, cada minuto cerrado se envía solo, como `[1]` + registro.
-- **Limitación de seguridad (prototipo):** con «Just Works» cualquier teléfono que se vincule puede leer y confirmar el historial. Antes de un producto: vinculación con código (passkey), permitir solo un teléfono vinculado y verificar la banda con una clave por dispositivo, porque el nombre `Vitalsy-` anunciado se puede falsificar.
+- **Limitación de seguridad (prototipo):** la clave evita que un teléfono ajeno se vincule y lea o confirme el historial, pero no impide una banda falsa que copie el nombre `Vitalsy-`. Antes de un producto: clave por dispositivo firmada de fábrica para verificar la banda, y un reinicio físico (botón) además del comando serie.
 - **Confirmación:** la app guarda los registros y escribe `05` + último minuto; entonces la banda los borra. Si la app no confirma, se vuelven a enviar en la siguiente descarga. La app deduplica por id, que es `vb:<8 hex del dispositivo>:<tipo>:<minuto>`.
 - **Capacidad:** 1440 minutos (24 h) en RAM. Si se llena, se pierde el más antiguo. **Al apagarse o reiniciarse la banda se pierde lo no descargado.**
 

@@ -3,7 +3,7 @@ import { BAND_UUID } from './domain/gatt';
 
 type ValueEvent = { peripheral: string; characteristic: string; value: number[] };
 
-function fakeBle() {
+function fakeBle(bondError?: string) {
   const handlers = {
     discover: [] as Array<(p: BlePeripheral) => void>,
     stop: [] as Array<() => void>,
@@ -38,6 +38,9 @@ function fakeBle() {
     },
     createBond: async (id) => {
       calls.push(`bond:${id}`);
+      if (bondError) {
+        throw new Error(bondError);
+      }
     },
     removeBond: async (id) => {
       calls.push(`removeBond:${id}`);
@@ -99,6 +102,18 @@ describe('BandClient', () => {
     );
     expect(ble.writes[0]).toEqual([0x03, 0xc0, 0x86, 0xe4, 0x6a]);
     expect(info.battery).toBeNull();
+  });
+
+  it('fails the pairing when Android denies the bond (wrong passkey)', async () => {
+    const ble = fakeBle('Bond request has been denied');
+    const client = new BandClient(ble.api, 'android', NOW);
+    await expect(client.connect('A', {}, { pairing: true })).rejects.toThrow('denied');
+    expect(ble.calls).not.toContain(`notify:${BAND_UUID.state}`);
+  });
+
+  it('tolerates a bond error when only reconnecting', async () => {
+    const ble = fakeBle('Create bond request fail');
+    await expect(new BandClient(ble.api, 'android', NOW).connect('A', {})).resolves.toEqual({ battery: null });
   });
 
   it('does not bond explicitly on iOS (the system pairs when the band asks)', async () => {

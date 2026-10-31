@@ -50,6 +50,8 @@ const TEXT = {
   noPermission: 'Sin permiso de Bluetooth no se puede buscar la banda.',
   bluetoothOff: 'Activa el Bluetooth para conectar la banda.',
   notFound: 'No encontramos ninguna banda Vitalsy cerca. Enciéndela y acércala al teléfono.',
+  pairFailed:
+    'No se pudo vincular. Revisa la clave de 6 dígitos que muestra tu banda; si ya estuvo vinculada a otro teléfono, bórrala en la banda.',
   connectFailed: 'No se pudo conectar con la banda. Acércala al teléfono e inténtalo de nuevo.',
   historyFailed: 'La banda está conectada, pero no se pudo descargar su historial. Se reintentará al reconectar.',
   scanFailed: 'No se pudo buscar la banda. Inténtalo de nuevo.',
@@ -187,10 +189,10 @@ export class BandController {
     this.set({ connection: 'connecting', message: null, paired: pairing ? this.view.paired : band });
     let battery: number | null;
     try {
-      ({ battery } = await client.connect(band.id, this.events(client)));
+      ({ battery } = await client.connect(band.id, this.events(client), { pairing }));
     } catch {
       await client.disconnect().catch(() => undefined);
-      this.set({ connection: pairing ? 'idle' : 'disconnected', message: { tone: 'danger', text: TEXT.connectFailed } });
+      this.set({ connection: pairing ? 'idle' : 'disconnected', message: { tone: 'danger', text: pairing ? TEXT.pairFailed : TEXT.connectFailed } });
       return false;
     }
     if (pairing) {

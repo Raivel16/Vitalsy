@@ -42,7 +42,7 @@ Apple Health lee los mismos tipos salvo temperatura cutánea (HealthKit solo exp
 Hoy es un prototipo: un ESP32-C3 SuperMini con un sensor MAX30102. Más adelante será una banda wearable propia, y la app la tratará como fuente principal; Health Connect y Apple Health quedan como fuentes adicionales. El ESP32-C3 solo tiene BLE, sin Bluetooth clásico.
 
 - **Contrato:** [protocolo-banda-ble.md](protocolo-banda-ble.md). Usa los perfiles estándar Heart Rate (`0x180D`) y Pulse Oximeter (`0x1822`), Device Information y un servicio propio de Vitalsy con el estado de la medida y los comandos.
-- **Seguridad:** vinculación con LE Secure Connections. Las medidas solo viajan por un enlace cifrado. El prototipo usa «Just Works» y la banda final usará un PIN fijo.
+- **Seguridad:** vinculación con LE Secure Connections y clave de 6 dígitos que muestra la banda (monitor serie en el prototipo). Las medidas solo viajan por un enlace cifrado y autenticado, y la banda admite un solo teléfono. En Perfil › Dispositivos la tarjeta pide escribir esa clave; Android abre su diálogo y, si la clave es incorrecta, la app muestra «No se pudo vincular. Revisa la clave de 6 dígitos…».
 - **Firmware:** vive en `firmware-esp32c3/`, en la raíz, con su propio repositorio Git local que no se sube (está en `.gitignore`). El algoritmo de pulso y SpO2 está en un módulo aparte (`Oximetro.h/.cpp`), sin dependencias del hardware ni del transporte.
 - **Flujo de datos:** la banda calcula un registro por minuto (pulso y SpO2 medianos y HRV RMSSD, solo con segundos de «Señal buena») y lo guarda 24 h en RAM.
   - Con la app conectada, cada minuto se envía solo.

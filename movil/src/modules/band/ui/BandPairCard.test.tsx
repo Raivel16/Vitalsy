@@ -24,6 +24,16 @@ describe('BandPairCard', () => {
     expect(screen.getByText('Sin banda vinculada')).toBeTruthy();
   });
 
+  it('asks for the 6-digit key shown on the band before pairing', async () => {
+    await render(<BandPairCard {...props()} />);
+    expect(screen.getByText(/Escribe la clave de 6 dígitos que aparece en tu banda/)).toBeTruthy();
+  });
+
+  it('does not repeat the key hint once paired', async () => {
+    await render(<BandPairCard {...props({ paired: { name: 'Vitalsy-12EF' }, connection: 'connected' })} />);
+    expect(screen.queryByText(/clave de 6 dígitos/)).toBeNull();
+  });
+
   it('lists found bands and pairs the chosen one', async () => {
     const onPair = jest.fn();
     await render(<BandPairCard {...props({ found: [{ id: 'A', name: 'Vitalsy-12EF', rssi: -60 }], onPair })} />);
