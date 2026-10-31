@@ -9,6 +9,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BandProvider } from '../modules/band/BandProvider';
 import '../modules/health-sync/backgroundTask';
 import { LifeProvider, useLife } from '../modules/life/LifeProvider';
 import { aire } from '../shared/theme/tokens';
@@ -58,7 +59,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LifeProvider>
-        <Gate />
+        <BandProvider>
+          <Gate />
+        </BandProvider>
       </LifeProvider>
     </SafeAreaProvider>
   );

@@ -4,6 +4,7 @@ import { apiBaseUrl, createLifeClient, type LifeClient } from '../../shared/api/
 import { tokenStore, type TokenStore } from '../../shared/api/tokenStore';
 import { singleFlight } from '../../shared/async/singleFlight';
 import { AppState } from 'react-native';
+import { bandStore } from '../band/bandStore';
 import { activatePlan } from './activatePlan';
 import { grantSharing, issueServerLinkCode, revokeSharing, type LinkCodeOutcome, type SharingOutcome } from './consentSync';
 import { needsResync, runSync } from './syncRunner';
@@ -34,6 +35,11 @@ type LifeContextValue = {
   health: HealthFeedback;
   refresh: () => Promise<void>;
   syncHealth: () => Promise<string | null>;
+  /** Envía la cola al servidor (una sola ejecución a la vez). */
+  syncServer: () => Promise<void>;
+  /** Hay una banda Vitalsy vinculada (RF-113): basta para programar la lectura en segundo plano. */
+  bandPaired: boolean;
+  setBandPaired: (paired: boolean) => void;
   activateFromCode: (raw: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   /** Activa/revoca la compartición; la revocación llega al servidor o queda pendiente de forma honesta. */
   changeSharing: (enabled: boolean) => Promise<SharingOutcome>;
@@ -239,14 +245,31 @@ export function LifeProvider({
     return () => clearForegroundRuntime();
   }, [ready, life, store]);
 
-  // Con sesión y permiso de lectura se programa la lectura periódica; al cerrar sesión se da de baja.
-  const backgroundEnabled = hasSession && life.state.healthSync.accessGranted;
+  const [bandPaired, setBandPaired] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void bandStore.get().then(
+      (band) => {
+        if (active) {
+          setBandPaired(Boolean(band));
+        }
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Con sesión y permiso de lectura (o una banda vinculada) se programa la lectura periódica; al cerrar sesión se da de baja.
+  const backgroundEnabled = hasSession && (life.state.healthSync.accessGranted || bandPaired);
   useEffect(() => {
     if (!ready || !sessionKnown) {
       return;
     }
     void setHealthBackgroundSync(backgroundEnabled);
   }, [ready, sessionKnown, backgroundEnabled]);
+  const healthPollingEnabled = hasSession && life.state.healthSync.accessGranted;
 
   // Con la app abierta se lee Health Connect cada 60 s, sin diálogos. En segundo plano sigue la tarea de 15 min.
   const pollHealthQuietly = useCallback(async () => {
@@ -271,11 +294,11 @@ export function LifeProvider({
   }, [pollHealthQuietly]);
 
   useEffect(() => {
-    if (!ready || !backgroundEnabled) {
+    if (!ready || !healthPollingEnabled) {
       return;
     }
     return startForegroundHealthPolling({ run: () => pollImplRef.current(), appState: AppState });
-  }, [ready, backgroundEnabled]);
+  }, [ready, healthPollingEnabled]);
 
   const consentDeps = useCallback(async () => {
     const session = Boolean(await tokenStore.get().catch(() => null));
@@ -327,13 +350,31 @@ export function LifeProvider({
       health,
       refresh,
       syncHealth,
+      syncServer: serverSync,
+      bandPaired,
+      setBandPaired,
       activateFromCode,
       changeSharing: changeSharingNow,
       issueLinkCode: issueLinkCodeNow,
       client,
       tokenStore,
     }),
-    [ready, life, online, hasSession, health, refresh, syncHealth, activateFromCode, changeSharingNow, issueLinkCodeNow, client, tick],
+    [
+      ready,
+      life,
+      online,
+      hasSession,
+      health,
+      refresh,
+      syncHealth,
+      serverSync,
+      bandPaired,
+      activateFromCode,
+      changeSharingNow,
+      issueLinkCodeNow,
+      client,
+      tick,
+    ],
   );
 
   return <LifeContext.Provider value={value}>{children}</LifeContext.Provider>;

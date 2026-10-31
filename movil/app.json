@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "life.vitalsy.app"
+      "bundleIdentifier": "life.vitalsy.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["bluetooth-central"]
+      }
     },
     "android": {
       "package": "life.vitalsy.app",
@@ -63,6 +66,13 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 320,
           "backgroundColor": "#FAF9F6"
+        }
+      ],
+      [
+        "react-native-ble-manager",
+        {
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Vitalsy Life usa Bluetooth para conectarse a tu banda Vitalsy y leer pulso y SpO2."
         }
       ]
     ],

@@ -1,0 +1,188 @@
+import { BandController, type ControllerClient } from './bandController';
+import { createBandStore } from './bandStore';
+import type { BandEvents, FoundBand } from './bandClient';
+
+const BAND: FoundBand = { id: 'AA:BB:CC:DD', name: 'Vitalsy-CCDD', rssi: -60 };
+
+function setup(options: { bluetooth?: boolean; permissions?: boolean; found?: FoundBand[]; connectError?: Error } = {}) {
+  let events: BandEvents = {};
+  const log: string[] = [];
+  const client: ControllerClient = {
+    bluetoothOn: async () => options.bluetooth ?? true,
+    scan: async () => options.found ?? [BAND],
+    connect: async (id, handlers) => {
+      log.push(`connect:${id}`);
+      if (options.connectError) {
+        throw options.connectError;
+      }
+      events = handlers;
+      return { battery: 80 };
+    },
+    downloadHistory: async () => [{ minute: 29_889_360, heartRate: 72, spo2: 98, rmssd: null }],
+    ack: async (minute) => {
+      log.push(`ack:${minute}`);
+    },
+    disconnect: async () => {
+      log.push('disconnect');
+    },
+    forget: async (id) => {
+      log.push(`forget:${id}`);
+    },
+    command: async (bytes) => {
+      log.push(`command:${bytes.join(',')}`);
+    },
+  };
+  const store = createBandStore(null);
+  const applied: number[] = [];
+  const paired: boolean[] = [];
+  const controller = new BandController({
+    client,
+    store,
+    requestPermissions: async () => options.permissions ?? true,
+    apply: async (samples) => {
+      applied.push(samples.length);
+      return true;
+    },
+    onPairedChange: (value) => paired.push(value),
+  });
+  return { controller, store, log, applied, paired, events: () => events };
+}
+
+describe('BandController', () => {
+  it('is unavailable without a Bluetooth client', () => {
+    const controller = new BandController({
+      client: null,
+      store: createBandStore(null),
+      requestPermissions: async () => true,
+      apply: async () => true,
+      onPairedChange: () => undefined,
+    });
+    expect(controller.view.available).toBe(false);
+  });
+
+  it('validates permissions and Bluetooth before searching', async () => {
+    const denied = setup({ permissions: false });
+    await denied.controller.scan();
+    expect(denied.controller.view.message).toEqual({ tone: 'danger', text: 'Sin permiso de Bluetooth no se puede buscar la banda.' });
+
+    const off = setup({ bluetooth: false });
+    await off.controller.scan();
+    expect(off.controller.view.message).toEqual({ tone: 'warning', text: 'Activa el Bluetooth para conectar la banda.' });
+    expect(off.controller.view.connection).toBe('idle');
+  });
+
+  it('tells the person when no band is nearby', async () => {
+    const { controller } = setup({ found: [] });
+    await controller.scan();
+    expect(controller.view.found).toEqual([]);
+    expect(controller.view.message?.text).toMatch(/No encontramos ninguna banda Vitalsy/);
+  });
+
+  it('pairs a found band, remembers it and saves its pending history', async () => {
+    const { controller, store, log, applied, paired } = setup();
+    await controller.scan();
+    expect(controller.view.found).toEqual([BAND]);
+
+    await controller.pair(BAND);
+
+    expect(controller.view.connection).toBe('connected');
+    expect(controller.view.battery).toBe(80);
+    expect(controller.view.found).toEqual([]);
+    expect(await store.get()).toEqual({ id: BAND.id, name: BAND.name, lastMinute: 29_889_360 });
+    expect(applied).toEqual([2]);
+    expect(log).toContain('ack:29889360');
+    expect(paired).toEqual([true]);
+    expect(controller.view.message).toEqual({ tone: 'info', text: 'Banda vinculada. Se guardaron 2 lecturas de la banda.' });
+  });
+
+  it('does not remember a band it could not connect to', async () => {
+    const { controller, store, paired } = setup({ connectError: new Error('timeout') });
+    await controller.pair(BAND);
+    expect(await store.get()).toBeNull();
+    expect(paired).toEqual([]);
+    expect(controller.view.connection).toBe('idle');
+    expect(controller.view.message?.tone).toBe('danger');
+  });
+
+  it('updates the live reading from the band notifications', async () => {
+    const { controller, events } = setup();
+    await controller.pair(BAND);
+
+    events().onState?.({ phase: 'measuring', quality: 'good', channelsSwapped: false, channelWarning: false, pi: 2.35, r: 0.55 });
+    events().onHeartRate?.({ bpm: 72, contact: true, rrMs: [833] });
+    events().onPlx?.({ spo2: 98, pulse: 72, pi: 2.35, reliable: true });
+
+    expect(controller.view.live).toEqual({ phase: 'measuring', quality: 'good', bpm: 72, spo2: 98, pi: 2.35 });
+  });
+
+  it('follows battery updates from the band', async () => {
+    const { controller, events } = setup();
+    await controller.pair(BAND);
+    events().onBattery?.(55);
+    expect(controller.view.battery).toBe(55);
+  });
+
+  it('clears live values when the finger is removed', async () => {
+    const { controller, events } = setup();
+    await controller.pair(BAND);
+    events().onHeartRate?.({ bpm: 72, contact: true, rrMs: [] });
+    events().onState?.({ phase: 'no_finger', quality: null, channelsSwapped: false, channelWarning: false, pi: 0, r: null });
+    expect(controller.view.live).toEqual({ phase: 'no_finger', quality: null, bpm: null, spo2: null, pi: 0 });
+  });
+
+  it('saves records the band pushes every minute', async () => {
+    const { controller, events, applied } = setup();
+    await controller.pair(BAND);
+    events().onRecords?.([{ minute: 29_889_400, heartRate: 70, spo2: null, rmssd: null }]);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(applied).toEqual([2, 1]);
+  });
+
+  it('marks the band as disconnected and reconnects on demand', async () => {
+    const { controller, events, log } = setup();
+    await controller.pair(BAND);
+    events().onDisconnected?.();
+    expect(controller.view.connection).toBe('disconnected');
+
+    await controller.reconnect();
+    expect(controller.view.connection).toBe('connected');
+    expect(log.filter((entry) => entry.startsWith('connect:'))).toHaveLength(2);
+  });
+
+  it('reconnects to a band remembered from a previous session', async () => {
+    const { controller, store } = setup();
+    await store.set({ id: BAND.id, name: BAND.name, lastMinute: null });
+    await controller.load();
+    expect(controller.view.paired?.name).toBe(BAND.name);
+    await controller.reconnect();
+    expect(controller.view.connection).toBe('connected');
+  });
+
+  it('forgets the band', async () => {
+    const { controller, store, log, paired } = setup();
+    await controller.pair(BAND);
+    await controller.forget();
+    expect(await store.get()).toBeNull();
+    expect(log).toContain(`forget:${BAND.id}`);
+    expect(controller.view.paired).toBeNull();
+    expect(paired).toEqual([true, false]);
+  });
+
+  it('sends the serial-monitor commands', async () => {
+    const { controller, log } = setup();
+    await controller.pair(BAND);
+    await controller.swapChannels();
+    await controller.ledTest();
+    expect(log).toEqual(expect.arrayContaining(['command:1', 'command:2']));
+    expect(controller.view.message?.text).toMatch(/LEDs/);
+  });
+
+  it('notifies subscribers on every change', async () => {
+    const { controller } = setup();
+    const listener = jest.fn();
+    const unsubscribe = controller.subscribe(listener);
+    await controller.scan();
+    unsubscribe();
+    expect(listener).toHaveBeenCalled();
+  });
+});

@@ -13,8 +13,7 @@ export const HEALTH_BACKGROUND_TASK = 'vitalsy-life-health-sync';
 /** Mínimo que permiten WorkManager (Android) y BGTaskScheduler (iOS). Es un mínimo, no una cadencia garantizada. */
 export const BACKGROUND_MIN_INTERVAL_MINUTES = 15;
 
-export type BackgroundSyncDeps = {
-  source: HealthDataSource;
+type SessionDeps = {
   persistence: LifePersistence;
   tokenStore: Pick<TokenStore, 'getBinding' | 'isTransitioning' | 'clear'>;
   /** null: la API no está configurada. */
@@ -22,6 +21,17 @@ export type BackgroundSyncDeps = {
   now: () => Date;
   isOnline: () => Promise<boolean>;
   createLife: (snapshot: LifeSnapshot) => LifeApp;
+};
+
+export type BackgroundSyncDeps = SessionDeps & {
+  source: HealthDataSource;
+};
+
+/** Lee la banda vinculada (RF-113). `apply` guarda las muestras y responde si se guardaron. */
+export type BandReader = (apply: (samples: BiometricSample[]) => Promise<boolean>) => Promise<'none' | 'read' | 'failed'>;
+
+export type BandBackgroundDeps = SessionDeps & {
+  readBand: BandReader;
 };
 
 /** La app en primer plano (mismo runtime JS) expone su `LifeApp` para que la tarea no la pise desde disco. */
@@ -101,7 +111,7 @@ async function runInForeground(deps: BackgroundSyncDeps, runtime: ForegroundRunt
   return collected.failed ? 'failed' : 'success';
 }
 
-async function sessionStillValid(deps: BackgroundSyncDeps, accountId: string): Promise<boolean> {
+async function sessionStillValid(deps: SessionDeps, accountId: string): Promise<boolean> {
   const binding = await deps.tokenStore.getBinding().catch(() => null);
   if (binding?.accountId !== accountId) {
     return false;
@@ -128,7 +138,7 @@ function recordingSource(deps: BackgroundSyncDeps, recorded: BiometricSample[]):
 
 /** Se aplica sobre lo ÚLTIMO guardado, no sobre la copia leída al empezar. Devuelve false si la cuenta cambió. */
 async function applyRead(
-  deps: BackgroundSyncDeps,
+  deps: SessionDeps,
   accountId: string,
   recorded: BiometricSample[],
   recordRead: string | null,
@@ -152,7 +162,7 @@ async function applyRead(
 type ChunkResults = { accepted: string[]; rejected: Array<{ id: string; reason: string }>; unauthorized: boolean };
 
 async function sendChunks(
-  deps: BackgroundSyncDeps,
+  deps: SessionDeps,
   accountId: string,
   client: LifeClient,
   send: Parameters<typeof chunkForSend>[0],
@@ -183,7 +193,7 @@ async function sendChunks(
   return results;
 }
 
-async function sendPending(deps: BackgroundSyncDeps, accountId: string, client: LifeClient): Promise<void> {
+async function sendPending(deps: SessionDeps, accountId: string, client: LifeClient): Promise<void> {
   if (!(await sessionStillValid(deps, accountId))) {
     return;
   }
@@ -237,4 +247,38 @@ async function runCold(deps: BackgroundSyncDeps, accountId: string): Promise<Bac
     await sendPending(deps, accountId, deps.client);
   }
   return collected.failed ? 'failed' : 'success';
+}
+
+/**
+ * Lectura de la banda Vitalsy sin interfaz (RF-113): mismas garantías de cuenta que la lectura de salud,
+ * pero no depende del permiso de Health Connect. Con la app abierta no hace nada: la app ya está
+ * conectada a la banda y una segunda conexión la cortaría.
+ */
+export async function runBackgroundBandSync(deps: BandBackgroundDeps): Promise<BackgroundOutcome> {
+  try {
+    if (!deps.client || foreground) {
+      return 'noop';
+    }
+    const binding = await deps.tokenStore.getBinding().catch(() => null);
+    if (!binding?.accountId || (await deps.tokenStore.isTransitioning().catch(() => true))) {
+      return 'noop';
+    }
+    const accountId = binding.accountId;
+    const snapshot = await deps.persistence.load();
+    if (snapshot?.sessionUserId !== accountId) {
+      return 'noop';
+    }
+    // La banda solo borra lo enviado si `apply` confirma que quedó guardado en esta cuenta.
+    const outcome = await deps.readBand((samples) => applyRead(deps, accountId, samples, null));
+    if (outcome !== 'read') {
+      return outcome === 'failed' ? 'failed' : 'noop';
+    }
+    const online = await deps.isOnline().catch(() => false);
+    if (online) {
+      await sendPending(deps, accountId, deps.client);
+    }
+    return 'success';
+  } catch {
+    return 'failed';
+  }
 }
