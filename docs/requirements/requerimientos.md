@@ -126,6 +126,7 @@ RF-95: Sincronizar línea de base fisiológica en admisión. El sistema debe per
 RF-96: Generar onboarding QR patrocinado al alta. El sistema debe permitir la generación de un código QR de invitación gratuita a Vitalsy Life para pacientes que no dispongan de cuenta al momento de su egreso hospitalario. Actor: Enfermera de piso / Sistema.
 RF-97: Vincular plan de seguimiento domiciliario post-alta. El sistema debe transformar las indicaciones médicas de egreso registradas en Vitalsy Clinical en un plan activo de alarmas y recordatorios en la app Vitalsy Life. Actor: Enfermera de piso / Sistema.
 RF-98: Transferir custodia activa del perfil al egreso. El sistema debe cerrar el evento intrahospitalario en Vitalsy Clinical al confirmar la salida física y reactivar la vigilancia pasiva domiciliaria en Vitalsy Life. Actor: Sistema.
+RF-113: Conectar la banda Vitalsy por Bluetooth LE. La app Vitalsy Life debe permitir buscar, vincular con cifrado y olvidar una banda Vitalsy. Debe recibir de ella el pulso, la SpO2, los intervalos RR y el índice de perfusión mediante los perfiles estándar Heart Rate (0x180D) y Pulse Oximeter (0x1822). Solo debe guardar las lecturas de calidad suficiente, con origen `vitalsy_band`, y usar la banda como fuente principal junto a Health Connect / Apple Health. Contrato en `docs/architecture/protocolo-banda-ble.md`. Actor: Usuario Ciudadano / Dispositivo Wearable / Sistema.
 
 ### Acceso y gestión de usuarios
 

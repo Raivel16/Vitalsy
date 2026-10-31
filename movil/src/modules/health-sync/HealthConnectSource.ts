@@ -205,6 +205,10 @@ export class HealthConnectSource implements HealthDataSource {
   async readGranted(from: Date, to: Date): Promise<HealthReadResult> {
     try {
       const health = await this.load();
+      // Sin pedir permisos (lectura silenciosa o en segundo plano) nadie más inicializa el módulo.
+      if (!(await health.initialize())) {
+        return { samples: [], message: 'No se pudieron leer los registros de Health Connect.', failed: true };
+      }
       const timeRangeFilter: TimeRange = { operator: 'between', startTime: from.toISOString(), endTime: to.toISOString() };
       let failures = 0;
       let requiredFailures = 0;

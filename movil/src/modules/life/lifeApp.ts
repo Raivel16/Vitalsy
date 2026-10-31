@@ -1,6 +1,7 @@
 import type { ServerNotice } from '../../shared/api/lifeClient';
 import { authenticate, registerAccount, type Account, type Digest, type FieldErrors } from '../auth/domain/auth';
 import { buildBaselines } from '../health-sync/domain/baseline';
+import { preferBand } from '../health-sync/domain/sourcePriority';
 import { applySyncResult, decideFlush, enqueueSync, pendingCount, type SyncItem } from '../health-sync/domain/syncQueue';
 import type { BiometricSample } from '../health-sync/domain/types';
 import { draftNudge } from '../notices/domain/nudges';
@@ -328,7 +329,7 @@ export class LifeApp {
   }
 
   today(): TodaySnapshot {
-    const view = buildToday(this.snapshot.samples, this.clock.now());
+    const view = buildToday(this.displaySamples(), this.clock.now());
     if (view.nudge && this.snapshot.dismissedNoticeIds.includes(view.nudge.id)) {
       return { ...view, nudge: null };
     }
@@ -523,15 +524,20 @@ export class LifeApp {
     return pendingCount(this.snapshot.queue);
   }
 
+  /** Lecturas para mostrar y calcular: la banda Vitalsy tiene prioridad sobre Health Connect (respaldo). */
+  displaySamples(): BiometricSample[] {
+    return preferBand(this.snapshot.samples);
+  }
+
   samplesBetween(from: Date, to: Date, kind?: BiometricSample['kind']): BiometricSample[] {
-    return this.snapshot.samples.filter((sample) => {
+    return this.displaySamples().filter((sample) => {
       const at = Date.parse(sample.startedAt);
       return at >= from.getTime() && at <= to.getTime() && (!kind || sample.kind === kind);
     });
   }
 
   private captureNudge(): void {
-    const baselines = buildBaselines(this.snapshot.samples, this.clock.now(), [
+    const baselines = buildBaselines(this.displaySamples(), this.clock.now(), [
       'heart_rate',
       'spo2',
       'sleep',

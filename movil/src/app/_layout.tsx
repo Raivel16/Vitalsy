@@ -5,10 +5,12 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { useFonts } from 'expo-font';
+import { NavigationBar } from 'expo-navigation-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BandProvider } from '../modules/band/BandProvider';
 import '../modules/health-sync/backgroundTask';
 import { LifeProvider, useLife } from '../modules/life/LifeProvider';
 import { aire } from '../shared/theme/tokens';
@@ -57,8 +59,14 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      {/* Modo inmersivo: los botones del teléfono se ocultan y aparecen al deslizar desde abajo. */}
+      <NavigationBar hidden />
+      {/* Fondo claro: iconos oscuros en la barra de estado. */}
+      <StatusBar barStyle="dark-content" />
       <LifeProvider>
-        <Gate />
+        <BandProvider>
+          <Gate />
+        </BandProvider>
       </LifeProvider>
     </SafeAreaProvider>
   );

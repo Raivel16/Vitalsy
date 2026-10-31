@@ -8,13 +8,17 @@ import { Field } from '../../../shared/ui/Field';
 import { Screen } from '../../../shared/ui/Screen';
 import { aire, font } from '../../../shared/theme/tokens';
 import { syncStatusLabel } from '../../health-sync/domain/syncQueue';
+import { useBand } from '../../band/BandProvider';
+import { BandStatusLine } from '../../band/ui/BandStatusLine';
 import { useLife } from '../../life/LifeProvider';
 import { apiBaseUrl } from '../../../shared/api/lifeClient';
+import { applyBandLive } from '../domain/bandLive';
 import { TodayBody } from './TodayBody';
 
 export function TodayScreen() {
   const router = useRouter();
-  const { life, online, refresh, syncHealth, hasSession } = useLife();
+  const { life, online, refresh, syncHealth, syncHealthQuietly, hasSession } = useLife();
+  const { view: band, controller } = useBand();
   const user = life.currentUser();
   const [manualOpen, setManualOpen] = useState(false);
   const [kind, setKind] = useState<'heart_rate' | 'spo2'>('heart_rate');
@@ -22,16 +26,27 @@ export function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const started = useRef(false);
+  // Sin dedo, a los pocos minutos las tarjetas vuelven a lo guardado: un reloj las reevalúa.
+  const [now, setNow] = useState(() => Date.now());
+  const fingerOff = band.live?.fingerOffSince != null;
+  useEffect(() => {
+    if (!fingerOff) {
+      return;
+    }
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
+  }, [fingerOff]);
 
   useEffect(() => {
     if (started.current) {
       return;
     }
     started.current = true;
-    void syncHealth().then((message) => setSyncMessage(message));
-  }, [syncHealth]);
+    // Al abrir: lectura silenciosa. La pantalla de permisos de Health Connect solo se abre con el botón.
+    void syncHealthQuietly().then((message) => setSyncMessage(message));
+  }, [syncHealthQuietly]);
 
-  const snapshot = life.today();
+  const snapshot = applyBandLive(life.today(), { connected: Boolean(band.paired) && band.connection === 'connected', live: band.live, now });
   const dateLabel = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   return (
@@ -44,6 +59,15 @@ export function TodayScreen() {
       />
       {syncMessage ? <Banner message={syncMessage} palette={aire} tone={syncMessage.includes('No ') || syncMessage.includes('no ') ? 'warning' : 'info'} /> : null}
       <TodayBody
+        bandStatus={
+          <BandStatusLine
+            battery={band.battery}
+            connection={band.connection}
+            message={band.message}
+            onReconnect={() => void controller.reconnect()}
+            paired={band.paired}
+          />
+        }
         dateLabel={dateLabel}
         name={user?.name ?? 'ahí'}
         offline={!online}

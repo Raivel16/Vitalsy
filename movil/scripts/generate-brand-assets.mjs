@@ -1,6 +1,8 @@
 // Genera los íconos de marca de Vitalsy Life a partir del wordmark de la app
 // (src/shared/ui/Wordmark.tsx): «Vitalsy» en PlusJakartaSans Bold + pastilla «Life»
-// en SemiBold. Uso: node scripts/generate-brand-assets.mjs
+// en SemiBold. En los íconos van apilados («Vitalsy» arriba, «Life» abajo): así el logo es
+// más compacto, se puede agrandar y cabe en el círculo que recorta Android.
+// Uso: node scripts/generate-brand-assets.mjs
 import { Resvg } from '@resvg/resvg-js';
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -38,22 +40,26 @@ const wordW = textWidth('Vitalsy', WORD.size, WORD.weight, WORD.spacing);
 const lifeW = textWidth('Life', PILL.size, PILL.weight, PILL.spacing);
 const pillW = lifeW + PILL.padX * 2;
 const pillH = Math.round(PILL.size * 1.27) + PILL.padY * 2;
-const markW = wordW + PILL.gap + pillW;
-const markH = Math.max(WORD.size * 1.3, pillH);
+// Apilado: la pastilla centrada bajo la palabra, a una distancia que deja respirar la «y».
+const BASELINE = WORD.size * 0.76; // línea base de «Vitalsy» desde arriba
+const STACK_GAP = WORD.size * 0.3; // de la línea base al borde de la pastilla
+const markW = Math.max(wordW, pillW);
+const markH = BASELINE + STACK_GAP + pillH;
 
 /**
  * Wordmark completo en coordenadas lógicas (origen arriba-izquierda, tamaño markW×markH).
  * mono: una sola tinta; «Life» queda calado en la pastilla.
  */
 function wordmarkGroup({ mono = null } = {}) {
-  const cy = markH / 2;
-  const px = wordW + PILL.gap;
   const wordFill = mono ?? brand.word;
-  const word = `<text x="0" y="${cy + WORD.size * CAP}" font-family="${WORD.family}" font-weight="${WORD.weight}"
+  const wx = (markW - wordW) / 2;
+  const word = `<text x="${wx}" y="${BASELINE}" font-family="${WORD.family}" font-weight="${WORD.weight}"
     font-size="${WORD.size}" letter-spacing="${WORD.spacing}" fill="${wordFill}">Vitalsy</text>`;
-  const pillRect = `<rect x="${px}" y="${cy - pillH / 2}" width="${pillW}" height="${pillH}" rx="${pillH / 2}"`;
+  const px = (markW - pillW) / 2;
+  const py = BASELINE + STACK_GAP;
+  const pillRect = `<rect x="${px}" y="${py}" width="${pillW}" height="${pillH}" rx="${pillH / 2}"`;
   const lifeText = (fill) =>
-    `<text x="${px + PILL.padX}" y="${cy + PILL.size * CAP}" font-family="${WORD.family}" font-weight="${PILL.weight}"
+    `<text x="${px + PILL.padX}" y="${py + pillH / 2 + PILL.size * CAP}" font-family="${WORD.family}" font-weight="${PILL.weight}"
       font-size="${PILL.size}" letter-spacing="${PILL.spacing}" fill="${fill}">Life</text>`;
   if (mono) {
     return `<defs><mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="${markW}" height="${markH}">
@@ -145,6 +151,24 @@ function alphaBox(img) {
   return { x0, y0, x1, y1 };
 }
 
+/** Todo el contenido debe caber en un círculo centrado de `fraction` del ancho (Android recorta en círculo). */
+function assertInCircle(name, img, fraction) {
+  const { width, height } = img;
+  const px = img.pixels;
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = (width * fraction) / 2;
+  let farthest = 0;
+  for (let i = 3; i < px.length; i += 4) {
+    if (px[i] < 16) continue;
+    const pixel = (i - 3) / 4;
+    farthest = Math.max(farthest, Math.hypot((pixel % width) - cx, Math.floor(pixel / width) - cy));
+  }
+  const ok = farthest <= radius;
+  console.log(`${name}: punto más lejano ${Math.round(farthest)}px del centro (radio permitido ${Math.round(radius)}px) ${ok ? 'OK' : 'FALLA'}`);
+  if (!ok) throw new Error(`${name}: el contenido sale del círculo seguro`);
+}
+
 function assertSafeZone(name, img, fraction) {
   const { x0, y0, x1, y1 } = alphaBox(img);
   const margin = Math.round((img.width * (1 - fraction)) / 2);
@@ -156,25 +180,30 @@ function assertSafeZone(name, img, fraction) {
 mkdirSync(assets, { recursive: true });
 const out = (name, buf) => writeFileSync(join(assets, name), buf);
 
-// icon.png: lienzo sólido, wordmark al 76 % del ancho (margen lateral 12 %).
-const icon = render(composeSvg({ size: 1024, widthFraction: 0.76, background: brand.canvas }));
+// icon.png: lienzo sólido, wordmark apilado al 64 % del ancho.
+const icon = render(composeSvg({ size: 1024, widthFraction: 0.64, background: brand.canvas }));
 const iconPixels = icon.pixels;
 out('icon.png', encodeRgbPng(icon.width, icon.height, iconPixels));
 
 // splash-icon.png: wordmark sobre fondo transparente (el color de fondo lo pone la config).
-const splash = render(composeSvg({ size: 1024, widthFraction: 0.76 }));
+// En Android 12+ el splash recorta el ícono en un círculo de 192 dp; la imagen se pone a 240 dp
+// (imageWidth en app.json), así que el contenido debe caber en el 80 % del ancho (192/240).
+const splash = render(composeSvg({ size: 1024, widthFraction: 0.54 }));
+assertInCircle('splash-icon', splash, 0.76);
 out('splash-icon.png', splash.asPng());
 
 // Adaptive Android: foreground dentro del 66 % (zona segura), fondo y monocromo.
-const fg = render(composeSvg({ size: 1024, widthFraction: 0.62 }));
+const fg = render(composeSvg({ size: 1024, widthFraction: 0.54 }));
 assertSafeZone('android-icon-foreground', fg, 0.66);
+assertInCircle('android-icon-foreground', fg, 0.66);
 out('android-icon-foreground.png', fg.asPng());
 
 const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"><rect width="1024" height="1024" fill="${brand.canvas}"/></svg>`;
 out('android-icon-background.png', render(bgSvg).asPng());
 
-const mono = render(composeSvg({ size: 1024, widthFraction: 0.62, mono: '#000000' }));
+const mono = render(composeSvg({ size: 1024, widthFraction: 0.54, mono: '#000000' }));
 assertSafeZone('android-icon-monochrome', mono, 0.66);
+assertInCircle('android-icon-monochrome', mono, 0.66);
 out('android-icon-monochrome.png', mono.asPng());
 
 // favicon: 48×48, la «V» del wordmark (el wordmark completo sería ilegible).

@@ -11,7 +11,8 @@ export const BIOMETRIC_KINDS = [
 
 export type BiometricKind = (typeof BIOMETRIC_KINDS)[number];
 
-export type SampleOrigin = 'health_connect' | 'health_kit' | 'manual';
+/** `vitalsy_band`: banda propia por Bluetooth LE (RF-113). */
+export type SampleOrigin = 'health_connect' | 'health_kit' | 'manual' | 'vitalsy_band';
 
 export type BiometricSample = {
   id: string;
