@@ -25,6 +25,24 @@ describe('LifeApp', () => {
     expect(life.login('elena@correo.test', 'calma12345').ok).toBe(true);
   });
 
+  it('shows the band reading instead of a Health Connect one taken at the same moment, but keeps both stored', () => {
+    const life = app();
+    const at = '2026-10-03T11:58:00.000Z';
+    const sample = (origin: 'health_connect' | 'vitalsy_band', value: number) => ({
+      id: `${origin}-${value}`,
+      kind: 'heart_rate' as const,
+      value,
+      unit: 'lpm',
+      startedAt: at,
+      endedAt: at,
+      origin,
+    });
+    life.addSamples([sample('health_connect', 90), sample('vitalsy_band', 66)]);
+    expect(life.state.samples).toHaveLength(2);
+    expect(life.today().metrics.find((metric) => metric.kind === 'heart_rate')?.valueLabel).toBe('66');
+    expect(life.displaySamples().map((item) => item.origin)).toEqual(['vitalsy_band']);
+  });
+
   it('refuses a linking code until sharing is on, then revokes it', () => {
     const life = app();
     expect(life.issueLinkingCode().ok).toBe(false);

@@ -61,8 +61,12 @@ Hoy es un prototipo: un ESP32-C3 SuperMini con un sensor MAX30102. Más adelante
   | `BandProvider.tsx` | Reconecta al abrir la app, al volver a primer plano y cada 30 s |
   | `bandStore.ts` | La banda vinculada en SecureStore con la cuenta que la vinculó. Otra cuenta del mismo teléfono no la ve, no se conecta a ella y no guarda sus datos: debe vincularla de nuevo |
   | `ui/BandPairCard.tsx` | Perfil › Dispositivos: solo buscar, vincular y olvidar la banda |
-  | `ui/BandTodayCard.tsx` | Pestaña Hoy, con la banda vinculada: estado, batería, pulso y SpO2 en vivo, calidad de señal, avisos, reconectar y pruebas del sensor |
+  | `ui/BandStatusLine.tsx` | Pestaña Hoy, junto a las tarjetas: «Vitalsy Band · Conectada», batería, avisos y «Reconectar» |
 
+- **Hoy (una sola fuente por momento):**
+  - Con la banda conectada, las tarjetas de Pulso y SpO2 son las de siempre pero con el valor en vivo de la banda y la nota «Vitalsy Band · en vivo» (`today/domain/bandLive.ts`). Sin dedo muestran `--`, nunca un valor de Health Connect. Pasos, sueño y lo demás siguen viniendo de Health Connect.
+  - Health Connect sigue guardando su pulso y SpO2 como respaldo, pero `preferBand` (`health-sync/domain/sourcePriority.ts`) los ignora al mostrar y calcular (hoy, tendencias, línea de base) si la banda midió lo mismo a menos de 5 minutos. Si la banda se apaga, a partir de unos 5 minutos vuelven a contar. Solo filtra la vista: no se borra ni se deja de enviar nada.
+  - Las pruebas de LEDs e intercambio de canales ya no están en la app; siguen disponibles por el monitor serie y por nRF Connect.
 - **Cambio respecto al plan inicial:** la banda **no** es una `HealthDataSource`. La cola de lectura de salud depende del permiso de Health Connect (`accessGranted`, `lastReadAt`), y un permiso denegado bloquearía la banda. La banda tiene su propio camino y comparte la cola de envío.
 - **Segundo plano (F3):** la tarea de 15 min (`backgroundTask.ts`) ejecuta primero `runBackgroundBandSync` (conecta, descarga, guarda, confirma y desconecta) y luego la lectura de Health Connect.
   - Se programa si hay sesión y permiso de Health Connect **o** una banda vinculada.

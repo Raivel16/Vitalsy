@@ -1,12 +1,11 @@
 import type { BandClient, BandEvents, FoundBand } from './bandClient';
 import type { BandStore, PairedBand } from './bandStore';
 import { applyBandRecords, syncBandHistory, type ApplySamples } from './bandSync';
-import { BAND_COMMAND } from './domain/history';
 import type { BandPhase, BandQuality } from './domain/gatt';
 
 export type ControllerClient = Pick<
   BandClient,
-  'bluetoothOn' | 'scan' | 'connect' | 'downloadHistory' | 'ack' | 'disconnect' | 'forget' | 'command'
+  'bluetoothOn' | 'scan' | 'connect' | 'downloadHistory' | 'ack' | 'disconnect' | 'forget'
 >;
 
 export type BandConnection = 'idle' | 'scanning' | 'connecting' | 'connected' | 'disconnected';
@@ -50,8 +49,6 @@ const TEXT = {
   connectFailed: 'No se pudo conectar con la banda. Acércala al teléfono e inténtalo de nuevo.',
   historyFailed: 'La banda está conectada, pero no se pudo descargar su historial. Se reintentará al reconectar.',
   scanFailed: 'No se pudo buscar la banda. Inténtalo de nuevo.',
-  ledTest: 'Prueba de LEDs en curso (10 s): quita el dedo y mira el sensor.',
-  swapped: 'Canales rojo/IR intercambiados. Vuelve a colocar el dedo.',
 };
 
 function savedText(added: number, paired: boolean): string {
@@ -163,26 +160,6 @@ export class BandController {
     await this.deps.store.clear();
     this.deps.onPairedChange(false);
     this.set({ paired: null, connection: 'idle', live: null, battery: null, message: { tone: 'info', text: 'Banda olvidada.' } });
-  }
-
-  async swapChannels(): Promise<void> {
-    await this.send([BAND_COMMAND.swapChannels], TEXT.swapped);
-  }
-
-  async ledTest(): Promise<void> {
-    await this.send([BAND_COMMAND.ledTest], TEXT.ledTest);
-  }
-
-  private async send(bytes: number[], text: string): Promise<void> {
-    if (!this.deps.client || this.view.connection !== 'connected') {
-      return;
-    }
-    try {
-      await this.deps.client.command(bytes);
-      this.set({ message: { tone: 'info', text } });
-    } catch {
-      this.set({ message: { tone: 'danger', text: TEXT.connectFailed } });
-    }
   }
 
   private busy(): boolean {

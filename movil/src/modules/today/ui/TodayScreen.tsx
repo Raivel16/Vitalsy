@@ -9,9 +9,10 @@ import { Screen } from '../../../shared/ui/Screen';
 import { aire, font } from '../../../shared/theme/tokens';
 import { syncStatusLabel } from '../../health-sync/domain/syncQueue';
 import { useBand } from '../../band/BandProvider';
-import { BandTodayCard } from '../../band/ui/BandTodayCard';
+import { BandStatusLine } from '../../band/ui/BandStatusLine';
 import { useLife } from '../../life/LifeProvider';
 import { apiBaseUrl } from '../../../shared/api/lifeClient';
+import { applyBandLive } from '../domain/bandLive';
 import { TodayBody } from './TodayBody';
 
 export function TodayScreen() {
@@ -34,7 +35,7 @@ export function TodayScreen() {
     void syncHealth().then((message) => setSyncMessage(message));
   }, [syncHealth]);
 
-  const snapshot = life.today();
+  const snapshot = applyBandLive(life.today(), { connected: Boolean(band.paired) && band.connection === 'connected', live: band.live });
   const dateLabel = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   return (
@@ -46,17 +47,16 @@ export function TodayScreen() {
         status={syncStatusLabel(online, life.pendingSyncCount(), Boolean(apiBaseUrl()), life.state.lastServerSyncAt, hasSession)}
       />
       {syncMessage ? <Banner message={syncMessage} palette={aire} tone={syncMessage.includes('No ') || syncMessage.includes('no ') ? 'warning' : 'info'} /> : null}
-      <BandTodayCard
-        battery={band.battery}
-        connection={band.connection}
-        live={band.live}
-        message={band.message}
-        onLedTest={() => void controller.ledTest()}
-        onReconnect={() => void controller.reconnect()}
-        onSwapChannels={() => void controller.swapChannels()}
-        paired={band.paired}
-      />
       <TodayBody
+        bandStatus={
+          <BandStatusLine
+            battery={band.battery}
+            connection={band.connection}
+            message={band.message}
+            onReconnect={() => void controller.reconnect()}
+            paired={band.paired}
+          />
+        }
         dateLabel={dateLabel}
         name={user?.name ?? 'ahí'}
         offline={!online}

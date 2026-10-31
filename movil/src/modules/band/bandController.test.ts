@@ -31,9 +31,6 @@ function setup(
     forget: async (id) => {
       log.push(`forget:${id}`);
     },
-    command: async (bytes) => {
-      log.push(`command:${bytes.join(',')}`);
-    },
   };
   const store = createBandStore(null);
   const applied: number[] = [];
@@ -207,15 +204,6 @@ describe('BandController', () => {
     expect(log).toContain(`forget:${BAND.id}`);
     expect(controller.view.paired).toBeNull();
     expect(paired).toEqual([true, false]);
-  });
-
-  it('sends the serial-monitor commands', async () => {
-    const { controller, log } = setup();
-    await controller.pair(BAND);
-    await controller.swapChannels();
-    await controller.ledTest();
-    expect(log).toEqual(expect.arrayContaining(['command:1', 'command:2']));
-    expect(controller.view.message?.text).toMatch(/LEDs/);
   });
 
   it('notifies subscribers on every change', async () => {

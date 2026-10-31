@@ -27,7 +27,7 @@ export function TrendsScreen() {
       .samplesBetween(from, to, 'heart_rate')
       .sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt));
   }, [life, selected.days, life.state.samples]);
-  const baseline = baselineForKind(life.state.samples, 'heart_rate', new Date());
+  const baseline = baselineForKind(life.displaySamples(), 'heart_rate', new Date());
   const path = chartPath(points.map((item) => item.value));
 
   return (
