@@ -28,9 +28,9 @@ function fakeClient(records: MinuteRecord[] | Error = [RECORD]) {
   return { client, log };
 }
 
-async function pairedStore(lastMinute: number | null = null) {
+async function pairedStore(lastMinute: number | null = null, accountId: string | null = 'u1') {
   const store = createBandStore(null);
-  await store.set({ id: 'AA:BB:CC:DD', name: 'Vitalsy-CCDD', lastMinute });
+  await store.set({ id: 'AA:BB:CC:DD', name: 'Vitalsy-CCDD', lastMinute, accountId });
   return store;
 }
 
@@ -43,11 +43,14 @@ describe('syncBandHistory', () => {
     const result = await syncBandHistory({ client, store, apply });
 
     expect(log).toEqual(['download:29889001', 'ack:29889360']);
-    expect(apply).toHaveBeenCalledWith([
-      expect.objectContaining({ kind: 'heart_rate', origin: 'vitalsy_band' }),
-      expect.objectContaining({ kind: 'spo2' }),
-      expect.objectContaining({ kind: 'hrv' }),
-    ]);
+    expect(apply).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({ kind: 'heart_rate', origin: 'vitalsy_band' }),
+        expect.objectContaining({ kind: 'spo2' }),
+        expect.objectContaining({ kind: 'hrv' }),
+      ],
+      'u1',
+    );
     expect(result).toEqual({ added: 3, upTo: 29_889_360 });
     expect((await store.get())?.lastMinute).toBe(29_889_360);
   });
@@ -75,6 +78,14 @@ describe('applyBandRecords', () => {
     const store = await pairedStore();
     expect(await applyBandRecords({ client, store, apply: async () => true }, [RECORD])).toBe(3);
     expect(log).toEqual(['ack:29889360']);
+  });
+
+  it('never saves nor confirms records of a band without an owner account', async () => {
+    const { client, log } = fakeClient();
+    const apply = jest.fn(async () => true);
+    expect(await applyBandRecords({ client, store: await pairedStore(null, null), apply }, [RECORD])).toBe(0);
+    expect(apply).not.toHaveBeenCalled();
+    expect(log).toEqual([]);
   });
 });
 

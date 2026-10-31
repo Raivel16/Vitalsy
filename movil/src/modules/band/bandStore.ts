@@ -1,12 +1,14 @@
 import type { SecureBackend } from '../../shared/api/tokenStore';
 
-/** Banda vinculada a este teléfono. No depende de la cuenta: la banda es del dispositivo. */
+/** Banda vinculada a este teléfono por una cuenta: solo esa cuenta guarda y confirma sus datos. */
 export type PairedBand = {
   /** MAC en Android, identificador del sistema en iOS. */
   id: string;
   name: string;
   /** Último minuto (época / 60) guardado en el teléfono y confirmado a la banda. */
   lastMinute: number | null;
+  /** Cuenta que la vinculó. null (dato anterior): no se guarda nada hasta volver a vincularla. */
+  accountId: string | null;
 };
 
 export type BandStore = {
@@ -28,7 +30,12 @@ function parse(raw: string | null): PairedBand | null {
     if (typeof value.id !== 'string' || !value.id || typeof value.name !== 'string') {
       return null;
     }
-    return { id: value.id, name: value.name, lastMinute: typeof value.lastMinute === 'number' ? value.lastMinute : null };
+    return {
+      id: value.id,
+      name: value.name,
+      lastMinute: typeof value.lastMinute === 'number' ? value.lastMinute : null,
+      accountId: typeof value.accountId === 'string' && value.accountId ? value.accountId : null,
+    };
   } catch {
     return null;
   }

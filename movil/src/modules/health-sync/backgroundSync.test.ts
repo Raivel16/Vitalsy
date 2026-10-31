@@ -339,16 +339,16 @@ describe('runBackgroundHealthSync', () => {
 describe('runBackgroundBandSync', () => {
   const bandSample: BiometricSample = { ...sample('vb:AABBCCDD:heart_rate:1'), origin: 'vitalsy_band' };
 
-  function bandSetup(options: Parameters<typeof setup>[0] & { outcome?: 'none' | 'read' | 'failed' } = {}) {
+  function bandSetup(options: Parameters<typeof setup>[0] & { outcome?: 'none' | 'read' | 'failed'; owner?: string } = {}) {
     const harness = setup(options);
     const saved: boolean[] = [];
-    const readBand = jest.fn(async (apply: (samples: BiometricSample[]) => Promise<boolean>) => {
+    const readBand = jest.fn(async (apply: (samples: BiometricSample[], owner: string) => Promise<boolean>) => {
       const outcome = options.outcome ?? 'read';
       if (outcome !== 'read') {
         return outcome;
       }
       // Como readBandOnce: si no se guardó, no hay lectura.
-      const ok = await apply([bandSample]);
+      const ok = await apply([bandSample], options.owner ?? '7');
       saved.push(ok);
       return ok ? 'read' : 'none';
     });
@@ -382,6 +382,13 @@ describe('runBackgroundBandSync', () => {
     const { deps, saved } = bandSetup({ concurrentWrite: (current) => ({ ...current, sessionUserId: '9' }) });
     await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
     expect(saved).toEqual([false]);
+  });
+
+  it('refuses band data paired by another account on this phone', async () => {
+    const { deps, saved, getStored } = bandSetup({ owner: '9' });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(saved).toEqual([false]);
+    expect(getStored()?.samples.map((item) => item.id) ?? []).not.toContain(bandSample.id);
   });
 
   it('leaves the band to the open app: no background connection while the UI runtime is alive', async () => {

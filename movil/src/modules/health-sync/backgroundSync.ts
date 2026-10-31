@@ -28,7 +28,9 @@ export type BackgroundSyncDeps = SessionDeps & {
 };
 
 /** Lee la banda vinculada (RF-113). `apply` guarda las muestras y responde si se guardaron. */
-export type BandReader = (apply: (samples: BiometricSample[]) => Promise<boolean>) => Promise<'none' | 'read' | 'failed'>;
+export type BandReader = (
+  apply: (samples: BiometricSample[], ownerAccountId: string) => Promise<boolean>,
+) => Promise<'none' | 'read' | 'failed'>;
 
 export type BandBackgroundDeps = SessionDeps & {
   readBand: BandReader;
@@ -269,7 +271,8 @@ export async function runBackgroundBandSync(deps: BandBackgroundDeps): Promise<B
       return 'noop';
     }
     // La banda solo borra lo enviado si `apply` confirma que quedó guardado en esta cuenta.
-    const outcome = await deps.readBand((samples) => applyRead(deps, accountId, samples, null));
+    // Una banda vinculada por otra cuenta de este teléfono no se guarda aquí.
+    const outcome = await deps.readBand(async (samples, owner) => owner === accountId && applyRead(deps, accountId, samples, null));
     if (outcome !== 'read') {
       return outcome === 'failed' ? 'failed' : 'noop';
     }

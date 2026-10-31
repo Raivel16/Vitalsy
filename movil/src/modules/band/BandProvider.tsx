@@ -23,14 +23,18 @@ export function BandProvider({ children }: Readonly<{ children: ReactNode }>) {
         requestPermissions: requestBlePermissions,
         apply: async () => false,
         onPairedChange: () => undefined,
+        currentAccount: () => null,
       }),
   );
+  const accountId = life.currentUser()?.id ?? null;
   // La instancia de LifeApp cambia al cargar del disco: el controlador siempre usa la última.
   useLayoutEffect(() => {
     controller.setHandlers({
-      apply: async (samples: BiometricSample[]) => {
-        if (!life.currentUser()) {
-          return false; // sin cuenta abierta no se guarda: la banda conserva los datos
+      apply: async (samples: BiometricSample[], owner: string) => {
+        // Se comprueba al guardar, no al empezar: la sesión pudo cambiar durante la descarga.
+        // Si no se guarda, la banda conserva los datos.
+        if (life.sessionChanging || life.currentUser()?.id !== owner) {
+          return false;
         }
         life.addSamples(samples);
         await refresh();
@@ -38,6 +42,7 @@ export function BandProvider({ children }: Readonly<{ children: ReactNode }>) {
         return true;
       },
       onPairedChange: setBandPaired,
+      currentAccount: () => life.currentUser()?.id ?? null,
     });
   }, [controller, life, refresh, syncServer, setBandPaired]);
   const view = useSyncExternalStore(
@@ -45,13 +50,13 @@ export function BandProvider({ children }: Readonly<{ children: ReactNode }>) {
     () => controller.view,
   );
 
-  // Al arrancar: carga la banda vinculada y se conecta. Al volver a primer plano y cada 30 s, reintenta.
+  // Al arrancar y con cada cambio de cuenta: carga la banda de esa cuenta (la de otra se desconecta) y se
+  // conecta. Al volver a primer plano y cada 30 s, reintenta.
   useEffect(() => {
     if (!ready || !view.available) {
       return;
     }
-    let active = true;
-    void controller.load().then(() => (active ? controller.reconnect() : undefined));
+    void controller.sessionChanged();
     const subscription = AppState.addEventListener('change', (next) => {
       if (next === 'active') {
         void controller.reconnect();
@@ -63,11 +68,10 @@ export function BandProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
     }, RECONNECT_INTERVAL_MS);
     return () => {
-      active = false;
       subscription.remove();
       clearInterval(timer);
     };
-  }, [ready, view.available, controller]);
+  }, [ready, view.available, controller, accountId]);
 
   const value = useMemo(() => ({ view, controller }), [view, controller]);
   return <BandContext.Provider value={value}>{children}</BandContext.Provider>;

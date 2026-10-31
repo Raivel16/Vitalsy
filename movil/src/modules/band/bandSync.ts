@@ -5,8 +5,11 @@ import { latestMinute, recordsToSamples, type MinuteRecord } from './domain/hist
 
 export type HistoryClient = Pick<BandClient, 'connect' | 'downloadHistory' | 'ack' | 'disconnect'>;
 
-/** Guarda las muestras en el teléfono. false: no se guardaron (la banda debe conservarlas). */
-export type ApplySamples = (samples: BiometricSample[]) => Promise<boolean>;
+/**
+ * Guarda las muestras en la cuenta `ownerAccountId` (la que vinculó la banda) si sigue siendo la sesión
+ * abierta. false: no se guardaron (la banda debe conservarlas).
+ */
+export type ApplySamples = (samples: BiometricSample[], ownerAccountId: string) => Promise<boolean>;
 
 export type BandSyncDeps = {
   client: HistoryClient;
@@ -21,11 +24,11 @@ export type BandSyncDeps = {
 export async function applyBandRecords({ client, store, apply }: BandSyncDeps, records: MinuteRecord[]): Promise<number> {
   const paired = await store.get();
   const upTo = latestMinute(records);
-  if (!paired || upTo === null) {
+  if (!paired?.accountId || upTo === null) {
     return 0;
   }
   const samples = recordsToSamples(records, paired.id);
-  if (!(await apply(samples))) {
+  if (!(await apply(samples, paired.accountId))) {
     return 0;
   }
   await client.ack(upTo);

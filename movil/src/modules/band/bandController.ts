@@ -38,9 +38,12 @@ export type BandControllerDeps = {
   requestPermissions: () => Promise<boolean>;
   apply: ApplySamples;
   onPairedChange: (paired: boolean) => void;
+  /** Cuenta con sesión abierta: la banda solo se muestra y se conecta para la cuenta que la vinculó. */
+  currentAccount: () => string | null;
 };
 
 const TEXT = {
+  noSession: 'Inicia sesión para vincular la banda.',
   noPermission: 'Sin permiso de Bluetooth no se puede buscar la banda.',
   bluetoothOff: 'Activa el Bluetooth para conectar la banda.',
   notFound: 'No encontramos ninguna banda Vitalsy cerca. Enciéndela y acércala al teléfono.',
@@ -80,7 +83,7 @@ export class BandController {
   }
 
   /** La app cambia de instancia de LifeApp al cargar del disco: se actualizan los destinos sin recrear la conexión. */
-  setHandlers(handlers: Pick<BandControllerDeps, 'apply' | 'onPairedChange'>): void {
+  setHandlers(handlers: Pick<BandControllerDeps, 'apply' | 'onPairedChange' | 'currentAccount'>): void {
     this.deps = { ...this.deps, ...handlers };
   }
 
@@ -90,7 +93,25 @@ export class BandController {
   }
 
   async load(): Promise<void> {
-    this.set({ paired: await this.deps.store.get() });
+    this.set({ paired: await this.ownBand() });
+  }
+
+  /** Al abrir o cerrar sesión: si la banda no es de la cuenta nueva se desconecta; si lo es, se reconecta. */
+  async sessionChanged(): Promise<void> {
+    const paired = await this.ownBand();
+    if (this.view.paired && paired?.id !== this.view.paired.id) {
+      await this.deps.client?.disconnect().catch(() => undefined);
+      this.set({ connection: 'idle', live: null, battery: null, found: [], message: null });
+    }
+    this.set({ paired });
+    await this.reconnect();
+  }
+
+  /** La banda guardada, solo si la vinculó la cuenta con sesión abierta. */
+  private async ownBand(): Promise<PairedBand | null> {
+    const stored = await this.deps.store.get();
+    const account = this.deps.currentAccount();
+    return stored && account && stored.accountId === account ? stored : null;
   }
 
   async scan(): Promise<void> {
@@ -109,10 +130,15 @@ export class BandController {
 
   async pair(band: FoundBand): Promise<void> {
     const client = this.deps.client;
+    const accountId = this.deps.currentAccount();
+    if (!accountId) {
+      this.set({ message: { tone: 'warning', text: TEXT.noSession } });
+      return;
+    }
     if (!client || this.busy() || !(await this.ready(client))) {
       return;
     }
-    const candidate: PairedBand = { id: band.id, name: band.name, lastMinute: null };
+    const candidate: PairedBand = { id: band.id, name: band.name, lastMinute: null, accountId };
     if (!(await this.connect(client, candidate, true))) {
       return;
     }

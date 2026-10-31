@@ -4,8 +4,11 @@ import type { BandEvents, FoundBand } from './bandClient';
 
 const BAND: FoundBand = { id: 'AA:BB:CC:DD', name: 'Vitalsy-CCDD', rssi: -60 };
 
-function setup(options: { bluetooth?: boolean; permissions?: boolean; found?: FoundBand[]; connectError?: Error } = {}) {
+function setup(
+  options: { bluetooth?: boolean; permissions?: boolean; found?: FoundBand[]; connectError?: Error; account?: string | null } = {},
+) {
   let events: BandEvents = {};
+  let account = options.account === undefined ? 'u1' : options.account;
   const log: string[] = [];
   const client: ControllerClient = {
     bluetoothOn: async () => options.bluetooth ?? true,
@@ -44,8 +47,12 @@ function setup(options: { bluetooth?: boolean; permissions?: boolean; found?: Fo
       return true;
     },
     onPairedChange: (value) => paired.push(value),
+    currentAccount: () => account,
   });
-  return { controller, store, log, applied, paired, events: () => events };
+  const setAccount = (next: string | null) => {
+    account = next;
+  };
+  return { controller, store, log, applied, paired, setAccount, events: () => events };
 }
 
 describe('BandController', () => {
@@ -56,6 +63,7 @@ describe('BandController', () => {
       requestPermissions: async () => true,
       apply: async () => true,
       onPairedChange: () => undefined,
+      currentAccount: () => 'u1',
     });
     expect(controller.view.available).toBe(false);
   });
@@ -88,7 +96,7 @@ describe('BandController', () => {
     expect(controller.view.connection).toBe('connected');
     expect(controller.view.battery).toBe(80);
     expect(controller.view.found).toEqual([]);
-    expect(await store.get()).toEqual({ id: BAND.id, name: BAND.name, lastMinute: 29_889_360 });
+    expect(await store.get()).toEqual({ id: BAND.id, name: BAND.name, lastMinute: 29_889_360, accountId: 'u1' });
     expect(applied).toEqual([2]);
     expect(log).toContain('ack:29889360');
     expect(paired).toEqual([true]);
@@ -151,10 +159,43 @@ describe('BandController', () => {
 
   it('reconnects to a band remembered from a previous session', async () => {
     const { controller, store } = setup();
-    await store.set({ id: BAND.id, name: BAND.name, lastMinute: null });
+    await store.set({ id: BAND.id, name: BAND.name, lastMinute: null, accountId: 'u1' });
     await controller.load();
     expect(controller.view.paired?.name).toBe(BAND.name);
     await controller.reconnect();
+    expect(controller.view.connection).toBe('connected');
+  });
+
+  it('ignores a band paired by another account on this phone', async () => {
+    const { controller, store, log } = setup();
+    await store.set({ id: BAND.id, name: BAND.name, lastMinute: null, accountId: 'u2' });
+    await controller.load();
+    expect(controller.view.paired).toBeNull();
+    await controller.reconnect();
+    expect(log).toEqual([]);
+  });
+
+  it('asks for a session before pairing', async () => {
+    const { controller, store, log } = setup({ account: null });
+    await controller.pair(BAND);
+    expect(log).toEqual([]);
+    expect(await store.get()).toBeNull();
+    expect(controller.view.message).toEqual({ tone: 'warning', text: 'Inicia sesión para vincular la banda.' });
+  });
+
+  it('disconnects the band when its owner logs out and resumes when they come back', async () => {
+    const { controller, log, setAccount } = setup();
+    await controller.pair(BAND);
+
+    setAccount(null);
+    await controller.sessionChanged();
+    expect(log).toContain('disconnect');
+    expect(controller.view.paired).toBeNull();
+    expect(controller.view.connection).toBe('idle');
+
+    setAccount('u1');
+    await controller.sessionChanged();
+    expect(controller.view.paired?.id).toBe(BAND.id);
     expect(controller.view.connection).toBe('connected');
   });
 
