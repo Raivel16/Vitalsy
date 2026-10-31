@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, type ColorValue } from 'react-native';
-import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aire, font } from '../../shared/theme/tokens';
 
 const tabs = [
@@ -19,10 +19,10 @@ function renderTabIcon(name: (typeof tabs)[number]['icon']) {
 }
 
 export default function TabsLayout() {
+  // La barra de botones de Android va oculta (RootLayout): los tabs quedan pegados al borde inferior.
+  // En iPhone, el margen inferior es el del indicador de inicio.
   const insets = useSafeAreaInsets();
-  const measuredBottom = Math.max(insets.bottom, initialWindowMetrics?.insets.bottom ?? 0);
-  const fallbackBottom = Platform.OS === 'android' ? 48 : 0;
-  const bottom = measuredBottom > 0 ? measuredBottom : fallbackBottom;
+  const bottom = insets.bottom;
   return (
     <Tabs
       safeAreaInsets={{ top: insets.top, right: insets.right, bottom, left: insets.left }}

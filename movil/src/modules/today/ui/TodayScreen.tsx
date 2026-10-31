@@ -26,6 +26,16 @@ export function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const started = useRef(false);
+  // Sin dedo, a los pocos minutos las tarjetas vuelven a lo guardado: un reloj las reevalúa.
+  const [now, setNow] = useState(() => Date.now());
+  const fingerOff = band.live?.fingerOffSince != null;
+  useEffect(() => {
+    if (!fingerOff) {
+      return;
+    }
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
+  }, [fingerOff]);
 
   useEffect(() => {
     if (started.current) {
@@ -35,7 +45,7 @@ export function TodayScreen() {
     void syncHealth().then((message) => setSyncMessage(message));
   }, [syncHealth]);
 
-  const snapshot = applyBandLive(life.today(), { connected: Boolean(band.paired) && band.connection === 'connected', live: band.live });
+  const snapshot = applyBandLive(life.today(), { connected: Boolean(band.paired) && band.connection === 'connected', live: band.live, now });
   const dateLabel = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   return (

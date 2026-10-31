@@ -5,6 +5,7 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { useFonts } from 'expo-font';
+import { NavigationBar } from 'expo-navigation-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -58,6 +59,8 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      {/* Modo inmersivo: los botones del teléfono se ocultan y aparecen al deslizar desde abajo. */}
+      <NavigationBar hidden />
       <LifeProvider>
         <BandProvider>
           <Gate />

@@ -9,6 +9,7 @@ function setup(
 ) {
   let events: BandEvents = {};
   let account = options.account === undefined ? 'u1' : options.account;
+  const clock = { now: 0 };
   const log: string[] = [];
   const client: ControllerClient = {
     bluetoothOn: async () => options.bluetooth ?? true,
@@ -45,11 +46,12 @@ function setup(
     },
     onPairedChange: (value) => paired.push(value),
     currentAccount: () => account,
+    now: () => clock.now,
   });
   const setAccount = (next: string | null) => {
     account = next;
   };
-  return { controller, store, log, applied, paired, setAccount, events: () => events };
+  return { controller, store, log, applied, paired, setAccount, clock, events: () => events };
 }
 
 describe('BandController', () => {
@@ -117,7 +119,7 @@ describe('BandController', () => {
     events().onHeartRate?.({ bpm: 72, contact: true, rrMs: [833] });
     events().onPlx?.({ spo2: 98, pulse: 72, pi: 2.35, reliable: true });
 
-    expect(controller.view.live).toEqual({ phase: 'measuring', quality: 'good', bpm: 72, spo2: 98, pi: 2.35 });
+    expect(controller.view.live).toEqual({ phase: 'measuring', quality: 'good', bpm: 72, spo2: 98, pi: 2.35, fingerOffSince: null });
   });
 
   it('follows battery updates from the band', async () => {
@@ -127,12 +129,32 @@ describe('BandController', () => {
     expect(controller.view.battery).toBe(55);
   });
 
-  it('clears live values when the finger is removed', async () => {
-    const { controller, events } = setup();
+  it('keeps the last reading when the finger is removed and remembers since when', async () => {
+    const { controller, events, clock } = setup();
+    await controller.pair(BAND);
+    events().onState?.({ phase: 'measuring', quality: 'good', channelsSwapped: false, channelWarning: false, pi: 2, r: 0.5 });
+    events().onHeartRate?.({ bpm: 72, contact: true, rrMs: [] });
+    events().onPlx?.({ spo2: 98, pulse: 72, pi: 2, reliable: true });
+
+    clock.now = 5_000;
+    events().onState?.({ phase: 'no_finger', quality: null, channelsSwapped: false, channelWarning: false, pi: 0, r: null });
+    expect(controller.view.live).toEqual({ phase: 'no_finger', quality: null, bpm: 72, spo2: 98, pi: 0, fingerOffSince: 5_000 });
+
+    clock.now = 9_000; // otra notificación sin dedo: no reinicia el tiempo
+    events().onState?.({ phase: 'no_finger', quality: null, channelsSwapped: false, channelWarning: false, pi: 0, r: null });
+    expect(controller.view.live?.fingerOffSince).toBe(5_000);
+  });
+
+  it('forgets the time without finger as soon as it measures again', async () => {
+    const { controller, events, clock } = setup();
     await controller.pair(BAND);
     events().onHeartRate?.({ bpm: 72, contact: true, rrMs: [] });
+    clock.now = 5_000;
     events().onState?.({ phase: 'no_finger', quality: null, channelsSwapped: false, channelWarning: false, pi: 0, r: null });
-    expect(controller.view.live).toEqual({ phase: 'no_finger', quality: null, bpm: null, spo2: null, pi: 0 });
+    events().onState?.({ phase: 'adjusting', quality: null, channelsSwapped: false, channelWarning: false, pi: 0, r: null });
+    expect(controller.view.live?.fingerOffSince).toBe(5_000);
+    events().onState?.({ phase: 'measuring', quality: 'good', channelsSwapped: false, channelWarning: false, pi: 2, r: 0.5 });
+    expect(controller.view.live?.fingerOffSince).toBeNull();
   });
 
   it('saves records the band pushes every minute', async () => {

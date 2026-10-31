@@ -16,6 +16,8 @@ export type BandLive = {
   bpm: number | null;
   spo2: number | null;
   pi: number;
+  /** Desde cuándo (ms) no hay dedo; null si hay dedo. Los valores se conservan para no perder la última lectura. */
+  fingerOffSince: number | null;
 };
 
 export type BandMessage = { tone: 'info' | 'warning' | 'danger'; text: string };
@@ -39,6 +41,8 @@ export type BandControllerDeps = {
   onPairedChange: (paired: boolean) => void;
   /** Cuenta con sesión abierta: la banda solo se muestra y se conecta para la cuenta que la vinculó. */
   currentAccount: () => string | null;
+  /** Reloj en ms (para el tiempo sin dedo). Por defecto `Date.now`. */
+  now?: () => number;
 };
 
 const TEXT = {
@@ -211,14 +215,21 @@ export class BandController {
     return {
       onState: (state) => {
         const previous = this.view.live;
-        const measuring = state.phase === 'measuring';
+        // Sin dedo se conserva la última lectura; «ajustando» no cambia desde cuándo no había dedo.
+        let fingerOffSince = previous?.fingerOffSince ?? null;
+        if (state.phase === 'measuring') {
+          fingerOffSince = null;
+        } else if (state.phase === 'no_finger') {
+          fingerOffSince ??= this.now();
+        }
         this.set({
           live: {
             phase: state.phase,
             quality: state.quality,
             pi: state.pi,
-            bpm: measuring ? (previous?.bpm ?? null) : null,
-            spo2: measuring ? (previous?.spo2 ?? null) : null,
+            bpm: previous?.bpm ?? null,
+            spo2: previous?.spo2 ?? null,
+            fingerOffSince,
           },
         });
       },
@@ -239,8 +250,12 @@ export class BandController {
   }
 
   private patchLive(patch: Partial<BandLive>): void {
-    const live = this.view.live ?? { phase: 'measuring' as const, quality: null, bpm: null, spo2: null, pi: 0 };
+    const live = this.view.live ?? { phase: 'measuring' as const, quality: null, bpm: null, spo2: null, pi: 0, fingerOffSince: null };
     this.set({ live: { ...live, ...patch } });
+  }
+
+  private now(): number {
+    return (this.deps.now ?? Date.now)();
   }
 
   private set(patch: Partial<BandView>): void {
