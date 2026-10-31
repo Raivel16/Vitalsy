@@ -26,6 +26,34 @@ function fakeModule(readRecords: HealthModule['readRecords'], requestPermission 
 const RANGE = [new Date('2026-10-01T00:00:00.000Z'), NOW] as const;
 
 describe('HealthConnectSource read integrity', () => {
+  it('initializes Health Connect before a silent read, without asking for permissions', async () => {
+    const order: string[] = [];
+    const requestPermission = jest.fn(async () => [{}]);
+    const module: HealthModule = {
+      ...fakeModule(async () => {
+        order.push('read');
+        return { records: [] };
+      }, requestPermission),
+      initialize: async () => {
+        order.push('initialize');
+        return true;
+      },
+    };
+    const result = await new HealthConnectSource(async () => module, 'android').readGranted(...RANGE);
+    expect(order[0]).toBe('initialize');
+    expect(order).toContain('read');
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(result.failed).toBeUndefined();
+  });
+
+  it('reports a failed read, not an empty one, when Health Connect cannot start', async () => {
+    const readRecords = jest.fn(async () => ({ records: [] }));
+    const module: HealthModule = { ...fakeModule(readRecords), initialize: async () => false };
+    const result = await new HealthConnectSource(async () => module, 'android').readGranted(...RANGE);
+    expect(result.failed).toBe(true);
+    expect(readRecords).not.toHaveBeenCalled();
+  });
+
   it('marks the read failed when every record type throws (background permission missing)', async () => {
     const source = new HealthConnectSource(async () => fakeModule(async () => {
       throw new Error('SecurityException');

@@ -34,7 +34,10 @@ type LifeContextValue = {
   hasSession: boolean;
   health: HealthFeedback;
   refresh: () => Promise<void>;
+  /** Lectura de salud pedida por la persona: puede abrir la pantalla de permisos del sistema. */
   syncHealth: () => Promise<string | null>;
+  /** Lectura automática (al abrir la app, al volver la red): solo lee lo ya concedido, sin abrir pantallas del sistema. */
+  syncHealthQuietly: () => Promise<string | null>;
   /** Envía la cola al servidor (una sola ejecución a la vez). */
   syncServer: () => Promise<void>;
   /** Hay una banda Vitalsy vinculada (RF-113): basta para programar la lectura en segundo plano. */
@@ -151,12 +154,12 @@ export function LifeProvider({
     }
   }, [life, store]);
 
-  const syncHealthOnce = useCallback(async () => {
+  const syncHealthOnce = useCallback(async (interactive: boolean) => {
     const collected = await collectAndEnqueue({
       source: createHealthSource(),
       life,
       now: () => new Date(),
-      interactive: true,
+      interactive,
     });
     if (collected.status !== 'read') {
       if (collected.status !== 'stale_session') {
@@ -202,7 +205,8 @@ export function LifeProvider({
   useLayoutEffect(() => {
     syncImplRef.current = syncHealthOnce;
   }, [syncHealthOnce]);
-  const syncHealth = useMemo(() => singleFlight(() => syncImplRef.current()), []);
+  const syncHealth = useMemo(() => singleFlight(() => syncImplRef.current(true)), []);
+  const syncHealthQuietly = useMemo(() => singleFlight(() => syncImplRef.current(false)), []);
 
   const wasOnline = useRef(true);
   useEffect(() => {
@@ -210,11 +214,11 @@ export function LifeProvider({
       return;
     }
     if (!wasOnline.current && online) {
-      void syncHealth();
+      void syncHealthQuietly();
       void serverSync();
     }
     wasOnline.current = online;
-  }, [online, ready, syncHealth, serverSync]);
+  }, [online, ready, syncHealthQuietly, serverSync]);
 
   // Al abrir la app y al volver a primer plano: revocación pendiente, cola y avisos del servidor.
   useEffect(() => {
@@ -350,6 +354,7 @@ export function LifeProvider({
       health,
       refresh,
       syncHealth,
+      syncHealthQuietly,
       syncServer: serverSync,
       bandPaired,
       setBandPaired,
@@ -367,6 +372,7 @@ export function LifeProvider({
       health,
       refresh,
       syncHealth,
+      syncHealthQuietly,
       serverSync,
       bandPaired,
       activateFromCode,

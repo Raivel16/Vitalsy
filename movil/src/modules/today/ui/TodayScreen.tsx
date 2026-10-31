@@ -17,7 +17,7 @@ import { TodayBody } from './TodayBody';
 
 export function TodayScreen() {
   const router = useRouter();
-  const { life, online, refresh, syncHealth, hasSession } = useLife();
+  const { life, online, refresh, syncHealth, syncHealthQuietly, hasSession } = useLife();
   const { view: band, controller } = useBand();
   const user = life.currentUser();
   const [manualOpen, setManualOpen] = useState(false);
@@ -42,8 +42,9 @@ export function TodayScreen() {
       return;
     }
     started.current = true;
-    void syncHealth().then((message) => setSyncMessage(message));
-  }, [syncHealth]);
+    // Al abrir: lectura silenciosa. La pantalla de permisos de Health Connect solo se abre con el botón.
+    void syncHealthQuietly().then((message) => setSyncMessage(message));
+  }, [syncHealthQuietly]);
 
   const snapshot = applyBandLive(life.today(), { connected: Boolean(band.paired) && band.connection === 'connected', live: band.live, now });
   const dateLabel = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());

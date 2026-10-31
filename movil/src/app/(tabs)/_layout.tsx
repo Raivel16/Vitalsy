@@ -4,6 +4,10 @@ import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aire, font } from '../../shared/theme/tokens';
 
+// Alto de cada pestaña: icono, etiqueta y su aire interno (medido en un Galaxy A24). Con menos, la etiqueta desborda y se pega al borde.
+const TAB_BAR_CONTENT = 58;
+const TAB_BAR_PADDING = 6;
+
 const tabs = [
   { name: 'hoy', title: 'Hoy', icon: 'wb-sunny' },
   { name: 'tendencias', title: 'Tendencias', icon: 'show-chart' },
@@ -33,9 +37,10 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: 'rgba(246,249,255,0.96)',
           borderTopColor: aire.border,
-          height: 58 + bottom,
-          paddingBottom: bottom,
-          paddingTop: 8,
+          // Mismo aire arriba y abajo; abajo se suma el margen del indicador de inicio (iPhone).
+          height: TAB_BAR_CONTENT + 2 * TAB_BAR_PADDING + bottom,
+          paddingBottom: TAB_BAR_PADDING + bottom,
+          paddingTop: TAB_BAR_PADDING,
         },
         tabBarLabelStyle: { fontFamily: font.semibold, fontSize: 11 },
       }}
