@@ -20,7 +20,7 @@ import {
   type AlertEvent,
   type ClinicalAlert,
 } from "../domain/alert";
-import { notifyAlertAcknowledged } from "../domain/inboxEvents";
+import { ALERT_INBOX_CHANGED_EVENT, notifyAlertAcknowledged } from "../domain/inboxEvents";
 import { keyByContent } from "../../../shared/list/rowKeys";
 
 const NURSING_ROLES: ReadonlySet<string> = new Set(["enfermera_piso", "enfermera_supervisora"]);
@@ -770,6 +770,12 @@ function useAlertTimeline(alertId: string | undefined) {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const onInboxChanged = () => void load();
+    window.addEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
+    return () => window.removeEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
   }, [load]);
 
   return { alert, events, escalations, loading, pageError, load };

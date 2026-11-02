@@ -8,7 +8,7 @@ import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { formatDateTime } from "../../../shared/datetime/format";
 import { STATUS_LABEL, originLabel, severityVisual, type ClinicalAlert } from "../domain/alert";
-import { notifyAlertAcknowledged } from "../domain/inboxEvents";
+import { ALERT_INBOX_CHANGED_EVENT, notifyAlertAcknowledged } from "../domain/inboxEvents";
 
 type InboxFilter = "todas" | "confirmar" | "seguimiento";
 
@@ -35,6 +35,15 @@ export function AlertInboxPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    function onInboxChanged(event: Event) {
+      const latest = (event as CustomEvent<{ alerts?: ClinicalAlert[] }>).detail?.alerts;
+      if (latest) setAlerts(latest);
+    }
+    window.addEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
+    return () => window.removeEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
+  }, []);
 
   async function acknowledge(alert: ClinicalAlert) {
     setBusyId(alert.id);
