@@ -30,6 +30,8 @@ export type NavItem = {
   icon: Icon;
   roles: Role[];
   end?: boolean;
+  /** Subrutas con enlace propio en el menú: en ellas este elemento no se marca como activo. */
+  ownSubroutes?: string[];
   /** Si true, reutiliza el último paciente abierto (`vitalsy-ingreso`) al navegar. */
   needsIngreso?: boolean;
 };
@@ -86,7 +88,7 @@ export const NAV: NavGroup[] = [
     label: "Trabajo del turno",
     items: [
       { to: "/", label: "Inicio", icon: IconLayoutDashboard, roles: [...ROLES], end: true },
-      { to: "/pacientes", label: "Pacientes", icon: IconUsers, roles: PATIENT_WORKLIST },
+      { to: "/pacientes", label: "Pacientes", icon: IconUsers, roles: PATIENT_WORKLIST, ownSubroutes: ["/pacientes/nuevo"] },
       { to: "/pacientes/nuevo", label: "Registrar ingreso", icon: IconUserPlus, roles: ["admision"] },
     ],
   },
