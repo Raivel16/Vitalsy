@@ -13,13 +13,15 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EmarService
 {
+    public function __construct(private readonly MedicationDoseScheduler $scheduler) {}
+
     /**
      * @return array{doses: list<array<string, mixed>>, shiftStart: string, shiftEnd: string, hasActivePrescription: bool}
      */
     public function listShift(string $encounterId): array
     {
         $this->requireEncounter($encounterId);
-        $this->ensureDosesFromActiveCpoe($encounterId);
+        $this->scheduler->syncEncounter($encounterId);
 
         [$start, $end] = $this->shiftWindow();
 
@@ -31,7 +33,10 @@ class EmarService
         $doses = MedicationAdministration::query()
             ->with('prescriptionItem')
             ->where('encounter_id', $encounterId)
-            ->whereBetween('scheduled_at', [$start, $end])
+            // Una dosis vencida de otro turno sigue visible: su alerta solo se cierra al administrarla.
+            ->where(fn ($query) => $query
+                ->whereBetween('scheduled_at', [$start, $end])
+                ->orWhere(fn ($overdue) => $overdue->where('status', 'pendiente')->where('scheduled_at', '<', $start)))
             ->orderBy('scheduled_at')
             ->get()
             ->map(fn (MedicationAdministration $dose) => $this->present($dose))
@@ -99,53 +104,6 @@ class EmarService
         return ['dose' => $this->present($dose->fresh('prescriptionItem'))];
     }
 
-    private function ensureDosesFromActiveCpoe(string $encounterId): void
-    {
-        $prescription = Prescription::query()
-            ->with('items')
-            ->where('encounter_id', $encounterId)
-            ->where('status', 'activo')
-            ->latest('id')
-            ->first();
-
-        if (! $prescription || $prescription->items->isEmpty()) {
-            return;
-        }
-
-        $activeItemIds = $prescription->items->pluck('id')->all();
-
-        MedicationAdministration::query()
-            ->where('encounter_id', $encounterId)
-            ->where('status', 'pendiente')
-            ->whereNotIn('prescription_item_id', $activeItemIds)
-            ->update(['status' => 'cancelado']);
-
-        [$start, $end] = $this->shiftWindow();
-
-        foreach ($prescription->items as $item) {
-            $hours = $this->intervalHours($item->frequency);
-            $cursor = $start->copy();
-            while ($cursor < $end) {
-                $exists = MedicationAdministration::query()
-                    ->where('encounter_id', $encounterId)
-                    ->where('prescription_item_id', $item->id)
-                    ->where('scheduled_at', $cursor)
-                    ->exists();
-
-                if (! $exists) {
-                    MedicationAdministration::query()->create([
-                        'encounter_id' => $encounterId,
-                        'prescription_item_id' => $item->id,
-                        'scheduled_at' => $cursor->copy(),
-                        'status' => 'pendiente',
-                    ]);
-                }
-
-                $cursor->addHours($hours);
-            }
-        }
-    }
-
     /**
      * @return array{0: Carbon, 1: Carbon}
      */
@@ -164,15 +122,6 @@ class EmarService
         }
 
         return [$start, $end];
-    }
-
-    private function intervalHours(string $frequency): int
-    {
-        if (preg_match('/(\d+)\s*horas?/i', $frequency, $match) === 1) {
-            return max(1, (int) $match[1]);
-        }
-
-        return 8;
     }
 
     private function drugBarcode(?PrescriptionItem $item): string
