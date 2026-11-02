@@ -14,6 +14,7 @@ class PrescriptionItem extends Model
         'dose',
         'route',
         'frequency',
+        'first_dose_at',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class PrescriptionItem extends Model
         return [
             'dose' => EncryptedText::class,
             'drug_name' => EncryptedText::class,
+            'first_dose_at' => 'datetime',
             'frequency' => EncryptedText::class,
             'route' => EncryptedText::class,
         ];

@@ -44,6 +44,14 @@ class AlertPreconditions
         }
     }
 
+    /** Una alerta de dosis no se atiende con constantes: se cierra al administrar la dosis en e-MAR. */
+    public function requireVitalsApply(ClinicalAlert $alert): void
+    {
+        if ($alert->source === 'emar') {
+            throw new ClinicalRuleException('Esta alerta es de una dosis pendiente: adminístrela en e-MAR.');
+        }
+    }
+
     public function requireEncounter(string $encounterId): AdmissionEncounter
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();

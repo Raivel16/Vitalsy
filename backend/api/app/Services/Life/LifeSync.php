@@ -26,7 +26,8 @@ class LifeSync
 
     private const KIND_BIOMETRICS = 'biometrics';
 
-    private const ORIGINS = ['health_connect', 'health_kit', 'manual'];
+    /** `vitalsy_band`: banda propia por Bluetooth LE (RF-113). */
+    private const ORIGINS = ['health_connect', 'health_kit', 'manual', 'vitalsy_band'];
 
     /** Zona horaria final opcional de un ISO-8601 (Z, +hh:mm o +hhmm). */
     private const ISO_TIMEZONE_SUFFIX = '/(Z|[+-]\d{2}:?\d{2})$/';

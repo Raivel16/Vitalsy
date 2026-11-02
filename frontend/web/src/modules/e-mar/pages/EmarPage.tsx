@@ -33,6 +33,13 @@ function isOverdue(dose: Dose): boolean {
   return new Date(dose.scheduledAt).getTime() < Date.now();
 }
 
+/** Misma gracia que el backend para considerar una dosis dentro de su ventana. */
+const WINDOW_MS = 30 * 60_000;
+
+function isInWindow(dose: Dose): boolean {
+  return Boolean(dose.scheduledAt) && new Date(dose.scheduledAt as string).getTime() - Date.now() <= WINDOW_MS;
+}
+
 function doseTone(dose: Dose): ClinicalTone {
   if (dose.status === "administrado") return "success";
   if (isOverdue(dose)) return "warning";
@@ -44,7 +51,7 @@ function doseStatusLabel(dose: Dose): string {
   if (dose.status === "administrado") return "Administrada";
   if (isOverdue(dose)) return "Vencida";
   if (dose.status === "pendiente") return "Pendiente";
-  return dose.status;
+  return "Cancelada";
 }
 
 function ShiftLead({ patientName, shiftLabel }: Readonly<{ patientName?: string; shiftLabel: string }>) {
@@ -97,7 +104,7 @@ function DoseRow({ dose, active, onSelect }: Readonly<{ dose: Dose; active: bool
             <span className="hint">{timeLabel(dose.administeredAt)}</span>
           ) : null}
           {dose.status === "pendiente" && !overdue ? (
-            <span className="hint">Dosis en ventana</span>
+            <span className="hint">{isInWindow(dose) ? "Dosis en ventana" : "Programada"}</span>
           ) : null}
         </div>
       </td>
@@ -107,7 +114,7 @@ function DoseRow({ dose, active, onSelect }: Readonly<{ dose: Dose; active: bool
             {overdue ? "Justificar / Administrar" : "Verificar y administrar"}
           </Button>
         ) : (
-          <span className="hint">Registrada</span>
+          <span className="hint">{dose.status === "administrado" ? "Registrada" : "Sin acción"}</span>
         )}
       </td>
     </tr>
@@ -186,14 +193,17 @@ export function EmarPage() {
     new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false }),
   );
 
+  const [unscheduledDrugs, setUnscheduledDrugs] = useState<string[]>([]);
+
   function load() {
     if (!ingreso) return;
-    api<{ doses: Dose[]; hasActivePrescription?: boolean; shiftStart?: string; shiftEnd?: string }>(
+    api<{ doses: Dose[]; hasActivePrescription?: boolean; unscheduledDrugs?: string[]; shiftStart?: string; shiftEnd?: string }>(
       `/api/v1/inpatient-care/encounters/${encodeURIComponent(ingreso)}/emar`,
     )
       .then((data) => {
         setDoses(data.doses);
         setHasActivePrescription(data.hasActivePrescription ?? true);
+        setUnscheduledDrugs(data.unscheduledDrugs ?? []);
         if (data.shiftStart && data.shiftEnd) {
           setShiftLabel(`${formatDateTime(data.shiftStart)} – ${formatDateTime(data.shiftEnd)}`);
         }
@@ -287,6 +297,12 @@ export function EmarPage() {
       {!hasActivePrescription ? (
         <Feedback tone="info">
           No hay prescripción CPOE activa. El médico tratante debe registrar el plan en CPOE.
+        </Feedback>
+      ) : null}
+
+      {unscheduledDrugs.length > 0 ? (
+        <Feedback tone="error">
+          {unscheduledDrugs.join(", ")} sin horario: el médico debe elegir una frecuencia en CPOE para que aparezcan sus dosis.
         </Feedback>
       ) : null}
 

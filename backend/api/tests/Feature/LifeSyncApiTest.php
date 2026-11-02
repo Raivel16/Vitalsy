@@ -49,6 +49,28 @@ class LifeSyncApiTest extends TestCase
         $this->assertDatabaseCount('life_biometric_samples', 1);
     }
 
+    public function test_vitalsy_band_origin_is_accepted(): void
+    {
+        $this->asCitizen();
+        $item = $this->bioItem('bio-band', [
+            $this->sample('vb:AA:heart_rate:1', 'heart_rate', 71, 'lpm', 'vitalsy_band'),
+            $this->sample('vb:AA:spo2:1', 'spo2', 98, '%', 'vitalsy_band'),
+        ]);
+
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('accepted.0', 'bio-band');
+
+        $this->assertDatabaseHas('life_biometric_samples', ['client_id' => 'vb:AA:spo2:1', 'origin' => 'vitalsy_band']);
+    }
+
+    public function test_unknown_origin_is_rejected(): void
+    {
+        $this->asCitizen();
+        $item = $this->bioItem('bio-x', [$this->sample('s-x', 'heart_rate', 70, 'lpm', 'reloj_magico')]);
+
+        $this->postJson(self::LIFE_SYNC, ['items' => [$item]])->assertOk()->assertJsonPath('rejected.0.id', 'bio-x');
+        $this->assertDatabaseCount('life_biometric_samples', 0);
+    }
+
     public function test_unknown_kind_and_out_of_range_values_are_rejected_not_stored(): void
     {
         $this->asCitizen();

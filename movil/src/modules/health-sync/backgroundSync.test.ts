@@ -1,7 +1,13 @@
 import type { LifeClient } from '../../shared/api/lifeClient';
 import type { LifePersistence } from '../../shared/storage/persistence';
 import { emptySnapshot, LifeApp, type LifeSnapshot } from '../life/lifeApp';
-import { clearForegroundRuntime, runBackgroundHealthSync, setForegroundRuntime, type BackgroundSyncDeps } from './backgroundSync';
+import {
+  clearForegroundRuntime,
+  runBackgroundBandSync,
+  runBackgroundHealthSync,
+  setForegroundRuntime,
+  type BackgroundSyncDeps,
+} from './backgroundSync';
 import type { BiometricSample } from './domain/types';
 import type { HealthDataSource } from './HealthDataSource';
 
@@ -327,5 +333,79 @@ describe('runBackgroundHealthSync', () => {
       await expect(runBackgroundHealthSync(deps)).resolves.toBe('noop');
       expect(sync).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('runBackgroundBandSync', () => {
+  const bandSample: BiometricSample = { ...sample('vb:AABBCCDD:heart_rate:1'), origin: 'vitalsy_band' };
+
+  function bandSetup(options: Parameters<typeof setup>[0] & { outcome?: 'none' | 'read' | 'failed'; owner?: string } = {}) {
+    const harness = setup(options);
+    const saved: boolean[] = [];
+    const readBand = jest.fn(async (apply: (samples: BiometricSample[], owner: string) => Promise<boolean>) => {
+      const outcome = options.outcome ?? 'read';
+      if (outcome !== 'read') {
+        return outcome;
+      }
+      // Como readBandOnce: si no se guardó, no hay lectura.
+      const ok = await apply([bandSample], options.owner ?? '7');
+      saved.push(ok);
+      return ok ? 'read' : 'none';
+    });
+    return { ...harness, deps: { ...harness.deps, readBand }, readBand, saved };
+  }
+
+  it('saves band samples even without Health Connect permission, then sends them', async () => {
+    const { deps, sync, getStored, saved } = bandSetup({
+      snapshot: snapshot({ healthSync: { accessGranted: false, lastReadAt: null, backgroundAccessRequested: false } }),
+    });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('success');
+    expect(saved).toEqual([true]);
+    expect(getStored()?.samples.map((item) => item.id)).toContain(bandSample.id);
+    expect(sync).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps band samples queued when offline', async () => {
+    const { deps, sync, getStored } = bandSetup({ online: false });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('success');
+    expect(sync).not.toHaveBeenCalled();
+    expect(getStored()?.queue.some((item) => item.status === 'pending')).toBe(true);
+  });
+
+  it('refuses to save when the token belongs to another account (the band keeps its data)', async () => {
+    const { deps, readBand } = bandSetup({ accountId: '9' });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(readBand).not.toHaveBeenCalled();
+  });
+
+  it('reports false to the band when the account changed while reading', async () => {
+    const { deps, saved } = bandSetup({ concurrentWrite: (current) => ({ ...current, sessionUserId: '9' }) });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(saved).toEqual([false]);
+  });
+
+  it('refuses band data paired by another account on this phone', async () => {
+    const { deps, saved, getStored } = bandSetup({ owner: '9' });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(saved).toEqual([false]);
+    expect(getStored()?.samples.map((item) => item.id) ?? []).not.toContain(bandSample.id);
+  });
+
+  it('leaves the band to the open app: no background connection while the UI runtime is alive', async () => {
+    const { deps, readBand } = bandSetup({});
+    setForegroundRuntime({ life: deps.createLife(snapshot()), persist: async () => undefined });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(readBand).not.toHaveBeenCalled();
+  });
+
+  it('maps band outcomes: nothing new is a no-op, a failed read is failed', async () => {
+    await expect(runBackgroundBandSync(bandSetup({ outcome: 'none' }).deps)).resolves.toBe('noop');
+    await expect(runBackgroundBandSync(bandSetup({ outcome: 'failed' }).deps)).resolves.toBe('failed');
+  });
+
+  it('is a no-op without a session token', async () => {
+    const { deps, readBand } = bandSetup({ token: null });
+    await expect(runBackgroundBandSync(deps)).resolves.toBe('noop');
+    expect(readBand).not.toHaveBeenCalled();
   });
 });

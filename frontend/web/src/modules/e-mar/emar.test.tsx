@@ -83,3 +83,56 @@ describe("e-MAR (RF-32–35)", () => {
     expect(await screen.findByRole("status", { name: /resultado de administración/i })).toHaveTextContent(/dosis administrada/i);
   });
 });
+
+describe("e-MAR: estado de cada dosis (RF-32)", () => {
+  const baseDose = { drugName: "Paracetamol", dose: "1 g", route: "VO" };
+  const inHours = (hours: number) => new Date(Date.now() + hours * 3_600_000).toISOString();
+
+  function stubEmar(doses: unknown[], unscheduledDrugs: string[] = []) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+        if (url.includes("/emar")) return jsonResponse(200, { hasActivePrescription: true, doses, unscheduledDrugs });
+        return jsonResponse(404, { message: "No se encontró lo solicitado." });
+      }),
+    );
+  }
+
+  beforeEach(() => {
+    sessionStorage.setItem("vitalsy-role", "enfermera_piso");
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("no presenta una dosis cancelada como registrada", async () => {
+    stubEmar([{ ...baseDose, id: 1, status: "cancelado", scheduledAt: inHours(1) }]);
+    renderApp("/atencion/emar?ingreso=ENC-HOSP-0001");
+
+    expect(await screen.findByText("Cancelada")).toBeInTheDocument();
+    expect(screen.queryByText("Registrada")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /administrar/i })).not.toBeInTheDocument();
+  });
+
+  it("distingue una dosis lejana de la que está en ventana", async () => {
+    stubEmar([
+      { ...baseDose, id: 1, status: "pendiente", scheduledAt: inHours(3) },
+      { ...baseDose, id: 2, status: "pendiente", scheduledAt: inHours(0.25) },
+    ]);
+    renderApp("/atencion/emar?ingreso=ENC-HOSP-0001");
+
+    expect(await screen.findByText("Programada")).toBeInTheDocument();
+    expect(screen.getAllByText("Dosis en ventana")).toHaveLength(1);
+  });
+
+  it("avisa a enfermería de los medicamentos sin horario", async () => {
+    stubEmar([], ["Metformina"]);
+    renderApp("/atencion/emar?ingreso=ENC-HOSP-0001");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/metformina.*sin horario/i);
+  });
+});

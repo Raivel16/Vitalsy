@@ -112,7 +112,7 @@ RNF-01 (empuje ≤ 2 s), RNF-12 (reconexión ≤ 5 s y resincronización) y RF-5
 | `alert.raised` (`ClinicalAlertRaised`) | Alerta creada (NEWS2, observación, cumplimiento) o escalada hacia un perfil que antes no la veía | Usuarios activos que la ven en su bandeja |
 | `alert.updated` (`ClinicalAlertUpdated`) | Cambio de estado/asignación/severidad/plazos o cierre | Quienes la veían antes y quienes la ven ahora |
 
-El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `ClinicalAlert`), por lo que cubre todos los caminos que persisten alertas. Los destinatarios salen de `AlertAudience`, que replica las reglas de `AlertWorkflow::inboxFor` (hay una prueba de paridad por estado y rol). Un fallo del transporte se registra y no interrumpe el flujo clínico.
+El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `ClinicalAlert`), por lo que cubre todos los caminos que persisten alertas. Los destinatarios salen de `AlertAudience`, que replica las reglas de `AlertWorkflow::inboxFor` (hay una prueba de paridad por estado y rol). Un fallo del transporte se registra y no interrumpe el flujo clínico, tampoco si la difusión ocurre tras el commit de una transacción; cada destinatario se intenta por separado.
 
 **Carga mínima** (un evento por usuario): `alertId`, `severity`, `news2Total`, `encounterId`, `location` (habitación/lecho), `status`, `createdAt`, `needsSiren` (calculado para ese destinatario). Sin nombre del paciente ni texto libre clínico.
 
@@ -122,6 +122,13 @@ El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `
 - Caída: reintenta conectar cada 2 s y al disparar `online`; al (re)conectar hace un refresh completo de la bandeja (RNF-12).
 - Sirena: continua hasta confirmar lectura; `ALERT_ACKNOWLEDGED_EVENT` se comporta como antes. Se cancelan suscripción y temporizadores al desmontar/cerrar sesión.
 - El id propio llega en `GET /api/v1/auth/me` (`id`).
+- Páginas abiertas: `useAlertInbox` (montado en la campana) emite `ALERT_INBOX_CHANGED_EVENT` cuando cambia la bandeja; Inicio, la bandeja y el detalle del evento se actualizan sin recargar y sin perder lo escrito en los formularios.
+- Varias ventanas: si la lectura se confirmó en otra ventana o página, el aviso emergente se retira solo. Un acuse rechazado porque otra ventana se adelantó no se muestra como error. La ventana que confirmó conserva «Ir al evento» y, si la sirena reaparece, vuelve a pedir la confirmación.
+
+**Atención según el origen** (`source`).
+- `emar` (dosis pendiente): el detalle lleva al e-MAR y permite solicitar atención médica; no pide constantes. La API rechaza `reassessment` y `monitoring-schedule`. La alerta se cierra al administrar la dosis.
+- `control` (control vencido): conserva la toma de constantes y enlaza a Controles.
+- La bandeja etiqueta las alertas sin NEWS2 como «Dosis pendiente», «Control vencido» o «Deterioro observado».
 
 **Variables de entorno.** Backend: `BROADCAST_CONNECTION` (`reverb` en despliegue; `log`/`null` sin servidor WebSocket y en pruebas), `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME`, `REVERB_SERVER_HOST`, `REVERB_SERVER_PORT`, `REVERB_ALLOWED_ORIGINS`. Frontend: `VITE_REVERB_APP_KEY` (obligatoria), `VITE_REVERB_HOST`, `VITE_REVERB_PORT`, `VITE_REVERB_SCHEME` (opcionales; por defecto el host/puerto/esquema de la página). En producción usar claves aleatorias, `https`/`wss` detrás del proxy TLS (RNF-05) y acotar `REVERB_ALLOWED_ORIGINS` al dominio público.
 

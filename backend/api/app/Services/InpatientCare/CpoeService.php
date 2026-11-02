@@ -6,14 +6,18 @@ use App\Models\AdmissionEncounter;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
 use App\Models\User;
+use App\Support\MedicationFrequency;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CpoeService
 {
+    public function __construct(private readonly MedicationDoseScheduler $scheduler) {}
+
     /**
-     * @param  list<array{drugName: string, dose: string, route: string, frequency: string}>  $items
+     * @param  list<array{drugName: string, dose: string, route: string, frequency: string, firstDoseAt?: string}>  $items
      * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
      */
     public function prescribe(string $encounterId, User $prescriber, array $items, bool $continuePlan = false): array
@@ -21,25 +25,12 @@ class CpoeService
         $this->requireEncounter($encounterId);
 
         return DB::transaction(function () use ($encounterId, $prescriber, $items, $continuePlan) {
-            $merged = $items;
             $active = Prescription::query()
                 ->with('items')
                 ->where('encounter_id', $encounterId)
                 ->where('status', 'activo')
                 ->latest('id')
                 ->first();
-
-            if ($continuePlan && $active) {
-                $merged = array_merge(
-                    $active->items->map(fn (PrescriptionItem $item) => [
-                        'drugName' => $item->drug_name,
-                        'dose' => $item->dose,
-                        'route' => $item->route,
-                        'frequency' => $item->frequency,
-                    ])->all(),
-                    $items,
-                );
-            }
 
             Prescription::query()
                 ->where('encounter_id', $encounterId)
@@ -53,13 +44,13 @@ class CpoeService
                 'signed_at' => now(),
             ]);
 
-            foreach ($merged as $item) {
-                $prescription->items()->create([
-                    'drug_name' => $item['drugName'],
-                    'dose' => $item['dose'],
-                    'route' => $item['route'],
-                    'frequency' => $item['frequency'],
-                ]);
+            // Continuar conserva las mismas indicaciones: sus dosis dadas y pendientes siguen vigentes.
+            if ($continuePlan && $active) {
+                $active->items()->update(['prescription_id' => $prescription->id]);
+            }
+
+            foreach ($items as $item) {
+                $prescription->items()->create($this->itemColumns($item));
             }
 
             return $this->finalize($encounterId, $prescription->fresh('items'));
@@ -67,42 +58,42 @@ class CpoeService
     }
 
     /**
-     * @param  array{drugName: string, dose: string, route: string, frequency: string}  $item
+     * @param  array{drugName: string, dose: string, route: string, frequency: string, firstDoseAt: string}  $item
      * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
      */
     public function addItem(string $encounterId, array $item): array
     {
-        $prescription = $this->requireActive($encounterId);
-        $prescription->items()->create([
-            'drug_name' => $item['drugName'],
-            'dose' => $item['dose'],
-            'route' => $item['route'],
-            'frequency' => $item['frequency'],
-        ]);
+        return DB::transaction(function () use ($encounterId, $item) {
+            $prescription = $this->requireActive($encounterId);
+            $prescription->items()->create($this->itemColumns($item));
 
-        return $this->finalize($encounterId, $prescription->fresh('items'));
+            return $this->finalize($encounterId, $prescription->fresh('items'));
+        });
     }
 
     /**
-     * @param  array{drugName: string, dose: string, route: string, frequency: string}  $item
+     * @param  array{drugName: string, dose: string, route: string, frequency: string, firstDoseAt: string}  $item
      * @return array{prescription: array<string, mixed>, kardex: array{medications: list<string>}}
      */
     public function updateItem(string $encounterId, int $itemId, array $item): array
     {
-        $prescription = $this->requireActive($encounterId);
-        $row = $prescription->items()->whereKey($itemId)->first();
-        if (! $row) {
-            throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
-        }
+        return DB::transaction(function () use ($encounterId, $itemId, $item) {
+            $prescription = $this->requireActive($encounterId);
+            $row = $prescription->items()->whereKey($itemId)->first();
+            if (! $row) {
+                throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
+            }
 
-        $row->update([
-            'drug_name' => $item['drugName'],
-            'dose' => $item['dose'],
-            'route' => $item['route'],
-            'frequency' => $item['frequency'],
-        ]);
+            $columns = $this->itemColumns($item);
+            if ($this->scheduleChanges($row, $columns)) {
+                $this->requireFutureFirstDose($columns['first_dose_at']);
+                $this->scheduler->cancelPendingForItem($row->id, 'Dosis cancelada: el médico cambió el horario.');
+            }
 
-        return $this->finalize($encounterId, $prescription->fresh('items'));
+            $row->update($columns);
+
+            return $this->finalize($encounterId, $prescription->fresh('items'));
+        });
     }
 
     /**
@@ -110,21 +101,24 @@ class CpoeService
      */
     public function deleteItem(string $encounterId, int $itemId): array
     {
-        $prescription = $this->requireActive($encounterId);
-        $row = $prescription->items()->whereKey($itemId)->first();
-        if (! $row) {
-            throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
-        }
+        return DB::transaction(function () use ($encounterId, $itemId) {
+            $prescription = $this->requireActive($encounterId);
+            $row = $prescription->items()->whereKey($itemId)->first();
+            if (! $row) {
+                throw new NotFoundHttpException('No se encontró el medicamento en el plan activo.');
+            }
 
-        if ($prescription->items()->count() <= 1) {
-            throw ValidationException::withMessages([
-                'item' => ['No puede eliminar el último medicamento. Agregue otro o reemplace el plan.'],
-            ]);
-        }
+            if ($prescription->items()->count() <= 1) {
+                throw ValidationException::withMessages([
+                    'item' => ['No puede eliminar el último medicamento. Agregue otro o reemplace el plan.'],
+                ]);
+            }
 
-        $row->delete();
+            $this->scheduler->cancelPendingForItem($row->id, 'Dosis cancelada: el medicamento salió del plan.');
+            $row->delete();
 
-        return $this->finalize($encounterId, $prescription->fresh('items'));
+            return $this->finalize($encounterId, $prescription->fresh('items'));
+        });
     }
 
     /**
@@ -178,6 +172,42 @@ class CpoeService
         return "DRUG-{$name}-{$doseCode}";
     }
 
+    /**
+     * @param  array{drugName: string, dose: string, route: string, frequency: string, firstDoseAt?: string|null}  $item
+     * @return array{drug_name: string, dose: string, route: string, frequency: string, first_dose_at: Carbon}
+     */
+    private function itemColumns(array $item): array
+    {
+        return [
+            'drug_name' => $item['drugName'],
+            'dose' => $item['dose'],
+            'route' => $item['route'],
+            'frequency' => $item['frequency'],
+            // El plan basal del BPMH no trae hora: su primera dosis es la de la firma.
+            'first_dose_at' => isset($item['firstDoseAt'])
+                ? Carbon::parse($item['firstDoseAt'])->setTimezone((string) config('app.timezone'))
+                : now(),
+        ];
+    }
+
+    /**
+     * @param  array{frequency: string, first_dose_at: Carbon}  $columns
+     */
+    private function scheduleChanges(PrescriptionItem $row, array $columns): bool
+    {
+        return $row->frequency !== $columns['frequency']
+            || $row->first_dose_at?->format('Y-m-d H:i') !== $columns['first_dose_at']->format('Y-m-d H:i');
+    }
+
+    private function requireFutureFirstDose(Carbon $firstDoseAt): void
+    {
+        if ($firstDoseAt->lt(now()->subMinutes(MedicationDoseScheduler::PAST_TOLERANCE_MINUTES))) {
+            throw ValidationException::withMessages([
+                'firstDoseAt' => ['La primera dosis no puede estar en el pasado.'],
+            ]);
+        }
+    }
+
     private function requireEncounter(string $encounterId): AdmissionEncounter
     {
         $encounter = AdmissionEncounter::query()->where('encounter_id', $encounterId)->first();
@@ -218,6 +248,8 @@ class CpoeService
         $encounter->clinical_payload = $payload;
         $encounter->save();
 
+        $this->scheduler->syncEncounter($encounterId);
+
         return [
             'prescription' => $this->present($prescription),
             'kardex' => $kardex,
@@ -240,7 +272,7 @@ class CpoeService
     }
 
     /**
-     * @return array{id: int, status: string, signedAt: string|null, items: list<array{id: int, drugName: string, dose: string, route: string, frequency: string, drugBarcode: string}>}
+     * @return array{id: int, status: string, signedAt: string|null, items: list<array{id: int, drugName: string, dose: string, route: string, frequency: string, firstDoseAt: string|null, needsSchedule: bool, drugBarcode: string}>}
      */
     private function present(Prescription $prescription): array
     {
@@ -254,6 +286,8 @@ class CpoeService
                 'dose' => $item->dose,
                 'route' => $item->route,
                 'frequency' => $item->frequency,
+                'firstDoseAt' => $item->first_dose_at?->toIso8601String(),
+                'needsSchedule' => ! MedicationFrequency::isSchedulable($item->frequency),
                 'drugBarcode' => self::drugBarcodeFor($item->drug_name, $item->dose),
             ])->all(),
         ];

@@ -162,3 +162,27 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Dockerfile del backend: `$PHPIZE_DEPS` debe separarse en varios paquetes; se entrecomilla y se reparte con `printf '%s' "$PHPIZE_DEPS" | xargs apt-get ...`. No se pudo construir la imagen en local (Docker apagado): validar con `docker compose build backend` antes de desplegar.
 - Se dejan a propósito: S9382 (awaits secuenciales en E2E, el orden importa), `!important` en `clinical.css` (riesgo visual) y plsql:S1192 (el servidor oficial no analiza PL/SQL).
 - `npx expo lint` en `movil/` crea `eslint.config.js` y un script `lint` si no existen: no versionarlos sin decidirlo.
+
+### 2026-11-01 — Alertas: fallo de Reverb tras el commit (RNF-12)
+
+- `ClinicalAlertObserver::emit` difundía en `DB::afterCommit`, fuera del `try/catch` de `safely()`. Dentro de una transacción, con Reverb caído, `BroadcastException` se propagaba con la alerta ya guardada y cortaba la difusión a los demás destinatarios. Ahora cada callback lleva su propio `safely`.
+- No se halló ningún flujo actual que cree alertas dentro de una transacción directa: el fallo estaba latente. Esto resuelve el pendiente anotado en `AGENTS.md` el 2026-11-01.
+
+### 2026-11-02 — Alertas: sincronización y atención según el origen (RF-53)
+
+- `useAlertInbox` vive en la campana y las páginas no lo comparten: emite `ALERT_INBOX_CHANGED_EVENT` solo si la bandeja cambió, para que la bandeja y el detalle se actualicen sin recargar.
+- Confirmar una lectura ya confirmada en otra ventana devuelve 422. `acknowledge` lo trata como éxito silencioso si, al refrescar, esa alerta ya no pide sirena; la ventana que confirmó conserva «Ir al evento».
+- Las alertas `emar` no aceptan constantes: `requireVitalsApply` protege `reassessment` y `monitoring-schedule`, y la UI lleva al e-MAR. Las `control` conservan la toma.
+- Comprobado en Chrome con dos pestañas de la misma cuenta. No se reprodujo ahí el 422 de quien confirma tarde, que cubren las pruebas de componentes y la API.
+
+### 2026-11-02 — Horarios de medicación desde la prescripción (RF-25, RF-32)
+
+- Las dosis ya no salen del inicio del turno ni se crean al abrir el e-MAR: ver «Horarios de medicación» en `docs/architecture/modulo-2-atencion.md`.
+- Al generar dosis por adelantado, una salida o un cambio de plan dejaría alertas falsas: por eso toda cancelación pasa por `MedicationDoseScheduler`, que cierra la alerta `emar:{id}`.
+- Tras desplegar, `emar:extend-doses` empieza a crear dosis en todos los planes activos sin salida registrada, incluidos los de demostración, y a los 30 minutos sin administrar generan alerta.
+
+### 2026-11-02 — Cobertura: las pruebas de frontend y móvil también se miden (RNF-90)
+
+- Sonar contaba como código sin cubrir los archivos de prueba que no aparecen en los reportes: unas 8300 líneas de frontend y móvil. Regenerar los reportes no bastaba (73,3 % simulado).
+- Sin añadir exclusiones, ahora se miden como ya hacía el backend. Jest necesita `forceCoverageMatch`; Vitest añade `test.include` y `setupFiles` a `coverage.exclude` al resolver la configuración, por eso se vacía en el hook `configureVitest`.
+- Este cambio sube la cifra sin mejorar la prueba del código real: móvil sigue en torno al 68 %. `frontend/web/e2e` queda sin cubrir porque Vitest no lo ejecuta.

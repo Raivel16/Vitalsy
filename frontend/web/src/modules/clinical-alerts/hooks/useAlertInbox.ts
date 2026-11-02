@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../app/api";
 import { alertSiren } from "../../../shared/audio/alertSiren";
 import type { ClinicalAlert } from "../domain/alert";
-import { ALERT_ACKNOWLEDGED_EVENT, notifyAlertAcknowledged } from "../domain/inboxEvents";
+import { ALERT_ACKNOWLEDGED_EVENT, notifyAlertAcknowledged, notifyAlertInboxChanged } from "../domain/inboxEvents";
 import { createEchoClient, type RealtimeClient } from "../realtime/realtimeClient";
 
 /** Sondeo sin canal en tiempo real, o con el canal caído. */
@@ -36,8 +36,10 @@ function resolveClient(options: AlertInboxOptions): RealtimeClient | null {
 export type AlertInbox = {
   alerts: ClinicalAlert[];
   pending: number;
-  acknowledge: (alertId: number) => Promise<void>;
-  refresh: () => Promise<void>;
+  /** `true` si se confirmó aquí; `false` si otra ventana ya lo había hecho. */
+  acknowledge: (alertId: number) => Promise<boolean>;
+  /** Devuelve la bandeja vigente, o `null` si no se pudo consultar. */
+  refresh: () => Promise<ClinicalAlert[] | null>;
 };
 
 /**
@@ -53,19 +55,30 @@ export function useAlertInbox(enabled: boolean, options: AlertInboxOptions = {})
   const activeRef = useRef(true);
   const connectedRef = useRef(false);
   const lastRefreshRef = useRef(0);
+  const lastInboxRef = useRef("");
   const pollingEnabled = enabled && (import.meta.env.MODE !== "test" || sessionStorage.getItem("vitalsy-alert-inbox") === "1");
   const userId = options.userId ?? null;
   const client = resolveClient(options);
   const realtime = pollingEnabled && userId !== null && client !== null ? client : null;
 
   const refresh = useCallback(async () => {
-    if (!pollingEnabled) return;
+    if (!pollingEnabled) return null;
     lastRefreshRef.current = Date.now();
     try {
       const data = await api<{ alerts?: ClinicalAlert[] }>("/api/v1/clinical-alerts/inbox");
-      if (activeRef.current) setAlerts(data.alerts ?? []);
+      const latest = data.alerts ?? [];
+      if (activeRef.current) {
+        setAlerts(latest);
+        const serialized = JSON.stringify(latest);
+        if (serialized !== lastInboxRef.current) {
+          lastInboxRef.current = serialized;
+          notifyAlertInboxChanged(latest);
+        }
+      }
+      return latest;
     } catch {
       // Una consulta fallida no debe interrumpir el trabajo del turno.
+      return null;
     }
   }, [pollingEnabled]);
 
@@ -172,8 +185,11 @@ export function useAlertInbox(enabled: boolean, options: AlertInboxOptions = {})
       )));
       notifyAlertAcknowledged(alertId);
       await refresh();
+      return true;
     } catch (error) {
-      await refresh();
+      const latest = await refresh();
+      // Otra ventana se adelantó: ya no hay nada que confirmar y no es un fallo que reintentar.
+      if (latest && !latest.some((alert) => alert.id === alertId && alert.needsSiren)) return false;
       throw error;
     }
   }, [refresh]);

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { TodayBody } from './TodayBody';
 
 const empty = {
@@ -28,6 +29,25 @@ describe('TodayBody', () => {
     );
     expect(screen.getByText('Esperando tu primera lectura del día')).toBeTruthy();
     expect(screen.queryByText('64')).toBeNull();
+  });
+
+  it('places the band status next to the metric cards', async () => {
+    await render(
+      <TodayBody
+        bandStatus={<Text>Vitalsy Band · Conectada</Text>}
+        dateLabel="sábado, 3 de octubre"
+        name="Elena"
+        offline={false}
+        onDismissNudge={() => undefined}
+        onManual={() => undefined}
+        onOpenNotices={() => undefined}
+        onSync={() => undefined}
+        snapshot={{ ...empty, empty: false, metrics: [{ kind: 'heart_rate', label: 'Pulso', valueLabel: '68', unit: 'lpm', footnote: 'Vitalsy Band · en vivo' }] }}
+        syncLabel="En el teléfono"
+      />,
+    );
+    expect(screen.getByText('Vitalsy Band · Conectada')).toBeTruthy();
+    expect(screen.getByText('Vitalsy Band · en vivo')).toBeTruthy();
   });
 
   it('shows an offline banner without hiding the local reading', async () => {

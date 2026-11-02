@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { TodaySnapshot } from '../domain/today';
 import { Banner } from '../../../shared/ui/Banner';
@@ -15,6 +16,7 @@ export function TodayBody({
   onDismissNudge,
   onManual,
   onSync,
+  bandStatus,
 }: Readonly<{
   name: string;
   dateLabel: string;
@@ -25,6 +27,8 @@ export function TodayBody({
   onDismissNudge: () => void;
   onManual: () => void;
   onSync: () => void;
+  /** Origen de pulso y SpO2 cuando hay una banda vinculada (BandStatusLine). */
+  bandStatus?: ReactNode;
 }>) {
   return (
     <View style={styles.wrap}>
@@ -39,6 +43,7 @@ export function TodayBody({
         <Text style={styles.headline}>{snapshot.empty ? 'Esperando tu primera lectura del día' : snapshot.headline}</Text>
         <Text style={styles.summary}>{snapshot.empty ? 'Conecta Health Connect o registra una lectura manual. No mostramos cifras de ejemplo.' : snapshot.summary}</Text>
       </View>
+      {bandStatus}
       {snapshot.metrics.length > 0 ? (
         <View style={styles.grid}>
           {snapshot.metrics.map((metric) => (
