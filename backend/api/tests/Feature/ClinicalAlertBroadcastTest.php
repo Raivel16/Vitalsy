@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /** RNF-01 / RNF-12: las alertas se empujan por WebSocket a quienes las ven en su bandeja. */
@@ -57,6 +58,21 @@ class ClinicalAlertBroadcastTest extends TestCase
             'record_id' => 'EXP-BC-1', 'current_step' => 'cerrado', 'waiting_reason' => null,
             'deliverables' => [], 'clinical_payload' => [],
         ]);
+    }
+
+    /** @param array<string, mixed> $options */
+    private function useReverb(array $options = []): void
+    {
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => 'test-key',
+            'broadcasting.connections.reverb.secret' => 'test-secret',
+            'broadcasting.connections.reverb.app_id' => 'test-app',
+        ]);
+        foreach ($options as $name => $value) {
+            config(["broadcasting.connections.reverb.options.{$name}" => $value]);
+        }
+        Broadcast::forgetDrivers();
     }
 
     /** @return list<int> */
@@ -190,13 +206,7 @@ class ClinicalAlertBroadcastTest extends TestCase
     public function test_channel_authorization_allows_only_own_active_staff_channel(): void
     {
         // El driver null no valida nada: se usa reverb con claves de prueba (la firma es local).
-        config([
-            'broadcasting.default' => 'reverb',
-            'broadcasting.connections.reverb.key' => 'test-key',
-            'broadcasting.connections.reverb.secret' => 'test-secret',
-            'broadcasting.connections.reverb.app_id' => 'test-app',
-        ]);
-        Broadcast::forgetDrivers();
+        $this->useReverb();
         require base_path('routes/channels.php');
 
         $auth = fn (User $user, int $id) => $this->actingAs($user->fresh())->postJson(self::BROADCASTING_AUTH, [
@@ -255,6 +265,17 @@ class ClinicalAlertBroadcastTest extends TestCase
         $this->assertSame($this->sorted($this->nurse->id, $this->nurse2->id), $this->raisedTo());
     }
 
+    public function test_unreachable_reverb_after_commit_keeps_the_alert_and_tries_every_recipient(): void
+    {
+        $this->useReverb(['host' => '127.0.0.1', 'port' => 1, 'scheme' => 'http']);
+        Log::spy();
+
+        DB::transaction(fn () => app(AlertRecorder::class)->openFromMonitoring('ENC-BC-1', 8));
+
+        $this->assertSame(1, ClinicalAlert::query()->where('encounter_id', 'ENC-BC-1')->count());
+        Log::shouldHaveReceived('warning')->with('No se pudo emitir la alerta en tiempo real.', \Mockery::type('array'))->twice();
+    }
+
     public function test_broadcast_auth_route_has_the_same_middleware_stack_as_authenticated_api_routes(): void
     {
         $routes = app('router')->getRoutes();
@@ -269,13 +290,7 @@ class ClinicalAlertBroadcastTest extends TestCase
 
     public function test_real_stateful_session_flow_authorizes_only_own_channel(): void
     {
-        config([
-            'broadcasting.default' => 'reverb',
-            'broadcasting.connections.reverb.key' => 'test-key',
-            'broadcasting.connections.reverb.secret' => 'test-secret',
-            'broadcasting.connections.reverb.app_id' => 'test-app',
-        ]);
-        Broadcast::forgetDrivers();
+        $this->useReverb();
         require base_path('routes/channels.php');
 
         $this->nurse->forceFill(['password' => 'Clave-Segura-123', 'must_change_password' => false])->save();

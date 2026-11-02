@@ -62,10 +62,13 @@ class ClinicalAlertObserver
         });
     }
 
-    /** Solo se emite tras el commit: una transacción revertida nunca difunde y el refresh ve la alerta. */
+    /**
+     * Solo se emite tras el commit: una transacción revertida nunca difunde y el refresh ve la alerta.
+     * Con una transacción abierta el callback corre fuera del observer, por eso lleva su propio `safely`.
+     */
     private function emit(object $event): void
     {
-        DB::afterCommit(fn () => event($event));
+        DB::afterCommit(fn () => $this->safely(fn () => event($event)));
     }
 
     /** @return array<string, mixed> */
