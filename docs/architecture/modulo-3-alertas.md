@@ -122,7 +122,7 @@ El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `
 - Caída: reintenta conectar cada 2 s y al disparar `online`; al (re)conectar hace un refresh completo de la bandeja (RNF-12).
 - Sirena: continua hasta confirmar lectura; `ALERT_ACKNOWLEDGED_EVENT` se comporta como antes. Se cancelan suscripción y temporizadores al desmontar/cerrar sesión.
 - El id propio llega en `GET /api/v1/auth/me` (`id`).
-- Páginas abiertas: `useAlertInbox` (montado en la campana) emite `ALERT_INBOX_CHANGED_EVENT` cuando cambia la bandeja; la bandeja y el detalle del evento se actualizan sin recargar y sin perder lo escrito en los formularios.
+- Páginas abiertas: `useAlertInbox` (montado en la campana) emite `ALERT_INBOX_CHANGED_EVENT` cuando cambia la bandeja; Inicio, la bandeja y el detalle del evento se actualizan sin recargar y sin perder lo escrito en los formularios.
 - Varias ventanas: si la lectura se confirmó en otra ventana o página, el aviso emergente se retira solo. Un acuse rechazado porque otra ventana se adelantó no se muestra como error. La ventana que confirmó conserva «Ir al evento» y, si la sirena reaparece, vuelve a pedir la confirmación.
 
 **Atención según el origen** (`source`).

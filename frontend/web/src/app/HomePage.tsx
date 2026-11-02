@@ -15,6 +15,7 @@ import {
 import { ButtonLink } from "../shared/ui/Button";
 import { Panel, QueueRow, StatTile, type ClinicalTone } from "../shared/ui/clinical";
 import type { ClinicalAlert } from "../modules/clinical-alerts/domain/alert";
+import { ALERT_INBOX_CHANGED_EVENT } from "../modules/clinical-alerts/domain/inboxEvents";
 
 const GUIDE: Record<Role, string> = {
   admision: "Abra el censo, continúe el paciente de su turno y registre cada actividad. También puede registrar un ingreso manual o recibir órdenes por la API de intake.",
@@ -130,6 +131,16 @@ function useHomeData(role: Role) {
     return () => {
       active = false;
     };
+  }, [role]);
+
+  useEffect(() => {
+    if (!isAlertRole(role)) return undefined;
+    function onInboxChanged(event: Event) {
+      const latest = (event as CustomEvent<{ alerts?: ClinicalAlert[] }>).detail?.alerts;
+      if (latest) setAlerts(latest);
+    }
+    window.addEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
+    return () => window.removeEventListener(ALERT_INBOX_CHANGED_EVENT, onInboxChanged);
   }, [role]);
 
   return { patientTotal, overdueControls, alerts };

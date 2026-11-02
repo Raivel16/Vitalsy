@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -78,6 +78,18 @@ describe("sincronización de alertas sin recargar la página (RF-53)", () => {
 
     expect(await screen.findByRole("heading", { name: /paciente sincronizado/i })).toBeInTheDocument();
     expect(screen.queryByText(/no tiene alertas pendientes/i)).not.toBeInTheDocument();
+  });
+
+  it("actualiza los contadores y la cola de Inicio sin recargar", async () => {
+    const server = stubServer([]);
+    renderApp("/", { role: "enfermera_piso" });
+    const summary = await screen.findByLabelText(/resumen del turno/i);
+    await waitFor(() => expect(within(summary).getByText("Alertas abiertas").closest("div")).toHaveTextContent("0"));
+
+    inboxChangedElsewhere(server, pendingAlert);
+
+    await waitFor(() => expect(within(summary).getByText("Alertas abiertas").closest("div")).toHaveTextContent("1"));
+    expect(screen.getByRole("link", { name: /abrir alerta/i })).toHaveAttribute("href", "/alertas/7");
   });
 
   it("actualiza el evento abierto cuando otra ventana confirma la lectura", async () => {
