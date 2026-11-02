@@ -162,3 +162,8 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Dockerfile del backend: `$PHPIZE_DEPS` debe separarse en varios paquetes; se entrecomilla y se reparte con `printf '%s' "$PHPIZE_DEPS" | xargs apt-get ...`. No se pudo construir la imagen en local (Docker apagado): validar con `docker compose build backend` antes de desplegar.
 - Se dejan a propósito: S9382 (awaits secuenciales en E2E, el orden importa), `!important` en `clinical.css` (riesgo visual) y plsql:S1192 (el servidor oficial no analiza PL/SQL).
 - `npx expo lint` en `movil/` crea `eslint.config.js` y un script `lint` si no existen: no versionarlos sin decidirlo.
+
+### 2026-11-01 — Alertas: fallo de Reverb tras el commit (RNF-12)
+
+- `ClinicalAlertObserver::emit` difundía en `DB::afterCommit`, fuera del `try/catch` de `safely()`. Dentro de una transacción, con Reverb caído, `BroadcastException` se propagaba con la alerta ya guardada y cortaba la difusión a los demás destinatarios. Ahora cada callback lleva su propio `safely`.
+- No se halló ningún flujo actual que cree alertas dentro de una transacción directa: el fallo estaba latente. Esto resuelve el pendiente anotado en `AGENTS.md` el 2026-11-01.

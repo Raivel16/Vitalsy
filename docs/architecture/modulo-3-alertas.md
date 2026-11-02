@@ -112,7 +112,7 @@ RNF-01 (empuje ≤ 2 s), RNF-12 (reconexión ≤ 5 s y resincronización) y RF-5
 | `alert.raised` (`ClinicalAlertRaised`) | Alerta creada (NEWS2, observación, cumplimiento) o escalada hacia un perfil que antes no la veía | Usuarios activos que la ven en su bandeja |
 | `alert.updated` (`ClinicalAlertUpdated`) | Cambio de estado/asignación/severidad/plazos o cierre | Quienes la veían antes y quienes la ven ahora |
 
-El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `ClinicalAlert`), por lo que cubre todos los caminos que persisten alertas. Los destinatarios salen de `AlertAudience`, que replica las reglas de `AlertWorkflow::inboxFor` (hay una prueba de paridad por estado y rol). Un fallo del transporte se registra y no interrumpe el flujo clínico.
+El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `ClinicalAlert`), por lo que cubre todos los caminos que persisten alertas. Los destinatarios salen de `AlertAudience`, que replica las reglas de `AlertWorkflow::inboxFor` (hay una prueba de paridad por estado y rol). Un fallo del transporte se registra y no interrumpe el flujo clínico, tampoco si la difusión ocurre tras el commit de una transacción; cada destinatario se intenta por separado.
 
 **Carga mínima** (un evento por usuario): `alertId`, `severity`, `news2Total`, `encounterId`, `location` (habitación/lecho), `status`, `createdAt`, `needsSiren` (calculado para ese destinatario). Sin nombre del paciente ni texto libre clínico.
 
