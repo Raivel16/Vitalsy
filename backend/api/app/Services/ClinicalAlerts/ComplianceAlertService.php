@@ -5,6 +5,7 @@ namespace App\Services\ClinicalAlerts;
 use App\Models\ClinicalAlert;
 use App\Models\MedicationAdministration;
 use App\Models\MonitoringSchedule;
+use App\Models\PatientExit;
 use App\Services\Staff\StaffRoster;
 
 /**
@@ -64,6 +65,7 @@ class ComplianceAlertService
             ->with('prescriptionItem')
             ->where('status', 'pendiente')
             ->where('scheduled_at', '<=', $cutoff)
+            ->whereNotIn('encounter_id', PatientExit::query()->select('encounter_id'))
             ->limit(100)
             ->get();
 

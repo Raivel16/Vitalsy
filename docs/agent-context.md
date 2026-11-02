@@ -174,3 +174,9 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Confirmar una lectura ya confirmada en otra ventana devuelve 422. `acknowledge` lo trata como éxito silencioso si, al refrescar, esa alerta ya no pide sirena; la ventana que confirmó conserva «Ir al evento».
 - Las alertas `emar` no aceptan constantes: `requireVitalsApply` protege `reassessment` y `monitoring-schedule`, y la UI lleva al e-MAR. Las `control` conservan la toma.
 - Comprobado en Chrome con dos pestañas de la misma cuenta. No se reprodujo ahí el 422 de quien confirma tarde, que cubren las pruebas de componentes y la API.
+
+### 2026-11-02 — Horarios de medicación desde la prescripción (RF-25, RF-32)
+
+- Las dosis ya no salen del inicio del turno ni se crean al abrir el e-MAR: ver «Horarios de medicación» en `docs/architecture/modulo-2-atencion.md`.
+- Al generar dosis por adelantado, una salida o un cambio de plan dejaría alertas falsas: por eso toda cancelación pasa por `MedicationDoseScheduler`, que cierra la alerta `emar:{id}`.
+- Tras desplegar, `emar:extend-doses` empieza a crear dosis en todos los planes activos sin salida registrada, incluidos los de demostración, y a los 30 minutos sin administrar generan alerta.

@@ -21,9 +21,9 @@ Cuentas demo: `{rol}@vitalsy.local`. La contraseña es `DEMO_PASSWORD` del `.env
 | RF-22 | Hecho | `/atencion/imagenes?ingreso=` · `POST/GET .../imaging-reports` |
 | RF-23 | Hecho | `/atencion/visita?ingreso=` · `GET .../clinical-visit` |
 | RF-24 | Hecho | `/atencion/evolucion?ingreso=` · `POST/GET .../medical-evolution-notes` |
-| RF-25 | Hecho | `/atencion/cpoe?ingreso=` · `POST .../prescriptions` + `GET .../prescriptions/active` + Kardex |
+| RF-25 | Hecho | `/atencion/cpoe?ingreso=` · `POST .../prescriptions` + `GET .../prescriptions/active` + Kardex · frecuencia de lista y primera dosis |
 | RF-26–31 | Hecho | `/atencion/constantes?ingreso=` · vitals/NEWS2 completo + gráfica SVG + alertas/agenda |
-| RF-32–35 | Hecho | `/atencion/emar?ingreso=` · e-MAR regenera dosis del CPOE activo en el turno · alertas de dosis vencida |
+| RF-32–35 | Hecho | `/atencion/emar?ingreso=` · dosis del turno y vencidas pendientes · alertas de dosis vencida |
 | RF-36–37 | Hecho | `/atencion/cuidados?ingreso=` · tabs Notas/Actividades · trazabilidad de quien registró · filtro por fecha |
 | RF-38 | Hecho | `/atencion/chart?ingreso=` · expediente con pestañas · timeline por fecha · `GET .../clinical-chart?from=&to=` |
 | RF-42 | Hecho | `/atencion/controles` · bandeja de controles programados (listar / registrar / reprogramar) |
@@ -60,3 +60,15 @@ Flujo recomendado:
 7. En el expediente, el historial temporal se agrupa por fecha y admite filtro (Hoy / 7 días / 30 días / Todo / rango).
 
 En `/atencion/*` no se muestra el stepper de admisión del Módulo 1.
+
+## Horarios de medicación (RF-25, RF-32)
+
+- **Quién y dónde:** el médico tratante, en CPOE. Por cada medicamento elige la frecuencia (`cada 4/6/8/12/24 horas` o `dosis única`) y la fecha y hora de la primera dosis, que no puede estar en el pasado (margen de 5 minutos). La lista vive en `MedicationFrequency` y en `cpoe/domain/schedule.ts`.
+- **Cálculo:** `MedicationDoseScheduler` crea las dosis desde la primera dosis, sumando el intervalo. El turno ya no interviene: solo decide qué muestra el e-MAR.
+- **Cuándo:** al firmar se crean las dosis de las próximas 24 horas. `emar:extend-doses` mantiene ese adelanto cada hora, aunque nadie abra el e-MAR. Si el sistema estuvo detenido, no se crean dosis atrasadas.
+- **Cambios del plan:** cambiar la frecuencia o la primera dosis, quitar el medicamento o reemplazar el plan cancela sus dosis pendientes y cierra sus alertas. Corregir solo el nombre, la dosis o la vía conserva el horario. Las dosis administradas no se tocan.
+- **Salida del paciente:** `CancelDosesOnPatientExit` cancela las dosis pendientes y cierra sus alertas; no se crean más.
+- **e-MAR:** muestra el turno vigente y las dosis vencidas de turnos anteriores que sigan pendientes, porque su alerta solo se cierra al administrarlas.
+- **Indicaciones sin lista:** el plan basal del BPMH empieza a la hora de la firma con su frecuencia en texto libre. Solo se leen formatos explícitos (`cada 12 horas`, `c/12h`, `8h`). Lo demás (`BID`, `una vez al día`) **no genera dosis**: nunca se supone un intervalo. CPOE y e-MAR avisan del medicamento sin horario hasta que el médico elija una frecuencia. Los planes anteriores a este cambio no tienen primera dosis y siguen desde su última dosis, o desde ahora si no tienen ninguna.
+- **Continuar el plan:** conserva las mismas indicaciones y sus dosis, para no repetir una ya administrada.
+- **Concurrencia:** `syncEncounter` bloquea el plan activo en una transacción, para que la tarea programada, el e-MAR y una firma simultáneos no dupliquen dosis.

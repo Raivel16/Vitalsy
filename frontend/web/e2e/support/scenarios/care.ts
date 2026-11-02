@@ -9,7 +9,7 @@ export type Prescription = { drug: string; dose: string; route: string; frequenc
 export async function prescribe(ctx: Ctx, enc: Enc, items: Prescription[]): Promise<{ codes: string[] }> {
   const { prescription } = await (await ctx.api("medico_tratante")).post<{ prescription: { items: { drugBarcode: string }[] } }>(
     `${CARE}/${enc.encounterId}/prescriptions`,
-    { items: items.map((i) => ({ drugName: i.drug, dose: i.dose, route: i.route, frequency: i.frequency })) },
+    { items: items.map((i) => ({ drugName: i.drug, dose: i.dose, route: i.route, frequency: i.frequency, firstDoseAt: new Date().toISOString() })) },
   );
   return ctx.data.track(`CPOE ${enc.encounterId}`, { codes: prescription.items.map((i) => i.drugBarcode) });
 }

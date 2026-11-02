@@ -22,6 +22,11 @@ class CpoePrescriptionApiTest extends TestCase
 
     use RefreshDatabase;
 
+    private function firstDose(): string
+    {
+        return now()->addHour()->toIso8601String();
+    }
+
     private function inpatientEncounter(string $encounterId = 'ENC-HOSP-0001'): AdmissionEncounter
     {
         return AdmissionEncounter::query()->create([
@@ -66,12 +71,14 @@ class CpoePrescriptionApiTest extends TestCase
                     'dose' => '1 g',
                     'route' => 'VO',
                     'frequency' => self::CADA_8_HORAS,
+                    'firstDoseAt' => $this->firstDose(),
                 ],
                 [
                     'drugName' => 'Omeprazol',
                     'dose' => '20 mg',
                     'route' => 'VO',
                     'frequency' => self::CADA_24_HORAS,
+                    'firstDoseAt' => $this->firstDose(),
                 ],
             ],
         ])
@@ -99,7 +106,7 @@ class CpoePrescriptionApiTest extends TestCase
         $this->inpatientEncounter();
         $this->asRole('medico_tratante');
         $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
-            'items' => [['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS]],
+            'items' => [['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS, 'firstDoseAt' => $this->firstDose()]],
         ])->assertCreated();
 
         $this->asRole('enfermera_piso');
@@ -117,8 +124,8 @@ class CpoePrescriptionApiTest extends TestCase
 
         $created = $this->postJson(self::HOSP_0001_PRESCRIPTIONS, [
             'items' => [
-                ['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS],
-                ['drugName' => 'Omeprazol', 'dose' => '20 mg', 'route' => 'VO', 'frequency' => self::CADA_24_HORAS],
+                ['drugName' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::CADA_8_HORAS, 'firstDoseAt' => $this->firstDose()],
+                ['drugName' => 'Omeprazol', 'dose' => '20 mg', 'route' => 'VO', 'frequency' => self::CADA_24_HORAS, 'firstDoseAt' => $this->firstDose()],
             ],
         ])->assertCreated();
 
@@ -129,6 +136,7 @@ class CpoePrescriptionApiTest extends TestCase
             'dose' => self::V_500_MG,
             'route' => 'VO',
             'frequency' => 'cada 6 horas',
+            'firstDoseAt' => $this->firstDose(),
         ])
             ->assertOk()
             ->assertJsonPath('prescription.items.0.dose', self::V_500_MG)
@@ -139,6 +147,7 @@ class CpoePrescriptionApiTest extends TestCase
             'dose' => '40 mg',
             'route' => 'SC',
             'frequency' => self::CADA_24_HORAS,
+            'firstDoseAt' => $this->firstDose(),
         ])
             ->assertCreated()
             ->assertJsonCount(3, 'prescription.items');
@@ -177,6 +186,7 @@ class CpoePrescriptionApiTest extends TestCase
                         'dose' => '40 mg',
                         'route' => 'SC',
                         'frequency' => self::CADA_24_HORAS,
+                        'firstDoseAt' => $this->firstDose(),
                     ],
                 ],
             ])

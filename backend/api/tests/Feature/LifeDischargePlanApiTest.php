@@ -266,10 +266,10 @@ class LifeDischargePlanApiTest extends TestCase
         $this->assertNotNull($plan->custody_transferred_at);
     }
 
-    public function test_both_listeners_are_registered_for_patient_exit(): void
+    public function test_each_listener_is_registered_once_for_patient_exit(): void
     {
         // Descubrimiento automático de app/Listeners: exactamente un registro por listener.
-        $this->assertCount(2, Event::getListeners(PatientExited::class));
+        $this->assertCount(3, Event::getListeners(PatientExited::class));
     }
 
     public function test_plan_requires_discharge_order_first(): void
