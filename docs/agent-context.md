@@ -180,3 +180,9 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Las dosis ya no salen del inicio del turno ni se crean al abrir el e-MAR: ver «Horarios de medicación» en `docs/architecture/modulo-2-atencion.md`.
 - Al generar dosis por adelantado, una salida o un cambio de plan dejaría alertas falsas: por eso toda cancelación pasa por `MedicationDoseScheduler`, que cierra la alerta `emar:{id}`.
 - Tras desplegar, `emar:extend-doses` empieza a crear dosis en todos los planes activos sin salida registrada, incluidos los de demostración, y a los 30 minutos sin administrar generan alerta.
+
+### 2026-11-02 — Cobertura: las pruebas de frontend y móvil también se miden (RNF-90)
+
+- Sonar contaba como código sin cubrir los archivos de prueba que no aparecen en los reportes: unas 8300 líneas de frontend y móvil. Regenerar los reportes no bastaba (73,3 % simulado).
+- Sin añadir exclusiones, ahora se miden como ya hacía el backend. Jest necesita `forceCoverageMatch`; Vitest añade `test.include` y `setupFiles` a `coverage.exclude` al resolver la configuración, por eso se vacía en el hook `configureVitest`.
+- Este cambio sube la cifra sin mejorar la prueba del código real: móvil sigue en torno al 68 %. `frontend/web/e2e` queda sin cubrir porque Vitest no lo ejecuta.
