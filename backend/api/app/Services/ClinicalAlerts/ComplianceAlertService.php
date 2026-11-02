@@ -64,6 +64,7 @@ class ComplianceAlertService
             ->with('prescriptionItem')
             ->where('status', 'pendiente')
             ->where('scheduled_at', '<=', $cutoff)
+            ->whereNotIn('encounter_id', PatientExit::query()->select('encounter_id'))
             ->limit(100)
             ->get();
 

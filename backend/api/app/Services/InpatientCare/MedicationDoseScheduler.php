@@ -9,6 +9,7 @@ use App\Models\PrescriptionItem;
 use App\Support\MedicationFrequency;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * RF-25 / RF-32: crea las dosis desde la primera dosis y la frecuencia indicadas, al firmar
@@ -29,27 +30,31 @@ class MedicationDoseScheduler
             return;
         }
 
-        $prescription = Prescription::query()
-            ->with('items')
-            ->where('encounter_id', $encounterId)
-            ->where('status', 'activo')
-            ->latest('id')
-            ->first();
-
-        if (! $prescription) {
-            return;
-        }
-
-        $this->cancelPending(
-            MedicationAdministration::query()
+        // El bloqueo evita dosis duplicadas si coinciden la tarea programada, el e-MAR y una firma.
+        DB::transaction(function () use ($encounterId) {
+            $prescription = Prescription::query()
+                ->with('items')
                 ->where('encounter_id', $encounterId)
-                ->whereNotIn('prescription_item_id', $prescription->items->pluck('id')->all()),
-            'Dosis cancelada: el medicamento ya no está en el plan activo.',
-        );
+                ->where('status', 'activo')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
 
-        foreach ($prescription->items as $item) {
-            $this->scheduleItem($encounterId, $item);
-        }
+            if (! $prescription) {
+                return;
+            }
+
+            $this->cancelPending(
+                MedicationAdministration::query()
+                    ->where('encounter_id', $encounterId)
+                    ->whereNotIn('prescription_item_id', $prescription->items->pluck('id')->all()),
+                'Dosis cancelada: el medicamento ya no está en el plan activo.',
+            );
+
+            foreach ($prescription->items as $item) {
+                $this->scheduleItem($encounterId, $item);
+            }
+        });
     }
 
     public function extendActivePlans(): int
@@ -90,6 +95,10 @@ class MedicationDoseScheduler
 
     private function scheduleItem(string $encounterId, PrescriptionItem $item): void
     {
+        if (! MedicationFrequency::isSchedulable($item->frequency)) {
+            return;
+        }
+
         $interval = MedicationFrequency::intervalHours($item->frequency);
         $lastAt = MedicationAdministration::query()
             ->where('prescription_item_id', $item->id)

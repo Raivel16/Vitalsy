@@ -7,6 +7,7 @@ use App\Models\MedicationAdministration;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
 use App\Models\User;
+use App\Support\MedicationFrequency;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -16,7 +17,7 @@ class EmarService
     public function __construct(private readonly MedicationDoseScheduler $scheduler) {}
 
     /**
-     * @return array{doses: list<array<string, mixed>>, shiftStart: string, shiftEnd: string, hasActivePrescription: bool}
+     * @return array{doses: list<array<string, mixed>>, shiftStart: string, shiftEnd: string, hasActivePrescription: bool, unscheduledDrugs: list<string>}
      */
     public function listShift(string $encounterId): array
     {
@@ -25,10 +26,12 @@ class EmarService
 
         [$start, $end] = $this->shiftWindow();
 
-        $hasActive = Prescription::query()
+        $active = Prescription::query()
+            ->with('items')
             ->where('encounter_id', $encounterId)
             ->where('status', 'activo')
-            ->exists();
+            ->latest('id')
+            ->first();
 
         $doses = MedicationAdministration::query()
             ->with('prescriptionItem')
@@ -46,7 +49,14 @@ class EmarService
             'doses' => $doses,
             'shiftStart' => $start->toIso8601String(),
             'shiftEnd' => $end->toIso8601String(),
-            'hasActivePrescription' => $hasActive,
+            'hasActivePrescription' => $active !== null,
+            'unscheduledDrugs' => $active
+                ? $active->items
+                    ->reject(fn (PrescriptionItem $item) => MedicationFrequency::isSchedulable($item->frequency))
+                    ->map(fn (PrescriptionItem $item) => $item->drug_name)
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 

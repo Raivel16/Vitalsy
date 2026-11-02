@@ -24,7 +24,7 @@ class Prescription extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(PrescriptionItem::class);
+        return $this->hasMany(PrescriptionItem::class)->orderBy('id');
     }
 
     public function prescriber(): BelongsTo

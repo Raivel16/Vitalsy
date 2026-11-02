@@ -9,6 +9,8 @@ use App\Models\MedicationAdministration;
 use App\Models\PatientExit;
 use App\Models\Prescription;
 use App\Models\User;
+use App\Services\InpatientCare\CpoeService;
+use App\Support\MedicationFrequency;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -287,6 +289,21 @@ class MedicationScheduleApiTest extends TestCase
         $this->assertSame([], $this->scheduled());
     }
 
+    public function test_overdue_dose_of_an_exited_patient_opens_no_alert(): void
+    {
+        $this->prescribe($this->item(firstDoseAt: self::NOW));
+        PatientExit::query()->create([
+            'encounter_id' => self::ENCOUNTER,
+            'exited_at' => now(),
+            'confirmed_by' => auth()->id(),
+        ]);
+
+        Carbon::setTestNow('2026-11-02 18:00:00');
+        $this->artisan('alerts:process-slas')->assertSuccessful();
+
+        $this->assertDatabaseMissing('clinical_alerts', ['encounter_id' => self::ENCOUNTER, 'source' => 'emar']);
+    }
+
     public function test_plan_without_first_dose_starts_now_and_does_not_backfill(): void
     {
         $prescription = Prescription::query()->create([
@@ -312,5 +329,77 @@ class MedicationScheduleApiTest extends TestCase
 
         $scheduled = collect($response->json('doses'))->pluck('scheduledAt')->all();
         $this->assertContains(Carbon::parse(self::FIRST_DOSE)->toIso8601String(), $scheduled);
+    }
+
+    public function test_unrecognized_frequency_creates_no_doses_and_warns_doctor_and_nurse(): void
+    {
+        app(CpoeService::class)->prescribe(self::ENCOUNTER, auth()->user(), [
+            ['drugName' => 'Metformina', 'dose' => '850 mg', 'route' => 'oral', 'frequency' => 'una vez al día'],
+        ]);
+        $this->artisan('emar:extend-doses')->assertSuccessful();
+
+        $this->assertSame([], $this->scheduled());
+        $this->getJson(self::PRESCRIPTIONS.'/active')->assertJsonPath('prescription.items.0.needsSchedule', true);
+
+        $this->actingAs(User::factory()->create(['role' => 'enfermera_piso']));
+        $this->getJson(self::EMAR)->assertOk()->assertJsonPath('unscheduledDrugs', ['Metformina']);
+    }
+
+    public function test_choosing_a_listed_frequency_schedules_a_flagged_item(): void
+    {
+        $plan = app(CpoeService::class)->prescribe(self::ENCOUNTER, auth()->user(), [
+            ['drugName' => 'Metformina', 'dose' => '850 mg', 'route' => 'oral', 'frequency' => 'BID'],
+        ]);
+        $itemId = $plan['prescription']['items'][0]['id'];
+
+        $this->putJson(self::ITEMS."/{$itemId}", $this->item(self::CADA_24_HORAS))
+            ->assertOk()
+            ->assertJsonPath('prescription.items.0.needsSchedule', false);
+
+        $this->assertSame([self::SHOWN_FIRST_DOSE], $this->scheduled());
+    }
+
+    public function test_only_explicit_hour_formats_are_read_from_free_text(): void
+    {
+        $this->assertSame(6, MedicationFrequency::intervalHours('cada 6h'));
+        $this->assertSame(12, MedicationFrequency::intervalHours('c/12h'));
+        $this->assertSame(8, MedicationFrequency::intervalHours('Cada 8 horas'));
+        $this->assertNull(MedicationFrequency::intervalHours('BID'));
+        $this->assertNull(MedicationFrequency::intervalHours('2 tabletas cada noche'));
+        $this->assertNull(MedicationFrequency::intervalHours('1 hora antes de dormir'));
+        $this->assertNull(MedicationFrequency::intervalHours('cada 0 horas'));
+        $this->assertNull(MedicationFrequency::intervalHours(''));
+    }
+
+    public function test_continuing_the_plan_keeps_doses_and_does_not_repeat_a_given_one(): void
+    {
+        $itemId = $this->prescribe($this->item(firstDoseAt: self::NOW));
+        $given = MedicationAdministration::query()->where('prescription_item_id', $itemId)->orderBy('scheduled_at')->firstOrFail();
+        $given->update(['status' => 'administrado', 'administered_at' => now()]);
+        $pending = $this->scheduled();
+
+        $response = $this->postJson(self::PRESCRIPTIONS, [
+            'continuePlan' => true,
+            'items' => [$this->item(self::CADA_24_HORAS, self::OTHER_FIRST_DOSE, 'Omeprazol')],
+        ])->assertCreated();
+
+        $this->assertSame($itemId, $response->json('prescription.items.0.id'));
+        $this->assertSame(['2026-11-02 17:00'], $this->scheduled('administrado'));
+        $this->assertSame([], $this->scheduled('cancelado'));
+        $this->assertEqualsCanonicalizing([...$pending, self::SHOWN_OTHER_DOSE], $this->scheduled());
+    }
+
+    public function test_continuing_the_plan_does_not_repeat_a_given_single_dose(): void
+    {
+        $itemId = $this->prescribe($this->item(MedicationFrequency::SINGLE_DOSE, self::NOW));
+        MedicationAdministration::query()->where('prescription_item_id', $itemId)->firstOrFail()
+            ->update(['status' => 'administrado', 'administered_at' => now()]);
+
+        $this->postJson(self::PRESCRIPTIONS, [
+            'continuePlan' => true,
+            'items' => [$this->item(self::CADA_24_HORAS, self::OTHER_FIRST_DOSE, 'Omeprazol')],
+        ])->assertCreated();
+
+        $this->assertSame([self::SHOWN_OTHER_DOSE], $this->scheduled());
     }
 }

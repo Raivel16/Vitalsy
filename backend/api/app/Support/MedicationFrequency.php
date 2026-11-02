@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * RF-25: frecuencias que el médico elige en CPOE. La misma lista vive en
- * `frontend/web/src/modules/cpoe/domain/frequencies.ts`.
+ * `frontend/web/src/modules/cpoe/domain/schedule.ts`.
  */
 final class MedicationFrequency
 {
@@ -19,21 +19,21 @@ final class MedicationFrequency
         self::SINGLE_DOSE,
     ];
 
-    private const DEFAULT_HOURS = 8;
-
     /**
-     * Horas entre dosis, o null si no se repite. El texto libre solo llega de planes anteriores y del BPMH.
+     * Horas entre dosis, o null si no se repite o no se entiende. El texto libre solo llega de
+     * planes anteriores y del BPMH: solo se aceptan formatos explícitos, nunca se supone un intervalo.
      */
     public static function intervalHours(string $frequency): ?int
     {
-        if ($frequency === self::SINGLE_DOSE) {
+        if (preg_match('/^(?:cada\s*|c\/\s*)?(\d+)\s*h(?:oras?|rs?)?\.?$/iu', trim($frequency), $match) !== 1) {
             return null;
         }
 
-        if (preg_match('/(\d+)\s*h/i', $frequency, $match) === 1) {
-            return max(1, (int) $match[1]);
-        }
+        return (int) $match[1] >= 1 ? (int) $match[1] : null;
+    }
 
-        return self::DEFAULT_HOURS;
+    public static function isSchedulable(string $frequency): bool
+    {
+        return $frequency === self::SINGLE_DOSE || self::intervalHours($frequency) !== null;
     }
 }
