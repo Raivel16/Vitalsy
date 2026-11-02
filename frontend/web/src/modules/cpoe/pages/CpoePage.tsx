@@ -15,7 +15,7 @@ import { MEDICATION_FREQUENCIES, isListedFrequency, isPastFirstDose, toDateTimeI
 
 /** En el formulario, `firstDoseAt` es el valor local del campo; hacia la API viaja como instante. */
 type Item = { drugName: string; dose: string; route: string; frequency: string; firstDoseAt: string };
-type ActiveItem = Omit<Item, "firstDoseAt"> & { id: number; firstDoseAt?: string | null; drugBarcode?: string };
+type ActiveItem = Omit<Item, "firstDoseAt"> & { id: number; firstDoseAt?: string | null; needsSchedule?: boolean; drugBarcode?: string };
 type ActivePrescription = {
   id: number;
   status: string;
@@ -234,6 +234,7 @@ export function CpoePage() {
   }
 
   const hasActive = Boolean(active && active.items.length > 0);
+  const unscheduled = (active?.items ?? []).filter((item) => item.needsSchedule).map((item) => item.drugName);
 
   return (
     <Sheet kicker="Plan terapéutico" title="Prescripción electrónica (CPOE)" wide clinic="file" className="floor-care">
@@ -253,6 +254,11 @@ export function CpoePage() {
         ) : (
           <>
             <p className="hint">La enfermera administra desde e-MAR del turno.</p>
+            {unscheduled.length > 0 ? (
+              <Feedback tone="error">
+                {unscheduled.join(", ")} sin horario: no se entiende su frecuencia y no se crean dosis. Edítelo y elija una frecuencia de la lista.
+              </Feedback>
+            ) : null}
             <div className="table-wrap">
               <table>
                 <thead>

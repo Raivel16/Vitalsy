@@ -189,6 +189,13 @@ describe("prescripción CPOE (RF-25)", () => {
       expect(writes).toHaveLength(0);
     });
 
+    it("avisa al médico de los medicamentos sin horario", async () => {
+      stubServer({ ...plan("BID", signedAt), items: [{ ...plan("BID", signedAt).items[0], needsSchedule: true }] });
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(/paracetamol.*sin horario/i);
+    });
+
     it("muestra la primera dosis en el plan activo", async () => {
       stubServer(plan("cada 8 horas", signedAt));
       renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
