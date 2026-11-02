@@ -31,4 +31,11 @@ class OperationalConfigTest extends TestCase
 
         $this->assertMatchesRegularExpression('/^  scheduler:\R(?:.*\R)*?\s+command:.*schedule:work/m', $compose);
     }
+
+    public function test_la_api_de_desarrollo_conserva_las_variables_del_compose(): void
+    {
+        $entrypoint = file_get_contents($this->root().'/docker/backend/dev-entrypoint.sh');
+
+        $this->assertMatchesRegularExpression('/^exec php artisan serve\b.*--no-reload/m', $entrypoint);
+    }
 }
