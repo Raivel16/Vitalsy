@@ -2,6 +2,19 @@ import { screen } from "@testing-library/react";
 import { renderApp } from "../test/renderApp";
 
 describe("shell del módulo 1", () => {
+  it("en Registrar ingreso solo marca ese enlace como activo", () => {
+    renderApp("/pacientes/nuevo");
+
+    expect(screen.getByRole("link", { name: /registrar ingreso/i })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /^Pacientes$/i })).not.toHaveAttribute("aria-current");
+  });
+
+  it("en la ficha de un paciente mantiene Pacientes como activo", () => {
+    renderApp("/pacientes/ENC-0001");
+
+    expect(screen.getByRole("link", { name: /^Pacientes$/i })).toHaveAttribute("aria-current", "page");
+  });
+
   it("anuncia el título y permite saltar al contenido", () => {
     renderApp("/");
 

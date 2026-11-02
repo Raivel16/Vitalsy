@@ -134,6 +134,7 @@ class AlertWorkflow
     public function reassess(ClinicalAlert $alert, array $input, User $user): array
     {
         $this->checks->requireOpen($alert);
+        $this->checks->requireVitalsApply($alert);
         $reading = $this->vitals->storeManual($alert->encounter_id, $input, $user, activateAlerts: false);
         $total = (int) $reading['reading']['news2']['total'];
 
@@ -179,6 +180,7 @@ class AlertWorkflow
     public function scheduleMonitoring(ClinicalAlert $alert, array $input, User $user): array
     {
         $this->checks->requireOpen($alert);
+        $this->checks->requireVitalsApply($alert);
         $this->checks->requireReassessed($alert);
 
         if ((int) $alert->news2_total >= 1) {

@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes, useNavigate } from "react-router";
+import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router";
 import { IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
@@ -60,12 +60,13 @@ function Guard({ roles, requirement, children }: Readonly<{ roles: Role[]; requi
 
 function ShellNavLink({ item }: Readonly<{ item: NavItem }>) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const Icon = item.icon;
 
   return (
     <NavLink
       to={item.to}
-      end={item.end}
+      end={item.end || item.ownSubroutes?.includes(pathname)}
       onClick={(event) => {
         if (!item.needsIngreso) return;
         const next = withIngreso(item.to);

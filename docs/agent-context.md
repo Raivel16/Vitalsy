@@ -167,3 +167,10 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 
 - `ClinicalAlertObserver::emit` difundía en `DB::afterCommit`, fuera del `try/catch` de `safely()`. Dentro de una transacción, con Reverb caído, `BroadcastException` se propagaba con la alerta ya guardada y cortaba la difusión a los demás destinatarios. Ahora cada callback lleva su propio `safely`.
 - No se halló ningún flujo actual que cree alertas dentro de una transacción directa: el fallo estaba latente. Esto resuelve el pendiente anotado en `AGENTS.md` el 2026-11-01.
+
+### 2026-11-02 — Alertas: sincronización y atención según el origen (RF-53)
+
+- `useAlertInbox` vive en la campana y las páginas no lo comparten: emite `ALERT_INBOX_CHANGED_EVENT` solo si la bandeja cambió, para que la bandeja y el detalle se actualicen sin recargar.
+- Confirmar una lectura ya confirmada en otra ventana devuelve 422. `acknowledge` lo trata como éxito silencioso si, al refrescar, esa alerta ya no pide sirena; la ventana que confirmó conserva «Ir al evento».
+- Las alertas `emar` no aceptan constantes: `requireVitalsApply` protege `reassessment` y `monitoring-schedule`, y la UI lleva al e-MAR. Las `control` conservan la toma.
+- Comprobado en Chrome con dos pestañas de la misma cuenta. No se reprodujo ahí el 422 de quien confirma tarde, que cubren las pruebas de componentes y la API.
