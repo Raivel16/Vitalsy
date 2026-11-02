@@ -1,6 +1,6 @@
 import { expect, test } from "../support/fixtures";
 import { hospitalize } from "../support/scenarios";
-import { withIngreso } from "../support/ui";
+import { inOneHour, withIngreso } from "../support/ui";
 
 const DRUGS = [
   { drug: "Paracetamol", dose: "500 mg", route: "VO", frequency: "cada 8 horas", code: "DRUG-PARACETAMOL-500MG" },
@@ -17,14 +17,15 @@ test.describe("CPOE", () => {
       await page.goto(withIngreso("/atencion/cpoe", hosp.encounterId));
       const form = page.getByRole("form", { name: "Nueva prescripción" });
       await form.getByRole("button", { name: "Registrar CPOE" }).click();
-      await expect(page.getByText("Complete medicamento, dosis, vía y frecuencia en cada línea.")).toBeVisible();
+      await expect(page.getByText("Complete medicamento, dosis, vía, frecuencia y primera dosis en cada línea.")).toBeVisible();
 
       await form.getByLabel("Medicamento").last().fill(item.drug);
       await form.getByLabel("Dosis").last().fill(item.dose);
       await form.getByLabel("Vía").last().fill(item.route);
-      await form.getByLabel("Frecuencia").last().fill(item.frequency);
+      await form.getByLabel("Frecuencia").last().selectOption(item.frequency);
+      await form.getByLabel("Primera dosis").last().fill(inOneHour());
       await form.getByRole("button", { name: "Registrar CPOE" }).click();
-      await expect(page.getByText("Prescripción CPOE registrada. La enfermera verá las dosis en e-MAR del turno.")).toBeVisible();
+      await expect(page.getByText("Prescripción CPOE registrada. Las dosis ya están programadas en el e-MAR.")).toBeVisible();
       await expect(page.getByText(item.code).first()).toBeVisible();
     });
   }
@@ -38,7 +39,8 @@ test.describe("CPOE", () => {
     await plan.getByLabel("Medicamento").last().fill("Paracetamol");
     await plan.getByLabel("Dosis").last().fill("500 mg");
     await plan.getByLabel("Vía").last().fill("VO");
-    await plan.getByLabel("Frecuencia").last().fill("cada 8 horas");
+    await plan.getByLabel("Frecuencia").last().selectOption("cada 8 horas");
+    await plan.getByLabel("Primera dosis").last().fill(inOneHour());
     await plan.getByRole("button", { name: "Registrar CPOE" }).click();
     await expect(page.getByText("Prescripción CPOE registrada.", { exact: false })).toBeVisible();
 
@@ -46,7 +48,8 @@ test.describe("CPOE", () => {
     await add.getByLabel("Medicamento").fill("Omeprazol");
     await add.getByLabel("Dosis").fill("20 mg");
     await add.getByLabel("Vía").fill("VO");
-    await add.getByLabel("Frecuencia").fill("cada 24 horas");
+    await add.getByLabel("Frecuencia").selectOption("cada 24 horas");
+    await add.getByLabel("Primera dosis").fill(inOneHour());
     await add.getByRole("button", { name: "Agregar al plan" }).click();
     await expect(page.getByText("Medicamento agregado al plan activo.")).toBeVisible();
 

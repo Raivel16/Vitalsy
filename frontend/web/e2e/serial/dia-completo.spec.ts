@@ -1,6 +1,6 @@
 import { expect, test } from "../support/fixtures";
 import { uiAdmissionDesk, uiAssignBed, uiConsentAndTransfer, uiDischarge, uiNursingAdmission, uiRegister, uiSignOrders } from "../support/flows";
-import { fillVitals, withIngreso } from "../support/ui";
+import { fillVitals, inOneHour, withIngreso } from "../support/ui";
 
 // Recorridos completos por pantalla, de la admisión a la cama limpia. Van en la fase serial
 // porque registran ingresos por pantalla (en paralelo chocan por el ENC duplicado).
@@ -23,7 +23,8 @@ test.describe("día completo de un paciente", () => {
     await form.getByLabel("Medicamento").last().fill("Paracetamol");
     await form.getByLabel("Dosis").last().fill("500 mg");
     await form.getByLabel("Vía").last().fill("VO");
-    await form.getByLabel("Frecuencia").last().fill("cada 8 horas");
+    await form.getByLabel("Frecuencia").last().selectOption("cada 8 horas");
+    await form.getByLabel("Primera dosis").last().fill(inOneHour());
     await form.getByRole("button", { name: "Registrar CPOE" }).click();
     await expect(doctor.getByText(/^Prescripción CPOE registrada/)).toBeVisible();
 

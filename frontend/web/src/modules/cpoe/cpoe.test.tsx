@@ -1,7 +1,11 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
+import { formatDateTime } from "../../shared/datetime/format";
+import { toDateTimeInput } from "./domain/schedule";
+
+const inOneHour = () => toDateTimeInput(new Date(Date.now() + 3_600_000).toISOString());
 
 const encounter = {
   encounterId: "ENC-HOSP-0001",
@@ -86,8 +90,8 @@ describe("prescripción CPOE (RF-25)", () => {
     await user.paste("Paracetamol");
     await user.type(screen.getByLabelText(/^dosis$/i), "1 g");
     await user.type(screen.getByLabelText(/^vía$/i), "VO");
-    await user.click(screen.getByLabelText(/^frecuencia$/i));
-    await user.paste("cada 8 horas");
+    await user.selectOptions(screen.getByLabelText(/^frecuencia$/i), "cada 8 horas");
+    fireEvent.change(screen.getByLabelText(/^primera dosis$/i), { target: { value: inOneHour() } });
     await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
 
     expect(await screen.findByRole("status", { name: /resultado del registro/i })).toHaveTextContent(/e-mar/i);
@@ -95,5 +99,143 @@ describe("prescripción CPOE (RF-25)", () => {
     expect(screen.queryByRole("heading", { name: /reemplazar plan completo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /nueva prescripción/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /agregar al plan/i })).toBeInTheDocument();
+  });
+
+  describe("horario de la indicación (RF-25)", () => {
+    const signedAt = "2026-09-21T12:00:00+00:00";
+    const plan = (frequency: string, firstDoseAt: string | null) => ({
+      id: 1,
+      status: "activo",
+      signedAt,
+      items: [{ id: 1, drugName: "Paracetamol", dose: "1 g", route: "VO", frequency, firstDoseAt, drugBarcode: "DRUG-PARACETAMOL-1G" }],
+    });
+
+    function stubServer(prescription: unknown) {
+      const writes: { method: string; body: Record<string, unknown> }[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+          const url = String(input);
+          if (url.includes("/hospital-admission/encounters/")) return jsonResponse(200, { encounter });
+          if (init?.method && init.method !== "GET") {
+            writes.push({ method: init.method, body: JSON.parse(String(init.body)) });
+            return jsonResponse(200, { prescription: plan("cada 8 horas", signedAt), kardex: { medications: [], source: "cpoe" } });
+          }
+          if (url.includes("/prescriptions/active")) return jsonResponse(200, { prescription });
+          if (url.includes("/kardex")) return jsonResponse(200, { medications: [], source: "cpoe" });
+          return jsonResponse(404, { message: "No se encontró lo solicitado." });
+        }),
+      );
+      return writes;
+    }
+
+    async function fillDrug(user: ReturnType<typeof userEvent.setup>) {
+      await user.type(await screen.findByLabelText(/^medicamento$/i), "Paracetamol");
+      await user.type(screen.getByLabelText(/^dosis$/i), "1 g");
+      await user.type(screen.getByLabelText(/^vía$/i), "VO");
+    }
+
+    it("ofrece solo las frecuencias de la lista", async () => {
+      stubServer(null);
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      const frequency = await screen.findByRole("combobox", { name: /^frecuencia$/i });
+      const options = within(frequency).getAllByRole("option").map((option) => option.textContent);
+
+      expect(options).toEqual(["Seleccione", "cada 4 horas", "cada 6 horas", "cada 8 horas", "cada 12 horas", "cada 24 horas", "dosis única"]);
+    });
+
+    it("envía la frecuencia y la primera dosis como instante", async () => {
+      const writes = stubServer(null);
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+      await fillDrug(user);
+      await user.selectOptions(screen.getByLabelText(/^frecuencia$/i), "cada 12 horas");
+      const firstDose = inOneHour();
+      fireEvent.change(screen.getByLabelText(/^primera dosis$/i), { target: { value: firstDose } });
+
+      await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
+
+      await waitFor(() => expect(writes).toHaveLength(1));
+      expect(writes[0].body.items).toEqual([
+        { drugName: "Paracetamol", dose: "1 g", route: "VO", frequency: "cada 12 horas", firstDoseAt: new Date(firstDose).toISOString() },
+      ]);
+    });
+
+    it("exige la primera dosis antes de enviar", async () => {
+      const writes = stubServer(null);
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+      await fillDrug(user);
+      await user.selectOptions(screen.getByLabelText(/^frecuencia$/i), "cada 8 horas");
+
+      await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
+
+      expect(await screen.findByText(/primera dosis en cada línea/i)).toBeInTheDocument();
+      expect(writes).toHaveLength(0);
+    });
+
+    it("rechaza una primera dosis en el pasado antes de enviar", async () => {
+      const writes = stubServer(null);
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+      await fillDrug(user);
+      await user.selectOptions(screen.getByLabelText(/^frecuencia$/i), "cada 8 horas");
+      fireEvent.change(screen.getByLabelText(/^primera dosis$/i), { target: { value: "2020-01-01T08:00" } });
+
+      await user.click(screen.getByRole("button", { name: /registrar cpoe/i }));
+
+      expect(await screen.findByText(/no puede estar en el pasado/i)).toBeInTheDocument();
+      expect(writes).toHaveLength(0);
+    });
+
+    it("muestra la primera dosis en el plan activo", async () => {
+      stubServer(plan("cada 8 horas", signedAt));
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      const region = await screen.findByRole("region", { name: /prescripción activa/i });
+
+      expect(await within(region).findByRole("columnheader", { name: /primera dosis/i })).toBeInTheDocument();
+      expect(within(region).getByRole("row", { name: /paracetamol/i })).toHaveTextContent(formatDateTime(signedAt));
+    });
+
+    it("permite corregir la dosis aunque la primera dosis ya pasó", async () => {
+      const writes = stubServer(plan("cada 8 horas", signedAt));
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      await user.click(await screen.findByRole("button", { name: /^editar$/i }));
+      await user.click(screen.getByRole("button", { name: /^guardar$/i }));
+
+      await waitFor(() => expect(writes).toHaveLength(1));
+      expect(writes[0].body.firstDoseAt).toBe(new Date(signedAt).toISOString());
+    });
+
+    it("no deja cambiar el horario a una hora pasada", async () => {
+      const writes = stubServer(plan("cada 8 horas", signedAt));
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      await user.click(await screen.findByRole("button", { name: /^editar$/i }));
+      await user.selectOptions(within(screen.getByRole("form", { name: /editar medicamento/i })).getByRole("combobox", { name: /^frecuencia$/i }), "cada 12 horas");
+      await user.click(screen.getByRole("button", { name: /^guardar$/i }));
+
+      expect(await screen.findByText(/no puede estar en el pasado/i)).toBeInTheDocument();
+      expect(writes).toHaveLength(0);
+    });
+
+    it("pide elegir de la lista al editar una indicación con frecuencia libre", async () => {
+      const writes = stubServer(plan("c/12h", null));
+      const user = userEvent.setup();
+      renderApp("/atencion/cpoe?ingreso=ENC-HOSP-0001");
+
+      await user.click(await screen.findByRole("button", { name: /^editar$/i }));
+
+      expect(within(screen.getByRole("form", { name: /editar medicamento/i })).getByRole("combobox", { name: /^frecuencia$/i })).toHaveValue("");
+      await user.click(screen.getByRole("button", { name: /^guardar$/i }));
+
+      expect(await screen.findByText(/complete todos los campos/i)).toBeInTheDocument();
+      expect(writes).toHaveLength(0);
+    });
   });
 });

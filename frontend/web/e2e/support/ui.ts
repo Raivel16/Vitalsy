@@ -3,6 +3,13 @@ import type { Vitals } from "./data";
 
 // RNF-18: utilidades de pantalla compartidas por las pruebas por módulo.
 
+/** Valor local de `datetime-local` para una primera dosis dentro de una hora. */
+export function inOneHour(): string {
+  const date = new Date(Date.now() + 3_600_000);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
+
 export function withIngreso(path: string, encounterId: string): string {
   return `${path}?ingreso=${encodeURIComponent(encounterId)}`;
 }
