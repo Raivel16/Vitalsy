@@ -155,7 +155,7 @@ export function CpoePage() {
       return;
     }
     const original = active?.items.find((item) => item.id === editingId);
-    const scheduleChanged = !original || editForm.frequency !== original.frequency || editForm.firstDoseAt !== toDateTimeInput(original.firstDoseAt);
+    const scheduleChanged = editForm.frequency !== original?.frequency || editForm.firstDoseAt !== toDateTimeInput(original?.firstDoseAt);
     if (scheduleChanged && isPastFirstDose(editForm.firstDoseAt)) {
       setFieldError(PAST_FIRST_DOSE);
       return;

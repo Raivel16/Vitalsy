@@ -5,6 +5,7 @@ namespace App\Services\ClinicalAlerts;
 use App\Models\ClinicalAlert;
 use App\Models\MedicationAdministration;
 use App\Models\MonitoringSchedule;
+use App\Models\PatientExit;
 use App\Services\Staff\StaffRoster;
 
 /**
