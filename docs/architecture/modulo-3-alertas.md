@@ -123,6 +123,11 @@ El despacho está en un único punto, `ClinicalAlertObserver` (sobre el modelo `
 - Sirena: continua hasta confirmar lectura; `ALERT_ACKNOWLEDGED_EVENT` se comporta como antes. Se cancelan suscripción y temporizadores al desmontar/cerrar sesión.
 - El id propio llega en `GET /api/v1/auth/me` (`id`).
 
+**Atención según el origen** (`source`).
+- `emar` (dosis pendiente): el detalle lleva al e-MAR y permite solicitar atención médica; no pide constantes. La API rechaza `reassessment` y `monitoring-schedule`. La alerta se cierra al administrar la dosis.
+- `control` (control vencido): conserva la toma de constantes y enlaza a Controles.
+- La bandeja etiqueta las alertas sin NEWS2 como «Dosis pendiente», «Control vencido» o «Deterioro observado».
+
 **Variables de entorno.** Backend: `BROADCAST_CONNECTION` (`reverb` en despliegue; `log`/`null` sin servidor WebSocket y en pruebas), `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME`, `REVERB_SERVER_HOST`, `REVERB_SERVER_PORT`, `REVERB_ALLOWED_ORIGINS`. Frontend: `VITE_REVERB_APP_KEY` (obligatoria), `VITE_REVERB_HOST`, `VITE_REVERB_PORT`, `VITE_REVERB_SCHEME` (opcionales; por defecto el host/puerto/esquema de la página). En producción usar claves aleatorias, `https`/`wss` detrás del proxy TLS (RNF-05) y acotar `REVERB_ALLOWED_ORIGINS` al dominio público.
 
 **Cómo ejecutarlo.** `docker compose up --build` levanta el servicio `reverb` (`php artisan reverb:start --host=0.0.0.0 --port=8080`, puerto interno) y Nginx enruta `/app/`. Sin Docker: `php artisan reverb:start` y `BROADCAST_CONNECTION=reverb`.

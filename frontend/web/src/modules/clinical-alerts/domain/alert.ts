@@ -105,6 +105,13 @@ export function severityVisual(severity: AlertSeverity): "green" | "yellow" | "r
   return "green";
 }
 
+/** Etiqueta de una alerta sin puntaje NEWS2: el origen dice qué hay que atender. */
+export function originLabel(source: string): string {
+  if (source === "emar") return "Dosis pendiente";
+  if (source === "control") return "Control vencido";
+  return "Deterioro observado";
+}
+
 export function eventLabel(type: string): string {
   return EVENT_LABEL[type] ?? type;
 }

@@ -239,4 +239,58 @@ describe("acciones del evento de alerta", () => {
     expect(posted(calls, "icu-return")?.body).toMatchObject({ service: "Medicina", room: "507", bed: "B" });
     expect(await screen.findByText(/retorno a sala registrado/i)).toBeInTheDocument();
   });
+
+  describe("según el origen de la alerta", () => {
+    const doseAlert = {
+      ...baseAlert,
+      source: "emar",
+      news2Total: null,
+      message: "Dosis pendiente de Omeprazol. Administre en e-MAR.",
+    };
+
+    it("una dosis pendiente lleva al e-MAR y no pide constantes", async () => {
+      stubApi(doseAlert);
+      renderApp("/alertas/9", { role: "enfermera_piso" });
+
+      expect(await screen.findByRole("link", { name: /administrar en e-mar/i })).toHaveAttribute(
+        "href",
+        "/atencion/emar?ingreso=ENC-ACT-0001",
+      );
+      expect(screen.queryByRole("button", { name: /recalcular news2/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /programar control/i })).not.toBeInTheDocument();
+    });
+
+    it("una dosis pendiente permite solicitar atención médica con motivo", async () => {
+      const calls = stubApi(doseAlert);
+      const user = userEvent.setup();
+      renderApp("/alertas/9", { role: "enfermera_piso" });
+
+      await user.type(await screen.findByLabelText(/motivo de la atención médica/i), "El paciente rechaza la dosis");
+      await user.click(screen.getByRole("button", { name: /solicitar atención médica/i }));
+
+      expect(posted(calls, "medical-request")?.body).toEqual({ reason: "El paciente rechaza la dosis" });
+    });
+
+    it("un control vencido conserva la toma de constantes y enlaza a Controles", async () => {
+      stubApi({ ...doseAlert, source: "control", message: "Control de constantes vencido." });
+      renderApp("/alertas/9", { role: "enfermera_piso" });
+
+      expect(await screen.findByRole("button", { name: /recalcular news2/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /abrir controles/i })).toHaveAttribute("href", "/atencion/controles");
+    });
+
+    it.each([
+      ["emar", /dosis pendiente/i],
+      ["control", /control vencido/i],
+      ["observacion", /deterioro observado/i],
+    ])("la bandeja etiqueta el origen %s", async (source, label) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => jsonResponse(200, { alerts: [{ ...doseAlert, source, message: "Detalle" }], pending: 0 })),
+      );
+      renderApp("/alertas", { role: "enfermera_piso" });
+
+      expect(await screen.findByText(label)).toBeInTheDocument();
+    });
+  });
 });

@@ -7,7 +7,7 @@ import { StatTile } from "../../../shared/ui/clinical";
 import { Feedback, Sheet } from "../../../shared/ui/Sheet";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { formatDateTime } from "../../../shared/datetime/format";
-import { STATUS_LABEL, severityVisual, type ClinicalAlert } from "../domain/alert";
+import { STATUS_LABEL, originLabel, severityVisual, type ClinicalAlert } from "../domain/alert";
 import { notifyAlertAcknowledged } from "../domain/inboxEvents";
 
 type InboxFilter = "todas" | "confirmar" | "seguimiento";
@@ -107,7 +107,7 @@ export function AlertInboxPage() {
                 {alert.news2Total !== null ? (
                   <span className={`news news-${severityVisual(alert.severity)}`}>NEWS2 {alert.news2Total}</span>
                 ) : (
-                  <span className="news news-yellow">Deterioro observado</span>
+                  <span className="news news-yellow">{originLabel(alert.source)}</span>
                 )}
               </div>
               <p>{alert.message}</p>

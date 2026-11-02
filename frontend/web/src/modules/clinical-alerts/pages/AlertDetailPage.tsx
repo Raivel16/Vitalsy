@@ -271,12 +271,9 @@ function VitalsTabPanel({
   );
 }
 
-function DeteriorationTabPanel({ tabsId, medical }: Readonly<{ tabsId: string; medical: ReturnType<typeof useMedicalRequestForm> }>) {
+function MedicalRequestForm({ medical }: Readonly<{ medical: ReturnType<typeof useMedicalRequestForm> }>) {
   return (
-    <div className="chart-tab-panel" role="tabpanel" id={`${tabsId}-panel-deterioro`} aria-labelledby={`${tabsId}-deterioro`} aria-label="Deterioro clínico">
-      <Feedback tone="info">
-        Use esta pestaña si nota deterioro o preocupación clínica (nurse&apos;s worry) aunque aún no haya segunda toma. El médico recibe la alerta de inmediato.
-      </Feedback>
+    <>
       {medical.error ? <Feedback tone="error">{medical.error}</Feedback> : null}
       <form className="stack" onSubmit={medical.onSubmit} noValidate>
         <TextAreaField
@@ -292,7 +289,42 @@ function DeteriorationTabPanel({ tabsId, medical }: Readonly<{ tabsId: string; m
           </Button>
         </FormActions>
       </form>
+    </>
+  );
+}
+
+function DeteriorationTabPanel({ tabsId, medical }: Readonly<{ tabsId: string; medical: ReturnType<typeof useMedicalRequestForm> }>) {
+  return (
+    <div className="chart-tab-panel" role="tabpanel" id={`${tabsId}-panel-deterioro`} aria-labelledby={`${tabsId}-deterioro`} aria-label="Deterioro clínico">
+      <Feedback tone="info">
+        Use esta pestaña si nota deterioro o preocupación clínica (nurse&apos;s worry) aunque aún no haya segunda toma. El médico recibe la alerta de inmediato.
+      </Feedback>
+      <MedicalRequestForm medical={medical} />
     </div>
+  );
+}
+
+/** Una dosis pendiente se resuelve en el e-MAR: al administrarla, la alerta se cierra sola. */
+function MedicationCarePanel({
+  encounterId,
+  canAdminister,
+  postAction,
+  reload,
+}: Readonly<FormPanelProps & { encounterId: string; canAdminister: boolean }>) {
+  const medical = useMedicalRequestForm(postAction, reload);
+
+  return (
+    <section className="result-block" aria-label="Atención de la dosis pendiente">
+      <Feedback tone="info">
+        Esta alerta se cierra al administrar la dosis en el e-MAR. Si no puede administrarla, solicite atención médica.
+      </Feedback>
+      {canAdminister ? (
+        <FormActions>
+          <Link className="button" to={`/atencion/emar?ingreso=${encodeURIComponent(encounterId)}`}>Administrar en e-MAR</Link>
+        </FormActions>
+      ) : null}
+      <MedicalRequestForm medical={medical} />
+    </section>
   );
 }
 
@@ -779,7 +811,22 @@ function AlertActionPanels({
     <div className="stack">
       {pendingAck && !closed ? <AcknowledgePanel alertId={alertId} postAction={postAction} reload={reload} /> : null}
 
-      {perms.canNurseCare ? (
+      {perms.canNurseCare && alert.source === "emar" ? (
+        <MedicationCarePanel
+          encounterId={alert.encounterId}
+          canAdminister={role === "enfermera_piso"}
+          postAction={postAction}
+          reload={reload}
+        />
+      ) : null}
+
+      {perms.canNurseCare && alert.source === "control" ? (
+        <Feedback tone="info">
+          Control de constantes vencido: registre aquí la toma o use la bandeja. <Link to="/atencion/controles">Abrir Controles</Link>
+        </Feedback>
+      ) : null}
+
+      {perms.canNurseCare && alert.source !== "emar" ? (
         <NurseCarePanel canSchedule={perms.canSchedule} postAction={postAction} reload={reload} />
       ) : null}
 

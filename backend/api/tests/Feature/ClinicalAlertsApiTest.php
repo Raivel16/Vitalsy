@@ -290,6 +290,26 @@ class ClinicalAlertsApiTest extends TestCase
         $this->assertDatabaseHas('alert_events', ['alert_id' => $alert->id, 'type' => 'revaloracion']);
     }
 
+    public function test_medication_alert_rejects_vitals_and_never_notifies_or_closes_through_them(): void
+    {
+        Carbon::setTestNow(self::V_08_10_00);
+        $this->inpatientEncounter();
+        $alert = $this->openAlert([
+            'source' => 'emar', 'compliance_key' => 'emar:1', 'news2_total' => null,
+            'status' => 'en_atencion', 'reassessed_at' => now(),
+        ]);
+        $this->asRole('enfermera_piso');
+
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/reassessment", $this->vitalsPayload())
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Esta alerta es de una dosis pendiente: adminístrela en e-MAR.');
+        $this->postJson("/api/v1/clinical-alerts/{$alert->id}/monitoring-schedule", ['frequencyMinutes' => 60])
+            ->assertUnprocessable();
+
+        $this->assertSame('en_atencion', $alert->refresh()->status);
+        $this->assertSame(0, VitalSignReading::query()->where('encounter_id', 'ENC-ALERT-0001')->count());
+    }
+
     public function test_reassessment_with_persistent_alteration_auto_notifies_the_doctor(): void
     {
         Carbon::setTestNow(self::V_08_10_00);
