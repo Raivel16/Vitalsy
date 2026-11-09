@@ -21,8 +21,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "coverage",
-      // RF-114: la lógica de apoyo de Cypress se prueba aquí; los escenarios *.cy.ts corren en Cypress.
-      include: ["src/**/*.{ts,tsx}", "cypress/support/vitalsy/**/*.ts"],
+      // RF-114: la configuración y el soporte de Cypress se prueban aquí; los escenarios *.cy.ts corren en Cypress.
+      include: ["src/**/*.{ts,tsx}", "cypress.config.ts", "cypress/support/**/*.ts"],
     },
   },
 });
