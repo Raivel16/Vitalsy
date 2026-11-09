@@ -28,6 +28,8 @@ class MedicationScheduleApiTest extends TestCase
 
     private const ITEMS = self::PRESCRIPTIONS.'/active/items';
 
+    private const EVERY_12H = 'c/12h';
+
     private const EMAR = '/api/v1/inpatient-care/encounters/ENC-HORARIO-1/emar';
 
     private const CADA_8_HORAS = 'cada 8 horas';
@@ -157,7 +159,7 @@ class MedicationScheduleApiTest extends TestCase
         $this->postJson(self::PRESCRIPTIONS, ['items' => [$this->item('BID')]])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['items.0.frequency']);
-        $this->postJson(self::ITEMS, $this->item('c/12h'))
+        $this->postJson(self::ITEMS, $this->item(self::EVERY_12H))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['frequency']);
     }
@@ -312,7 +314,7 @@ class MedicationScheduleApiTest extends TestCase
             'prescribed_by' => auth()->id(),
             'signed_at' => now()->subDays(3),
         ]);
-        $prescription->items()->create(['drug_name' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => 'c/12h']);
+        $prescription->items()->create(['drug_name' => 'Paracetamol', 'dose' => '1 g', 'route' => 'VO', 'frequency' => self::EVERY_12H]);
 
         $this->artisan('emar:extend-doses')->assertSuccessful();
 
@@ -362,7 +364,7 @@ class MedicationScheduleApiTest extends TestCase
     public function test_only_explicit_hour_formats_are_read_from_free_text(): void
     {
         $this->assertSame(6, MedicationFrequency::intervalHours('cada 6h'));
-        $this->assertSame(12, MedicationFrequency::intervalHours('c/12h'));
+        $this->assertSame(12, MedicationFrequency::intervalHours(self::EVERY_12H));
         $this->assertSame(8, MedicationFrequency::intervalHours('Cada 8 horas'));
         $this->assertNull(MedicationFrequency::intervalHours('BID'));
         $this->assertNull(MedicationFrequency::intervalHours('2 tabletas cada noche'));
