@@ -13,9 +13,12 @@ export function roleEmail(role: string): string {
 
 /** Lee `CLAVE=valor` de un archivo .env (sin comillas ni comentarios). */
 export function readEnvValue(content: string, key: string): string | undefined {
-  for (const line of content.split(/\r?\n/)) {
-    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
-    if (match?.[1] === key) return match[2].trim().replace(/^(["'])(.*)\1$/, "$2");
+  for (const line of content.split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator < 0 || line.slice(0, separator).trim() !== key) continue;
+    const value = line.slice(separator + 1).trim();
+    const quoted = value.length >= 2 && (value[0] === '"' || value[0] === "'") && value.endsWith(value[0]);
+    return quoted ? value.slice(1, -1) : value;
   }
   return undefined;
 }

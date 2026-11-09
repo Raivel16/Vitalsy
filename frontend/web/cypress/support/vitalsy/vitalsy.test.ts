@@ -248,6 +248,9 @@ describe("tareas de Cypress", () => {
     expect(readEnvValue(env, "DEMO_PASSWORD")).toBe("Clave 123");
     expect(readEnvValue(env, "OTRA")).toBe("uno");
     expect(readEnvValue(env, "FALTA")).toBeUndefined();
+    expect(readEnvValue("  ESPACIOS =  valor  \nABIERTA=\"sin cierre\nSIN_IGUAL", "ESPACIOS")).toBe("valor");
+    expect(readEnvValue("ABIERTA=\"sin cierre", "ABIERTA")).toBe("\"sin cierre");
+    expect(readEnvValue("SIN_IGUAL\nX=1", "SIN_IGUAL")).toBeUndefined();
     expect(roleEmail("admision")).toBe("admision@vitalsy.local");
   });
 

@@ -177,10 +177,10 @@ export async function hospitalize(as: SessionFor, seed: number): Promise<Hospita
     source: "manual",
   });
   let enc = toEnc({ id: encounter.encounterId, orderNumber, patient, step: "", wristband: null, transfer: null, room: null, bed: null }, encounter);
-  for (let guard = 0; enc.step !== "cerrado"; guard++) {
-    if (guard >= MAX_STEPS) throw new Error(`El ingreso ${enc.id} quedó en el paso ${enc.step}.`);
+  for (let guard = 0; guard < MAX_STEPS && enc.step !== "cerrado"; guard++) {
     enc = await completeStep(as, enc);
   }
+  if (enc.step !== "cerrado") throw new Error(`El ingreso ${enc.id} quedó en el paso ${enc.step}.`);
   return { encounterId: enc.id, patientName: patient.fullName, room: enc.room, bed: enc.bed };
 }
 
