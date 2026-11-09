@@ -3,6 +3,7 @@
 Versión automática de la [guía de pruebas funcionales](guia-de-pruebas-clinical.md). Corre en local (no en CI) contra un entorno Docker propio y comprueba por pantalla que la interfaz y el funcionamiento esperado siguen correctos, con pacientes y datos distintos en cada corrida.
 
 - **Herramienta:** Playwright (`frontend/web/e2e/`).
+- **No está en GitHub (desde 2026-11-09):** la suite, `playwright.config.ts`, `tsconfig.e2e.json`, `docker-compose.e2e.yml`, `.env.e2e.example` y el workflow `browser-matrix.yml` se ignoran para que el zip de entrega y SonarQube midan solo lo que se entrega. Viven en la máquina local con copia en `D:\salva vitalsy`; para recuperarlos en otro equipo, copiarlos desde ahí o desde el historial de git (commit anterior a `chore(calidad): RNF-90 deja la suite e2e fuera del repositorio`). Para comprobar tipos: `npx tsc --noEmit -p tsconfig.e2e.json`.
 - **Diseño y plan:** `docs/superpowers/specs/2026-10-23-suite-e2e-clinical-design.md` y `docs/superpowers/plans/2026-10-23-suite-e2e-clinical.md`.
 
 ## 1. Preparación (una sola vez)
