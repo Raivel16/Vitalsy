@@ -34,3 +34,9 @@ __pycache__/
 # RNF-18: artefactos de la suite E2E
 e2e-results/
 e2e/.auth/
+
+# RF-114: artefactos de las corridas de Cypress (las evidencias seleccionadas se copian a docs/).
+cypress/videos/
+cypress/screenshots/
+cypress/results/
+cypress/downloads/
