@@ -1,0 +1,268 @@
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        16.2.1                                                                         │
+  │ Browser:        Electron 146 (headless) (deprecated)                                           │
+  │ Node Version:   v22.23.4 (C:\Users\WIN-COMS\AppData\Local\fnm_multishells\22032_1794257785050\ │
+  │                 node.exe)                                                                      │
+  │ Specs:          7 found (cy-m3-01-acceso.cy.ts, cy-m3-02-monitoreo-genera-alerta.cy.ts, cy-m3- │
+  │                 03-validacion-deterioro.cy.ts, cy-m3-04-acuse-alerta.cy.ts, cy-m3-05-atencion- │
+  │                 medica.cy.ts, cy-m3-06-permisos-navegacion.cy.ts, cy-m3-07-reportes.cy.ts)     │
+  │ Searched:       cypress/e2e/**/*.cy.ts                                                         │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Warning: The Electron browser is deprecated as a test browser and will be removed in a future version of Cypress.
+
+Switch to Chrome or another installed browser to avoid a breaking change when you upgrade.
+
+Read more about supported browsers: https://on.cypress.io/launching-browsers
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-01-acceso.cy.ts                                                           (1 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     18 seconds                                                                       │
+  │ Spec Ran:     cy-m3-01-acceso.cy.ts                                                            │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-01-acceso.cy.ts\C     (1280x720)
+     Y-M3-01-credenciales-invalidas.png                                                             
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-01-acceso.cy.ts\C     (1280x720)
+     Y-M3-01-sesion-iniciada.png                                                                    
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-01-acceso.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-02-monitoreo-genera-alerta.cy.ts                                          (2 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     43 seconds                                                                       │
+  │ Spec Ran:     cy-m3-02-monitoreo-genera-alerta.cy.ts                                           │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-02-monitoreo-gene    (1280x1845)
+     ra-alerta.cy.ts\CY-M3-02-constantes-registradas.png                                            
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-02-monitoreo-gene    (1280x1080)
+     ra-alerta.cy.ts\CY-M3-02-alerta-en-bandeja.png                                                 
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-02-monitoreo-genera-alerta.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-03-validacion-deterioro.cy.ts                                             (3 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     15 seconds                                                                       │
+  │ Spec Ran:     cy-m3-03-validacion-deterioro.cy.ts                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-03-validacion-det     (1280x774)
+     erioro.cy.ts\CY-M3-03-validacion.png                                                           
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-03-validacion-det     (1280x820)
+     erioro.cy.ts\CY-M3-03-deterioro-registrado.png                                                 
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-03-validacion-deterioro.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-04-acuse-alerta.cy.ts                                                     (4 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  1                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     11 seconds                                                                       │
+  │ Spec Ran:     cy-m3-04-acuse-alerta.cy.ts                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-04-acuse-alerta.c    (1280x1565)
+     y.ts\CY-M3-04-recepcion-confirmada.png                                                         
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-04-acuse-alerta.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-05-atencion-medica.cy.ts                                                  (5 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     33 seconds                                                                       │
+  │ Spec Ran:     cy-m3-05-atencion-medica.cy.ts                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-05-atencion-medic     (1280x844)
+     a.cy.ts\CY-M3-05-medico-notificado.png                                                         
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-05-atencion-medic    (1280x1730)
+     a.cy.ts\CY-M3-05-bandeja-medico.png                                                            
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-05-atencion-medica.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-06-permisos-navegacion.cy.ts                                              (6 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        3                                                                                │
+  │ Passing:      3                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  2                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     23 seconds                                                                       │
+  │ Spec Ran:     cy-m3-06-permisos-navegacion.cy.ts                                               │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-06-permisos-naveg     (1280x720)
+     acion.cy.ts\CY-M3-06-admision-sin-acceso.png                                                   
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-06-permisos-naveg     (1280x720)
+     acion.cy.ts\CY-M3-06-supervisora-reportes.png                                                  
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-06-permisos-navegacion.cy.ts.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  cy-m3-07-reportes.cy.ts                                                         (7 of 7)
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        3                                                                                │
+  │ Passing:      3                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  3                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     35 seconds                                                                       │
+  │ Spec Ran:     cy-m3-07-reportes.cy.ts                                                          │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-07-reportes.cy.ts    (1280x1688)
+     \CY-M3-07-indicadores.png                                                                      
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-07-reportes.cy.ts    (1280x1734)
+     \CY-M3-07-filtro-severidad.png                                                                 
+  -  C:\xampp\htdocs\Vitalsy\frontend\web\cypress\screenshots\cy-m3-07-reportes.cy.ts    (1280x1769)
+     \CY-M3-07-rango-invalido.png                                                                   
+
+
+  (Video)
+
+  -  Video output: C:\xampp\htdocs\Vitalsy\frontend\web\cypress\videos\cy-m3-07-reportes.cy.ts.mp4
+
+
+====================================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  cy-m3-01-acceso.cy.ts                    00:18        2        2        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-02-monitoreo-genera-alerta.cy      00:43        1        1        -        -        - │
+  │    .ts                                                                                         │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-03-validacion-deterioro.cy.ts      00:15        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-04-acuse-alerta.cy.ts              00:11        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-05-atencion-medica.cy.ts           00:33        1        1        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-06-permisos-navegacion.cy.ts       00:23        3        3        -        -        - │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  cy-m3-07-reportes.cy.ts                  00:35        3        3        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        03:00       12       12        -        -        -  
+

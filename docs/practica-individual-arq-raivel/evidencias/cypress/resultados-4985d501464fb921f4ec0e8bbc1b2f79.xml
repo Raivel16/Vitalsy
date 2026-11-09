@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="11.913" tests="1" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-11-09T20:58:31" tests="0" file="cypress\e2e\m3-alertas\cy-m3-04-acuse-alerta.cy.ts" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="CY-M3-04 · confirmación de recepción" timestamp="2026-11-09T20:58:31" tests="1" time="11.908" failures="0">
+    <testcase name="CY-M3-04 · confirmación de recepción pasa la alerta a «en atención», la registra en el historial y no admite un segundo acuse" time="11.838" classname="pasa la alerta a «en atención», la registra en el historial y no admite un segundo acuse">
+    </testcase>
+  </testsuite>
+</testsuites>

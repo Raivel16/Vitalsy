@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="23.001" tests="3" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-11-09T20:59:24" tests="0" file="cypress\e2e\m3-alertas\cy-m3-06-permisos-navegacion.cy.ts" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="CY-M3-06 · navegación y permisos" timestamp="2026-11-09T20:59:24" tests="3" time="22.998" failures="0">
+    <testcase name="CY-M3-06 · navegación y permisos admisión no ve el módulo de alertas ni puede abrirlo por URL" time="13.185" classname="admisión no ve el módulo de alertas ni puede abrirlo por URL">
+    </testcase>
+    <testcase name="CY-M3-06 · navegación y permisos la supervisora navega de la bandeja a los reportes de alertas" time="7.062" classname="la supervisora navega de la bandeja a los reportes de alertas">
+    </testcase>
+    <testcase name="CY-M3-06 · navegación y permisos la API de reportes rechaza a la enfermera de piso" time="2.535" classname="la API de reportes rechaza a la enfermera de piso">
+    </testcase>
+  </testsuite>
+</testsuites>

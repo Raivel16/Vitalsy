@@ -1,0 +1,6 @@
+# Videos de las corridas de Cypress: se conservan en local (pesan ~11 MB).
+evidencias/cypress/videos/
+
+# Evidencias citadas en el informe (la raíz ignora *.xml y *.log).
+!evidencias/cypress/resultados-*.xml
+!evidencias/sonarqube/logs/*.log
