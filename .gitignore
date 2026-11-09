@@ -87,3 +87,12 @@ docs/actividad-19-patentes/*.pdf
 
 # Código .ino del ESP32-C3 SuperMini (historial en repo Git propio, nunca se sube)
 /firmware-esp32c3/
+
+# RNF-90: la suite e2e (Playwright) no se sube; vive en local con copia en D:\salva vitalsy.
+# Así el zip de GitHub y SonarQube miden solo lo que se entrega.
+frontend/web/e2e/
+frontend/web/playwright.config.ts
+frontend/web/tsconfig.e2e.json
+docker-compose.e2e.yml
+.env.e2e.example
+.github/workflows/browser-matrix.yml
