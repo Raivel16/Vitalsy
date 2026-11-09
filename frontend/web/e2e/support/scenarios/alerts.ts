@@ -1,4 +1,5 @@
 import type { Role } from "../../../src/app/roles";
+import { sequentially } from "../sequence";
 import { recordVitals } from "./care";
 import { vitalsBody, type Ctx, type Enc } from "./types";
 
@@ -62,5 +63,5 @@ export async function driveAlert(ctx: Ctx, alert: Alert, until: AlertStage, opts
     },
     async () => (await at("enfermera_piso")).post(`${url}/icu-transfer`, { service: "UCI", room: "UCI-1", bed: "01" }),
   ];
-  for (let i = first; i <= stop; i++) await steps[i]();
+  await sequentially(steps.slice(first, stop + 1), (step) => step());
 }

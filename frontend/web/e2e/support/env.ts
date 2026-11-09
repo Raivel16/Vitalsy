@@ -57,14 +57,18 @@ async function healthy(): Promise<boolean> {
   }
 }
 
+async function waitUntilHealthy(deadline: number): Promise<boolean> {
+  if (await healthy()) return true;
+  if (Date.now() >= deadline) return false;
+  await new Promise((r) => setTimeout(r, 3000));
+  return waitUntilHealthy(deadline);
+}
+
 export async function ensureStack(): Promise<void> {
   if (await healthy()) return;
   compose(["up", "-d", "--build"]);
   const deadline = Date.now() + 5 * 60_000;
-  while (Date.now() < deadline) {
-    if (await healthy()) return;
-    await new Promise((r) => setTimeout(r, 3000));
-  }
+  if (await waitUntilHealthy(deadline)) return;
   throw new Error(`El stack ${E2E_PROJECT} no respondió /api/health en 5 minutos. Revise: docker compose -p ${E2E_PROJECT} logs backend`);
 }
 

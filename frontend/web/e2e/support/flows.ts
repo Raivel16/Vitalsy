@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import type { Role } from "../../src/app/roles";
 import type { Patient, Vitals } from "./data";
+import { sequentially } from "./sequence";
 import { fillVitals, withIngreso } from "./ui";
 
 // RNF-18: pasos por pantalla reutilizados por los recorridos de día completo. Cada función
@@ -108,10 +109,10 @@ export async function uiNursingAdmission(open: OpenAs, id: string, p: Patient, b
   await page.goto(withIngreso("/enfermeria/valoracion", id));
   await page.getByLabel("Motivo de consulta").fill(p.reason);
   await page.getByLabel("Antecedentes").fill("Hipertensión arterial controlada");
-  for (const allergy of p.allergies) {
+  await sequentially(p.allergies, async (allergy) => {
     await page.getByLabel("Alergia (opcional)").fill(allergy);
     await page.getByRole("button", { name: "Agregar alergia" }).click();
-  }
+  });
   if (p.allergies.length === 0) await page.getByLabel("Ninguna otra conocida.").check();
   await page.getByRole("button", { name: "Guardar valoración" }).click();
   await expect(page.getByText("Valoración registrada.")).toBeVisible();
@@ -122,13 +123,13 @@ export async function uiNursingAdmission(open: OpenAs, id: string, p: Patient, b
   await expect(page.getByText("Constantes registradas.")).toBeVisible();
 
   await page.goto(withIngreso("/enfermeria/conciliacion", id));
-  for (const med of p.homeMeds) {
+  await sequentially(p.homeMeds, async (med) => {
     await page.getByLabel("Medicamento", { exact: true }).fill(med.name);
     await page.getByLabel("Dosis").fill(med.dose);
     await page.getByLabel("Frecuencia").fill(med.frequency);
     await page.getByLabel("Vía").selectOption(med.route);
     await page.getByRole("button", { name: "Agregar medicamento" }).click();
-  }
+  });
   if (p.homeMeds.length === 0) await page.getByLabel(/Sin antecedentes farmacológicos/).check();
   if (p.allergies.length > 0) await page.getByLabel("Alergias conocidas (opcional)").fill(p.allergies.join(", "));
   await page.getByRole("button", { name: "Registrar conciliación" }).click();
