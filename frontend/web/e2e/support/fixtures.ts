@@ -78,23 +78,25 @@ export const test = base.extend<Fixtures & Internal & Options>({
       }
       return session;
     });
-    for (const session of opened.values()) await session.dispose();
+    await Promise.all([...opened.values()].map((session) => session.dispose()));
   },
 
   pages: async ({ page }, use, testInfo) => {
     const pages: Page[] = [];
     await use(pages);
     const failed = testInfo.status !== testInfo.expectedStatus;
-    for (const [i, p] of pages.entries()) {
-      if (p === page || p.isClosed()) continue;
-      if (failed) {
-        const body = await p.screenshot({ fullPage: true }).catch(() => null);
-        if (body) await testInfo.attach(`pantalla-${i + 1}.png`, { body, contentType: "image/png" });
-      }
-      // Los contextos de asRole/freshLogin son propios de la prueba: se cierran al terminar
-      // (si no, se acumulan en el worker y las capturas de fallo mezclan pruebas).
-      await p.context().close();
-    }
+    await Promise.all(
+      pages.map(async (p, i) => {
+        if (p === page || p.isClosed()) return;
+        if (failed) {
+          const body = await p.screenshot({ fullPage: true }).catch(() => null);
+          if (body) await testInfo.attach(`pantalla-${i + 1}.png`, { body, contentType: "image/png" });
+        }
+        // Los contextos de asRole/freshLogin son propios de la prueba: se cierran al terminar
+        // (si no, se acumulan en el worker y las capturas de fallo mezclan pruebas).
+        await p.context().close();
+      }),
+    );
   },
 
   clockOffsetMs: async ({}, use) => {
@@ -127,7 +129,7 @@ export const test = base.extend<Fixtures & Internal & Options>({
       }
       return session;
     });
-    for (const session of opened.values()) await session.dispose();
+    await Promise.all([...opened.values()].map((session) => session.dispose()));
   },
 
   asUser: async ({ browser, pages, clockOffsetMs, quietAlerts, apiAs }, use, testInfo) => {
@@ -161,7 +163,7 @@ export const test = base.extend<Fixtures & Internal & Options>({
     const sync = async (output: string) => {
       const at = parseClock(output);
       clockOffsetMs.value = at.getTime() - Date.now();
-      for (const page of pages) await page.clock.setSystemTime(at);
+      await Promise.all(pages.map((page) => page.clock.setSystemTime(at)));
       return at;
     };
     await use({

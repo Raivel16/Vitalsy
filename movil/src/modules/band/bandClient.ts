@@ -147,9 +147,11 @@ export class BandClient {
       await (options.pairing ? bonding : bonding.catch(() => undefined));
     }
     const info = await this.api.retrieveServices(id);
-    for (const [service, characteristic] of SUBSCRIBED) {
-      await this.api.startNotification(id, service, characteristic);
-    }
+    // Las operaciones GATT van una tras otra: en BLE no se pueden solapar.
+    await SUBSCRIBED.reduce(
+      (previous, [service, characteristic]) => previous.then(() => this.api.startNotification(id, service, characteristic)),
+      Promise.resolve<unknown>(undefined),
+    );
     this.connectedId = id;
     await this.command(setTimeCommand(this.now()));
     const hasBattery = (info.services ?? []).some((service) => shortUuid(service.uuid) === BAND_UUID.batteryService);

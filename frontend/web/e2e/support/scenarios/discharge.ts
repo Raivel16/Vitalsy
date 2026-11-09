@@ -1,4 +1,5 @@
 import type { Role } from "../../../src/app/roles";
+import { sequentially } from "../sequence";
 import type { Ctx, Enc } from "./types";
 
 // RNF-18: módulo 4 (alta y egreso) por API, en el orden de la guía E4.
@@ -74,6 +75,6 @@ export async function advanceDischarge(
     pase: async () => (await at("altas_caja")).post(`${url}/exit-pass`),
     salida: async () => (await at("enfermera_piso")).post(`${url}/exit`),
   };
-  for (const step of DISCHARGE_STEPS.slice(0, DISCHARGE_STEPS.indexOf(until) + 1)) await steps[step]();
+  await sequentially(DISCHARGE_STEPS.slice(0, DISCHARGE_STEPS.indexOf(until) + 1), (step) => steps[step]());
   return { lifePlan };
 }

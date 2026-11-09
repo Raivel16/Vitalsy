@@ -226,27 +226,31 @@ export async function registerEncounter(ctx: Ctx, patient: Patient = ctx.data.pa
   // Dos registros simultáneos pueden recibir el mismo ENC-… y el segundo responde 500
   // (defecto cubierto por m1-admision/concurrencia.spec.ts). Aquí solo se reintenta para
   // que el resto de la suite pueda preparar sus pacientes.
-  for (let attempt = 0; ; attempt++) {
+  const attemptRegister = async (attempt: number): Promise<Enc> => {
     try {
       const { encounter } = await api.post<{ encounter: ApiEncounter }>(`${ADM}/encounters`, encounterBody(patient, orderNumber));
       return ctx.data.track(`ingreso ${encounter.encounterId}`, apply({ encounterId: encounter.encounterId, orderNumber, patient, currentStep: "" }, encounter));
     } catch (error) {
       if (attempt >= 5 || !(error instanceof ApiError) || error.status !== 500) throw error;
       await new Promise((r) => setTimeout(r, 150 + ctx.data.int(0, 350)));
+      return attemptRegister(attempt + 1);
     }
-  }
+  };
+  return attemptRegister(0);
 }
 
 /** Deja el ingreso EN el paso `until` (sin completarlo). `cerrado` = hospitalizado. */
 export async function advanceAdmission(ctx: Ctx, enc: Enc, until: AdmissionStep, opts: AdmissionOptions = {}): Promise<Enc> {
   const target = ADMISSION_STEPS.indexOf(until);
-  let current = enc;
-  for (let guard = 0; guard < 25; guard++) {
+  const advance = async (current: Enc, guard: number): Promise<Enc> => {
     const at = ADMISSION_STEPS.indexOf(current.currentStep as AdmissionStep);
     if (current.currentStep === until || (at >= target && current.currentStep !== "derivacion")) return current;
-    current = await completeStep(ctx, current, opts);
-  }
-  throw new Error(`El ingreso ${enc.encounterId} no llegó al paso ${until} (quedó en ${current.currentStep}).`);
+    if (guard >= 25) {
+      throw new Error(`El ingreso ${enc.encounterId} no llegó al paso ${until} (quedó en ${current.currentStep}).`);
+    }
+    return advance(await completeStep(ctx, current, opts), guard + 1);
+  };
+  return advance(enc, 0);
 }
 
 export async function hospitalize(ctx: Ctx, opts: AdmissionOptions & { patient?: Patient } = {}): Promise<Hosp> {

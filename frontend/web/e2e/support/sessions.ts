@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { ROLES, type Role } from "../../src/app/roles";
 import { ApiSession } from "./api";
 import { e2eEnv } from "./env";
+import { sequentially } from "./sequence";
 
 // RNF-18: una sesión por rol, creada una vez por corrida (el login real se prueba aparte).
 const AUTH_DIR = fileURLToPath(new URL("../.auth/", import.meta.url));
@@ -22,9 +23,9 @@ export function sessionFile(role: Role): string {
 export async function createRoleSessions(): Promise<void> {
   mkdirSync(AUTH_DIR, { recursive: true });
   const password = rolePassword();
-  for (const role of ROLES) {
+  await sequentially(ROLES, async (role) => {
     const session = await ApiSession.login(roleEmail(role), password);
     await session.save(sessionFile(role));
     await session.dispose();
-  }
+  });
 }

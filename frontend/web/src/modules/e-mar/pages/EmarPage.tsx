@@ -100,24 +100,39 @@ function DoseRow({ dose, active, onSelect }: Readonly<{ dose: Dose; active: bool
       <td>
         <div className="emar-status">
           <StatusPill tone={doseTone(dose)}>{doseStatusLabel(dose)}</StatusPill>
-          {dose.status === "administrado" && dose.administeredAt ? (
-            <span className="hint">{timeLabel(dose.administeredAt)}</span>
-          ) : null}
-          {dose.status === "pendiente" && !overdue ? (
-            <span className="hint">{isInWindow(dose) ? "Dosis en ventana" : "Programada"}</span>
-          ) : null}
+          <DoseStatusHint dose={dose} overdue={overdue} />
         </div>
       </td>
       <td className="col-action">
-        {dose.status === "pendiente" ? (
-          <Button type="button" variant={active || overdue ? "primary" : "quiet"} onClick={onSelect}>
-            {overdue ? "Justificar / Administrar" : "Verificar y administrar"}
-          </Button>
-        ) : (
-          <span className="hint">{dose.status === "administrado" ? "Registrada" : "Sin acción"}</span>
-        )}
+        <DoseAction dose={dose} active={active} overdue={overdue} onSelect={onSelect} />
       </td>
     </tr>
+  );
+}
+
+function DoseStatusHint({ dose, overdue }: Readonly<{ dose: Dose; overdue: boolean }>) {
+  if (dose.status === "administrado" && dose.administeredAt) {
+    return <span className="hint">{timeLabel(dose.administeredAt)}</span>;
+  }
+  if (dose.status === "pendiente" && !overdue) {
+    return <span className="hint">{isInWindow(dose) ? "Dosis en ventana" : "Programada"}</span>;
+  }
+  return null;
+}
+
+function DoseAction({
+  dose,
+  active,
+  overdue,
+  onSelect,
+}: Readonly<{ dose: Dose; active: boolean; overdue: boolean; onSelect: () => void }>) {
+  if (dose.status !== "pendiente") {
+    return <span className="hint">{dose.status === "administrado" ? "Registrada" : "Sin acción"}</span>;
+  }
+  return (
+    <Button type="button" variant={active || overdue ? "primary" : "quiet"} onClick={onSelect}>
+      {overdue ? "Justificar / Administrar" : "Verificar y administrar"}
+    </Button>
   );
 }
 
