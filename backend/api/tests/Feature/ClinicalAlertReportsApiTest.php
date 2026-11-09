@@ -271,6 +271,12 @@ class ClinicalAlertReportsApiTest extends TestCase
         $this->getJson(self::REPORTS.'?from=2026-01-01&to=2026-11-01')
             ->assertStatus(422)
             ->assertJsonValidationErrors('from');
+        $this->getJson(self::REPORTS.'?from=2026-13-45')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('from');
+        $this->getJson(self::REPORTS.'?to=2027-01-01&from=2026-01-01')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('from');
         $this->getJson(self::REPORTS.'?severity=critica')
             ->assertStatus(422)
             ->assertJsonValidationErrors('severity');
