@@ -71,12 +71,17 @@ async function advance(as: SessionFor, enc: Enc, step: string, extra: Record<str
   return toEnc(enc, encounter);
 }
 
-/** Perfiles de cama que se prueban en orden: la política de género de cada habitación limita las sugerencias. */
+/**
+ * Perfiles de cama que se prueban en orden: la política de género de cada habitación limita las sugerencias.
+ * Como último recurso se pide aislamiento de contacto, que habilita las camas de aislamiento libres.
+ */
 export const BED_PROFILES = [
-  { specialty: "medicina_interna", gender: "female" },
-  { specialty: "medicina_interna", gender: "male" },
-  { specialty: "cirugia", gender: "female" },
-  { specialty: "cirugia", gender: "male" },
+  { specialty: "medicina_interna", gender: "female", isolationType: "ninguno" },
+  { specialty: "medicina_interna", gender: "male", isolationType: "ninguno" },
+  { specialty: "cirugia", gender: "female", isolationType: "ninguno" },
+  { specialty: "cirugia", gender: "male", isolationType: "ninguno" },
+  { specialty: "medicina_interna", gender: "female", isolationType: "contacto" },
+  { specialty: "cirugia", gender: "female", isolationType: "contacto" },
 ] as const;
 
 type Suggestion = { id: number; room: string; bedCode: string };
@@ -97,7 +102,7 @@ async function assignBed(as: SessionFor, encounterId: string): Promise<Suggestio
   const beds = await as("gestion_camas");
   for (const profile of BED_PROFILES) {
     const { request, suggestions } = await beds.request<{ request: { id: number }; suggestions: Suggestion[] }>("POST", "/beds/requests", {
-      encounterId, ...profile, isolationType: "ninguno", isolation: false, priority: "media", source: "admisiones",
+      encounterId, ...profile, isolation: profile.isolationType !== "ninguno", priority: "media", source: "admisiones",
     });
     const bed = await tryAssign(beds, request.id, suggestions);
     if (bed) return bed;

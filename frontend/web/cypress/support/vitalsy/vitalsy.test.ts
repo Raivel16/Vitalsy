@@ -139,8 +139,9 @@ function fakeApi(options: { bedConflicts?: number; noBeds?: boolean; bedsFor?: s
     }
     if (path === "/hospital-admission/wristbands") return { wristband: { code: "BRZ-1" } };
     if (path === "/beds/requests") {
-      const profile = body as { specialty: string; gender: string };
-      const fits = !options.noBeds && (!options.bedsFor || options.bedsFor === `${profile.specialty}/${profile.gender}`);
+      const profile = body as { specialty: string; gender: string; isolationType: string };
+      const key = profile.isolationType === "ninguno" ? `${profile.specialty}/${profile.gender}` : `${profile.specialty}/${profile.gender}/${profile.isolationType}`;
+      const fits = !options.noBeds && (!options.bedsFor || options.bedsFor === key);
       return { request: { id: 9 }, suggestions: fits ? [{ id: 1, room: "601", bedCode: "A" }, { id: 2, room: "602", bedCode: "B" }] : [] };
     }
     if (path.endsWith("/assign") && conflicts > 0) {
@@ -185,6 +186,14 @@ describe("preparación de escenarios por API", () => {
 
     await expect(hospitalize(as, 7)).resolves.toMatchObject({ room: "601", bed: "A" });
     expect(recorded.filter((call) => call.path === "/beds/requests").map((call) => (call.body as { specialty: string; gender: string }).gender)).toEqual(["female", "male", "female"]);
+    expect(recorded.find((call) => call.path === "/beds/requests")?.body).toMatchObject({ isolationType: "ninguno", isolation: false });
+  });
+
+  it("pide aislamiento de contacto como último recurso", async () => {
+    const { as, recorded } = fakeApi({ bedsFor: "medicina_interna/female/contacto" });
+
+    await expect(hospitalize(as, 8)).resolves.toMatchObject({ room: "601" });
+    expect(recorded.filter((call) => call.path === "/beds/requests").at(-1)?.body).toMatchObject({ isolationType: "contacto", isolation: true });
   });
 
   it("informa cuando no quedan camas o el ingreso no avanza", async () => {
@@ -197,9 +206,9 @@ describe("preparación de escenarios por API", () => {
   it("propaga errores de cama distintos de un conflicto", async () => {
     const failing: SessionFor = async () =>
       ({
-        request: async (method: string, path: string) => {
+        request: async (method: string, path: string, body?: unknown) => {
           if (path.endsWith("/assign")) throw new Error("caída de red");
-          return fakeApi().as("x").then((s) => s.request(method, path));
+          return fakeApi().as("x").then((s) => s.request(method, path, body));
         },
       }) as unknown as VitalsySession;
     const { as } = fakeApi();
@@ -269,5 +278,26 @@ describe("tareas de Cypress", () => {
     await expect(tasks["vitalsy:api"]({ role: "enfermera_piso", method: "GET", path: "/clinical-alerts/inbox" })).resolves.toMatchObject({ status: 200 });
     await expect(tasks["vitalsy:hospitalize"]()).rejects.toThrow();
     expect(logins).toBe(3);
+  });
+
+  it("hospitaliza un solo paciente por corrida y reintenta si la preparación falló", async () => {
+    let encounters = 0;
+    const { fetcher } = fakeServer((call) => {
+      if (call.url.endsWith("/hospital-admission/encounters")) {
+        encounters += 1;
+        if (encounters === 1) return { status: 500, body: { message: "Error" } };
+        return { body: { encounter: { encounterId: "ENC-9", currentStep: "cerrado", wristbandCode: null, transferOrderNumber: null, location: { room: "601", bed: "A" } } } };
+      }
+      return { body: {} };
+    });
+    const tasks = createVitalsyTasks({ baseUrl: BASE, password: "secreta", fetcher, seed: () => 11 });
+
+    await expect(tasks["vitalsy:hospitalize"]()).rejects.toThrow("500");
+    const first = await tasks["vitalsy:hospitalize"]();
+    const second = await tasks["vitalsy:hospitalize"]();
+
+    expect(first).toEqual({ encounterId: "ENC-9", patientName: patientFor(11).fullName, room: "601", bed: "A" });
+    expect(second).toBe(first);
+    expect(encounters).toBe(2);
   });
 });

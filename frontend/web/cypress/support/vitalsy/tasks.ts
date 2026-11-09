@@ -1,5 +1,5 @@
 // Tareas de Node que Cypress expone a los escenarios (`cy.task`): una sesión por rol, reutilizada en la corrida.
-import { hospitalize, raiseAlert, type SessionFor } from "./scenarios";
+import { hospitalize, raiseAlert, type Hospitalized, type SessionFor } from "./scenarios";
 import { VitalsySession, type FetchLike, type Wait } from "./session";
 import type { VitalsProfile } from "./vitals";
 
@@ -23,6 +23,8 @@ export function readEnvValue(content: string, key: string): string | undefined {
 export function createVitalsyTasks(options: TaskOptions) {
   const sessions = new Map<string, Promise<VitalsySession>>();
   const seed = options.seed ?? (() => Date.now());
+  // Un solo paciente por corrida: cada ingreso ocupa una cama y el entorno de desarrollo no da de alta.
+  let patient: Promise<Hospitalized> | null = null;
 
   const as: SessionFor = (role) => {
     let session = sessions.get(role);
@@ -39,7 +41,13 @@ export function createVitalsyTasks(options: TaskOptions) {
   };
 
   return {
-    "vitalsy:hospitalize": () => hospitalize(as, seed()),
+    "vitalsy:hospitalize": () => {
+      patient ??= hospitalize(as, seed());
+      patient.catch(() => {
+        patient = null;
+      });
+      return patient;
+    },
     "vitalsy:raiseAlert": ({ encounterId, profile }: { encounterId: string; profile: Exclude<VitalsProfile, "normal"> }) =>
       raiseAlert(as, encounterId, profile),
     "vitalsy:api": async ({ role, method, path, body }: ApiCall) => (await as(role)).raw(method, path, body),

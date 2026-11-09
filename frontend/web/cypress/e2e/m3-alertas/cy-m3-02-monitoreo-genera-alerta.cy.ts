@@ -25,8 +25,16 @@ describe("CY-M3-02 · el monitoreo genera la alerta", () => {
     cy.get("output[aria-label='Resultado del registro']").should("contain", "Se activó el proceso de alertas (NEWS2 8)");
     cy.screenshot("CY-M3-02-constantes-registradas");
 
+    cy.vitalsyApi("enfermera_piso", "GET", "/clinical-alerts/inbox").then(({ body }) => {
+      const alerts = (body as { alerts: Array<{ id: number; encounterId: string; news2Total: number | null }> }).alerts;
+      const newest = alerts.filter((item) => item.encounterId === patient.encounterId).sort((a, b) => b.id - a.id)[0];
+      expect(newest.news2Total, "NEWS2 de la alerta generada").to.eq(8);
+      cy.wrap(newest.id).as("alertId");
+    });
+
     cy.visit("/alertas");
-    cy.contains(".alert-card", patient.patientName).within(() => {
+    cy.get<number>("@alertId").then((alertId) => cy.alertCard(alertId)).within(() => {
+      cy.contains(patient.patientName).should("be.visible");
       cy.contains("NEWS2 8").should("be.visible");
       cy.contains("Pendiente de recepción").should("be.visible");
     });

@@ -25,8 +25,8 @@ describe("CY-M3-03 · registro de deterioro observado", () => {
     cy.screenshot("CY-M3-03-deterioro-registrado");
 
     cy.vitalsyApi("enfermera_piso", "GET", "/clinical-alerts/inbox").then(({ body }) => {
-      const alerts = (body as { alerts: Array<{ encounterId: string; source: string; severity: string }> }).alerts;
-      const alert = alerts.find((item) => item.encounterId === patient.encounterId);
+      const alerts = (body as { alerts: Array<{ id: number; encounterId: string; source: string; severity: string }> }).alerts;
+      const alert = alerts.filter((item) => item.encounterId === patient.encounterId).sort((a, b) => b.id - a.id)[0];
       expect(alert, "alerta en la bandeja de enfermería").to.include({ source: "observacion", severity: "alta" });
     });
   });

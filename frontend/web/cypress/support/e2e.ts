@@ -8,12 +8,14 @@ declare global {
     interface Chainable {
       /** Inicia sesión por API con la cuenta demo `{rol}@vitalsy.local` y la reutiliza entre escenarios. */
       loginAs(role: string): Chainable<void>;
-      /** Paciente hospitalizado nuevo, preparado por API (módulo 1 completo). */
+      /** Paciente hospitalizado de la corrida, preparado por API (módulo 1 completo) y compartido entre escenarios. */
       hospitalize(): Chainable<Hospitalized>;
       /** Registra constantes alteradas y devuelve la alerta generada (RF-39). */
       raiseAlert(encounterId: string, profile: "news2_medio" | "news2_alto"): Chainable<RaisedAlert>;
       /** Llamada directa a /api/v1 con la sesión de un rol (para verificar el estado en el servidor). */
       vitalsyApi(role: string, method: string, path: string, body?: unknown): Chainable<RawResponse>;
+      /** Tarjeta de la bandeja que corresponde a una alerta concreta. */
+      alertCard(alertId: number): Chainable<JQuery<HTMLElement>>;
     }
   }
 }
@@ -69,4 +71,9 @@ Cypress.Commands.add("raiseAlert", (encounterId: string, profile: "news2_medio" 
 
 Cypress.Commands.add("vitalsyApi", (role: string, method: string, path: string, body?: unknown) =>
   cy.task<RawResponse>("vitalsy:api", { role, method, path, body }, { timeout: 60_000 }),
+);
+
+Cypress.Commands.add("alertCard", (alertId: number) =>
+  // La bandeja puede tardar con muchas alertas en el entorno de desarrollo.
+  cy.get(`.alert-card a[href="/alertas/${alertId}"]`, { timeout: 30_000 }).closest(".alert-card"),
 );

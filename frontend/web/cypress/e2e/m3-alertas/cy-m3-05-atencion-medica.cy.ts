@@ -32,7 +32,8 @@ describe("CY-M3-05 · escalamiento al médico de guardia", () => {
 
     cy.loginAs("medico_residente");
     cy.visit("/alertas");
-    cy.contains(".alert-card", patient.patientName).within(() => {
+    cy.alertCard(alert.id).within(() => {
+      cy.contains(patient.patientName).should("be.visible");
       cy.contains("Médico notificado").should("be.visible");
     });
     cy.screenshot("CY-M3-05-bandeja-medico");
