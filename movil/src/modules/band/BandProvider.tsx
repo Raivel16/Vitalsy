@@ -21,7 +21,7 @@ export function BandProvider({ children }: Readonly<{ children: ReactNode }>) {
         client: getBandClient(),
         store: bandStore,
         requestPermissions: requestBlePermissions,
-        apply: async () => false,
+        apply: () => Promise.resolve(false),
         onPairedChange: () => undefined,
         currentAccount: () => null,
       }),

@@ -90,6 +90,11 @@ export function BarcodeScanner({ onScan, label = "Escanear brazalete", variant =
         },
         () => undefined,
       )
+      .then(() => {
+        // La librería fija el ancho del video en línea; se ajusta aquí en vez de forzarlo desde el CSS.
+        const video = document.querySelector<HTMLVideoElement>(`#${elementId} video`);
+        if (video) video.style.width = "100%";
+      })
       .catch(() => {
         if (active) setError("No se pudo abrir la cámara. Permita el acceso o escriba el código.");
       });

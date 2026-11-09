@@ -25,7 +25,9 @@ final class MedicationFrequency
      */
     public static function intervalHours(string $frequency): ?int
     {
-        if (preg_match('/^(?:cada\s*|c\/\s*)?(\d+)\s*h(?:oras?|rs?)?\.?$/iu', trim($frequency), $match) !== 1) {
+        $withoutPrefix = preg_replace('/^(?:cada|c\/)\s*/iu', '', trim($frequency)) ?? '';
+
+        if (preg_match('/^(\d+)\s*h(?:oras?|rs?)?\.?$/iu', $withoutPrefix, $match) !== 1) {
             return null;
         }
 
