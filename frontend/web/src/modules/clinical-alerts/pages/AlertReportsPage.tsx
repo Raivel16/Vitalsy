@@ -38,7 +38,8 @@ export function AlertReportsPage() {
     try {
       const data = await api<AlertReport>(`/api/v1/clinical-alerts/reports?${buildReportQuery(next)}`);
       setReport(data);
-      setNotice(announce ? { tone: "success", text: `Reporte actualizado: ${data.summary.totalAlerts} alertas en el período.` } : null);
+      // La carga inicial es silenciosa: no reemplaza un aviso de validación mostrado mientras terminaba.
+      if (announce) setNotice({ tone: "success", text: `Reporte actualizado: ${data.summary.totalAlerts} alertas en el período.` });
     } catch (error) {
       setReport(null);
       setNotice({ tone: "error", text: errorText(error, "No se pudo obtener el reporte de alertas.") });

@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { jsonResponse, renderApp } from "../../test/renderApp";
@@ -156,6 +156,23 @@ describe("pantalla de reportes de alertas (RF-114)", () => {
     await userEvent.click(screen.getByRole("button", { name: CONSULT }));
 
     expect(await screen.findByText(/la fecha final no puede ser anterior/i)).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/revise los filtros/i);
+    expect(urls).toHaveLength(1);
+  });
+
+  it("conserva el aviso de validación aunque la carga inicial termine después", async () => {
+    let release: (value: unknown) => void = () => undefined;
+    const urls = stubReports(() => new Promise((resolve) => { release = resolve; }));
+    renderApp(REPORTS_PATH, { role: "enfermera_supervisora" });
+    await screen.findByText(/calculando indicadores/i);
+
+    // En desarrollo StrictMode repite la carga inicial y el botón queda habilitado mientras termina la segunda.
+    await userEvent.clear(screen.getByLabelText("Hasta"));
+    fireEvent.submit(screen.getByRole("form", { name: /filtros del reporte/i }));
+    expect(await screen.findByText(/indique la fecha final/i)).toBeInTheDocument();
+
+    release(jsonResponse(200, report));
+    expect(await screen.findByRole("region", { name: /indicadores principales/i })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(/revise los filtros/i);
     expect(urls).toHaveLength(1);
   });
