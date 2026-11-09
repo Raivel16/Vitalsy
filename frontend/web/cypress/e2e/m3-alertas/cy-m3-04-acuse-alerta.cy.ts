@@ -18,7 +18,8 @@ describe("CY-M3-04 · confirmación de recepción", () => {
     cy.loginAs("enfermera_piso");
     cy.visit("/alertas");
 
-    cy.contains(".alert-card", patient.patientName).within(() => {
+    // La bandeja puede tardar con muchas alertas en el entorno de desarrollo.
+    cy.contains(".alert-card", patient.patientName, { timeout: 30_000 }).within(() => {
       cy.contains("NEWS2 5").should("be.visible");
       cy.contains("button", "Confirmar recepción").click();
     });

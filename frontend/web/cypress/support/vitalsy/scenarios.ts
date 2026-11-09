@@ -71,20 +71,36 @@ async function advance(as: SessionFor, enc: Enc, step: string, extra: Record<str
   return toEnc(enc, encounter);
 }
 
-async function assignBed(as: SessionFor, encounterId: string): Promise<{ room: string; bedCode: string }> {
-  const beds = await as("gestion_camas");
-  const { request, suggestions } = await beds.request<{ request: { id: number }; suggestions: Array<{ id: number; room: string; bedCode: string }> }>(
-    "POST",
-    "/beds/requests",
-    { encounterId, specialty: "medicina_interna", gender: "female", isolationType: "ninguno", isolation: false, priority: "media", source: "admisiones" },
-  );
+/** Perfiles de cama que se prueban en orden: la política de género de cada habitación limita las sugerencias. */
+export const BED_PROFILES = [
+  { specialty: "medicina_interna", gender: "female" },
+  { specialty: "medicina_interna", gender: "male" },
+  { specialty: "cirugia", gender: "female" },
+  { specialty: "cirugia", gender: "male" },
+] as const;
+
+type Suggestion = { id: number; room: string; bedCode: string };
+
+async function tryAssign(beds: VitalsySession, requestId: number, suggestions: Suggestion[]): Promise<Suggestion | null> {
   for (const bed of suggestions) {
     try {
-      await beds.request("POST", `/beds/requests/${request.id}/assign`, { bedId: bed.id });
+      await beds.request("POST", `/beds/requests/${requestId}/assign`, { bedId: bed.id });
       return bed;
     } catch (error) {
       if (!(error instanceof VitalsyApiError) || error.status !== 422) throw error;
     }
+  }
+  return null;
+}
+
+async function assignBed(as: SessionFor, encounterId: string): Promise<Suggestion> {
+  const beds = await as("gestion_camas");
+  for (const profile of BED_PROFILES) {
+    const { request, suggestions } = await beds.request<{ request: { id: number }; suggestions: Suggestion[] }>("POST", "/beds/requests", {
+      encounterId, ...profile, isolationType: "ninguno", isolation: false, priority: "media", source: "admisiones",
+    });
+    const bed = await tryAssign(beds, request.id, suggestions);
+    if (bed) return bed;
   }
   throw new Error(`No hay camas disponibles para ${encounterId}: libere camas antes de ejecutar Cypress.`);
 }

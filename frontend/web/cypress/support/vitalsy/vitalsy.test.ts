@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { hospitalize, patientFor, raiseAlert, type SessionFor } from "./scenarios";
+import { BED_PROFILES, hospitalize, patientFor, raiseAlert, type SessionFor } from "./scenarios";
 import { VitalsyApiError, VitalsySession, type FetchLike } from "./session";
 import { createVitalsyTasks, readEnvValue, roleEmail } from "./tasks";
 import { EXPECTED_NEWS2, severityFor, vitalsBody, vitalsFor } from "./vitals";
@@ -119,7 +119,7 @@ const STEPS = [
 type Recorded = { role: string; method: string; path: string; body?: unknown };
 
 /** Simula la API por rol: el ingreso avanza un paso en cada POST /advance. */
-function fakeApi(options: { bedConflicts?: number; noBeds?: boolean; alertActivated?: boolean; inbox?: unknown[]; stuckAt?: string } = {}) {
+function fakeApi(options: { bedConflicts?: number; noBeds?: boolean; bedsFor?: string; alertActivated?: boolean; inbox?: unknown[]; stuckAt?: string } = {}) {
   const recorded: Recorded[] = [];
   let step = 0;
   let conflicts = options.bedConflicts ?? 0;
@@ -139,7 +139,9 @@ function fakeApi(options: { bedConflicts?: number; noBeds?: boolean; alertActiva
     }
     if (path === "/hospital-admission/wristbands") return { wristband: { code: "BRZ-1" } };
     if (path === "/beds/requests") {
-      return { request: { id: 9 }, suggestions: options.noBeds ? [] : [{ id: 1, room: "601", bedCode: "A" }, { id: 2, room: "602", bedCode: "B" }] };
+      const profile = body as { specialty: string; gender: string };
+      const fits = !options.noBeds && (!options.bedsFor || options.bedsFor === `${profile.specialty}/${profile.gender}`);
+      return { request: { id: 9 }, suggestions: fits ? [{ id: 1, room: "601", bedCode: "A" }, { id: 2, room: "602", bedCode: "B" }] : [] };
     }
     if (path.endsWith("/assign") && conflicts > 0) {
       conflicts -= 1;
@@ -178,8 +180,17 @@ describe("preparación de escenarios por API", () => {
     expect(recorded.find((call) => call.path === "/hospital-admission/wristbands/verify")?.body).toEqual({ code: "BRZ-1" });
   });
 
+  it("prueba otros perfiles de cama cuando la habitación no admite el primero", async () => {
+    const { as, recorded } = fakeApi({ bedsFor: "cirugia/female" });
+
+    await expect(hospitalize(as, 7)).resolves.toMatchObject({ room: "601", bed: "A" });
+    expect(recorded.filter((call) => call.path === "/beds/requests").map((call) => (call.body as { specialty: string; gender: string }).gender)).toEqual(["female", "male", "female"]);
+  });
+
   it("informa cuando no quedan camas o el ingreso no avanza", async () => {
-    await expect(hospitalize(fakeApi({ noBeds: true }).as, 1)).rejects.toThrow("No hay camas disponibles para ENC-CY-1");
+    const full = fakeApi({ noBeds: true });
+    await expect(hospitalize(full.as, 1)).rejects.toThrow("No hay camas disponibles para ENC-CY-1");
+    expect(full.recorded.filter((call) => call.path === "/beds/requests")).toHaveLength(BED_PROFILES.length);
     await expect(hospitalize(fakeApi({ stuckAt: "kardex" }).as, 1)).rejects.toThrow("quedó en el paso kardex");
   });
 
