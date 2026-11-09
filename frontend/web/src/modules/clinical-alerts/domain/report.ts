@@ -1,4 +1,8 @@
 import { toInputDate } from "../../../shared/datetime/range";
+import { STATUS_LABEL as ALERT_STATUS_LABEL } from "./alert";
+
+/** Mismas etiquetas de estado que la bandeja y el detalle de alertas. */
+export const STATUS_LABEL: Record<string, string> = ALERT_STATUS_LABEL;
 
 /** RF-114: reporte de monitoreo y respuesta a alertas (`GET /clinical-alerts/reports`). */
 export const REPORT_DEFAULT_DAYS = 7;
@@ -42,20 +46,6 @@ export const SOURCE_LABEL: Record<string, string> = {
   observacion: "Deterioro observado",
   control: "Control vencido",
   emar: "Dosis pendiente (e-MAR)",
-};
-
-export const STATUS_LABEL: Record<string, string> = {
-  abierta: "Abierta",
-  en_atencion: "En atención",
-  escalada_supervisora: "Escalada a supervisora",
-  medico_notificado: "Médico notificado",
-  medico_en_atencion: "Médico en atención",
-  err_solicitado: "ERR solicitado",
-  escalada_err: "Escalada al ERR",
-  orden_uci: "Orden UCI",
-  uci_autorizada: "UCI autorizada",
-  en_uci: "En UCI",
-  cerrada: "Cerrada",
 };
 
 export function defaultReportFilters(today = new Date()): ReportFilters {
