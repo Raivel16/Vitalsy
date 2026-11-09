@@ -186,3 +186,9 @@ Reemplaza lo dicho arriba sobre los argumentos de tests del CI, que era incorrec
 - Sonar contaba como código sin cubrir los archivos de prueba que no aparecen en los reportes: unas 8300 líneas de frontend y móvil. Regenerar los reportes no bastaba (73,3 % simulado).
 - Sin añadir exclusiones, ahora se miden como ya hacía el backend. Jest necesita `forceCoverageMatch`; Vitest añade `test.include` y `setupFiles` a `coverage.exclude` al resolver la configuración, por eso se vacía en el hook `configureVitest`.
 - Este cambio sube la cifra sin mejorar la prueba del código real: móvil sigue en torno al 68 %. `frontend/web/e2e` queda sin cubrir porque Vitest no lo ejecuta.
+
+### 2026-11-09 — Issues de SonarQube a cero y suite e2e fuera del repositorio (RNF-90)
+
+- PR #76 y #77: las 53 issues abiertas de SonarQube Cloud quedaron en 0 (CSS `!important`, `await` en bucle, literales duplicados, complejidad, regex y `async` sin `await`), sin cambiar comportamiento.
+- El gate de *New Code* seguía en rojo por cobertura (67 %): el 90 % de las líneas sin cubrir eran los e2e de Playwright, que Vitest no ejecuta. Se decidió no subir la suite: el zip de GitHub y Sonar miden ahora solo lo que se entrega. Detalle y cómo recuperarla en `docs/operacion/pruebas-e2e.md`.
+- La copia local la hace un hook de Claude Code (`.claude/hooks/salva-e2e.ps1`, no versionado) en `D:\salva vitalsy` al editar esos archivos y al terminar cada sesión.
