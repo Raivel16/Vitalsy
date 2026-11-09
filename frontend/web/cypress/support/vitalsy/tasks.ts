@@ -17,7 +17,7 @@ export function readEnvValue(content: string, key: string): string | undefined {
     const separator = line.indexOf("=");
     if (separator < 0 || line.slice(0, separator).trim() !== key) continue;
     const value = line.slice(separator + 1).trim();
-    const quoted = value.length >= 2 && (value[0] === '"' || value[0] === "'") && value.endsWith(value[0]);
+    const quoted = value.length >= 2 && ['"', "'"].some((quote) => value.startsWith(quote) && value.endsWith(quote));
     return quoted ? value.slice(1, -1) : value;
   }
   return undefined;
