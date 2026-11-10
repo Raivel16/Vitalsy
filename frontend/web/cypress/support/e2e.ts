@@ -22,6 +22,9 @@ declare global {
 
 const THROTTLE_WAIT_MS = 61_000;
 
+// La captura de página completa une tramos y repite el menú lateral fijo: se captura lo visible.
+Cypress.Screenshot.defaults({ capture: "viewport" });
+
 function login(role: string, attempt = 0): void {
   cy.request("/sanctum/csrf-cookie");
   cy.env<{ DEMO_PASSWORD: string }>(["DEMO_PASSWORD"], { log: false }).then(({ DEMO_PASSWORD }) => {
