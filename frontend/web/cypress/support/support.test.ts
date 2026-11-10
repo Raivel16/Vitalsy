@@ -54,6 +54,7 @@ function fakeCypress(loginStatuses: number[], { cookie = { value: "token%3D" } a
     },
   };
   const Cypress = {
+    Screenshot: { defaults: (options: unknown) => calls.push({ name: "screenshotDefaults", args: [options] }) },
     Commands: { add: (name: string, implementation: Fn) => (commands[name] = implementation) },
     config: (key: string) => (key === "baseUrl" ? baseUrl : undefined),
   };
@@ -73,6 +74,12 @@ describe("comandos de soporte de Cypress", () => {
     const { commands } = fakeCypress([]);
     await import("./e2e");
     expect(Object.keys(commands).sort()).toEqual(["alertCard", "hospitalize", "loginAs", "raiseAlert", "vitalsyApi"]);
+  });
+
+  it("captura solo el área visible para no repetir el menú lateral", async () => {
+    const { calls } = fakeCypress([]);
+    await import("./e2e");
+    expect(calls).toContainEqual({ name: "screenshotDefaults", args: [{ capture: "viewport" }] });
   });
 
   it("inicia sesión por API con XSRF y valida la sesión cacheada", async () => {
@@ -134,7 +141,14 @@ describe("comandos de soporte de Cypress", () => {
 
 describe("configuración de Cypress", () => {
   type Config = { env: Record<string, string> };
-  type E2e = { baseUrl: string; setupNodeEvents: (on: (event: string, tasks: object) => void, config: Config) => Config };
+  type E2e = {
+    baseUrl: string;
+    viewportWidth: number;
+    viewportHeight: number;
+    setupNodeEvents: (on: (event: string, handler: unknown) => void, config: Config) => Config;
+  };
+  type Launch = { preferences: Record<string, unknown>; args: string[] };
+  type BeforeLaunch = (browser: { name: string; family: string }, options: Launch) => Launch;
 
   async function load(env: Record<string, string | undefined>) {
     vi.resetModules();
@@ -156,6 +170,18 @@ describe("configuración de Cypress", () => {
     expect(resolved.env.DEMO_PASSWORD).toBe("de-entorno");
     expect(on).toHaveBeenCalledWith("task", expect.objectContaining({ "vitalsy:hospitalize": expect.any(Function) }));
     expect(readFileSync).not.toHaveBeenCalled();
+  });
+
+  it("abre el navegador del tamaño de la vista para que las capturas no se recorten", async () => {
+    const { e2e, on } = await load({ CYPRESS_DEMO_PASSWORD: "x" });
+    const handler = on.mock.calls.find(([event]) => event === "before:browser:launch")?.[1] as BeforeLaunch;
+    const launch = (name: string, family: string) => handler({ name, family }, { preferences: {}, args: [] });
+
+    expect([e2e.viewportWidth, e2e.viewportHeight]).toEqual([1920, 1080]);
+    expect(launch("electron", "chromium").preferences).toEqual({ width: 1920, height: 1080 });
+    expect(launch("chrome", "chromium").args).toEqual(["--window-size=1920,1080", "--force-device-scale-factor=1"]);
+    expect(launch("firefox", "firefox").args).toEqual(["--width=1920", "--height=1080"]);
+    expect(launch("webkit", "webkit")).toEqual({ preferences: {}, args: [] });
   });
 
   it("lee DEMO_PASSWORD del .env de la raíz si no hay variable", async () => {
