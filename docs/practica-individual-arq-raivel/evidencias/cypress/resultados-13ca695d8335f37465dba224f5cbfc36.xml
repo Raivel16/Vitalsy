@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="26.588" tests="1" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-11-10T16:29:20" tests="0" file="cypress\e2e\m3-alertas\cy-m3-05-atencion-medica.cy.ts" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="CY-M3-05 · escalamiento al médico de guardia" timestamp="2026-11-10T16:29:20" tests="1" time="26.584" failures="0">
+    <testcase name="CY-M3-05 · escalamiento al médico de guardia valida el motivo, notifica al médico y la alerta aparece en su bandeja" time="26.551" classname="valida el motivo, notifica al médico y la alerta aparece en su bandeja">
+    </testcase>
+  </testsuite>
+</testsuites>
