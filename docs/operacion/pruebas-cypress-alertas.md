@@ -36,5 +36,12 @@ Evidencia de la última corrida (12/12 pruebas aprobadas): `docs/practica-indivi
 - **Un paciente por corrida.** Las tareas de Node (`cypress/support/vitalsy/tasks.ts`) hospitalizan un único paciente por corrida y lo comparten entre specs: cada ingreso ocupa una cama y el entorno de desarrollo no da de alta. Si no hay camas libres compatibles, liberar camas o recrear la base de desarrollo.
 - **Throttle de login (10/min por IP).** Las sesiones se cachean con `cy.session` y la API reintenta tras un 429 esperando 61 s.
 - **Viewport 1920×1080.** A 1366 px los avisos (RF-53) tapan parte de los formularios; hallazgo de usabilidad documentado en el informe de la práctica.
+- **Ventana y capturas.** Sin interfaz el navegador abre a 1280×720 y recortaba la vista de 1920 px; `cypress.config.ts` lo abre a 1920×1080 en `before:browser:launch` (Electron, Chromium y Firefox) y `support/e2e.ts` captura solo el área visible (`capture: "viewport"`), porque la captura de página completa repetía el menú lateral fijo.
+- **Base limpia para evidencias.** Antes de una corrida de evidencias conviene respaldar y recrear la base de desarrollo, para no arrastrar alertas pendientes de corridas viejas:
+
+  ```bash
+  docker compose exec -T postgres pg_dump -U postgres -Fc mi_db > respaldo-mi_db.dump
+  docker compose exec -T backend php artisan migrate:fresh --seed --force
+  ```
 - **Cobertura.** `cypress.config.ts` y `cypress/support/` tienen pruebas Vitest (`support.test.ts` con dobles de `Cypress`/`cy`, y `vitalsy/vitalsy.test.ts`) y entran en la cobertura del frontend, así la suite no baja la cobertura que mide SonarQube; los specs `.cy.ts` solo se ejecutan con Cypress.
 - La suite Playwright (`frontend/web/e2e/`, ver [pruebas-e2e.md](pruebas-e2e.md)) sigue fuera del repositorio; esta suite Cypress es independiente.
