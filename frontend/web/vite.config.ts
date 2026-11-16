@@ -20,7 +20,15 @@ export default defineConfig({
     watch: {
       // Playwright escribe reportes, videos y sesiones aquí mientras corre; sin ignorarlos Vite recarga
       // las páginas de las demás pruebas a mitad de una navegación (pruebas inestables, RNF-18).
-      ignored: ["**/e2e-results/**", "**/e2e/.auth/**"],
+      // Cypress escribe resultados JUnit, videos y capturas en `cypress/`: mismo problema.
+      ignored: [
+        "**/e2e-results/**",
+        "**/e2e/.auth/**",
+        "**/cypress/results/**",
+        "**/cypress/videos/**",
+        "**/cypress/screenshots/**",
+        "**/cypress/downloads/**",
+      ],
       ...(process.env.CHOKIDAR_USEPOLLING === "true" ? { usePolling: true } : {}),
     },
   },
