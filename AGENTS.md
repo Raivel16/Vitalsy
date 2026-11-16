@@ -261,3 +261,8 @@ El propósito de este archivo es reducir el consumo innecesario de tokens y evit
 
 - Las capturas de Cypress salían recortadas a la derecha: en modo sin interfaz el navegador abre a 1280×720 y la vista es de 1920 px. `cypress.config.ts` ahora abre la ventana a 1920×1080 (`before:browser:launch`) y `cypress/support/e2e.ts` captura solo el área visible (la captura completa repetía el menú lateral). Cubierto en `cypress/support/support.test.ts`.
 - Antes de la corrida de evidencias se respaldó la base de desarrollo y se recreó con `migrate:fresh --seed` (tenía alertas pendientes de pruebas viejas). Corrida: 12/12 en 3 min 42 s; evidencias e informe de la práctica actualizados.
+
+### 2026-11-16 · RF-115 · tablero de indicadores hospitalarios
+
+- `GET /api/v1/reports/hospital` (`HospitalIndicatorsService`, roles `jefatura_enfermeria`, `enfermera_supervisora` y `gestion_camas`) y pantalla `/reportes/hospital` con ocupación de camas por sala y estado, ingresos/altas por día, estancia promedio, recambio de cama y cumplimiento del acuse de alertas. Filtros: período ≤ 90 días y sala; las alertas no se filtran por sala porque `clinical_alerts` no guarda la cama. Diseño y reglas de cálculo en `docs/architecture/reportes-hospitalarios.md`.
+- La rama sale de `main` con RF-114 fusionado porque `origin/dev` va un commit atrasado y RF-114 aún no entra a `dev`.
