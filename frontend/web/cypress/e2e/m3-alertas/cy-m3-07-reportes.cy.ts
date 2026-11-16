@@ -1,4 +1,6 @@
 // CY-M3-07 · Reportes de monitoreo y alertas (RF-114): indicadores calculados con los registros reales.
+
+export {};
 type ReportResponse = { summary: { totalAlerts: number }; period: { from: string; to: string } };
 
 function kpi(label: string) {
