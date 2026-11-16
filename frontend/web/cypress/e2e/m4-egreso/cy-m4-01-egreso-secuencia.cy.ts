@@ -1,4 +1,4 @@
-// CY-M4-01 · Proceso 4 (alta y egreso): el paciente hospitalizado entra al tablero y la salida respeta la secuencia.
+// CY-M4-01 · Proceso 4 (alta y egreso): el médico encuentra al paciente hospitalizado y la salida respeta la secuencia.
 import type { Hospitalized } from "../../support/vitalsy/scenarios";
 
 describe("CY-M4-01 · egreso con secuencia obligatoria", () => {
@@ -11,10 +11,12 @@ describe("CY-M4-01 · egreso con secuencia obligatoria", () => {
   });
 
   it("lista al paciente hospitalizado y abre su caso de alta", () => {
-    cy.loginAs("enfermera_piso");
+    cy.loginAs("medico_residente");
     cy.visit("/egreso");
 
     cy.contains("Pacientes en proceso de alta").should("be.visible");
+    cy.get("#discharge-search").type(patient.patientName);
+    cy.contains("button", "Buscar").click();
     cy.get("table[aria-label='Pacientes hospitalizados']").contains("tr", patient.patientName).within(() => {
       cy.get("button").first().click();
     });

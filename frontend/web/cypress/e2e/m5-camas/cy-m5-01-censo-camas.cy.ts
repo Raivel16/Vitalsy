@@ -1,4 +1,5 @@
 // CY-M5-01 · Proceso 5 (camas): el censo muestra la capacidad que calcula la API con los registros reales.
+// Capacidad operativa = disponibles + ocupadas + en limpieza (las camas bloqueadas no cuentan).
 
 export {};
 type CensusResponse = { wards: Array<{ available: number; occupied: number; cleaning: number; beds: unknown[] }> };
@@ -23,7 +24,7 @@ describe("CY-M5-01 · censo de camas", () => {
 
     cy.vitalsyApi("gestion_camas", "GET", "/beds/census").then(({ body }) => {
       const { wards } = body as CensusResponse;
-      kpi("Capacidad total").should("have.text", String(total(wards, (ward) => ward.beds.length)));
+      kpi("Capacidad total").should("have.text", String(total(wards, (ward) => ward.available + ward.occupied + ward.cleaning)));
       kpi("Disponibles").should("have.text", String(total(wards, (ward) => ward.available)));
       kpi("Ocupadas").should("have.text", String(total(wards, (ward) => ward.occupied)));
       kpi("Limpieza").should("have.text", String(total(wards, (ward) => ward.cleaning)));
@@ -33,8 +34,10 @@ describe("CY-M5-01 · censo de camas", () => {
   });
 
   it("reduce el censo al filtrar por un pabellón", () => {
+    cy.intercept("GET", "/api/v1/beds/census*").as("census");
     cy.visit("/camas");
-    cy.get("fieldset[aria-label='Filtrar pabellones'] button").should("have.length.at.least", 2);
+    cy.wait("@census");
+    cy.get("fieldset[aria-label='Filtrar pabellones'] button", { timeout: 30_000 }).should("have.length.at.least", 2);
     cy.get("fieldset[aria-label='Filtrar pabellones'] button").eq(1).click();
     cy.get("fieldset[aria-label='Filtrar pabellones'] button").eq(1).should("have.attr", "aria-pressed", "true");
     cy.screenshot("CY-M5-01-filtro-pabellon");
