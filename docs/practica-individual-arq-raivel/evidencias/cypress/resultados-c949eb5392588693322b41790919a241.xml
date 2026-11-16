@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="35.738" tests="3" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-11-10T16:30:23" tests="0" file="cypress\e2e\m3-alertas\cy-m3-07-reportes.cy.ts" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="CY-M3-07 · reportes de alertas" timestamp="2026-11-10T16:30:23" tests="3" time="35.734" failures="0">
+    <testcase name="CY-M3-07 · reportes de alertas muestra los indicadores que coinciden con los registros del sistema" time="19.904" classname="muestra los indicadores que coinciden con los registros del sistema">
+    </testcase>
+    <testcase name="CY-M3-07 · reportes de alertas filtra por severidad y confirma la actualización" time="8.682" classname="filtra por severidad y confirma la actualización">
+    </testcase>
+    <testcase name="CY-M3-07 · reportes de alertas no consulta con un rango de fechas inválido" time="6.973" classname="no consulta con un rango de fechas inválido">
+    </testcase>
+  </testsuite>
+</testsuites>

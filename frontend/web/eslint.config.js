@@ -27,6 +27,16 @@ export default defineConfig([
     },
   },
   {
+    // RF-114: escenarios de Cypress (Mocha + Chai en el navegador) y su configuración en Node.
+    files: ['cypress/**/*.ts', 'cypress.config.ts'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node, ...globals.mocha, cy: 'readonly', Cypress: 'readonly', expect: 'readonly' },
+    },
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+    },
+  },
+  {
     // RNF-18: los fixtures de Playwright llaman a `use(...)`, que no es un hook de React, y
     // declaran sin dependencias con `async ({}, use) => …`.
     files: ['e2e/**/*.ts', 'playwright.config.ts'],

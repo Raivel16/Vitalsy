@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="62.282" tests="1" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-11-10T16:27:35" tests="0" file="cypress\e2e\m3-alertas\cy-m3-02-monitoreo-genera-alerta.cy.ts" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="CY-M3-02 · el monitoreo genera la alerta" timestamp="2026-11-10T16:27:35" tests="1" time="62.274" failures="0">
+    <testcase name="CY-M3-02 · el monitoreo genera la alerta registra constantes alteradas y la alerta llega a la bandeja de enfermería" time="62.122" classname="registra constantes alteradas y la alerta llega a la bandeja de enfermería">
+    </testcase>
+  </testsuite>
+</testsuites>

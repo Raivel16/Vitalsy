@@ -4404,3 +4404,30 @@ ul { margin: 0.4rem 0 1rem; padding-left: 1.1rem; }
 .ops-board .priority-baja { color: var(--muted); background: var(--sunken); }
 .ops-board .equipment-list { display: grid; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
 .ops-board .equipment-list legend { margin-bottom: 0.3rem; padding: 0; font-size: 0.82rem; font-weight: 700; }
+
+/* RF-114: reportes de monitoreo y alertas */
+.report-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+.report-filters-actions { display: flex; align-items: flex-end; padding-bottom: 0.2rem; }
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 0 1rem;
+  margin-bottom: 1rem;
+}
+.report-grid > .panel + .panel { margin-top: 1rem; }
+.report-chart { margin: 0; }
+.report-chart figcaption { margin-bottom: 0.6rem; color: var(--ink); font-weight: 700; }
+.report-chart svg { display: block; width: 100%; height: auto; max-height: 15rem; }
+.report-chart-label, .report-chart-value, .report-chart-axis { fill: var(--ink); font-size: 12px; }
+.report-chart-axis { fill: var(--muted); font-size: 11px; }
+.report-bar.tone-danger, .report-swatch.tone-danger { fill: var(--danger); background: var(--danger); }
+.report-bar.tone-warning, .report-swatch.tone-warning { fill: var(--warning); background: var(--warning); }
+.report-bar.tone-info, .report-swatch.tone-info { fill: var(--info); background: var(--info); }
+.report-bar.tone-neutral, .report-swatch.tone-neutral { fill: var(--muted); background: var(--muted); }
+.report-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin: 0.5rem 0 0; color: var(--muted); font-size: 0.82rem; }
+.report-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; vertical-align: -0.05rem; }

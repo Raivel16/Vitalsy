@@ -1,0 +1,428 @@
+{
+ "base": {
+  "measures": {
+   "coverage": "91.8",
+   "reliability_rating": "1.0",
+   "code_smells": "0",
+   "duplicated_lines_density": "1.5",
+   "security_rating": "1.0",
+   "software_quality_security_issues": "0",
+   "security_hotspots": "0",
+   "sqale_rating": "1.0",
+   "alert_status": "OK",
+   "bugs": "0",
+   "lines_to_cover": "42568",
+   "uncovered_conditions": "1441",
+   "software_quality_reliability_issues": "0",
+   "branch_coverage": "80.6",
+   "uncovered_lines": "2676",
+   "ncloc": "78424",
+   "software_quality_maintainability_issues": "0",
+   "vulnerabilities": "0",
+   "conditions_to_cover": "7437",
+   "line_coverage": "93.7"
+  },
+  "gate": {
+   "status": "OK",
+   "conditions": [],
+   "ignoredConditions": false,
+   "caycStatus": "compliant"
+  },
+  "total": 0,
+  "facets": [
+   {
+    "property": "severities",
+    "values": [
+     {
+      "val": "INFO",
+      "count": 0
+     },
+     {
+      "val": "MINOR",
+      "count": 0
+     },
+     {
+      "val": "MAJOR",
+      "count": 0
+     },
+     {
+      "val": "CRITICAL",
+      "count": 0
+     },
+     {
+      "val": "BLOCKER",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "directories",
+    "values": []
+   },
+   {
+    "property": "types",
+    "values": [
+     {
+      "val": "CODE_SMELL",
+      "count": 0
+     },
+     {
+      "val": "BUG",
+      "count": 0
+     },
+     {
+      "val": "VULNERABILITY",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "impactSoftwareQualities",
+    "values": [
+     {
+      "val": "MAINTAINABILITY",
+      "count": 0
+     },
+     {
+      "val": "SECURITY",
+      "count": 0
+     },
+     {
+      "val": "RELIABILITY",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "impactSeverities",
+    "values": [
+     {
+      "val": "HIGH",
+      "count": 0
+     },
+     {
+      "val": "MEDIUM",
+      "count": 0
+     },
+     {
+      "val": "LOW",
+      "count": 0
+     },
+     {
+      "val": "INFO",
+      "count": 0
+     },
+     {
+      "val": "BLOCKER",
+      "count": 0
+     }
+    ]
+   }
+  ],
+  "vulns": [],
+  "bugs": [],
+  "hotspots": []
+ },
+ "rf": {
+  "measures": {
+   "coverage": "91.8",
+   "reliability_rating": "1.0",
+   "code_smells": "0",
+   "duplicated_lines_density": "1.5",
+   "security_rating": "1.0",
+   "software_quality_security_issues": "0",
+   "security_hotspots": "0",
+   "sqale_rating": "1.0",
+   "alert_status": "OK",
+   "bugs": "0",
+   "lines_to_cover": "44319",
+   "uncovered_conditions": "1443",
+   "software_quality_reliability_issues": "0",
+   "branch_coverage": "81.6",
+   "uncovered_lines": "2824",
+   "ncloc": "80849",
+   "software_quality_maintainability_issues": "0",
+   "vulnerabilities": "0",
+   "conditions_to_cover": "7854",
+   "line_coverage": "93.6"
+  },
+  "gate": {
+   "status": "OK",
+   "conditions": [
+    {
+     "status": "OK",
+     "metricKey": "new_coverage",
+     "comparator": "LT",
+     "errorThreshold": "80",
+     "actualValue": "98.9"
+    },
+    {
+     "status": "OK",
+     "metricKey": "new_duplicated_lines_density",
+     "comparator": "GT",
+     "errorThreshold": "3",
+     "actualValue": "0.0"
+    },
+    {
+     "status": "OK",
+     "metricKey": "new_violations",
+     "comparator": "GT",
+     "errorThreshold": "0",
+     "actualValue": "0"
+    }
+   ],
+   "ignoredConditions": false,
+   "period": {
+    "mode": "PREVIOUS_VERSION",
+    "date": "2026-11-09T21:15:57+0000"
+   },
+   "caycStatus": "compliant"
+  },
+  "total": 0,
+  "facets": [
+   {
+    "property": "severities",
+    "values": [
+     {
+      "val": "INFO",
+      "count": 0
+     },
+     {
+      "val": "MINOR",
+      "count": 0
+     },
+     {
+      "val": "MAJOR",
+      "count": 0
+     },
+     {
+      "val": "CRITICAL",
+      "count": 0
+     },
+     {
+      "val": "BLOCKER",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "directories",
+    "values": []
+   },
+   {
+    "property": "types",
+    "values": [
+     {
+      "val": "CODE_SMELL",
+      "count": 0
+     },
+     {
+      "val": "BUG",
+      "count": 0
+     },
+     {
+      "val": "VULNERABILITY",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "impactSoftwareQualities",
+    "values": [
+     {
+      "val": "MAINTAINABILITY",
+      "count": 0
+     },
+     {
+      "val": "SECURITY",
+      "count": 0
+     },
+     {
+      "val": "RELIABILITY",
+      "count": 0
+     }
+    ]
+   },
+   {
+    "property": "impactSeverities",
+    "values": [
+     {
+      "val": "HIGH",
+      "count": 0
+     },
+     {
+      "val": "MEDIUM",
+      "count": 0
+     },
+     {
+      "val": "LOW",
+      "count": 0
+     },
+     {
+      "val": "INFO",
+      "count": 0
+     },
+     {
+      "val": "BLOCKER",
+      "count": 0
+     }
+    ]
+   }
+  ],
+  "vulns": [],
+  "bugs": [],
+  "hotspots": []
+ },
+ "files": [
+  [
+   "backend/api/app/Http/Controllers/Api/ClinicalAlertReportsController.php",
+   "100.0",
+   "0",
+   "35"
+  ],
+  [
+   "backend/api/app/Services/ClinicalAlerts/AlertReportService.php",
+   "99.2",
+   "0",
+   "183"
+  ],
+  [
+   "frontend/web/cypress.config.ts",
+   "100.0",
+   "0",
+   "33"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-01-acceso.cy.ts",
+   "0.0",
+   "0",
+   "25"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-02-monitoreo-genera-alerta.cy.ts",
+   "0.0",
+   "0",
+   "35"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-03-validacion-deterioro.cy.ts",
+   "0.0",
+   "0",
+   "26"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-04-acuse-alerta.cy.ts",
+   "0.0",
+   "0",
+   "31"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-05-atencion-medica.cy.ts",
+   "0.0",
+   "0",
+   "34"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-06-permisos-navegacion.cy.ts",
+   "0.0",
+   "0",
+   "23"
+  ],
+  [
+   "frontend/web/cypress/e2e/m3-alertas/cy-m3-07-reportes.cy.ts",
+   "0.0",
+   "0",
+   "47"
+  ],
+  [
+   "frontend/web/cypress/support/e2e.ts",
+   "100.0",
+   "0",
+   "61"
+  ],
+  [
+   "frontend/web/cypress/support/support.test.ts",
+   "99.0",
+   "0",
+   "151"
+  ],
+  [
+   "frontend/web/cypress/support/vitalsy/scenarios.ts",
+   "99.5",
+   "0",
+   "167"
+  ],
+  [
+   "frontend/web/cypress/support/vitalsy/session.ts",
+   "100.0",
+   "0",
+   "76"
+  ],
+  [
+   "frontend/web/cypress/support/vitalsy/tasks.ts",
+   "100.0",
+   "0",
+   "48"
+  ],
+  [
+   "frontend/web/cypress/support/vitalsy/vitals.ts",
+   "100.0",
+   "0",
+   "37"
+  ],
+  [
+   "frontend/web/cypress/support/vitalsy/vitalsy.test.ts",
+   "100.0",
+   "0",
+   "261"
+  ],
+  [
+   "frontend/web/src/App.tsx",
+   "97.7",
+   "0",
+   "304"
+  ],
+  [
+   "frontend/web/src/app/navigation.tsx",
+   "92.4",
+   "0",
+   "190"
+  ],
+  [
+   "frontend/web/src/modules/clinical-alerts/alert-reports.test.tsx",
+   "98.4",
+   "0",
+   "176"
+  ],
+  [
+   "frontend/web/src/modules/clinical-alerts/components/ReportCharts.tsx",
+   "100.0",
+   "0",
+   "79"
+  ],
+  [
+   "frontend/web/src/modules/clinical-alerts/domain/report.ts",
+   "98.5",
+   "0",
+   "69"
+  ],
+  [
+   "frontend/web/src/modules/clinical-alerts/pages/AlertReportsPage.tsx",
+   "100.0",
+   "0",
+   "149"
+  ],
+  [
+   "frontend/web/src/modules/vital-monitoring/vital-signs-chart-panel.test.tsx",
+   "98.4",
+   "0",
+   "47"
+  ],
+  [
+   "frontend/web/src/styles/clinical.css",
+   null,
+   "0",
+   "4293"
+  ]
+ ]
+}
