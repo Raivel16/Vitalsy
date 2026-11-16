@@ -58,7 +58,7 @@ function daysBetween(from: string, to: string): number {
 }
 
 /** Validación previa al envío: mismas reglas que la API. */
-export function validateReportFilters(filters: ReportFilters): ReportFilterErrors {
+export function validateReportFilters(filters: Pick<ReportFilters, "from" | "to">): ReportFilterErrors {
   if (!filters.from) return { from: "Indique la fecha inicial." };
   if (!filters.to) return { to: "Indique la fecha final." };
   const days = daysBetween(filters.from, filters.to);
