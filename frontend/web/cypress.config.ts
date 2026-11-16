@@ -39,6 +39,11 @@ export default defineConfig({
     viewportWidth: WINDOW.width,
     viewportHeight: WINDOW.height,
     defaultCommandTimeout: 10_000,
+    // El servidor de desarrollo compila módulos bajo demanda y la API corre con `php artisan serve`: la primera
+    // carga de una ruta puede tardar más que los 5 s por defecto. Se reintenta una vez en la terminal (CI).
+    requestTimeout: 20_000,
+    responseTimeout: 60_000,
+    retries: { runMode: 1, openMode: 0 },
     video: true,
     screenshotOnRunFailure: true,
     reporter: "junit",

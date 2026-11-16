@@ -145,6 +145,9 @@ describe("configuración de Cypress", () => {
     baseUrl: string;
     viewportWidth: number;
     viewportHeight: number;
+    retries: { runMode: number; openMode: number };
+    requestTimeout: number;
+    responseTimeout: number;
     setupNodeEvents: (on: (event: string, handler: unknown) => void, config: Config) => Config;
   };
   type Launch = { preferences: Record<string, unknown>; args: string[] };
@@ -182,6 +185,13 @@ describe("configuración de Cypress", () => {
     expect(launch("chrome", "chromium").args).toEqual(["--window-size=1920,1080", "--force-device-scale-factor=1"]);
     expect(launch("firefox", "firefox").args).toEqual(["--width=1920", "--height=1080"]);
     expect(launch("webkit", "webkit")).toEqual({ preferences: {}, args: [] });
+  });
+
+  it("tolera un servidor de desarrollo lento: espera las peticiones y reintenta una vez en la terminal", async () => {
+    const { e2e } = await load({ CYPRESS_DEMO_PASSWORD: "x" });
+    expect(e2e.retries).toEqual({ runMode: 1, openMode: 0 });
+    expect(e2e.requestTimeout).toBeGreaterThanOrEqual(20_000);
+    expect(e2e.responseTimeout).toBeGreaterThanOrEqual(60_000);
   });
 
   it("lee DEMO_PASSWORD del .env de la raíz si no hay variable", async () => {
