@@ -8,3 +8,4 @@
 | RNF-11 | `GET /api/health`, healthchecks y `restart` en `docker-compose.prod.yml`, [disponibilidad.md](disponibilidad.md) | Sonda con test; 99.9 % requiere medición anual |
 | RNF-13 | `scripts/backup-db.sh`, `restore-db.sh`, `verify-backup.sh`, [recuperacion-ante-desastres.md](recuperacion-ante-desastres.md) | Scripts sin simulacro real; RTO estimado |
 | RNF-18 | `frontend/web/playwright.config.ts`, `frontend/web/e2e/`, `.github/workflows/browser-matrix.yml` | Matriz definida; requiere variable `E2E_BASE_URL`; el job instala `@playwright/test` con `--no-save`; sin ejecutar localmente |
+| RF-114 / Proceso 3 | `frontend/web/cypress/`, [pruebas-cypress-alertas.md](pruebas-cypress-alertas.md) | Cypress local contra :8080; última corrida 12/12 aprobadas |

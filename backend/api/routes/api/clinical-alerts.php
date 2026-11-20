@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ClinicalAlertReportsController;
 use App\Http\Controllers\Api\ClinicalAlertsController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,6 +12,11 @@ Route::prefix('clinical-alerts')->group(function () {
         Route::get('inbox', [ClinicalAlertsController::class, 'inbox']);
         Route::get('{alert}/timeline', [ClinicalAlertsController::class, 'timeline']);
         Route::post('{alert}/acknowledge', [ClinicalAlertsController::class, 'acknowledge']);
+    });
+
+    // RF-114: reportes de monitoreo y respuesta a alertas (supervisión de enfermería).
+    Route::middleware('role:enfermera_supervisora,jefatura_enfermeria')->group(function () {
+        Route::get('reports', [ClinicalAlertReportsController::class, 'show']);
     });
 
     // RF-40: el auxiliar registra el deterioro observado; la enfermera también.

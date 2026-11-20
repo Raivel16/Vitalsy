@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from "./app/AuthProvider";
 import { HomePage } from "./app/HomePage";
 import { LoginPage } from "./app/LoginPage";
 import { ChangePasswordPage } from "./app/ChangePasswordPage";
-import { navFor, withIngreso, isAlertRole, ALERT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, ADMIN_ROLES, type NavItem } from "./app/navigation";
+import { navFor, withIngreso, isAlertRole, ALERT_ROLES, ALERT_REPORT_ROLES, HOSPITAL_REPORT_ROLES, BED_ROLES, CLEANING_ROLES, DISCHARGE_ROLES, PATIENT_WORKLIST, STAFF_ROLES, ADMIN_ROLES, type NavItem } from "./app/navigation";
 import { ROLE_LABEL, type Role } from "./app/roles";
 import { KardexPage } from "./modules/admission-kardex/pages/KardexPage";
 import { CensusPage, EncounterFilePage } from "./modules/admission-census/pages/CensusPages";
@@ -31,6 +31,8 @@ import { NursingEvolutionCarePage } from "./modules/nursing-care/pages/NursingEv
 import { PatientChartPage } from "./modules/patient-chart/pages/PatientChartPage";
 import { AlertInboxPage } from "./modules/clinical-alerts/pages/AlertInboxPage";
 import { AlertDetailPage } from "./modules/clinical-alerts/pages/AlertDetailPage";
+import { AlertReportsPage } from "./modules/clinical-alerts/pages/AlertReportsPage";
+import { HospitalReportsPage } from "./modules/hospital-reports/pages/HospitalReportsPage";
 import { DeteriorationPage } from "./modules/clinical-alerts/pages/DeteriorationPage";
 import { DischargeBoardPage } from "./modules/discharge/pages/DischargeBoardPage";
 import { DischargeCasePage } from "./modules/discharge/pages/DischargeCasePage";
@@ -250,6 +252,14 @@ function Shell() {
                     <DeteriorationPage />
                   </Guard>
                 }
+              />
+              <Route
+                path="/alertas/reportes"
+                element={<Guard roles={ALERT_REPORT_ROLES} requirement="supervisión o jefatura de enfermería"><AlertReportsPage /></Guard>}
+              />
+              <Route
+                path="/reportes/hospital"
+                element={<Guard roles={HOSPITAL_REPORT_ROLES} requirement="jefatura, supervisión de enfermería o gestión de camas"><HospitalReportsPage /></Guard>}
               />
               <Route
                 path="/alertas/:alertId"

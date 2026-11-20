@@ -19,6 +19,7 @@ import {
   IconSparkles,
   IconCalendarEvent,
   IconUserCog,
+  IconChartBar,
   type Icon,
 } from "@tabler/icons-react";
 import { ROLES, type Role } from "./roles";
@@ -60,6 +61,10 @@ export const BED_ROLES: Role[] = ["gestion_camas", "enfermera_supervisora"];
 export const CLEANING_ROLES: Role[] = ["servicios_generales", "auxiliar_enfermeria", "enfermera_supervisora"];
 /** RF-101–104: administración de cuentas y accesos. */
 export const ADMIN_ROLES: Role[] = ["administrador_accesos"];
+/** RF-114: supervisión de enfermería que consulta los reportes de alertas. */
+export const ALERT_REPORT_ROLES: Role[] = ["enfermera_supervisora", "jefatura_enfermeria"];
+/** RF-115: tablero de indicadores del hospital. */
+export const HOSPITAL_REPORT_ROLES: Role[] = ["jefatura_enfermeria", "enfermera_supervisora", "gestion_camas"];
 export const STAFF_ROLES: Role[] = ["jefatura_enfermeria", "enfermera_supervisora", "enfermera_piso", "recursos_humanos"];
 
 export const DISCHARGE_ROLES: Role[] = [
@@ -120,6 +125,14 @@ export const NAV: NavGroup[] = [
         roles: ["auxiliar_enfermeria", "enfermera_piso", "enfermera_supervisora"],
         needsIngreso: true,
       },
+      { to: "/alertas/reportes", label: "Reportes de alertas", icon: IconChartBar, roles: ALERT_REPORT_ROLES },
+    ],
+  },
+  {
+    id: "reportes",
+    label: "Reportes",
+    items: [
+      { to: "/reportes/hospital", label: "Indicadores hospitalarios", icon: IconChartBar, roles: HOSPITAL_REPORT_ROLES },
     ],
   },
   {
