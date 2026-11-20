@@ -1,6 +1,6 @@
 # Pruebas de carga (RNF-03, RNF-04)
 
-Escenarios k6 en `scripts/load/`. Ejecutar solo contra un entorno de pruebas con datos sintéticos.
+Escenarios k6 en `scripts/load/`, una carpeta local que no se versiona para no afectar la medición de SonarQube. Ejecutar solo contra un entorno de pruebas con datos sintéticos.
 
 | Escenario | Cubre | Umbrales |
 |---|---|---|
