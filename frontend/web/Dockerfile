@@ -5,10 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts
 
-COPY index.html tsconfig.json tsconfig.app.json tsconfig.node.json tsconfig.e2e.json vite.config.ts playwright.config.ts ./
+COPY index.html tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts ./
 COPY public ./public
 COPY src ./src
-COPY e2e ./e2e
 # VITE_REVERB_APP_PUBLIC es la clave publica del cliente Reverb. VITE_* se resuelven en tiempo de build (alertas en tiempo real, RNF-01).
 ARG VITE_REVERB_APP_PUBLIC=""
 ARG VITE_REVERB_HOST=""

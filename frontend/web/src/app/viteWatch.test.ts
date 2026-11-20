@@ -8,4 +8,13 @@ describe("servidor de desarrollo (RNF-18)", () => {
     expect(ignored).toContain("**/e2e-results/**");
     expect(ignored).toContain("**/e2e/.auth/**");
   });
+
+  it("no recarga las páginas cuando Cypress escribe resultados, videos o capturas", () => {
+    const watch = config.server?.watch as { ignored?: string[] } | undefined;
+    const ignored = watch?.ignored ?? [];
+
+    for (const folder of ["results", "videos", "screenshots", "downloads"]) {
+      expect(ignored).toContain(`**/cypress/${folder}/**`);
+    }
+  });
 });

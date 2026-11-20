@@ -66,5 +66,7 @@ Route::prefix('v1')->group(function () {
         require base_path('routes/api/beds.php');
 
         require base_path('routes/api/staff.php');
+
+        require base_path('routes/api/reports.php');
     });
 });

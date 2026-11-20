@@ -32,11 +32,14 @@ El desarrollo en LAN esta en `https-dev-lan.md` (admite TLS 1.2+1.3 por compatib
    - CA institucional: emitir con el CN/SAN del dominio y entregar la cadena completa.
 2. Definir en `.env` (el compose los pasa explicitamente): `PUBLIC_DOMAIN` (sin esquema), `APP_URL=https://<dominio>`, `SANCTUM_STATEFUL_DOMAINS=<dominio>` (obligatorios), `APP_KEY`, `DB_PASSWORD`, `REVERB_*`, `REVERB_ALLOWED_ORIGINS=https://<dominio>`, opcional `SESSION_DOMAIN`, `TRUSTED_PROXIES`, `TLS_CERTS_DIR`. `SESSION_SECURE_COOKIE=true` va fijado en el compose.
 3. `docker compose -f docker-compose.prod.yml up -d --build`.
-4. Verificar: `sh scripts/check-tls.sh <dominio>` (301 a https, TLS 1.3 acepta, TLS 1.2 rechaza, HSTS presente; sale != 0 si falla).
+4. Verificar (detalle del servidor real en `docs/devops/despliegue-produccion.md`):
+   - `curl -sI http://<dominio>/` → `301` a `https://`
+   - `curl -sI https://<dominio>/ | grep -i strict-transport-security` → HSTS presente
+   - `openssl s_client -connect <dominio>:443 -tls1_3 </dev/null` acepta; con `-tls1_2` el handshake falla.
 
 ## Riesgos residuales
 
-- `prod.conf` y `check-tls.sh` no se ejecutaron contra un servidor real en el entorno de desarrollo (sin dominio ni certificados; Docker no estaba activo para `nginx -t`). Validar en el primer despliegue.
+- `prod.conf` ya corre en el servidor de AWS (2026-11-20): `http` responde 301 a `https` y `/api/health` responde `ok`. Falta registrar la prueba de rechazo de TLS 1.2 con `openssl`.
 - El trafico entre contenedores (proxy -> frontend/backend/reverb, backend -> postgres) es texto plano dentro de la red interna de Docker; mitigado por no publicar puertos, no cifrado.
 - TLS 1.3 solamente excluye clientes antiguos (p. ej. Android < 10, iOS < 12.2); es el requisito literal del RNF-05.
 - HSTS con `includeSubDomains`: obliga a HTTPS en todos los subdominios del dominio; verifique que ninguno depende de HTTP antes de desplegar.

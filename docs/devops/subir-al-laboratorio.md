@@ -2,7 +2,7 @@
 
 Guía del día en que el proyecto se publica en el GitLab del laboratorio para que el pipeline lo despliegue. El código ya está adaptado: no hay que rehacer la estructura.
 
-El remoto `origin` apunta a GitHub. El laboratorio es otro servidor. No hagas push de este trabajo a `origin main`.
+El remoto `origin` apunta a GitHub. El laboratorio es otro servidor. Lo que se sube al GitLab del laboratorio es una copia de `main` de GitHub. Ese mismo `main` es el que se despliega en AWS (`despliegue-produccion.md`). Por eso todo lo que entra a `main` tiene que funcionar en AWS y no puede bajar la nota de SonarQube del laboratorio.
 
 ## Qué debe quedar listo antes de salir
 
@@ -19,10 +19,11 @@ El remoto `origin` apunta a GitHub. El laboratorio es otro servidor. No hagas pu
 Desde la raíz del repositorio, en Git Bash:
 
 ```bash
-bash scripts/pre-push.sh
+(cd frontend/web && npm ci && npm test && npm run build)
+(cd backend/api && php artisan test && ./vendor/bin/pint --test)
 ```
 
-Tiene que terminar en verde. El frontend deja `frontend/web/coverage/lcov.info`. Si PHP local no tiene PCOV, el backend igual corre los tests y el aviso de cobertura es esperado: el CI del laboratorio es el que mide SonarQube.
+Las dos líneas tienen que terminar en verde. Es lo mismo que comprueba el CI de GitHub en cada PR. El frontend deja `frontend/web/coverage/lcov.info`. Si PHP local no tiene PCOV, el backend igual corre los tests y el aviso de cobertura es esperado: el CI del laboratorio es el que mide SonarQube.
 
 Revisa que no vayas a subir secretos:
 

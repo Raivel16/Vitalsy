@@ -26,6 +26,7 @@ Implementa el Proceso 3. Una alerta nace del monitoreo (RF-30) o de una observac
 | RF-51+ | Hecho | Ciclo UCI: orden → autorizaciones → traslado → retorno |
 | RF-38 | Hecho | Expediente incluye pestaña **Alertas** con timeline |
 | RF-53 | Hecho | Campana, toast e Ir al evento tras confirmar lectura |
+| RF-114 | Hecho | `/alertas/reportes` · `GET .../clinical-alerts/reports` (`AlertReportService`): acuse de enfermería, escalamiento, respuesta médica, UCI, severidad/origen/estado, NEWS2 y detalle diario; filtros período ≤ 90 días, severidad, origen y servicio |
 
 ## Estados de la alerta
 
@@ -68,6 +69,7 @@ abierta ──ack──> en_atencion ──┬── NEWS2 0 + programacion ─�
 | `/alertas/deterioro` | auxiliar, enfermera, supervisora |
 | `/atencion/controles` | enfermera, auxiliar, supervisora (bandeja RF-42) |
 | `/atencion/chart` | pestaña Alertas (RF-38) |
+| `/alertas/reportes` | enfermera_supervisora, jefatura_enfermeria (RF-114) |
 
 ## Plazos
 
