@@ -113,7 +113,9 @@ jobs:
       # Se instala antes de levantar el stack: si no, el volumen de compose crea node_modules como root.
       - name: Install frontend dependencies
         working-directory: frontend/web
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts
+          npx cypress install
 
       # Credenciales efímeras del runner: no hay secretos del repositorio en el stack de pruebas.
       - name: Prepare environment and certificates
