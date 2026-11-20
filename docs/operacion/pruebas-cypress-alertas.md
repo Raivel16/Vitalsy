@@ -14,7 +14,7 @@ Suite E2E con Cypress 16.2 (`frontend/web/cypress/`), versionada en git. Corre e
 | CY-M3-06 | `cy-m3-06-permisos-navegacion.cy.ts` | Navegación entre módulos y control de acceso por rol a alertas y reportes | RF-114 |
 | CY-M3-07 | `cy-m3-07-reportes.cy.ts` | Reporte RF-114: filtros validados e indicadores calculados con registros reales | RF-114 |
 
-Evidencia de la última corrida (12/12 pruebas aprobadas): `docs/practica-individual-arq-raivel/evidencias/cypress/`.
+Evidencia de la última corrida (12/12 pruebas aprobadas): se conserva fuera del repositorio (capturas, videos y XML JUnit), porque el servidor de calidad mide todo lo que se versiona.
 
 ## Ejecución (en `frontend/web`)
 

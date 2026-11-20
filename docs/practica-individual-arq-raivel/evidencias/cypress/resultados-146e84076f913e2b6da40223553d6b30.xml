@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="Mocha Tests" time="16.998" tests="1" failures="0">
-  <testsuite name="Root Suite" timestamp="2026-11-10T16:28:40" tests="0" file="cypress\e2e\m3-alertas\cy-m3-03-validacion-deterioro.cy.ts" time="0.000" failures="0">
-  </testsuite>
-  <testsuite name="CY-M3-03 · registro de deterioro observado" timestamp="2026-11-10T16:28:40" tests="1" time="16.989" failures="0">
-    <testcase name="CY-M3-03 · registro de deterioro observado exige la descripción y notifica a la enfermera al registrar" time="16.907" classname="exige la descripción y notifica a la enfermera al registrar">
-    </testcase>
-  </testsuite>
-</testsuites>
