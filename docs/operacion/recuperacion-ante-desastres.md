@@ -1,30 +1,31 @@
 # Recuperación ante desastres (RNF-13: RPO <= 24 h, RTO <= 4 h)
 
-## Respaldo
+## Alcance actual
 
-- Script: `scripts/backup-db.sh` (`pg_dump -Fc`, checksum SHA-256, retención por `BACKUP_RETENTION_DAYS`, 14 por defecto).
-- Automático: servicio `backup` de `docker-compose.prod.yml`, cada `BACKUP_INTERVAL_HOURS` (6 h por defecto; debe ser <= 24 para cumplir el RPO).
-- Los respaldos viven en el volumen `backup_data`. **Obligatorio fuera del servidor:** copiar periódicamente a almacenamiento externo cifrado (cifrado en reposo y control de acceso), porque un volumen en el mismo host no sobrevive a su pérdida.
-- La clave de base de datos se pasa por `PGPASSWORD`/`PGPASSFILE`, nunca por línea de comandos.
+El despliegue en AWS (`docs/devops/despliegue-produccion.md`) es de demostración. **No hay respaldo automático.** Los datos se pueden recrear con `php artisan db:seed --force`, y perderlos no es un riesgo aceptado como incidente. El RNF-13 queda sin cumplir hasta que exista una operación real. Los scripts de respaldo se retiraron del repositorio porque no forman parte de la entrega evaluada.
 
-## Verificación de restauración
+## Respaldo manual
 
-`scripts/verify-backup.sh <archivo.dump>` valida checksum, restaura en una base temporal, cuenta tablas, `users` y `admission_encounters` y la elimina. Ejecutar al menos semanalmente y tras cambios de esquema.
+Desde la raíz del proyecto en el servidor:
 
-## Runbook de restauración
+```bash
+C="docker compose -f docker-compose.prod.yml"
+$C exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > vitalsy-$(date +%F-%H%M).dump
+sha256sum vitalsy-*.dump > respaldos.sha256
+```
+
+La contraseña no viaja por la línea de comandos: `pg_dump` corre dentro del contenedor con el usuario de la base. Copiar el `.dump` y el `.env` fuera del servidor, a almacenamiento cifrado. Sin el mismo `APP_KEY`, los campos cifrados (RNF-06) no se pueden leer.
+
+## Restauración
 
 | Paso | Acción | Tiempo estimado |
 |---|---|---|
-| 1 | Declarar el incidente y detener tráfico (`docker compose stop frontend backend reverb`) | 10 min |
-| 2 | Aprovisionar host/volumen de PostgreSQL si se perdió | 60 min |
-| 3 | Localizar el último respaldo y su `.sha256` | 10 min |
-| 4 | `scripts/restore-db.sh --yes <archivo.dump>` (verifica checksum antes de restaurar) | 30-60 min según tamaño |
-| 5 | `php artisan migrate --force` por si el esquema es posterior al respaldo | 10 min |
-| 6 | Levantar servicios y comprobar `GET /api/health` | 10 min |
-| 7 | Humo funcional (login, censo, un ingreso) y reapertura | 30 min |
+| 1 | Detener el tráfico: `$C stop frontend backend reverb scheduler` | 10 min |
+| 2 | Aprovisionar el host o el volumen de PostgreSQL si se perdió | 60 min |
+| 3 | Verificar el respaldo: `sha256sum -c respaldos.sha256` | 10 min |
+| 4 | `$C exec -T postgres sh -c 'pg_restore --clean --if-exists -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < archivo.dump` | 30-60 min según tamaño |
+| 5 | `$C run --rm backend php artisan migrate --force`, por si el esquema es posterior al respaldo | 10 min |
+| 6 | Levantar los servicios y comprobar `GET /api/health` | 10 min |
+| 7 | Prueba de humo funcional (login, censo, un ingreso) y reapertura | 30 min |
 
-Total estimado: ~3 h, dentro del RTO de 4 h. Son estimaciones; deben medirse en un simulacro.
-
-## Simulacro
-
-Realizar un simulacro trimestral en un entorno aparte, cronometrar cada paso y actualizar la tabla. Hasta registrar un simulacro, el RTO es una estimación no verificada.
+Total estimado: unas 3 h, dentro del RTO de 4 h. Son estimaciones que deben medirse en un simulacro.

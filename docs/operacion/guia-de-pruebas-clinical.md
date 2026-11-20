@@ -722,11 +722,11 @@ Anote aquí, durante la prueba, observaciones que no son defectos pero mejorarí
 ## 8. Limitaciones de esta guía
 
 - **Entorno local, no productivo.** Docker de desarrollo (`APP_ENV=local`, `APP_DEBUG=true`, `php artisan serve`, Vite en modo desarrollo, HTTP). Los resultados de rendimiento no representan producción.
-- **TLS 1.3 / HTTPS (RNF-05):** solo verificable con `docker-compose.prod.yml`, dominio y certificados reales (`scripts/check-tls.sh`). El compose de desarrollo admite TLS 1.2 y 1.3.
+- **TLS 1.3 / HTTPS (RNF-05):** solo verificable con `docker-compose.prod.yml`, dominio y certificados reales (comandos `curl`/`openssl` de `docs/architecture/https-produccion.md`). El compose de desarrollo admite TLS 1.2 y 1.3.
 - **Reverb y tiempo real (RNF-01, RNF-12):** corre en local, pero la latencia ≤ 2 s hasta el navegador y la reconexión ≤ 5 s tras perder señal exigen una corrida en un entorno de staging con clientes reales; en local solo se verifica el comportamiento funcional.
 - **LIS/PACS:** se usan clientes *stub* con datos fijos; no hay interoperabilidad HL7/FHIR real (RNF-17).
-- **Carga y concurrencia (RNF-03/04):** hay guiones k6 en `scripts/load/` sin ejecutar; no se prueban 50/200 usuarios.
-- **Disponibilidad y recuperación (RNF-11, RNF-13):** requieren medición anual y simulacro con `scripts/backup-db.sh` / `restore-db.sh`.
+- **Carga y concurrencia (RNF-03/04):** hay guiones k6 locales, fuera del repositorio, sin ejecutar; no se prueban 50/200 usuarios.
+- **Disponibilidad y recuperación (RNF-11, RNF-13):** requieren medición anual y simulacro de respaldo y restauración con `pg_dump` / `pg_restore` (`recuperacion-ante-desastres.md`).
 - **Planificador:** las pruebas de SLA y de controles/dosis vencidas dependen de ejecutar `alerts:process-slas` a mano (HP-01).
 - **Reloj del sistema:** no hay forma de adelantar el tiempo desde la interfaz; las pruebas de 5, 15 y 30 minutos requieren espera real.
 - **Navegadores:** Safari y dispositivos físicos solo si dispone de ellos.

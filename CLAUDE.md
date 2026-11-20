@@ -57,7 +57,18 @@ php artisan alerts:process-slas                  # SLA de alertas y recordatorio
 
 Móvil (`movil`): `npm test` (jest), `npm run typecheck`, `npx expo lint`.
 
-Validación local completa antes de push: `scripts/pre-push.sh`. CI (`.github/workflows/ci.yml`): tests + build del frontend, tests + `pint --test` del backend.
+Validación local antes de push: los mismos comandos de prueba y build de arriba, en frontend y backend. CI (`.github/workflows/ci.yml`): tests y build del frontend, tests y `pint --test` del backend, análisis de SonarCloud y e2e con Cypress. Despliegue (`.github/workflows/deploy.yml`): cuando el CI de `main` termina en verde, se actualiza producción en AWS (`docs/devops/despliegue-produccion.md`).
+
+## Dos destinos de `main` (no mezclar)
+
+`main` de GitHub alimenta dos cosas distintas, y todo lo que entre a `main` tiene que cumplir con las dos:
+
+| Destino | Para qué | Qué no se puede romper |
+|---|---|---|
+| GitLab del laboratorio (copia de `main`, `docs/devops/subir-al-laboratorio.md`) | Solo la nota de SonarQube; SonarCloud `Raivel16_Vitalsy` es el espejo para predecirla | Gate OK, A/A/A, cobertura ≥ 80 %, duplicación ≤ 3 %, < 2500 hallazgos. Sin exclusiones nuevas en `sonar-project.properties`, sin scripts `.sh` nuevos ni carpetas pesadas: el servidor oficial mide todo el repositorio. Mantener `.gitlab-ci.yml` y `project.yml` en la raíz. |
+| AWS EC2 (producción de demostración, `docs/devops/despliegue-produccion.md`) | Mostrar que la app funciona | Que `docker-compose.prod.yml` y los Dockerfiles construyan con lo que está versionado. Los secretos y los scripts operativos viven solo en el servidor. |
+
+Antes de fusionar a `main`, revisar SonarCloud en el PR y que el compose de producción no referencie archivos ignorados por `.gitignore`.
 
 ## Arquitectura
 
