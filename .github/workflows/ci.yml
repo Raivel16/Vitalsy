@@ -110,6 +110,11 @@ jobs:
         with:
           node-version: 24
 
+      # Se instala antes de levantar el stack: si no, el volumen de compose crea node_modules como root.
+      - name: Install frontend dependencies
+        working-directory: frontend/web
+        run: npm ci
+
       # Credenciales efímeras del runner: no hay secretos del repositorio en el stack de pruebas.
       - name: Prepare environment and certificates
         run: |
@@ -134,9 +139,10 @@ jobs:
           exit 1
 
       - name: Run Cypress
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@f790eee7a50d9505912f50c2095510be7de06aa7 # v6.10.9
         with:
           working-directory: frontend/web
+          install: false
           browser: electron
           command: npm run cy:run
         env:

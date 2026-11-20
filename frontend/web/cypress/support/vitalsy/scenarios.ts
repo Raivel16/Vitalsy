@@ -110,6 +110,12 @@ async function assignBed(as: SessionFor, encounterId: string): Promise<Suggestio
   throw new Error(`No hay camas disponibles para ${encounterId}: libere camas antes de ejecutar Cypress.`);
 }
 
+/** Cada paso depende del resultado del anterior, por eso se encadenan en secuencia hasta cerrar el ingreso. */
+async function advanceUntilClosed(as: SessionFor, enc: Enc, remaining: number): Promise<Enc> {
+  if (enc.step === "cerrado" || remaining === 0) return enc;
+  return advanceUntilClosed(as, await completeStep(as, enc), remaining - 1);
+}
+
 /** Acción de la pantalla del paso vigente; devuelve el ingreso ya avanzado. */
 async function completeStep(as: SessionFor, enc: Enc): Promise<Enc> {
   const id = enc.id;
@@ -176,10 +182,8 @@ export async function hospitalize(as: SessionFor, seed: number): Promise<Hospita
     reason: "Neumonía adquirida en la comunidad",
     source: "manual",
   });
-  let enc = toEnc({ id: encounter.encounterId, orderNumber, patient, step: "", wristband: null, transfer: null, room: null, bed: null }, encounter);
-  for (let guard = 0; guard < MAX_STEPS && enc.step !== "cerrado"; guard++) {
-    enc = await completeStep(as, enc);
-  }
+  const first = toEnc({ id: encounter.encounterId, orderNumber, patient, step: "", wristband: null, transfer: null, room: null, bed: null }, encounter);
+  const enc = await advanceUntilClosed(as, first, MAX_STEPS);
   if (enc.step !== "cerrado") throw new Error(`El ingreso ${enc.id} quedó en el paso ${enc.step}.`);
   return { encounterId: enc.id, patientName: patient.fullName, room: enc.room, bed: enc.bed };
 }
