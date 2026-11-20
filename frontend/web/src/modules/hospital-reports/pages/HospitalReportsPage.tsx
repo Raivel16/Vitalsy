@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type SubmitEvent } from "react";
 import { api } from "../../../app/api";
 import { errorText } from "../../../app/userMessage";
 import { Button } from "../../../shared/ui/Button";
@@ -52,7 +52,7 @@ export function HospitalReportsPage() {
     setFilters((current) => ({ ...current, [key]: value }));
   }
 
-  function submit(event: FormEvent) {
+  function submit(event: SubmitEvent) {
     event.preventDefault();
     const found = validateHospitalFilters(filters);
     setErrors(found);
