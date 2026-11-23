@@ -5,6 +5,8 @@ export const STEP_PATH: Record<string, string> = {
   orden: "/admision/orden",
   filiacion: "/admision/filiacion",
   cobertura: "/admision/cobertura",
+  // La derivación no abre otra pantalla: es la misma cobertura cuando el seguro
+  // aún no está aprobado y el ingreso queda en espera.
   derivacion: "/admision/cobertura",
   brazalete: "/admision/brazalete",
   expediente: "/admision/expediente",
@@ -76,6 +78,13 @@ export function canActOnEncounter(role: Role, encounter: Pick<Encounter, "nextRo
   return false;
 }
 
+/**
+ * Un paso del stepper es enlace solo si este rol ya lo alcanzó.
+ * Los pasos de otro rol quedan como etiqueta (su índice es -1).
+ * Si el ingreso está ahora en un paso de este rol, se puede volver a los anteriores.
+ * Si está en un paso ajeno, solo se abre un paso propio marcado `done` o `current`
+ * en el progreso (por ejemplo, indicaciones ya firmadas).
+ */
 export function canViewRoleStep(role: Role, step: string, progress: ProgressStep[] | undefined, currentStep: string): boolean {
   const index = roleStepIndex(role, step);
   if (index < 0) return false;

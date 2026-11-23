@@ -24,6 +24,8 @@ class AdmissionStepTransitions
         $resolvingCoverage = $coverageStatus === 'aprobada'
             && in_array($step, ['cobertura', 'derivacion'], true);
 
+        // Con cobertura observada el ingreso no avanza. La única salida es
+        // volver a registrar cobertura o derivación ya aprobada.
         if ($encounter->waiting_reason && ! $resolvingCoverage) {
             throw new AdmissionBoardException('La cobertura no permite continuar. Derive el trámite.', 422);
         }
@@ -48,6 +50,9 @@ class AdmissionStepTransitions
         $waiting = null;
 
         if ($step === 'cobertura' || $step === 'derivacion') {
+            // Sin aprobación el ingreso permanece en «derivacion» (la misma pantalla).
+            // Solo «aprobada» abre el brazalete y marca la ficha como entregable.
+            // Insistir en derivar sin aprobación deja el ingreso en espera por cobertura.
             $approved = $coverageStatus === 'aprobada';
             $next = $approved ? 'brazalete' : 'derivacion';
             $deliverables['fichaAdmision'] = $approved;

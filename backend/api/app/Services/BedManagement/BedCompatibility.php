@@ -26,6 +26,8 @@ class BedCompatibility
         if ($needsIsolation && ! $bed->isolation) {
             $violations[] = 'La solicitud requiere aislamiento y el lecho no es de aislamiento.';
         }
+        // El aislamiento también cierra el camino inverso: una cama de aislamiento
+        // no se ofrece a quien no lo necesita, para no ocuparla con un paciente común.
         if (! $needsIsolation && $bed->isolation) {
             $violations[] = 'El lecho de aislamiento está reservado para pacientes que lo requieren.';
         }

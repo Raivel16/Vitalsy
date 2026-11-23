@@ -35,7 +35,8 @@ class AlertSirenPolicy
     public function awaitsAcknowledgement(ClinicalAlert $alert): bool
     {
         if ($this->isRapidResponseStatus($alert)) {
-            // Solo cuenta el acuse posterior a la última vez que la alerta pasó al ERR.
+            // Un acuse anterior no vale si la alerta volvió al ERR. Solo cuenta
+            // uno de ese equipo con fecha igual o posterior al último pase.
             $routedAt = $alert->events()->whereIn('type', ['solicitud_err', 'escalamiento'])->max('created_at');
 
             return ! $alert->acknowledgements()
