@@ -4,6 +4,12 @@ namespace App\Services\Discharge;
 
 /**
  * Siguiente acción del egreso según el avance (banderas por entregable) y el rol de quien consulta.
+ *
+ * No es un stepper libre: cada entregable abre el siguiente. Con el pase emitido,
+ * solo la enfermera de piso registra la salida; el camillero ve el traslado y el
+ * resto espera esa salida. Antes del pase, cada rol ve el primer entregable que
+ * le falta. Si no le queda ninguno propio, se pide lo social o la conciliación
+ * y, en último caso, la cuenta de caja.
  */
 final class DischargeNextAction
 {

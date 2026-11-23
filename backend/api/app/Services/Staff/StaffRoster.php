@@ -283,6 +283,9 @@ class StaffRoster
 
             $reassignments = [];
             $unassigned = 0;
+            // Un paciente con NEWS2 de 7 o más no se reparte solo: exige convocatoria.
+            // El resto se rebalancea por carga. Si no queda enfermera receptora,
+            // los pacientes sin destino también abren esa convocatoria.
             if (! $critical && $orphans->isNotEmpty()) {
                 [$reassignments, $unassigned] = $this->rebalance($orphans, $data['shiftDate'], (int) $data['userId']);
             }

@@ -37,6 +37,8 @@ class ComplianceAlertService
             ->get();
 
         foreach ($due as $schedule) {
+            // Una sola alerta abierta por ingreso. El scheduler corre seguido
+            // y, mientras esta siga abierta, no debe duplicarla.
             $key = 'control:'.$schedule->encounter_id;
             if ($this->hasOpenCompliance($key)) {
                 continue;
@@ -58,6 +60,8 @@ class ComplianceAlertService
     private function openDueDoses(): int
     {
         $opened = 0;
+        // La dosis no alerta en el minuto exacto: espera el margen configurado
+        // para que enfermería alcance a administrarla antes de abrir la sirena.
         $grace = (int) config('vitalsy.alerts.emar_grace_minutes', 30);
         $cutoff = now()->subMinutes($grace);
 

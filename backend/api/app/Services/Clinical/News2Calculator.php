@@ -166,6 +166,8 @@ class News2Calculator
      */
     private function classify(int $total, bool $single): array
     {
+        // El orden importa: un solo parámetro en 3 clasifica como bajo-medio
+        // únicamente cuando el total aún no llegó a riesgo medio (5) ni alto (7).
         $key = match (true) {
             $total >= 7 => 'high',
             $total >= 5 => 'medium',
